@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DirectoryShell, ProfileCard } from "@/app/directorio/_components";
+import { StoryRail } from "@/app/historias/StoryRail";
 import { getCityPath, getProfileDisplayTags, getPublicProfiles, type PublicProfile } from "@/lib/directory";
 import { getAvailabilityStatus, readAvailability, readProfilePrices } from "@/lib/profile";
+import { getActiveStories } from "@/lib/stories";
 
 export const dynamic = "force-dynamic";
 
@@ -108,6 +110,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
   }));
   const availability = readAvailability(profile.details.metadata.availability);
   const availabilityStatus = getAvailabilityStatus(availability);
+  const stories = await getActiveStories({ profileId: profile.id });
 
   return (
     <DirectoryShell>
@@ -128,6 +131,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
           </section>}
         </div>
       </section>
+      <div id="historias"><StoryRail stories={stories} profileOnly /></div>
       <section className="profile-detail-layout">
         <div className="profile-detail-main">
           {(availability.length > 0 || profile.details.schedule) && <section className="profile-detail-section availability-detail-section"><div className="availability-detail-heading"><div><h2>Disponibilidad</h2>{availabilityStatus && <p className={availabilityStatus.isOpen ? "availability-open" : "availability-closed"}>{availabilityStatus.text}</p>}</div>{availabilityStatus && <span aria-hidden="true" className={availabilityStatus.isOpen ? "availability-status-dot is-open" : "availability-status-dot"} />}</div>{availability.length > 0 ? <dl className="availability-list">{availability.map((day) => <div key={day.key}><dt>{day.label}</dt><dd>{day.opensAt} – {day.closesAt}</dd></div>)}</dl> : <p>{profile.details.schedule}</p>}</section>}

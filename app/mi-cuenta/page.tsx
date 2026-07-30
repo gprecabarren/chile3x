@@ -29,6 +29,9 @@ const messages: Record<string, string> = {
   invite_accepted: "La asociación fue aceptada y ya puede mostrarse públicamente.",
   invite_declined: "La invitación fue rechazada.",
   membership_removed: "La asociación fue retirada.",
+  story_published: "Tu historia está publicada y se ocultará automáticamente en 24 horas.",
+  story_limit: "Ya tienes el máximo de 5 historias activas para este perfil.",
+  story_error: "No se pudo publicar la historia. Solo los perfiles escort ya publicados pueden crear historias.",
   invite_error: "No se pudo procesar la invitación o asociación.",
   error: "No fue posible completar esa acción. Revisa el estado del perfil.",
 };
@@ -55,6 +58,7 @@ export default async function AccountHome({ searchParams }: { searchParams: Prom
     .where(eq(profiles.ownerId, user.id))
     .orderBy(desc(profiles.updatedAt));
   const params = await searchParams;
+  const storyProfiles = rows.filter((profile) => profile.type === "escort" && profile.status === "approved");
 
   return (
     <AccountShell user={user}>
@@ -98,6 +102,14 @@ export default async function AccountHome({ searchParams }: { searchParams: Prom
             ))}
           </div>
         )}
+        {storyProfiles.length > 0 && <section className="story-publisher-panel">
+          <div><p className="eyebrow">HISTORIAS · 24 HORAS</p><h2>Comparte una actualización</h2><p>Las historias se muestran en la portada, en la ciudad de tu perfil y dentro de tu propia publicación. Se ocultan automáticamente después de 24 horas.</p></div>
+          <div className="story-publisher-grid">{storyProfiles.map((profile) => <form action="/api/historias" method="post" key={profile.id}>
+            <input name="profile_id" type="hidden" value={profile.id} />
+            <label><strong>{profile.displayName}</strong><span>{profile.city}</span><textarea name="body" required minLength={2} maxLength={180} rows={3} placeholder="Ej. Disponible esta tarde en Concepción" /></label>
+            <button className="button button-primary" type="submit">Publicar historia</button>
+          </form>)}</div>
+        </section>}
         <AgencyMemberships ownerId={user.id} />
       </div>
     </AccountShell>

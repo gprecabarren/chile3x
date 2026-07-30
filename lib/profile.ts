@@ -3,8 +3,44 @@ import { regions } from "@/app/locations";
 export const profileTypes = ["escort", "agency", "rental"] as const;
 export const tiers = ["gold", "premium", "vip"] as const;
 export const profileTags = ["milf", "hombres", "trans", "masajes"] as const;
-export const includedServices = ["Departamento propio", "Hoteles", "Domicilio", "Acompañamiento", "Videollamada"] as const;
-export const additionalServices = ["Traslado", "Viajes", "Noche completa", "Atención fuera de horario"] as const;
+export const includedServices = [
+  "Departamento propio",
+  "Hoteles",
+  "Domicilio",
+  "Acompañamiento",
+  "Videollamada",
+  "Americana corporal",
+  "Atención a parejas",
+  "Bailes eróticos",
+  "Besos",
+  "Despedidas",
+  "Eventos y cenas",
+  "Fantasías y disfraces",
+  "Juguetes eróticos",
+  "Masaje erótico",
+  "Oral con preservativo",
+  "Trato de pareja",
+] as const;
+export const additionalServices = [
+  "Traslado",
+  "Viajes",
+  "Noche completa",
+  "Atención fuera de horario",
+  "Amiga para un trío",
+  "Ducha erótica",
+  "Garganta profunda",
+  "Lluvia dorada",
+  "Masturbación rusa",
+  "Oral natural",
+  "Sexo anal",
+  "Fetiches",
+  "Fetiche de pies",
+  "BDSM suave",
+  "Dominación",
+  "Sumisión",
+  "Juego de roles",
+  "Lencería y disfraces",
+] as const;
 export const escortGenders = ["Femenino", "Masculino", "No binario", "Trans"] as const;
 export const skinColors = ["Clara", "Trigueña", "Morena", "Oscura"] as const;
 export const hairColors = ["Rubio", "Castaño", "Negro", "Rojo", "Otro"] as const;

@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { DirectoryFilters } from "@/app/directorio/DirectoryFilters";
 import { DirectoryShell, ProfileGrid, SeoContent } from "@/app/directorio/_components";
+import { StoryRail } from "@/app/historias/StoryRail";
 import { filterPublicProfiles, getCityInfo, getCityPath, getPublicProfiles, readDirectoryFilters, type DirectoryQuery } from "@/lib/directory";
+import { getActiveStories } from "@/lib/stories";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +27,8 @@ export default async function CityPage({ params, searchParams }: CityPageProps) 
   const city = getCityInfo(citySlug);
   if (!city) notFound();
   const filters = readDirectoryFilters(await searchParams, { region: city.region, city: city.city });
-  const profiles = filterPublicProfiles(await getPublicProfiles(), filters);
+  const [publicProfiles, stories] = await Promise.all([getPublicProfiles(), getActiveStories({ city: city.city })]);
+  const profiles = filterPublicProfiles(publicProfiles, filters);
   const basePath = getCityPath(city.city);
   const categories = [
     ["Todos", basePath], ["VIP", `${basePath}?tier=vip`], ["Premium", `${basePath}?tier=premium`], ["Gold", `${basePath}?tier=gold`],
@@ -42,6 +45,7 @@ export default async function CityPage({ params, searchParams }: CityPageProps) 
         <nav className="city-category-links" aria-label={`Categorías en ${city.city}`}>{categories.map(([label, href]) => <Link key={label} href={href}>{label}</Link>)}</nav>
         <DirectoryFilters action={basePath} filters={filters} pinnedCity={city.city} pinnedRegion={city.region} showType />
         {filters.invalidCombination && <p className="filter-warning" role="alert">MILF y Hombres son categorías incompatibles. Selecciona solo una para buscar.</p>}
+        <StoryRail stories={stories} city={city.city} />
         <div className="directory-results-heading"><div><p className="eyebrow">{city.city.toUpperCase()}</p><h2>{profiles.length} publicación{profiles.length === 1 ? "" : "es"} visible{profiles.length === 1 ? "" : "s"}</h2></div><p>Esta página mantiene la ciudad fija; los filtros no mezclan resultados de otros territorios.</p></div>
         <ProfileGrid profiles={profiles} emptyMessage={`Aún no hay publicaciones que coincidan con los filtros en ${city.city}.`} />
         <SeoContent city={city.city} count={profiles.length} />

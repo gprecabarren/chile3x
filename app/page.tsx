@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { StoryRail } from "./historias/StoryRail";
 import { cityTotal, regions } from "./locations";
+import { getActiveStories } from "@/lib/stories";
 
 export const metadata: Metadata = {
   title: "Perfiles adultos por región y ciudad",
@@ -34,7 +36,10 @@ const directorySchema = {
   })),
 };
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const stories = await getActiveStories();
   return (
     <main>
       <script
@@ -96,6 +101,8 @@ export default function Home() {
           <a className="button button-primary card-action" href="#cobertura">Explorar cobertura</a>
         </aside>
       </section>
+
+      <StoryRail stories={stories} />
 
       <section className="section directory-section" id="cobertura">
         <div className="section-heading directory-heading">

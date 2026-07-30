@@ -44,6 +44,10 @@ Las uniones lógicas de infraestructura están declaradas en
 [.openai/hosting.json](.openai/hosting.json): `DB` para D1 y `MEDIA` para
 R2. Los nombres físicos de los recursos se configuran al desplegar.
 
+> R2 mantiene una cuota gratuita mensual, pero Cloudflare solicita activar su
+> suscripción de uso y un medio de pago antes de poder crear un bucket. No se
+> debe activar hasta que Chile3X necesite recibir fotos o videos reales.
+
 ## Principios de operación
 
 - Solo personas mayores de 18 años.

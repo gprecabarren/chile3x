@@ -5,6 +5,7 @@ const messages: Record<string, string> = {
   adult: "Debes confirmar que eres mayor de 18 años.",
   duplicate: "Ese correo ya tiene una cuenta. Puedes iniciar sesión.",
   invalid: "Revisa los datos ingresados e inténtalo nuevamente.",
+  server: "No fue posible crear la cuenta en este momento. Intentalo nuevamente en unos minutos.",
 };
 
 export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ error?: string; return_to?: string }> }) {

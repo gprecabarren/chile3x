@@ -27,37 +27,50 @@ export async function POST(request: NextRequest) {
   try {
     assertSameOrigin(request);
   } catch {
-    return new Response("Solicitud no válida.", { status: 403 });
+    return new Response("Solicitud no valida.", { status: 403 });
   }
 
-  const formData = await request.formData();
-  const displayName = getFormString(formData, "display_name").trim().slice(0, 80);
-  const email = getFormString(formData, "email").trim().toLowerCase().slice(0, 160);
-  const password = getFormString(formData, "password");
+  let stage = "form_data";
 
-  if (formData.get("adult_confirmed") !== "yes") {
-    return redirectWithError(request, "adult");
+  try {
+    const formData = await request.formData();
+    const displayName = getFormString(formData, "display_name").trim().slice(0, 80);
+    const email = getFormString(formData, "email").trim().toLowerCase().slice(0, 160);
+    const password = getFormString(formData, "password");
+
+    if (formData.get("adult_confirmed") !== "yes") {
+      return redirectWithError(request, "adult");
+    }
+
+    if (displayName.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < 12) {
+      return redirectWithError(request, "invalid");
+    }
+
+    stage = "lookup";
+    const db = await getDb();
+    const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+    if (existing) {
+      return redirectWithError(request, "duplicate");
+    }
+
+    stage = "password";
+    const userId = `usr_${crypto.randomUUID()}`;
+    const passwordHash = await hashPassword(password);
+
+    stage = "create_user";
+    await db.insert(users).values({ id: userId, email, displayName, passwordHash, role: "visitor" });
+
+    stage = "create_session";
+    const returnTo = safeAccountReturnTo(getFormString(formData, "return_to"));
+    const response = NextResponse.redirect(new URL(`${returnTo}?welcome=1`, request.url), 303);
+    response.cookies.set({
+      name: getUserSessionCookieName(),
+      value: await createUserSession(userId),
+      ...sessionCookieOptions(getUserSessionDuration()),
+    });
+    return response;
+  } catch (error) {
+    console.error("Account registration failed", { stage, error });
+    return redirectWithError(request, "server");
   }
-
-  if (displayName.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < 12) {
-    return redirectWithError(request, "invalid");
-  }
-
-  const db = await getDb();
-  const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
-  if (existing) {
-    return redirectWithError(request, "duplicate");
-  }
-
-  const userId = `usr_${crypto.randomUUID()}`;
-  await db.insert(users).values({ id: userId, email, displayName, passwordHash: await hashPassword(password), role: "visitor" });
-
-  const returnTo = safeAccountReturnTo(getFormString(formData, "return_to"));
-  const response = NextResponse.redirect(new URL(`${returnTo}?welcome=1`, request.url), 303);
-  response.cookies.set({
-    name: getUserSessionCookieName(),
-    value: await createUserSession(userId),
-    ...sessionCookieOptions(getUserSessionDuration()),
-  });
-  return response;
 }

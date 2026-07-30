@@ -7,7 +7,8 @@ const ADMIN_SESSION_COOKIE = "chile3x_admin_session";
 const USER_SESSION_COOKIE = "chile3x_user_session";
 const ADMIN_SESSION_DURATION_SECONDS = 60 * 60 * 12;
 const USER_SESSION_DURATION_SECONDS = 60 * 60 * 24 * 30;
-const PASSWORD_ITERATIONS = 210_000;
+// Cloudflare Workers supports PBKDF2 iteration counts up to 100,000.
+const PASSWORD_ITERATIONS = 100_000;
 
 type RuntimeAuthEnv = {
   GITHUB_CLIENT_ID?: string;

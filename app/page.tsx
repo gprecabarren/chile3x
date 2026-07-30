@@ -200,6 +200,7 @@ export default function Home() {
       <footer id="reglas">
         <Image src="/chile3x-logo-primary.jpeg" alt="Chile3X" width={800} height={225} />
         <p>Chile3X es un directorio para personas adultas. No interviene en acuerdos entre usuarios y anunciantes.</p>
+        <p className="home-legal-links"><Link href="/terminos">Términos y condiciones</Link><Link href="/privacidad">Privacidad</Link><Link href="/reglas-de-publicacion">Reglas de publicación</Link></p>
         <span>© {new Date().getFullYear()} Chile3X · Solo mayores de 18 años</span>
       </footer>
     </main>

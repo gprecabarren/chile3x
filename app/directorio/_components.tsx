@@ -41,7 +41,7 @@ export function PublicFooter() {
   return (
     <footer className="public-footer">
       <p>Chile3X es un directorio para personas adultas. Los acuerdos ocurren directamente entre visitantes y anunciantes.</p>
-      <div><Link href="/escorts">Escorts</Link><Link href="/agencias">Agencias</Link><Link href="/arriendos">Arriendos</Link></div>
+      <div><Link href="/escorts">Escorts</Link><Link href="/agencias">Agencias</Link><Link href="/arriendos">Arriendos</Link><Link href="/terminos">Términos</Link><Link href="/privacidad">Privacidad</Link><Link href="/reglas-de-publicacion">Reglas</Link></div>
     </footer>
   );
 }

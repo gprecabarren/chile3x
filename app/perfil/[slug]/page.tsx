@@ -12,6 +12,22 @@ function profileTypeLabel(type: PublicProfile["type"]) {
   return type === "escort" ? "Escort" : type === "agency" ? "Agencia" : "Arriendo";
 }
 
+function phoneDigits(value: string | null) {
+  return (value ?? "").replace(/\D/g, "");
+}
+
+function contactLinks(profile: PublicProfile) {
+  const whatsappNumber = phoneDigits(profile.contactWhatsapp);
+  const callNumber = phoneDigits(profile.details.contactPhone) || whatsappNumber;
+  const telegramUsername = (profile.contactTelegram ?? "").replace(/^@/, "");
+  const message = encodeURIComponent(`Hola ${profile.displayName}, vi tu perfil en Chile3X y quisiera consultar disponibilidad.`);
+  return {
+    whatsapp: whatsappNumber ? `https://wa.me/${whatsappNumber}?text=${message}` : null,
+    call: callNumber ? `tel:${callNumber}` : null,
+    telegram: /^[A-Za-z0-9_]{5,32}$/.test(telegramUsername) ? `https://t.me/${telegramUsername}` : null,
+  };
+}
+
 function metadataFacts(profile: PublicProfile) {
   const metadata = profile.details.metadata;
   if (profile.type === "escort") return [
@@ -38,6 +54,7 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
     title: `${profile.displayName} en ${profile.city} | Chile3X`,
     description: profile.shortDescription,
     alternates: { canonical: `/perfil/${profile.slug}` },
+    robots: profile.isDemo ? { index: false, follow: false } : undefined,
   };
 }
 
@@ -52,6 +69,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
   const tags = getProfileDisplayTags(profile);
   const location = [profile.comuna, profile.city, profile.region].filter(Boolean).join(", ");
   const schema = { "@context": "https://schema.org", "@type": "Person", name: profile.displayName, description: profile.shortDescription, address: { "@type": "PostalAddress", addressLocality: profile.city, addressRegion: profile.region, addressCountry: "CL" } };
+  const contacts = contactLinks(profile);
 
   return (
     <DirectoryShell>
@@ -65,8 +83,12 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
           <div className="public-tag-row">{tags.map((tag) => <span key={tag} className={`public-tag ${tag.toLowerCase().replaceAll(" ", "-")}`}>{tag}</span>)}</div>
           <p className="profile-page-description">{profile.description}</p>
           <div className="profile-contact-box">
-            <strong>{profile.details.priceAmount !== null ? `Desde $${profile.details.priceAmount.toLocaleString("es-CL")} ${profile.details.currency}` : "Consulta disponibilidad"}</strong>
-            {profile.isDemo ? <p>Este es un perfil de demostración: el contacto está desactivado.</p> : <a className="button button-primary" href={`https://wa.me/${profile.contactWhatsapp}`} target="_blank" rel="noreferrer">Contactar por WhatsApp</a>}
+            <div><strong>{profile.details.priceAmount !== null ? `Desde $${profile.details.priceAmount.toLocaleString("es-CL")} ${profile.details.currency}` : "Consulta disponibilidad"}</strong><p>Contacto directo con el anunciante.</p></div>
+            {profile.isDemo ? <p>Este es un perfil de demostración: el contacto está desactivado.</p> : profile.type === "escort" ? <div className="profile-contact-actions">
+              {contacts.whatsapp && <a className="button contact-whatsapp" href={contacts.whatsapp} target="_blank" rel="noreferrer">WhatsApp</a>}
+              {contacts.telegram && <a className="button contact-telegram" href={contacts.telegram} target="_blank" rel="noreferrer">Telegram</a>}
+              {contacts.call && <a className="button contact-call" href={contacts.call}>Llamar</a>}
+            </div> : contacts.whatsapp && <a className="button button-primary" href={contacts.whatsapp} target="_blank" rel="noreferrer">Contactar por WhatsApp</a>}
           </div>
         </div>
       </section>
@@ -75,6 +97,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
           {profile.details.schedule && <section className="profile-detail-section"><h2>Disponibilidad</h2><p>{profile.details.schedule}</p></section>}
           {facts.length > 0 && <section className="profile-detail-section"><h2>{profile.type === "rental" ? "Características" : "Información del perfil"}</h2><dl className="profile-facts">{facts.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></section>}
           {(profile.servicesIncluded.length > 0 || profile.servicesAdditional.length > 0) && <section className="profile-detail-section service-detail-section"><h2>Servicios</h2><div>{profile.servicesIncluded.length > 0 && <article><h3>Incluidos</h3><ul>{profile.servicesIncluded.map((item) => <li key={item}>{item}</li>)}</ul></article>}{profile.servicesAdditional.length > 0 && <article><h3>Adicionales</h3><ul>{profile.servicesAdditional.map((item) => <li key={item}>{item}</li>)}</ul></article>}</div></section>}
+          {profile.type === "escort" && <section className="profile-detail-section profile-media-section"><p className="eyebrow">MULTIMEDIA</p><h2>Fotos y videos</h2><div className="profile-media-groups"><article><h3>Fotos</h3><p>Las fotografías aprobadas se mostrarán aquí, separadas del material audiovisual.</p><span>Galería de fotos</span></article><article><h3>Videos</h3><p>Los videos aprobados aparecerán en esta sección independiente cuando se habilite el almacenamiento multimedia.</p><span>Galería de videos</span></article></div></section>}
         </div>
         <aside className="profile-detail-aside"><p className="eyebrow">UBICACIÓN</p><h2>{profile.city}</h2><p>{profile.details.referenceLocation ?? "Ubicación referencial disponible al contactar."}</p><Link className="button button-outline" href={getCityPath(profile.city)}>Ver más en {profile.city}</Link></aside>
       </section>

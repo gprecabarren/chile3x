@@ -18,6 +18,23 @@ export const users = sqliteTable("users", {
   createdAt,
 });
 
+export const authSessions = sqliteTable("auth_sessions", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull().unique(),
+  expiresAt: text("expires_at").notNull(),
+  createdAt,
+}, (table) => [
+  index("auth_sessions_user_expires_idx").on(table.userId, table.expiresAt),
+]);
+
+export const siteSettings = sqliteTable("site_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedBy: text("updated_by").references(() => users.id, { onDelete: "set null" }),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
 export const profiles = sqliteTable("profiles", {
   id: text("id").primaryKey(),
   ownerId: text("owner_id").notNull().references(() => users.id),

@@ -5,6 +5,7 @@ import { getDb } from "@/db";
 import { listingPeriods, profiles } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { AccountHeading, AccountShell } from "./_components";
+import { AgencyMemberships } from "./AgencyMemberships";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,11 @@ const messages: Record<string, string> = {
   paused: "El perfil quedó pausado.",
   resumed: "La reactivación fue enviada a revisión.",
   closed: "La creación de perfiles está cerrada temporalmente.",
+  invite_sent: "La invitación fue enviada. La escort debe aceptarla para que la asociación sea pública.",
+  invite_accepted: "La asociación fue aceptada y ya puede mostrarse públicamente.",
+  invite_declined: "La invitación fue rechazada.",
+  membership_removed: "La asociación fue retirada.",
+  invite_error: "No se pudo procesar la invitación o asociación.",
   error: "No fue posible completar esa acción. Revisa el estado del perfil.",
 };
 
@@ -92,6 +98,7 @@ export default async function AccountHome({ searchParams }: { searchParams: Prom
             ))}
           </div>
         )}
+        <AgencyMemberships ownerId={user.id} />
       </div>
     </AccountShell>
   );

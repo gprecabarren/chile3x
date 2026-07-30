@@ -35,3 +35,23 @@ export const regions = [
 ] satisfies readonly RegionDirectory[];
 
 export const cityTotal = regions.reduce((total, region) => total + region.cities.length, 0);
+
+function toSlug(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export const cityDirectory = regions.flatMap((region) => region.cities.map((city) => ({
+  city,
+  citySlug: toSlug(city),
+  region: region.title,
+  regionSlug: region.id,
+})));
+
+export function getCityBySlug(citySlug: string) {
+  return cityDirectory.find((item) => item.citySlug === citySlug) ?? null;
+}

@@ -53,6 +53,7 @@ export const profiles = sqliteTable("profiles", {
   verificationStatus: text("verification_status", { enum: ["unreviewed", "in_review", "reviewed"] }).notNull().default("unreviewed"),
   healthReviewStatus: text("health_review_status", { enum: ["not_requested", "in_review", "reviewed"] }).notNull().default("not_requested"),
   isFeatured: integer("is_featured", { mode: "boolean" }).notNull().default(false),
+  isDemo: integer("is_demo", { mode: "boolean" }).notNull().default(false),
   createdAt,
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
@@ -97,6 +98,20 @@ export const agencyMembers = sqliteTable("agency_members", {
   memberProfileId: text("member_profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
   createdAt,
 }, (table) => [uniqueIndex("agency_member_unique").on(table.agencyProfileId, table.memberProfileId)]);
+
+export const agencyMembershipRequests = sqliteTable("agency_membership_requests", {
+  id: text("id").primaryKey(),
+  agencyProfileId: text("agency_profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  escortProfileId: text("escort_profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  requestedBy: text("requested_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+  status: text("status", { enum: ["pending", "accepted", "declined"] }).notNull().default("pending"),
+  message: text("message"),
+  respondedAt: text("responded_at"),
+  createdAt,
+}, (table) => [
+  uniqueIndex("agency_membership_request_unique").on(table.agencyProfileId, table.escortProfileId),
+  index("agency_membership_request_escort_status_idx").on(table.escortProfileId, table.status),
+]);
 
 export const profileMedia = sqliteTable("profile_media", {
   id: text("id").primaryKey(),

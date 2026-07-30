@@ -5,9 +5,27 @@ export const tiers = ["gold", "premium", "vip"] as const;
 export const profileTags = ["milf", "hombres", "trans", "masajes"] as const;
 export const includedServices = ["Departamento propio", "Hoteles", "Domicilio", "Acompañamiento", "Videollamada"] as const;
 export const additionalServices = ["Traslado", "Viajes", "Noche completa", "Atención fuera de horario"] as const;
+export const escortGenders = ["Femenino", "Masculino", "No binario", "Trans"] as const;
+export const skinColors = ["Clara", "Trigueña", "Morena", "Oscura"] as const;
+export const hairColors = ["Rubio", "Castaño", "Negro", "Rojo", "Otro"] as const;
+export const bodyTypes = ["Delgada", "Atlética", "Curvilínea", "Grande", "Otro"] as const;
+export const bustSizes = ["Pequeño", "Medio", "Grande", "No aplica"] as const;
 
 export type ProfileType = (typeof profileTypes)[number];
 export type Tier = (typeof tiers)[number];
+
+export const tagLabels: Record<(typeof profileTags)[number], string> = {
+  milf: "MILF",
+  hombres: "Hombres",
+  trans: "TRANS",
+  masajes: "Masajes",
+};
+
+export const tierLabels: Record<Tier, string> = {
+  gold: "Gold",
+  premium: "Premium",
+  vip: "VIP",
+};
 
 export const citiesByRegion = new Map(regions.map((region) => [region.title, region.cities]));
 
@@ -35,6 +53,10 @@ export function slugify(value: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 52) || "perfil";
+}
+
+export function citySlug(value: string) {
+  return slugify(value);
 }
 
 export function compactText(value: FormDataEntryValue | null, maxLength: number) {

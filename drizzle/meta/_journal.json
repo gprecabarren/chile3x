@@ -22,6 +22,20 @@
       "when": 1785430768248,
       "tag": "0002_sweet_maximus",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1785433227616,
+      "tag": "0003_condemned_cassandra_nova",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1785433255319,
+      "tag": "0004_demo_directory_profiles",
+      "breakpoints": true
     }
   ]
 }

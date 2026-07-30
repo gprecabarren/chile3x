@@ -1,0 +1,260 @@
+import { eq, inArray, or } from "drizzle-orm";
+import { cityDirectory, getCityBySlug, regions } from "@/app/locations";
+import { getDb } from "@/db";
+import { agencyMembers, profileDetails, profileServices, profileTags, profiles } from "@/db/schema";
+import {
+  additionalServices,
+  bodyTypes,
+  bustSizes,
+  hairColors,
+  includedServices,
+  profileTags as allowedTags,
+  profileTypes,
+  skinColors,
+  tagLabels,
+  tiers,
+  type ProfileType,
+  type Tier,
+} from "@/lib/profile";
+
+type QueryValue = string | string[] | undefined;
+export type DirectoryQuery = Record<string, QueryValue>;
+
+export type DirectoryFilters = {
+  region?: string;
+  city?: string;
+  type?: ProfileType;
+  tier?: Tier;
+  tags: string[];
+  nationality?: string;
+  gender?: string;
+  skinColor?: string;
+  hairColor?: string;
+  bodyType?: string;
+  bustSize?: string;
+  language?: string;
+  ageMin?: number;
+  ageMax?: number;
+  servicesIncluded: string[];
+  servicesAdditional: string[];
+  invalidCombination: boolean;
+};
+
+export type PublicProfile = {
+  id: string;
+  slug: string;
+  type: ProfileType;
+  displayName: string;
+  shortDescription: string;
+  description: string;
+  region: string;
+  city: string;
+  comuna: string | null;
+  contactWhatsapp: string | null;
+  contactTelegram: string | null;
+  tier: Tier;
+  verificationStatus: "unreviewed" | "in_review" | "reviewed";
+  healthReviewStatus: "not_requested" | "in_review" | "reviewed";
+  isFeatured: boolean;
+  isDemo: boolean;
+  updatedAt: string;
+  details: {
+    contactPhone: string | null;
+    contactEmail: string | null;
+    referenceLocation: string | null;
+    schedule: string | null;
+    priceAmount: number | null;
+    currency: string;
+    metadata: Record<string, string>;
+  };
+  tags: string[];
+  servicesIncluded: string[];
+  servicesAdditional: string[];
+  agencyIds: string[];
+  memberIds: string[];
+};
+
+function values(query: DirectoryQuery, key: string) {
+  const value = query[key];
+  const raw = Array.isArray(value) ? value : value ? [value] : [];
+  return [...new Set(raw.filter((item) => typeof item === "string").map((item) => item.trim()).filter(Boolean))];
+}
+
+function one(query: DirectoryQuery, key: string) {
+  return values(query, key)[0];
+}
+
+function normalized(value: string | undefined | null) {
+  return (value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+
+function matchesText(value: string | undefined, expected: string | undefined) {
+  return !expected || normalized(value).includes(normalized(expected));
+}
+
+function metadataValue(profile: PublicProfile, key: string) {
+  return profile.details.metadata[key] ?? "";
+}
+
+function numberQuery(value: string | undefined) {
+  if (!value || !/^\d{1,3}$/.test(value)) {
+    return undefined;
+  }
+  return Number(value);
+}
+
+export function readDirectoryFilters(query: DirectoryQuery, pinned?: { region?: string; city?: string; type?: ProfileType }): DirectoryFilters {
+  const requestedTags = values(query, "tag").filter((value) => allowedTags.includes(value as (typeof allowedTags)[number]));
+  const tierValue = one(query, "tier");
+  const typeValue = pinned?.type ?? one(query, "tipo");
+  const region = pinned?.region ?? one(query, "region");
+  const city = pinned?.city ?? one(query, "ciudad");
+  const invalidCombination = requestedTags.includes("milf") && requestedTags.includes("hombres");
+
+  return {
+    region: regions.some((item) => item.title === region) ? region : undefined,
+    city: cityDirectory.some((item) => item.city === city && (!region || item.region === region)) ? city : undefined,
+    type: profileTypes.includes(typeValue as ProfileType) ? typeValue as ProfileType : undefined,
+    tier: tiers.includes(tierValue as Tier) ? tierValue as Tier : undefined,
+    tags: invalidCombination ? [] : requestedTags,
+    nationality: one(query, "nacionalidad"),
+    gender: one(query, "genero"),
+    skinColor: one(query, "piel"),
+    hairColor: one(query, "pelo"),
+    bodyType: one(query, "cuerpo"),
+    bustSize: one(query, "busto"),
+    language: one(query, "idioma"),
+    ageMin: numberQuery(one(query, "edad_min")),
+    ageMax: numberQuery(one(query, "edad_max")),
+    servicesIncluded: values(query, "incluido").filter((value) => includedServices.includes(value as (typeof includedServices)[number])),
+    servicesAdditional: values(query, "adicional").filter((value) => additionalServices.includes(value as (typeof additionalServices)[number])),
+    invalidCombination,
+  };
+}
+
+export async function getPublicProfiles() {
+  const db = await getDb();
+  const rows = await db.select({ profile: profiles, details: profileDetails }).from(profiles)
+    .leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id))
+    .where(eq(profiles.status, "approved"));
+  const ids = rows.map((row) => row.profile.id);
+
+  if (!ids.length) {
+    return [] as PublicProfile[];
+  }
+
+  const [tags, services, memberships] = await Promise.all([
+    db.select().from(profileTags).where(inArray(profileTags.profileId, ids)),
+    db.select().from(profileServices).where(inArray(profileServices.profileId, ids)),
+    db.select().from(agencyMembers).where(or(inArray(agencyMembers.agencyProfileId, ids), inArray(agencyMembers.memberProfileId, ids))),
+  ]);
+
+  const tagMap = new Map<string, string[]>();
+  const includedMap = new Map<string, string[]>();
+  const additionalMap = new Map<string, string[]>();
+  const agencyMap = new Map<string, string[]>();
+  const memberMap = new Map<string, string[]>();
+  for (const tag of tags) tagMap.set(tag.profileId, [...(tagMap.get(tag.profileId) ?? []), tag.tag]);
+  for (const service of services) {
+    const target = service.kind === "included" ? includedMap : additionalMap;
+    target.set(service.profileId, [...(target.get(service.profileId) ?? []), service.service]);
+  }
+  for (const membership of memberships) {
+    agencyMap.set(membership.memberProfileId, [...(agencyMap.get(membership.memberProfileId) ?? []), membership.agencyProfileId]);
+    memberMap.set(membership.agencyProfileId, [...(memberMap.get(membership.agencyProfileId) ?? []), membership.memberProfileId]);
+  }
+
+  return rows.map(({ profile, details }): PublicProfile => ({
+    id: profile.id,
+    slug: profile.slug,
+    type: profile.type,
+    displayName: profile.displayName,
+    shortDescription: profile.shortDescription,
+    description: profile.description,
+    region: profile.region,
+    city: profile.city,
+    comuna: profile.comuna,
+    contactWhatsapp: profile.contactWhatsapp,
+    contactTelegram: profile.contactTelegram,
+    tier: profile.tier,
+    verificationStatus: profile.verificationStatus,
+    healthReviewStatus: profile.healthReviewStatus,
+    isFeatured: profile.isFeatured,
+    isDemo: profile.isDemo,
+    updatedAt: profile.updatedAt,
+    details: {
+      contactPhone: details?.contactPhone ?? null,
+      contactEmail: details?.contactEmail ?? null,
+      referenceLocation: details?.referenceLocation ?? null,
+      schedule: details?.schedule ?? null,
+      priceAmount: details?.priceAmount ?? null,
+      currency: details?.currency ?? "CLP",
+      metadata: readMetadata(details?.metadata),
+    },
+    tags: tagMap.get(profile.id) ?? [],
+    servicesIncluded: includedMap.get(profile.id) ?? [],
+    servicesAdditional: additionalMap.get(profile.id) ?? [],
+    agencyIds: agencyMap.get(profile.id) ?? [],
+    memberIds: memberMap.get(profile.id) ?? [],
+  }));
+}
+
+function readMetadata(value: string | null | undefined): Record<string, string> {
+  try {
+    const parsed = JSON.parse(value ?? "{}");
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return {};
+    }
+    return Object.fromEntries(Object.entries(parsed).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
+  } catch {
+    return {};
+  }
+}
+
+export function filterPublicProfiles(profilesToFilter: PublicProfile[], filters: DirectoryFilters) {
+  if (filters.invalidCombination) {
+    return [];
+  }
+
+  return profilesToFilter.filter((profile) => {
+    if (filters.region && profile.region !== filters.region) return false;
+    if (filters.city && profile.city !== filters.city) return false;
+    if (filters.type && profile.type !== filters.type) return false;
+    if (filters.tier && profile.tier !== filters.tier) return false;
+    if (filters.tags.some((tag) => !profile.tags.includes(tag))) return false;
+    if (!matchesText(metadataValue(profile, "nationality"), filters.nationality)) return false;
+    if (!matchesText(metadataValue(profile, "gender"), filters.gender)) return false;
+    if (!matchesText(metadataValue(profile, "skin_color"), filters.skinColor)) return false;
+    if (!matchesText(metadataValue(profile, "hair_color"), filters.hairColor)) return false;
+    if (!matchesText(metadataValue(profile, "body_type"), filters.bodyType)) return false;
+    if (!matchesText(metadataValue(profile, "bust_size"), filters.bustSize)) return false;
+    if (!matchesText(metadataValue(profile, "languages"), filters.language)) return false;
+    const age = Number(metadataValue(profile, "age"));
+    if (filters.ageMin && (!Number.isFinite(age) || age < filters.ageMin)) return false;
+    if (filters.ageMax && (!Number.isFinite(age) || age > filters.ageMax)) return false;
+    if (filters.servicesIncluded.some((service) => !profile.servicesIncluded.includes(service))) return false;
+    if (filters.servicesAdditional.some((service) => !profile.servicesAdditional.includes(service))) return false;
+    return true;
+  }).sort((left, right) => Number(right.isFeatured) - Number(left.isFeatured) || right.updatedAt.localeCompare(left.updatedAt));
+}
+
+export function getCityPath(city: string) {
+  const cityData = cityDirectory.find((item) => item.city === city);
+  return cityData ? `/escorts/${cityData.citySlug}` : "/escorts";
+}
+
+export function getProfileDisplayTags(profile: PublicProfile) {
+  const tags = [profile.tier === "gold" ? null : profile.tier.toUpperCase(), ...profile.tags.map((tag) => tagLabels[tag as keyof typeof tagLabels] ?? tag)];
+  if (profile.type === "agency") tags.push("Agencia");
+  if (profile.type === "rental") tags.push("Arriendo");
+  if (profile.verificationStatus === "reviewed" && profile.type === "escort") tags.push("Comprobada");
+  return tags.filter((tag): tag is string => Boolean(tag));
+}
+
+export function getFilterOptions() {
+  return { skinColors, hairColors, bodyTypes, bustSizes, includedServices, additionalServices, allowedTags };
+}
+
+export function getCityInfo(citySlug: string) {
+  return getCityBySlug(citySlug);
+}

@@ -10,10 +10,10 @@ export const metadata: Metadata = {
 };
 
 const profiles = [
-  { name: "Ámbar", location: "Providencia, Metropolitana", tags: ["VIP", "Verificada"], tone: "amber" },
-  { name: "Isidora", location: "Viña del Mar, Valparaíso", tags: ["Premium", "Video"], tone: "violet" },
-  { name: "Luna", location: "Concepción, Biobío", tags: ["VIP", "Disponible"], tone: "rose" },
-  { name: "Valentina", location: "Antofagasta, Antofagasta", tags: ["Premium", "Verificada"], tone: "blue" },
+  { name: "Ámbar", slug: "ambar-providencia-demo", location: "Providencia, Metropolitana", tags: ["VIP", "Comprobada"], tone: "amber" },
+  { name: "Valentina", slug: "valentina-vina-del-mar-demo", location: "Viña del Mar, Valparaíso", tags: ["Premium", "MILF"], tone: "violet" },
+  { name: "Paola", slug: "paola-concepcion-demo", location: "Concepción, Biobío", tags: ["VIP", "TRANS"], tone: "rose" },
+  { name: "Luna", slug: "luna-concepcion-demo", location: "Concepción, Biobío", tags: ["Masajes", "Comprobada"], tone: "blue" },
 ];
 
 const features = [
@@ -54,6 +54,9 @@ export default function Home() {
         </Link>
         <nav aria-label="Navegación principal">
           <a href="#cobertura">Regiones y ciudades</a>
+          <Link href="/escorts">Escorts</Link>
+          <Link href="/agencias">Agencias</Link>
+          <Link href="/arriendos">Arriendos</Link>
           <a href="#como-funciona">Cómo funciona</a>
           <a href="#anunciate">Anúnciate</a>
           <a href="/ingresar">Mi cuenta</a>
@@ -69,7 +72,7 @@ export default function Home() {
             Perfiles, agencias y arriendos en un espacio privado, claro y moderado. Comienza por tu región o ciudad.
           </p>
           <div className="hero-actions">
-            <a className="button button-primary" href="#cobertura">Ver regiones y ciudades</a>
+            <Link className="button button-primary" href="/escorts">Explorar perfiles</Link>
             <a className="text-link" href="/registro">Quiero anunciarme <span>→</span></a>
           </div>
           <div className="trust-row">
@@ -125,7 +128,7 @@ export default function Home() {
                 </div>
               </div>
               <ul className="commune-list" aria-label={`Ciudades de ${region.title}`}>
-                {region.cities.map((city) => <li key={city}>{city}</li>)}
+                {region.cities.map((city) => <li key={city}><Link href={`/escorts/${city.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}>{city}</Link></li>)}
               </ul>
               {region.coverageNote && <p className="region-coverage-note">{region.coverageNote}</p>}
             </section>
@@ -143,14 +146,14 @@ export default function Home() {
         <div className="listing-grid">
           {profiles.map((profile) => (
             <article className="listing-card" key={profile.name}>
-              <div className={`profile-visual ${profile.tone}`}>
+              <Link href={`/perfil/${profile.slug}`} className={`profile-visual ${profile.tone}`}>
                 <span className="profile-initial">{profile.name.slice(0, 1)}</span>
-                <span className="featured-label">DESTACADA</span>
-              </div>
+                <span className="featured-label">DEMO</span>
+              </Link>
               <div className="listing-content">
                 <div className="listing-title">
                   <div>
-                    <h3>{profile.name}</h3>
+                    <h3><Link href={`/perfil/${profile.slug}`}>{profile.name}</Link></h3>
                     <p>{profile.location}</p>
                   </div>
                   <button type="button" aria-label={`Guardar a ${profile.name}`}>♡</button>
@@ -162,7 +165,7 @@ export default function Home() {
             </article>
           ))}
         </div>
-        <p className="demo-note">Vista de demostración: los perfiles y cifras se activarán tras la etapa de verificación.</p>
+        <p className="demo-note">Perfiles ficticios de demostración: sirven para revisar las tarjetas, filtros y páginas públicas antes de recibir anuncios reales.</p>
       </section>
 
       <section className="section process-section" id="como-funciona">

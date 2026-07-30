@@ -46,17 +46,38 @@ export type ProfileSubmission = {
 };
 
 const metadataFields = [
+  "artist_name",
   "gender",
   "age",
   "nationality",
+  "skin_color",
   "languages",
   "height_cm",
   "weight_kg",
+  "measurements",
+  "hair_color",
+  "body_type",
+  "bust_size",
   "agency_years",
   "website",
+  "facebook_url",
+  "instagram_url",
+  "twitter_url",
+  "promotions",
+  "contact_methods",
   "room_type",
   "furnished",
   "private_bathroom",
+  "exterior_window",
+  "room_size",
+  "common_expenses",
+  "deposit",
+  "minimum_rental",
+  "immediate_available",
+  "wifi",
+  "utilities_included",
+  "kitchen",
+  "laundry",
 ] as const;
 
 function required(value: string, message: string) {
@@ -111,22 +132,24 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
   }
 
   const age = compactText(formData.get("age"), 2);
-  if (age && (!/^[0-9]{2}$/.test(age) || Number(age) < 18 || Number(age) > 99)) {
-    throw new ProfileValidationError("La edad debe estar entre 18 y 99 años.");
+  if (age && (!/^[0-9]{2,3}$/.test(age) || Number(age) < 18)) {
+    throw new ProfileValidationError("La edad debe ser de al menos 18 años.");
   }
 
-  const website = compactText(formData.get("website"), 180);
-  if (website) {
-    try {
-      new URL(website);
-    } catch {
-      throw new ProfileValidationError("El sitio web debe incluir una URL válida.");
+  for (const field of ["website", "facebook_url", "instagram_url", "twitter_url"] as const) {
+    const url = compactText(formData.get(field), 180);
+    if (url) {
+      try {
+        new URL(url);
+      } catch {
+        throw new ProfileValidationError("Los enlaces web deben incluir una URL válida.");
+      }
     }
   }
 
   const metadata = Object.fromEntries(
     metadataFields
-      .map((field) => [field, compactText(formData.get(field), 160)] as const)
+      .map((field) => [field, compactText(formData.get(field), field === "promotions" ? 500 : 180)] as const)
       .filter(([, value]) => value),
   );
 

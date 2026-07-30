@@ -3,15 +3,15 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Chile3X | Adultos, agencias y arriendos en Chile",
+    default: "Chile3X | Directorio adulto en todo Chile",
     template: "%s | Chile3X",
   },
   description:
-    "Directorio para adultos con perfiles verificados, agencias y arriendos en todo Chile.",
+    "Directorio para adultos con perfiles, agencias y arriendos en las 16 regiones y 346 comunas de Chile.",
   openGraph: {
-    title: "Chile3X | Adultos, agencias y arriendos en Chile",
+    title: "Chile3X | Directorio adulto en todo Chile",
     description:
-      "Directorio para adultos con perfiles verificados, agencias y arriendos en todo Chile.",
+      "Perfiles, agencias y arriendos en las 16 regiones y 346 comunas de Chile.",
     type: "website",
     locale: "es_CL",
     images: [
@@ -25,13 +25,13 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Chile3X | Adultos, agencias y arriendos en Chile",
+    title: "Chile3X | Directorio adulto en todo Chile",
     description:
-      "Directorio para adultos con perfiles verificados, agencias y arriendos en todo Chile.",
+      "Perfiles, agencias y arriendos en las 16 regiones y 346 comunas de Chile.",
     images: ["/chile3x-social-card.png"],
   },
   icons: {
-    icon: "/chile3x-logo-dark.jpeg",
+    icon: "/chile3x-logo-primary.jpeg",
   },
 };
 

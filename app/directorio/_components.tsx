@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { getCityPath, getProfileDisplayTags, type PublicProfile } from "@/lib/directory";
+import { readProfilePrices } from "@/lib/profile";
 
 const typeLabel = {
   escort: "Escort",
@@ -50,6 +51,7 @@ export function ProfileCard({ profile }: { profile: PublicProfile }) {
   const tags = getProfileDisplayTags(profile);
   const age = profile.details.metadata.age;
   const subtitle = [age ? `${age} años` : null, profile.comuna ?? profile.details.referenceLocation].filter(Boolean).join(" · ");
+  const mainPrice = readProfilePrices(profile.details)[0];
 
   return (
     <article className="public-profile-card">
@@ -69,7 +71,7 @@ export function ProfileCard({ profile }: { profile: PublicProfile }) {
         </div>
         <p className="public-profile-description">{profile.shortDescription}</p>
         <div className="public-tag-row">{tags.map((tag) => <span key={tag} className={`public-tag ${tag.toLowerCase().replaceAll(" ", "-")}`}>{tag}</span>)}</div>
-        <div className="public-profile-meta"><span>{profile.region}</span>{profile.details.priceAmount !== null && <strong>Desde ${profile.details.priceAmount.toLocaleString("es-CL")} {profile.details.currency}</strong>}</div>
+        <div className="public-profile-meta"><span>{profile.region}</span>{mainPrice && <strong>{mainPrice.label} · ${mainPrice.amount.toLocaleString("es-CL")} {mainPrice.currency}</strong>}</div>
       </div>
     </article>
   );

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DirectoryShell, ProfileCard } from "@/app/directorio/_components";
 import { getCityPath, getProfileDisplayTags, getPublicProfiles, type PublicProfile } from "@/lib/directory";
+import { getAvailabilityStatus, readAvailability, readProfilePrices } from "@/lib/profile";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,18 @@ function phoneDigits(value: string | null) {
   return (value ?? "").replace(/\D/g, "");
 }
 
+function safeExternalUrl(value: string | undefined, allowedHost?: string) {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    if (!/^https?:$/.test(url.protocol)) return null;
+    if (allowedHost && !(url.hostname === allowedHost || url.hostname.endsWith(`.${allowedHost}`))) return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
 function contactLinks(profile: PublicProfile) {
   const whatsappNumber = phoneDigits(profile.contactWhatsapp);
   const callNumber = phoneDigits(profile.details.contactPhone) || whatsappNumber;
@@ -25,7 +38,16 @@ function contactLinks(profile: PublicProfile) {
     whatsapp: whatsappNumber ? `https://wa.me/${whatsappNumber}?text=${message}` : null,
     call: callNumber ? `tel:${callNumber}` : null,
     telegram: /^[A-Za-z0-9_]{5,32}$/.test(telegramUsername) ? `https://t.me/${telegramUsername}` : null,
+    email: profile.details.contactEmail ? `mailto:${profile.details.contactEmail}` : null,
+    instagram: safeExternalUrl(profile.details.metadata.instagram_url, "instagram.com"),
+    arsmate: safeExternalUrl(profile.details.metadata.arsmate_url, "arsmate.com"),
   };
+}
+
+function serviceFilterPath(profile: PublicProfile, kind: "included" | "additional", service: string) {
+  const destination = profile.type === "escort" ? "/escorts" : profile.type === "agency" ? "/agencias" : "/arriendos";
+  const params = new URLSearchParams({ ciudad: profile.city, [kind === "included" ? "incluido" : "adicional"]: service });
+  return `${destination}?${params.toString()}`;
 }
 
 function metadataFacts(profile: PublicProfile) {
@@ -70,6 +92,22 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
   const location = [profile.comuna, profile.city, profile.region].filter(Boolean).join(", ");
   const schema = { "@context": "https://schema.org", "@type": "Person", name: profile.displayName, description: profile.shortDescription, address: { "@type": "PostalAddress", addressLocality: profile.city, addressRegion: profile.region, addressCountry: "CL" } };
   const contacts = contactLinks(profile);
+  const contactButtons = [
+    ["whatsapp", contacts.whatsapp, "WhatsApp", "contact-whatsapp"],
+    ["telegram", contacts.telegram, "Telegram", "contact-telegram"],
+    ["call", contacts.call, "Llamar", "contact-call"],
+    ["email", contacts.email, "Correo", "contact-email"],
+  ] as const;
+  const socialButtons = [
+    ["instagram", contacts.instagram, "Instagram", "contact-instagram"],
+    ["arsmate", contacts.arsmate, "Arsmate", "contact-arsmate"],
+  ] as const;
+  const prices = readProfilePrices(profile.details).map((price) => ({
+    ...price,
+    label: profile.type === "rental" && price.label === "Tarifa informada" ? "Valor mensual" : price.label,
+  }));
+  const availability = readAvailability(profile.details.metadata.availability);
+  const availabilityStatus = getAvailabilityStatus(availability);
 
   return (
     <DirectoryShell>
@@ -82,24 +120,21 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
           <p className="profile-page-location"><Link href={getCityPath(profile.city)}>{location}</Link></p>
           <div className="public-tag-row">{tags.map((tag) => <span key={tag} className={`public-tag ${tag.toLowerCase().replaceAll(" ", "-")}`}>{tag}</span>)}</div>
           <p className="profile-page-description">{profile.description}</p>
-          <div className="profile-contact-box">
-            <div><strong>{profile.details.priceAmount !== null ? `Desde $${profile.details.priceAmount.toLocaleString("es-CL")} ${profile.details.currency}` : "Consulta disponibilidad"}</strong><p>Contacto directo con el anunciante.</p></div>
-            {profile.isDemo ? <p>Este es un perfil de demostración: el contacto está desactivado.</p> : profile.type === "escort" ? <div className="profile-contact-actions">
-              {contacts.whatsapp && <a className="button contact-whatsapp" href={contacts.whatsapp} target="_blank" rel="noreferrer">WhatsApp</a>}
-              {contacts.telegram && <a className="button contact-telegram" href={contacts.telegram} target="_blank" rel="noreferrer">Telegram</a>}
-              {contacts.call && <a className="button contact-call" href={contacts.call}>Llamar</a>}
-            </div> : contacts.whatsapp && <a className="button button-primary" href={contacts.whatsapp} target="_blank" rel="noreferrer">Contactar por WhatsApp</a>}
-          </div>
+          {prices.length > 0 && <section className="profile-price-panel"><p className="eyebrow">VALORES REFERENCIALES</p><div>{prices.map((price) => <article key={price.label}><span>{price.label}</span><strong>${price.amount.toLocaleString("es-CL")} {price.currency}</strong></article>)}</div></section>}
+          {profile.isDemo ? <p className="profile-demo-contact-note">Este es un perfil de demostración: sus medios de contacto están desactivados.</p> : (contactButtons.some(([, href]) => href) || socialButtons.some(([, href]) => href)) && <section className="profile-contact-box">
+            <div className="profile-contact-heading"><p className="eyebrow">CONTACTO</p><h2>Habla directamente con {profile.displayName}</h2></div>
+            {contactButtons.some(([, href]) => href) && <div className="profile-contact-group"><span>Contacto directo</span><div className="profile-contact-actions">{contactButtons.map(([key, href, label, className]) => href && <a key={key} className={`button ${className}`} href={href} target={key === "call" || key === "email" ? undefined : "_blank"} rel={key === "call" || key === "email" ? undefined : "noreferrer"}>{label}</a>)}</div></div>}
+            {socialButtons.some(([, href]) => href) && <div className="profile-contact-group"><span>Redes y plataformas</span><div className="profile-contact-actions">{socialButtons.map(([key, href, label, className]) => href && <a key={key} className={`button ${className}`} href={href} target="_blank" rel="noreferrer">{key === "arsmate" ? <em>{label}</em> : label}</a>)}</div></div>}
+          </section>}
         </div>
       </section>
       <section className="profile-detail-layout">
         <div className="profile-detail-main">
-          {profile.details.schedule && <section className="profile-detail-section"><h2>Disponibilidad</h2><p>{profile.details.schedule}</p></section>}
+          {(availability.length > 0 || profile.details.schedule) && <section className="profile-detail-section availability-detail-section"><div className="availability-detail-heading"><div><h2>Disponibilidad</h2>{availabilityStatus && <p className={availabilityStatus.isOpen ? "availability-open" : "availability-closed"}>{availabilityStatus.text}</p>}</div>{availabilityStatus && <span aria-hidden="true" className={availabilityStatus.isOpen ? "availability-status-dot is-open" : "availability-status-dot"} />}</div>{availability.length > 0 ? <dl className="availability-list">{availability.map((day) => <div key={day.key}><dt>{day.label}</dt><dd>{day.opensAt} – {day.closesAt}</dd></div>)}</dl> : <p>{profile.details.schedule}</p>}</section>}
           {facts.length > 0 && <section className="profile-detail-section"><h2>{profile.type === "rental" ? "Características" : "Información del perfil"}</h2><dl className="profile-facts">{facts.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></section>}
-          {(profile.servicesIncluded.length > 0 || profile.servicesAdditional.length > 0) && <section className="profile-detail-section service-detail-section"><h2>Servicios</h2><div>{profile.servicesIncluded.length > 0 && <article><h3>Incluidos</h3><ul>{profile.servicesIncluded.map((item) => <li key={item}>{item}</li>)}</ul></article>}{profile.servicesAdditional.length > 0 && <article><h3>Adicionales</h3><ul>{profile.servicesAdditional.map((item) => <li key={item}>{item}</li>)}</ul></article>}</div></section>}
-          {profile.type === "escort" && <section className="profile-detail-section profile-media-section"><p className="eyebrow">MULTIMEDIA</p><h2>Fotos y videos</h2><div className="profile-media-groups"><article><h3>Fotos</h3><p>Las fotografías aprobadas se mostrarán aquí, separadas del material audiovisual.</p><span>Galería de fotos</span></article><article><h3>Videos</h3><p>Los videos aprobados aparecerán en esta sección independiente cuando se habilite el almacenamiento multimedia.</p><span>Galería de videos</span></article></div></section>}
+          {(profile.servicesIncluded.length > 0 || profile.servicesAdditional.length > 0) && <section className="profile-detail-section service-detail-section"><h2>Servicios</h2><p className="service-filter-hint">Selecciona un servicio para ver resultados inicialmente en {profile.city}; después puedes ajustar los filtros.</p><div>{profile.servicesIncluded.length > 0 && <article><h3>Incluidos</h3><ul>{profile.servicesIncluded.map((item) => <li key={item}><Link href={serviceFilterPath(profile, "included", item)}>{item}</Link></li>)}</ul></article>}{profile.servicesAdditional.length > 0 && <article><h3>Adicionales</h3><ul>{profile.servicesAdditional.map((item) => <li key={item}><Link href={serviceFilterPath(profile, "additional", item)}>{item}</Link></li>)}</ul></article>}</div></section>}
         </div>
-        <aside className="profile-detail-aside"><p className="eyebrow">UBICACIÓN</p><h2>{profile.city}</h2><p>{profile.details.referenceLocation ?? "Ubicación referencial disponible al contactar."}</p><Link className="button button-outline" href={getCityPath(profile.city)}>Ver más en {profile.city}</Link></aside>
+        <aside className="profile-detail-aside"><p className="eyebrow">UBICACIÓN</p><h2>{profile.city}</h2>{profile.details.referenceLocation && <p>{profile.details.referenceLocation}</p>}<Link className="button button-outline" href={getCityPath(profile.city)}>Ver más en {profile.city}</Link></aside>
       </section>
       {profile.type === "agency" && <section className="profile-association-section"><p className="eyebrow">PERFILES ASOCIADOS</p><h2>Escorts de {profile.displayName}</h2><p>Los perfiles se muestran aquí solo después de aceptar la invitación de la agencia.</p><div className="public-profile-grid">{agencyMembers.map((member) => <ProfileCard profile={member} key={member.id} />)}</div>{agencyMembers.length === 0 && <p className="association-empty">Esta agencia aún no tiene perfiles asociados aprobados.</p>}</section>}
       {profile.type === "escort" && agencyProfiles.length > 0 && <section className="profile-association-section compact"><p className="eyebrow">ASOCIACIONES ACEPTADAS</p><h2>Agencias relacionadas</h2><div className="public-profile-grid">{agencyProfiles.map((agency) => <ProfileCard profile={agency} key={agency.id} />)}</div></section>}

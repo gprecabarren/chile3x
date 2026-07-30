@@ -12,7 +12,9 @@ import {
   longText,
   optionalPositiveInteger,
   profileTags,
+  serializeAvailability,
   slugify,
+  spokenLanguages,
   type ProfileType,
   type Tier,
 } from "@/lib/profile";
@@ -28,7 +30,7 @@ export type ProfileSubmission = {
   comuna: string | null;
   shortDescription: string;
   description: string;
-  contactWhatsapp: string;
+  contactWhatsapp: string | null;
   contactTelegram: string | null;
   details: {
     contactPhone: string | null;
@@ -63,6 +65,7 @@ const metadataFields = [
   "facebook_url",
   "instagram_url",
   "twitter_url",
+  "arsmate_url",
   "promotions",
   "contact_methods",
   "room_type",
@@ -92,6 +95,29 @@ function optional(value: string) {
   return value || null;
 }
 
+function requiredUrl(value: string, fieldLabel: string, allowedHost?: string | string[]) {
+  if (!value) return "";
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new ProfileValidationError(`${fieldLabel} debe incluir una URL válida.`);
+  }
+  const allowedHosts = allowedHost ? (Array.isArray(allowedHost) ? allowedHost : [allowedHost]) : [];
+  if (!/^https?:$/.test(url.protocol) || (allowedHosts.length && !allowedHosts.some((host) => url.hostname === host || url.hostname.endsWith(`.${host}`)))) {
+    throw new ProfileValidationError(`${fieldLabel} debe usar un enlace válido de ${allowedHosts.join(" o ") || "un sitio web"}.`);
+  }
+  return url.toString();
+}
+
+function normalizeInstagram(value: string) {
+  if (!value) return "";
+  if (/^@?[A-Za-z0-9._]{1,30}$/.test(value)) {
+    return `https://www.instagram.com/${value.replace(/^@/, "")}/`;
+  }
+  return requiredUrl(value, "Instagram", "instagram.com");
+}
+
 export function readProfileSubmission(formData: FormData): ProfileSubmission {
   const typeValue = compactText(formData.get("type"), 20);
   const tierValue = compactText(formData.get("tier"), 20);
@@ -100,7 +126,7 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
   const displayName = required(compactText(formData.get("display_name"), 80), "Indica un nombre visible.");
   const shortDescription = required(compactText(formData.get("short_description"), 180), "Agrega una descripción breve.");
   const description = required(longText(formData.get("description"), 4000), "Agrega una descripción completa.");
-  const contactWhatsapp = required(compactText(formData.get("contact_whatsapp"), 15), "Indica un WhatsApp de contacto.");
+  const contactWhatsapp = compactText(formData.get("contact_whatsapp"), 15);
   const intent = formData.get("intent") === "submit" ? "submit" : "draft";
 
   if (!isProfileType(typeValue) || !isTier(tierValue)) {
@@ -111,7 +137,7 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
     throw new ProfileValidationError("Selecciona una ciudad disponible para la región elegida.");
   }
 
-  if (!/^[0-9]{8,15}$/.test(contactWhatsapp)) {
+  if (contactWhatsapp && !/^[0-9]{8,15}$/.test(contactWhatsapp)) {
     throw new ProfileValidationError("El WhatsApp debe incluir solo números, sin signo +.");
   }
 
@@ -125,10 +151,24 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
     throw new ProfileValidationError("El correo de contacto no es válido.");
   }
 
-  const priceRaw = compactText(formData.get("price_amount"), 14);
-  const priceAmount = optionalPositiveInteger(formData.get("price_amount"));
-  if (priceRaw && priceAmount === null) {
-    throw new ProfileValidationError("El precio debe ser un número válido.");
+  const priceValues = ["price_30_min", "price_60_min"] as const;
+  const prices = Object.fromEntries(priceValues.flatMap((field) => {
+    const raw = compactText(formData.get(field), 14);
+    const value = optionalPositiveInteger(formData.get(field));
+    if (raw && (value === null || value === 0)) {
+      throw new ProfileValidationError("Los valores deben ser números mayores que cero.");
+    }
+    return value ? [[field, String(value)]] : [];
+  }));
+  const generalPriceRaw = compactText(formData.get("price_amount"), 14);
+  const generalPrice = optionalPositiveInteger(formData.get("price_amount"));
+  if (generalPriceRaw && (generalPrice === null || generalPrice === 0)) {
+    throw new ProfileValidationError("El valor debe ser un número mayor que cero.");
+  }
+
+  const telegram = compactText(formData.get("contact_telegram"), 80).replace(/^@/, "");
+  if (telegram && !/^[A-Za-z0-9_]{5,32}$/.test(telegram)) {
+    throw new ProfileValidationError("Telegram debe ser un nombre de usuario válido.");
   }
 
   const age = compactText(formData.get("age"), 2);
@@ -136,15 +176,16 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
     throw new ProfileValidationError("La edad debe ser de al menos 18 años.");
   }
 
-  for (const field of ["website", "facebook_url", "instagram_url", "twitter_url"] as const) {
-    const url = compactText(formData.get(field), 180);
-    if (url) {
-      try {
-        new URL(url);
-      } catch {
-        throw new ProfileValidationError("Los enlaces web deben incluir una URL válida.");
-      }
-    }
+  const website = requiredUrl(compactText(formData.get("website"), 180), "El sitio web");
+  const facebookUrl = requiredUrl(compactText(formData.get("facebook_url"), 180), "Facebook", "facebook.com");
+  const twitterUrl = requiredUrl(compactText(formData.get("twitter_url"), 180), "Twitter/X", ["x.com", "twitter.com"]);
+  const instagramUrl = normalizeInstagram(compactText(formData.get("instagram_url"), 180));
+  const arsmateUrl = requiredUrl(compactText(formData.get("arsmate_url"), 180), "Arsmate", "arsmate.com");
+  const languages = listFromForm(formData.getAll("languages"), spokenLanguages).join(", ");
+  const availability = serializeAvailability(formData);
+
+  if (!contactWhatsapp && !contactPhone && !contactEmail && !telegram && !instagramUrl && !arsmateUrl) {
+    throw new ProfileValidationError("Agrega al menos una forma de contacto o red social pública.");
   }
 
   const metadata = Object.fromEntries(
@@ -152,6 +193,15 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
       .map((field) => [field, compactText(formData.get(field), field === "promotions" ? 500 : 180)] as const)
       .filter(([, value]) => value),
   );
+
+  if (typeValue === "escort") Object.assign(metadata, prices);
+  if (languages) metadata.languages = languages;
+  if (availability) metadata.availability = availability;
+  if (website) metadata.website = website;
+  if (facebookUrl) metadata.facebook_url = facebookUrl;
+  if (twitterUrl) metadata.twitter_url = twitterUrl;
+  if (instagramUrl) metadata.instagram_url = instagramUrl;
+  if (arsmateUrl) metadata.arsmate_url = arsmateUrl;
 
   return {
     type: typeValue,
@@ -162,14 +212,14 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
     comuna: optional(compactText(formData.get("comuna"), 80)),
     shortDescription,
     description,
-    contactWhatsapp,
-    contactTelegram: optional(compactText(formData.get("contact_telegram"), 80)),
+    contactWhatsapp: optional(contactWhatsapp),
+    contactTelegram: optional(telegram),
     details: {
       contactPhone: optional(contactPhone),
       contactEmail: optional(contactEmail),
       referenceLocation: optional(compactText(formData.get("reference_location"), 120)),
-      schedule: optional(compactText(formData.get("schedule"), 120)),
-      priceAmount,
+      schedule: null,
+      priceAmount: typeValue === "escort" ? null : generalPrice,
       currency: formData.get("currency") === "USD" ? "USD" : "CLP",
       metadata: JSON.stringify(metadata),
     },

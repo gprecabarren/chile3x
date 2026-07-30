@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { regions } from "@/app/locations";
 import {
   additionalServices,
+  availabilityDays,
   bodyTypes,
   bustSizes,
   escortGenders,
@@ -11,7 +12,9 @@ import {
   includedServices,
   profileTags,
   profileTypes,
+  readAvailability,
   skinColors,
+  spokenLanguages,
   tiers,
   type ProfileType,
 } from "@/lib/profile";
@@ -59,6 +62,8 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
     [region],
   );
   const [city, setCity] = useState(initial?.city ?? availableCities[0] ?? "");
+  const savedAvailability = useMemo(() => new Map(readAvailability(metadataValue(initial, "availability")).map((item) => [item.key, item])), [initial]);
+  const [enabledAvailabilityDays, setEnabledAvailabilityDays] = useState(() => new Set(savedAvailability.keys()));
 
   function onRegionChange(nextRegion: string) {
     setRegion(nextRegion);
@@ -131,14 +136,19 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
             Descripción breve
             <input name="short_description" required maxLength={180} defaultValue={initial?.shortDescription} placeholder="Una frase para tu aviso" />
           </label>
-          <label>
-            Horario o disponibilidad
-            <input name="schedule" maxLength={120} defaultValue={initial?.details.schedule} placeholder="Ej. Lunes a domingo, 12:00 a 22:00" />
-          </label>
-          <label>
-            Precio desde
-            <input name="price_amount" inputMode="numeric" min="0" type="number" defaultValue={initial?.details.priceAmount ?? ""} placeholder={type === "rental" ? "Precio mensual" : "Monto referencial"} />
-          </label>
+          {type === "escort" ? <>
+            <label>
+              Valor por 30 minutos (opcional)
+              <input name="price_30_min" inputMode="numeric" min="1" type="number" defaultValue={metadataValue(initial, "price_30_min")} placeholder="Ej. 30000" />
+            </label>
+            <label>
+              Valor por 1 hora (opcional)
+              <input name="price_60_min" inputMode="numeric" min="1" type="number" defaultValue={metadataValue(initial, "price_60_min")} placeholder="Ej. 50000" />
+            </label>
+          </> : <label>
+            {type === "rental" ? "Valor mensual (opcional)" : "Valor referencial (opcional)"}
+            <input name="price_amount" inputMode="numeric" min="1" type="number" defaultValue={initial?.details.priceAmount ?? ""} placeholder={type === "rental" ? "Ej. 350000" : "Monto referencial"} />
+          </label>}
           <label>
             Moneda
             <select name="currency" defaultValue={initial?.details.currency ?? "CLP"}>
@@ -147,6 +157,26 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
             </select>
           </label>
         </div>
+        <fieldset className="availability-editor">
+          <legend>Horarios de disponibilidad (opcional)</legend>
+          <p>Activa solo los días en que atiendes. En el perfil se indicará claramente si está disponible ahora, usando la hora de Chile.</p>
+          <div className="availability-editor-grid">
+            {availabilityDays.map((day) => {
+              const entry = savedAvailability.get(day.key);
+              const enabled = enabledAvailabilityDays.has(day.key);
+              return <div className={`availability-editor-row${enabled ? " is-enabled" : ""}`} key={day.key}>
+                <label className="availability-day-toggle"><input name={`availability_${day.key}_enabled`} type="checkbox" checked={enabled} onChange={() => setEnabledAvailabilityDays((current) => {
+                  const next = new Set(current);
+                  if (next.has(day.key)) next.delete(day.key); else next.add(day.key);
+                  return next;
+                })} />{day.label}</label>
+                <label>Desde<input name={`availability_${day.key}_opens`} type="time" disabled={!enabled} defaultValue={entry?.opensAt ?? ""} /></label>
+                <label>Hasta<input name={`availability_${day.key}_closes`} type="time" disabled={!enabled} defaultValue={entry?.closesAt ?? ""} /></label>
+              </div>;
+            })}
+          </div>
+          {initial?.details.schedule && !savedAvailability.size && <small>Tu horario anterior (“{initial.details.schedule}”) se reemplazará al guardar rangos semanales.</small>}
+        </fieldset>
         <label className="form-wide-label">
           Descripción completa
           <textarea name="description" required maxLength={4000} rows={7} defaultValue={initial?.description} placeholder="Describe tu aviso con claridad. No publiques datos personales sensibles." />
@@ -165,7 +195,7 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
             <label>Edad<input name="age" type="number" min="18" defaultValue={metadataValue(initial, "age")} /></label>
             <label>Nacionalidad<input name="nationality" maxLength={60} defaultValue={metadataValue(initial, "nationality")} /></label>
             <label>Color de piel<select name="skin_color" defaultValue={metadataValue(initial, "skin_color")}><option value="">Seleccionar</option>{skinColors.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label>Idiomas<input name="languages" maxLength={120} defaultValue={metadataValue(initial, "languages")} placeholder="Ej. Español, inglés" /></label>
+            <label className="language-selector">Idiomas<select name="languages" multiple size={4} defaultValue={metadataValue(initial, "languages").split(", ").filter(Boolean)}>{spokenLanguages.map((language) => <option key={language} value={language}>{language}</option>)}</select><small>Selecciona uno o más idiomas.</small></label>
             <label>Estatura (cm)<input name="height_cm" type="number" min="0" defaultValue={metadataValue(initial, "height_cm")} /></label>
             <label>Peso (kg)<input name="weight_kg" type="number" min="0" defaultValue={metadataValue(initial, "weight_kg")} /></label>
             <label>Medidas corporales<input name="measurements" maxLength={50} defaultValue={metadataValue(initial, "measurements")} placeholder="Busto - cintura - cadera" /></label>
@@ -220,15 +250,26 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
 
       <section className="profile-form-section">
         <div className="profile-form-section-heading">
-          <p>05 · CONTACTO Y SERVICIOS</p>
+          <p>05 · CONTACTO, REDES Y SERVICIOS</p>
           <h2>Cómo te pueden encontrar</h2>
         </div>
+        <p className="profile-form-help">Completa solo los medios que deseas mostrar. Debes dejar al menos un método de contacto o red social pública.</p>
+        <fieldset className="profile-contact-fieldset">
+          <legend>Contacto directo</legend>
         <div className="form-grid form-grid-three">
-          <label>WhatsApp público<input name="contact_whatsapp" inputMode="numeric" pattern="[0-9]{8,15}" required defaultValue={initial?.contactWhatsapp} placeholder="56912345678" /></label>
+          <label>WhatsApp público (opcional)<input name="contact_whatsapp" inputMode="numeric" pattern="[0-9]{8,15}" defaultValue={initial?.contactWhatsapp} placeholder="56912345678" /></label>
           <label>Teléfono alternativo<input name="contact_phone" inputMode="numeric" pattern="[0-9]{8,15}" defaultValue={initial?.details.contactPhone} /></label>
           <label>Telegram (opcional)<input name="contact_telegram" maxLength={80} defaultValue={initial?.contactTelegram} placeholder="@usuario" /></label>
           <label>Correo de contacto (opcional)<input name="contact_email" type="email" maxLength={160} defaultValue={initial?.details.contactEmail} /></label>
         </div>
+        </fieldset>
+        <fieldset className="profile-contact-fieldset">
+          <legend>Redes y plataformas</legend>
+          <div className="form-grid form-grid-three">
+            {type !== "agency" && <label>Instagram (opcional)<input name="instagram_url" maxLength={180} defaultValue={metadataValue(initial, "instagram_url")} placeholder="@usuario o https://instagram.com/..." /></label>}
+            <label>Arsmate (opcional)<input name="arsmate_url" type="url" maxLength={180} defaultValue={metadataValue(initial, "arsmate_url")} placeholder="https://arsmate.com/..." /></label>
+          </div>
+        </fieldset>
         <fieldset>
           <legend>Etiquetas complementarias</legend>
           <div className="check-grid">

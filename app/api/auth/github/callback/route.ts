@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { users } from "@/db/schema";
+import { siteSettings, users } from "@/db/schema";
 import {
   createAdminSession,
   getGitHubOAuthConfig,
@@ -13,10 +13,9 @@ import {
 const OAUTH_STATE_COOKIE = "chile3x_admin_oauth_state";
 const OAUTH_RETURN_TO_COOKIE = "chile3x_admin_oauth_return_to";
 
-type GitHubEmail = {
-  email: string;
-  primary: boolean;
-  verified: boolean;
+type GitHubUser = {
+  email: string | null;
+  login: string;
 };
 
 function accessDenied(request: Request) {
@@ -58,35 +57,52 @@ export async function GET(request: NextRequest) {
     return accessDenied(request);
   }
 
-  const emailsResponse = await fetch("https://api.github.com/user/emails", {
+  const githubUserResponse = await fetch("https://api.github.com/user", {
     headers: {
       accept: "application/vnd.github+json",
       authorization: `Bearer ${token.access_token}`,
+      "user-agent": "Chile3X-Administration",
       "x-github-api-version": "2026-03-10",
     },
   });
 
-  if (!emailsResponse.ok) {
+  if (!githubUserResponse.ok) {
     return accessDenied(request);
   }
 
-  const emails = await emailsResponse.json() as GitHubEmail[];
-  const verifiedEmail = emails.find((email) => email.verified && email.primary)
-    ?? emails.find((email) => email.verified);
-
-  if (!verifiedEmail) {
-    return accessDenied(request);
-  }
-
+  const githubUser = await githubUserResponse.json() as GitHubUser;
+  const email = githubUser.email?.trim().toLowerCase();
+  const githubLogin = githubUser.login.trim().toLowerCase();
   const db = await getDb();
-  const [admin] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(and(
-      eq(users.email, verifiedEmail.email.toLowerCase()),
-      eq(users.role, "admin"),
-    ))
-    .limit(1);
+  let admin: { id: string } | undefined;
+
+  if (email) {
+    [admin] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(
+        eq(users.email, email),
+        eq(users.role, "admin"),
+      ))
+      .limit(1);
+  }
+
+  if (!admin && githubLogin) {
+    const [allowedLogins] = await db
+      .select({ value: siteSettings.value })
+      .from(siteSettings)
+      .where(eq(siteSettings.key, "admin_github_logins"))
+      .limit(1);
+    const isAllowed = allowedLogins?.value.split(",").some((login) => login.trim().toLowerCase() === githubLogin);
+
+    if (isAllowed) {
+      [admin] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.role, "admin"))
+        .limit(1);
+    }
+  }
 
   if (!admin) {
     return accessDenied(request);

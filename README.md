@@ -6,17 +6,21 @@ depender de WordPress ni de una suscripción de hosting inicial.
 
 ## Estado actual
 
-La primera pantalla pública y el modelo de datos del MVP ya están definidos.
-Las fichas que se ven en la portada son de demostración: no hay perfiles reales
-ni funciones de contacto activas todavía.
+El MVP ya permite crear una cuenta de anunciante, iniciar sesión y administrar
+perfiles de acompañante, agencia o arriendo. Cada perfil se puede guardar como
+borrador, enviar a revisión y pausar hasta dos veces; la publicación y los
+periodos se siguen controlando manualmente desde el panel de propietario.
 
-La siguiente etapa habilitará recursos de Cloudflare y construirá:
+La portada muestra las 16 regiones y solo las ciudades iniciales definidas en
+los requerimientos históricos. Las fichas destacadas siguen siendo de
+demostración hasta conectar los perfiles aprobados al directorio público.
 
-- registro y acceso de anunciantes;
-- panel de revisión manual y publicación;
-- perfiles públicos, filtros, favoritos, reacciones y reseñas moderadas;
+La siguiente etapa incorpora:
+
+- directorio público de perfiles aprobados, rutas por ubicación y filtros;
+- favoritos, reacciones y reseñas moderadas;
 - carga de fotos y videos a R2;
-- pausas y periodos de avisos administrados manualmente.
+- control operativo de aperturas, periodos y publicaciones desde el panel.
 
 El detalle de alcance y decisiones tomadas desde los requerimientos históricos
 está en [docs/product-scope.md](docs/product-scope.md).
@@ -37,8 +41,8 @@ pnpm db:generate
 - **Interfaz y servidor:** React con vinext sobre Cloudflare Workers.
 - **Base de datos:** Cloudflare D1 + Drizzle ORM.
 - **Archivos públicos moderados:** Cloudflare R2.
-- **Autenticación:** se incorporará antes del registro público, usando un
-  proveedor compatible con Workers y sin almacenar contraseñas en texto plano.
+- **Autenticación:** sesiones con cookies seguras y contraseñas derivadas con
+  PBKDF2; el acceso de propietario se mantiene protegido con GitHub OAuth.
 
 Las uniones lógicas de infraestructura están declaradas en
 [.openai/hosting.json](.openai/hosting.json): `DB` para D1 y `MEDIA` para

@@ -7,11 +7,11 @@ export const metadata: Metadata = {
     template: "%s | Chile3X",
   },
   description:
-    "Directorio para adultos con perfiles, agencias y arriendos en las 16 regiones y 346 comunas de Chile.",
+    "Directorio para adultos con perfiles, agencias y arriendos en las 16 regiones y ciudades iniciales de Chile.",
   openGraph: {
     title: "Chile3X | Directorio adulto en todo Chile",
     description:
-      "Perfiles, agencias y arriendos en las 16 regiones y 346 comunas de Chile.",
+      "Perfiles, agencias y arriendos en las 16 regiones y ciudades iniciales de Chile.",
     type: "website",
     locale: "es_CL",
     images: [
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Chile3X | Directorio adulto en todo Chile",
     description:
-      "Perfiles, agencias y arriendos en las 16 regiones y 346 comunas de Chile.",
+      "Perfiles, agencias y arriendos en las 16 regiones y ciudades iniciales de Chile.",
     images: ["/chile3x-social-card.png"],
   },
   icons: {

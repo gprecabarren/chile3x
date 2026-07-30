@@ -7,7 +7,7 @@ import { AdminPageHeading, AdminShell } from "../_components";
 export const dynamic = "force-dynamic";
 
 const defaults = {
-  listing_open: "closed",
+  listing_open: "open",
   moderation_mode: "manual",
   billing_mode: "manual",
 };

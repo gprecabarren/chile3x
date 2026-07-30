@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { communeTotal, regions } from "./locations";
+import { cityTotal, regions } from "./locations";
 
 export const metadata: Metadata = {
-  title: "Perfiles adultos por región y comuna",
+  title: "Perfiles adultos por región y ciudad",
   description:
-    "Explora Chile3X por región y comuna. Directorio para adultos con perfiles, agencias y arriendos en todo Chile.",
+    "Explora Chile3X por región y ciudad. Directorio para adultos con perfiles, agencias y arriendos en todo Chile.",
 };
 
 const profiles = [
@@ -18,19 +18,19 @@ const profiles = [
 
 const features = [
   ["Perfiles revisados", "Cada publicación pasa por moderación antes de hacerse visible."],
-  ["Cobertura territorial", "La navegación considera región, ciudad y comuna desde la primera versión."],
+  ["Cobertura territorial", "La navegación considera región y las ciudades iniciales definidas para el lanzamiento."],
   ["Contacto directo", "El portal muestra información; el acuerdo es directamente con el anunciante."],
 ];
 
 const directorySchema = {
   "@context": "https://schema.org",
   "@type": "ItemList",
-  name: "Comunidades y comunas cubiertas por Chile3X",
-  numberOfItems: communeTotal,
+  name: "Ciudades iniciales cubiertas por Chile3X",
+  numberOfItems: cityTotal,
   itemListElement: regions.map((region, index) => ({
     "@type": "ListItem",
     position: index + 1,
-    name: [region.title, region.communes.join(", ")].join(": "),
+    name: [region.title, region.cities.join(", ")].join(": "),
   })),
 };
 
@@ -53,11 +53,12 @@ export default function Home() {
           <Image src="/chile3x-logo-primary.jpeg" alt="Chile3X" width={800} height={225} priority />
         </Link>
         <nav aria-label="Navegación principal">
-          <a href="#cobertura">Regiones y comunas</a>
+          <a href="#cobertura">Regiones y ciudades</a>
           <a href="#como-funciona">Cómo funciona</a>
           <a href="#anunciate">Anúnciate</a>
+          <a href="/ingresar">Mi cuenta</a>
         </nav>
-        <a className="button button-outline" href="#anunciate">Publicar perfil</a>
+        <a className="button button-outline" href="/registro">Publicar perfil</a>
       </header>
 
       <section className="hero" id="explorar">
@@ -65,11 +66,11 @@ export default function Home() {
           <p className="eyebrow">DIRECTORIO PARA ADULTOS · TODO CHILE</p>
           <h1>Chile completo, <em>en un mismo lugar.</em></h1>
           <p className="hero-text">
-            Perfiles, agencias y arriendos en un espacio privado, claro y moderado. Comienza por tu región o comuna.
+            Perfiles, agencias y arriendos en un espacio privado, claro y moderado. Comienza por tu región o ciudad.
           </p>
           <div className="hero-actions">
-            <a className="button button-primary" href="#cobertura">Ver regiones y comunas</a>
-            <a className="text-link" href="#anunciate">Quiero anunciarme <span>→</span></a>
+            <a className="button button-primary" href="#cobertura">Ver regiones y ciudades</a>
+            <a className="text-link" href="/registro">Quiero anunciarme <span>→</span></a>
           </div>
           <div className="trust-row">
             <span><b>✓</b> Moderación manual</span>
@@ -85,8 +86,8 @@ export default function Home() {
             <span>regiones de Chile</span>
           </div>
           <div className="coverage-stat">
-            <strong>{communeTotal}</strong>
-            <span>comunas ordenadas para explorar</span>
+            <strong>{cityTotal}</strong>
+            <span>ciudades y comunas iniciales</span>
           </div>
           <p className="hero-card-note">Desde Arica y Parinacota hasta Magallanes y la Antártica Chilena.</p>
           <a className="button button-primary card-action" href="#cobertura">Explorar cobertura</a>
@@ -97,10 +98,10 @@ export default function Home() {
         <div className="section-heading directory-heading">
           <div>
             <p className="eyebrow">COBERTURA TERRITORIAL</p>
-            <h2>Todas las regiones,<br /><em>todas las comunas.</em></h2>
+            <h2>Todas las regiones,<br /><em>ciudades iniciales.</em></h2>
           </div>
           <p>
-            Recorre Chile de norte a sur. Este directorio muestra las {communeTotal} comunas agrupadas por región para que la búsqueda sea directa, clara y útil.
+            Recorre Chile de norte a sur. Este directorio muestra las {cityTotal} ciudades y comunas iniciales definidas para el lanzamiento, agrupadas por región.
           </p>
         </div>
 
@@ -120,12 +121,13 @@ export default function Home() {
                 <span>{String(index + 1).padStart(2, "0")}</span>
                 <div>
                   <h3>{region.title}</h3>
-                  <p>{region.communes.length} comunas</p>
+                  <p>{region.cities.length === 1 ? "1 ciudad" : `${region.cities.length} ciudades`}</p>
                 </div>
               </div>
-              <ul className="commune-list" aria-label={`Comunas de ${region.title}`}>
-                {region.communes.map((commune) => <li key={commune}>{commune}</li>)}
+              <ul className="commune-list" aria-label={`Ciudades de ${region.title}`}>
+                {region.cities.map((city) => <li key={city}>{city}</li>)}
               </ul>
+              {region.coverageNote && <p className="region-coverage-note">{region.coverageNote}</p>}
             </section>
           ))}
         </div>
@@ -189,7 +191,7 @@ export default function Home() {
           <h2>¿Quieres aparecer en Chile3X?</h2>
           <p>La apertura inicial será con revisión manual y publicaciones de cortesía para construir una comunidad segura.</p>
         </div>
-        <a className="button button-light" href="#reglas">Conocer el proceso</a>
+        <a className="button button-light" href="/registro">Crear cuenta</a>
       </section>
 
       <footer id="reglas">

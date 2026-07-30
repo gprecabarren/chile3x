@@ -16,6 +16,12 @@ const statusLabel: Record<string, string> = {
   rejected: "Rechazado",
 };
 
+const verificationLabel: Record<string, string> = {
+  unreviewed: "Sin revisar",
+  in_review: "En verificación",
+  reviewed: "Comprobado",
+};
+
 export default async function AdminProfilesPage() {
   const admin = await getCurrentAdmin();
 
@@ -24,18 +30,18 @@ export default async function AdminProfilesPage() {
   }
 
   const db = await getDb();
-  const rows = await db
-    .select({
-      id: profiles.id,
-      displayName: profiles.displayName,
-      type: profiles.type,
-      status: profiles.status,
-      city: profiles.city,
-      region: profiles.region,
-      ownerEmail: users.email,
-      updatedAt: profiles.updatedAt,
-    })
-    .from(profiles)
+  const rows = await db.select({
+    id: profiles.id,
+    displayName: profiles.displayName,
+    type: profiles.type,
+    status: profiles.status,
+    city: profiles.city,
+    region: profiles.region,
+    verificationStatus: profiles.verificationStatus,
+    healthReviewStatus: profiles.healthReviewStatus,
+    ownerEmail: users.email,
+    updatedAt: profiles.updatedAt,
+  }).from(profiles)
     .innerJoin(users, eq(profiles.ownerId, users.id))
     .orderBy(desc(profiles.updatedAt));
 
@@ -45,18 +51,18 @@ export default async function AdminProfilesPage() {
         <AdminPageHeading
           eyebrow="MODERACIÓN GLOBAL"
           title="Perfiles y publicaciones"
-          description="Como dueño puedes cambiar el estado de cualquier ficha. La publicación siempre requiere una revisión manual."
+          description="Revisa cada aviso antes de publicarlo. La verificación se realiza fuera del sitio; aquí solo registras el resultado, sin almacenar documentos sensibles."
         />
         {rows.length === 0 ? (
           <section className="admin-empty">
             <h2>Aún no hay perfiles reales</h2>
-            <p>Cuando se habilite el alta de anunciantes, sus avisos aparecerán aquí primero como borrador o pendientes de revisión.</p>
+            <p>Los avisos creados por anunciantes llegarán aquí como borradores o pendientes de revisión.</p>
           </section>
         ) : (
           <section className="admin-table-wrap">
-            <table className="admin-table">
+            <table className="admin-table admin-profile-table">
               <thead>
-                <tr><th>Perfil</th><th>Ubicación</th><th>Dueño</th><th>Estado</th><th>Actualizar</th></tr>
+                <tr><th>Perfil</th><th>Ubicación</th><th>Dueño</th><th>Publicación</th><th>Verificación</th><th>Actualizar</th></tr>
               </thead>
               <tbody>
                 {rows.map((profile) => (
@@ -65,10 +71,19 @@ export default async function AdminProfilesPage() {
                     <td>{profile.city}, {profile.region}</td>
                     <td>{profile.ownerEmail}</td>
                     <td><span className={`admin-status admin-status-${profile.status}`}>{statusLabel[profile.status]}</span></td>
+                    <td><span className="admin-verification">{verificationLabel[profile.verificationStatus]}<small>{profile.healthReviewStatus === "reviewed" ? "Revisión médica opcional" : ""}</small></span></td>
                     <td>
-                      <form action={`/api/admin/profiles/${profile.id}/status`} method="post" className="admin-inline-form">
+                      <form action={`/api/admin/profiles/${profile.id}/status`} method="post" className="admin-inline-form admin-moderation-form">
                         <select name="status" defaultValue={profile.status} aria-label={`Estado de ${profile.displayName}`}>
                           {Object.entries(statusLabel).map(([value, label]) => <option value={value} key={value}>{label}</option>)}
+                        </select>
+                        <select name="verification_status" defaultValue={profile.verificationStatus} aria-label={`Verificación de ${profile.displayName}`}>
+                          {Object.entries(verificationLabel).map(([value, label]) => <option value={value} key={value}>{label}</option>)}
+                        </select>
+                        <select name="health_review_status" defaultValue={profile.healthReviewStatus} aria-label={`Revisión médica de ${profile.displayName}`}>
+                          <option value="not_requested">Sin solicitud médica</option>
+                          <option value="in_review">Médico en revisión</option>
+                          <option value="reviewed">Médico revisado</option>
                         </select>
                         <button type="submit">Guardar</button>
                       </form>

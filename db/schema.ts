@@ -67,6 +67,30 @@ export const profileTags = sqliteTable("profile_tags", {
   createdAt,
 }, (table) => [uniqueIndex("profile_tag_unique").on(table.profileId, table.tag)]);
 
+export const profileDetails = sqliteTable("profile_details", {
+  profileId: text("profile_id").primaryKey().references(() => profiles.id, { onDelete: "cascade" }),
+  contactPhone: text("contact_phone"),
+  contactEmail: text("contact_email"),
+  referenceLocation: text("reference_location"),
+  schedule: text("schedule"),
+  priceAmount: integer("price_amount"),
+  currency: text("currency").notNull().default("CLP"),
+  metadata: text("metadata").notNull().default("{}"),
+  createdAt,
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const profileServices = sqliteTable("profile_services", {
+  id: text("id").primaryKey(),
+  profileId: text("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  kind: text("kind", { enum: ["included", "additional"] }).notNull(),
+  service: text("service").notNull(),
+  createdAt,
+}, (table) => [
+  uniqueIndex("profile_service_unique").on(table.profileId, table.kind, table.service),
+  index("profile_services_service_idx").on(table.service, table.kind),
+]);
+
 export const agencyMembers = sqliteTable("agency_members", {
   id: text("id").primaryKey(),
   agencyProfileId: text("agency_profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),

@@ -28,13 +28,14 @@ test("server-renders the Chile3X public home", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>Perfiles adultos por región y comuna \| Chile3X<\/title>/i);
+  assert.match(html, /<title>Perfiles adultos por región y ciudad \| Chile3X<\/title>/i);
   assert.match(html, /DIRECTORIO PARA ADULTOS/);
   assert.match(html, /Este sitio está destinado exclusivamente a personas mayores de edad/);
   assert.match(html, /Perfiles, agencias y arriendos/);
   assert.match(html, /Publicaciones destacadas/i);
   assert.match(html, /Todas las regiones,/);
-  assert.match(html, /346 comunas/);
+  assert.match(html, /numberOfItems":36/);
+  assert.match(html, /ciudades y comunas iniciales/);
   assert.match(html, /Región de Arica y Parinacota/);
   assert.match(html, /Región de Magallanes y de la Antártica Chilena/);
   assert.doesNotMatch(html, /Your site is taking shape|Building your site|codex-preview/i);

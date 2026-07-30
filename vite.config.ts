@@ -22,9 +22,14 @@ const localBindingConfig = {
         },
       ]
     : [],
-  // The MEDIA binding is deliberately added only after the real R2 bucket is
-  // activated in Cloudflare. The public MVP does not upload or read media yet.
-  r2_buckets: [],
+  // Private media for profile photos. Files are served through an application
+  // route after checking their moderation state; the bucket has no public URL.
+  r2_buckets: [
+    {
+      binding: "MEDIA",
+      bucket_name: "chile3x-media",
+    },
+  ],
 };
 
 export default defineConfig(async () => {

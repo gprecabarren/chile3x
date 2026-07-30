@@ -294,7 +294,7 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
 
       <section className="profile-media-notice" aria-label="Estado de carga de fotos y videos">
         <strong>Galería y videos</strong>
-        <p>La carga de archivos se habilitará cuando activemos el almacenamiento privado. No subimos ni guardamos documentos de identidad en el sitio.</p>
+        <p>Guarda el perfil y luego administra hasta 10 fotos desde la edición. Cada imagen puede pesar hasta 5 MB y pasa por revisión antes de verse públicamente. Los videos siguen desactivados para proteger la cuota inicial. No subimos ni guardamos documentos de identidad en el sitio.</p>
       </section>
 
       <div className="profile-form-actions">

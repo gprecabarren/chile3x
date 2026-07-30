@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DirectoryShell, ProfileCard } from "@/app/directorio/_components";
@@ -111,12 +112,13 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
   const availability = readAvailability(profile.details.metadata.availability);
   const availabilityStatus = getAvailabilityStatus(availability);
   const stories = await getActiveStories({ profileId: profile.id });
+  const coverImage = profile.media[0];
 
   return (
     <DirectoryShell>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <section className="profile-page-shell">
-        <div className="profile-page-visual"><span>{profile.displayName.slice(0, 1)}</span>{profile.isDemo && <p>PERFIL DE DEMOSTRACIÓN</p>}</div>
+        <div className={`profile-page-visual${coverImage ? " has-image" : ""}`}>{coverImage ? <Image className="profile-page-cover" src={coverImage.url} alt={coverImage.altText ?? `Foto de ${profile.displayName}`} fill priority unoptimized sizes="(max-width: 900px) 100vw, 45vw" /> : <span>{profile.displayName.slice(0, 1)}</span>}{profile.isDemo && <p>PERFIL DE DEMOSTRACIÓN</p>}</div>
         <div className="profile-page-summary">
           <p className="eyebrow">{profileTypeLabel(profile.type).toUpperCase()} · {profile.city.toUpperCase()}</p>
           <h1>{profile.displayName} {profile.verificationStatus === "reviewed" && profile.type === "escort" && <span className="verified-sticker" title="Perfil comprobado">✓</span>}</h1>
@@ -131,6 +133,10 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
           </section>}
         </div>
       </section>
+      {profile.media.length > 0 && <section className="profile-media-gallery" aria-label={`Fotos de ${profile.displayName}`}>
+        <div><p className="eyebrow">GALERÍA</p><h2>Fotos</h2><p>Material publicado después de revisión del equipo Chile3X.</p></div>
+        <div className="profile-media-grid">{profile.media.map((media, index) => <figure key={media.id}><Image src={media.url} alt={media.altText ?? `Foto ${index + 1} de ${profile.displayName}`} fill unoptimized sizes="(max-width: 620px) 100vw, (max-width: 900px) 50vw, 33vw" /></figure>)}</div>
+      </section>}
       <div id="historias"><StoryRail stories={stories} profileOnly /></div>
       <section className="profile-detail-layout">
         <div className="profile-detail-main">

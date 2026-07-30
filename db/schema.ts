@@ -118,6 +118,8 @@ export const profileMedia = sqliteTable("profile_media", {
   profileId: text("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
   mediaType: text("media_type", { enum: ["image", "video"] }).notNull(),
   r2Key: text("r2_key").notNull(),
+  byteSize: integer("byte_size").notNull().default(0),
+  contentType: text("content_type").notNull().default("image/jpeg"),
   altText: text("alt_text"),
   moderationStatus: text("moderation_status", { enum: ["pending", "approved", "rejected"] }).notNull().default("pending"),
   sortOrder: integer("sort_order").notNull().default(0),

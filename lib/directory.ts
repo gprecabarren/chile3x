@@ -2,6 +2,7 @@ import { eq, inArray, or } from "drizzle-orm";
 import { cityDirectory, getCityBySlug, regions } from "@/app/locations";
 import { getDb } from "@/db";
 import { agencyMembers, profileDetails, profileServices, profileTags, profiles } from "@/db/schema";
+import { getApprovedMediaForProfiles } from "@/lib/media";
 import {
   additionalServices,
   bodyTypes,
@@ -70,6 +71,7 @@ export type PublicProfile = {
   tags: string[];
   servicesIncluded: string[];
   servicesAdditional: string[];
+  media: Array<{ id: string; url: string; altText: string | null }>;
   agencyIds: string[];
   memberIds: string[];
 };
@@ -143,10 +145,11 @@ export async function getPublicProfiles() {
     return [] as PublicProfile[];
   }
 
-  const [tags, services, memberships] = await Promise.all([
+  const [tags, services, memberships, mediaByProfile] = await Promise.all([
     db.select().from(profileTags).where(inArray(profileTags.profileId, ids)),
     db.select().from(profileServices).where(inArray(profileServices.profileId, ids)),
     db.select().from(agencyMembers).where(or(inArray(agencyMembers.agencyProfileId, ids), inArray(agencyMembers.memberProfileId, ids))),
+    getApprovedMediaForProfiles(ids),
   ]);
 
   const tagMap = new Map<string, string[]>();
@@ -194,6 +197,7 @@ export async function getPublicProfiles() {
     tags: tagMap.get(profile.id) ?? [],
     servicesIncluded: includedMap.get(profile.id) ?? [],
     servicesAdditional: additionalMap.get(profile.id) ?? [],
+    media: (mediaByProfile.get(profile.id) ?? []).map((media) => ({ id: media.id, url: `/media/${media.id}`, altText: media.altText })),
     agencyIds: agencyMap.get(profile.id) ?? [],
     memberIds: memberMap.get(profile.id) ?? [],
   }));

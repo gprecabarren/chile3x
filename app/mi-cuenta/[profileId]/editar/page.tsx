@@ -3,7 +3,9 @@ import { notFound, redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { profileDetails, profileServices, profileTags, profiles } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
+import { getMediaQuotaState, getMediaUsage, getProfileMedia } from "@/lib/media";
 import { AccountHeading, AccountShell } from "../../_components";
+import { ProfileMediaManager } from "../../ProfileMediaManager";
 import { ProfileForm } from "../../ProfileForm";
 
 export const dynamic = "force-dynamic";
@@ -34,9 +36,11 @@ export default async function EditProfilePage({ params, searchParams }: { params
   if (!row) {
     notFound();
   }
-  const [tags, services] = await Promise.all([
+  const [tags, services, media, usage] = await Promise.all([
     db.select({ tag: profileTags.tag }).from(profileTags).where(eq(profileTags.profileId, profileId)),
     db.select({ service: profileServices.service, kind: profileServices.kind }).from(profileServices).where(eq(profileServices.profileId, profileId)),
+    getProfileMedia(profileId),
+    getMediaUsage(),
   ]);
   const query = await searchParams;
 
@@ -73,6 +77,7 @@ export default async function EditProfilePage({ params, searchParams }: { params
             servicesAdditional: services.filter((item) => item.kind === "additional").map((item) => item.service),
           }}
         />
+        <ProfileMediaManager profileId={profileId} initialMedia={media.map((item) => ({ id: item.id, url: `/media/${item.id}`, moderationStatus: item.moderationStatus, byteSize: item.byteSize }))} initialQuota={{ bytes: usage.bytes, ...getMediaQuotaState(usage.bytes) }} />
       </div>
     </AccountShell>
   );

@@ -52,11 +52,12 @@ export function ProfileCard({ profile }: { profile: PublicProfile }) {
   const age = profile.details.metadata.age;
   const subtitle = [age ? `${age} años` : null, profile.comuna ?? profile.details.referenceLocation].filter(Boolean).join(" · ");
   const mainPrice = readProfilePrices(profile.details)[0];
+  const coverImage = profile.media[0];
 
   return (
     <article className="public-profile-card">
-      <Link href={`/perfil/${profile.slug}`} className={`public-profile-visual ${toneFor(profile.slug)}`} aria-label={`Ver perfil de ${profile.displayName}`}>
-        <span className="public-profile-initial">{profile.displayName.slice(0, 1)}</span>
+      <Link href={`/perfil/${profile.slug}`} className={`public-profile-visual ${toneFor(profile.slug)}${coverImage ? " has-image" : ""}`} aria-label={`Ver perfil de ${profile.displayName}`}>
+        {coverImage ? <Image className="public-profile-image" src={coverImage.url} alt={coverImage.altText ?? `Foto de ${profile.displayName}`} fill unoptimized sizes="(max-width: 620px) 100vw, (max-width: 900px) 50vw, 33vw" /> : <span className="public-profile-initial">{profile.displayName.slice(0, 1)}</span>}
         <span className="public-type-label">{typeLabel[profile.type]}</span>
         {profile.isDemo && <span className="demo-label">DEMO</span>}
         {profile.isFeatured && <span className="featured-label">DESTACADA</span>}

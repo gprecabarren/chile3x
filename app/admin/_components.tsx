@@ -48,15 +48,17 @@ export async function AdminShell({ user, children }: { user: AdminUser; children
   );
 }
 
-export function AdminPageHeading({ eyebrow, title, description, children }: {
+export function AdminPageHeading({ eyebrow, title, description, children, backHref }: {
   eyebrow: string;
   title: string;
   description: string;
   children?: ReactNode;
+  backHref?: string;
 }) {
   return (
     <section className="admin-heading">
       <div>
+        {backHref && <Link className="page-back-link" href={backHref}>← Volver</Link>}
         <p>{eyebrow}</p>
         <h1>{title}</h1>
         <span>{description}</span>

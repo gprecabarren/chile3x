@@ -7,6 +7,9 @@ import { getMediaQuotaState, getMediaUsage, getProfileMedia } from "@/lib/media"
 import { AccountHeading, AccountShell } from "../../_components";
 import { ProfileMediaManager } from "../../ProfileMediaManager";
 import { ProfileForm } from "../../ProfileForm";
+import { getVerificationDocuments } from "@/lib/verification-documents";
+import { getOwnerStories } from "@/lib/stories";
+import { ProfileStoryManager } from "../../ProfileStoryManager";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +26,7 @@ function readMetadata(value: string | null): Record<string, string> {
   }
 }
 
-export default async function EditProfilePage({ params, searchParams }: { params: Promise<{ profileId: string }>; searchParams: Promise<{ error?: string }> }) {
+export default async function EditProfilePage({ params, searchParams }: { params: Promise<{ profileId: string }>; searchParams: Promise<{ error?: string; notice?: string }> }) {
   const user = await getCurrentUser();
   if (!user) {
     redirect("/ingresar?return_to=/mi-cuenta");
@@ -36,19 +39,24 @@ export default async function EditProfilePage({ params, searchParams }: { params
   if (!row) {
     notFound();
   }
-  const [tags, services, media, usage] = await Promise.all([
+  const [tags, services, media, usage, documents, stories] = await Promise.all([
     db.select({ tag: profileTags.tag }).from(profileTags).where(eq(profileTags.profileId, profileId)),
     db.select({ service: profileServices.service, kind: profileServices.kind }).from(profileServices).where(eq(profileServices.profileId, profileId)),
     getProfileMedia(profileId),
     getMediaUsage(),
+    getVerificationDocuments(profileId),
+    getOwnerStories(profileId),
   ]);
   const query = await searchParams;
 
   return (
     <AccountShell user={user}>
-      <div className="account-content">
+      <div className="account-content"><a className="page-back-link" href="/mi-cuenta">← Volver a mi cuenta</a>
         <AccountHeading eyebrow="EDITAR PUBLICACIÓN" title={row.profile.displayName} description="Si el aviso estaba publicado, cualquier actualización vuelve a revisión manual para proteger la calidad del directorio." />
         {query.error && <p className="form-alert" role="alert">No se pudieron guardar los cambios. Revisa los campos obligatorios.</p>}
+        {query.notice === "story_published" && <p className="account-success" role="status">La historia fue publicada y se ocultará automáticamente en 24 horas.</p>}
+        {query.notice === "story_limit" && <p className="form-alert" role="alert">Ya alcanzaste el máximo de historias activas de ese tipo para este perfil.</p>}
+        {query.notice === "story_error" && <p className="form-alert" role="alert">No se pudo publicar la historia. Revisa el archivo y el estado de tu perfil.</p>}
         <ProfileForm
           action={`/api/perfiles/${profileId}`}
           submitLabel="Guardar y enviar a revisión"
@@ -77,6 +85,8 @@ export default async function EditProfilePage({ params, searchParams }: { params
             servicesAdditional: services.filter((item) => item.kind === "additional").map((item) => item.service),
           }}
         />
+        {row.profile.type === "escort" && <section className="private-documents-status"><strong>Verificación privada</strong><p>{documents.length ? `Hay ${documents.length} documento${documents.length === 1 ? "" : "s"} privado${documents.length === 1 ? "" : "s"} adjunto${documents.length === 1 ? "" : "s"}. Puedes reemplazarlo desde el formulario anterior.` : "No hay documentos privados adjuntos. Son opcionales y nunca se mostrarán en tu perfil público."}</p>{documents.map((document) => <a key={document.kind} href={`/api/perfiles/${profileId}/documentos/${document.kind}`}>{document.kind === "identity" ? "Descargar carnet privado" : "Descargar examen médico privado"}</a>)}</section>}
+        {row.profile.status === "approved" && <ProfileStoryManager profileId={profileId} profileName={row.profile.displayName} stories={stories} />}
         <ProfileMediaManager profileId={profileId} initialMedia={media.map((item) => ({ id: item.id, url: `/media/${item.id}`, mediaType: item.mediaType, contentType: item.contentType, moderationStatus: item.moderationStatus, byteSize: item.byteSize }))} initialQuota={{ bytes: usage.bytes, ...getMediaQuotaState(usage.bytes) }} />
       </div>
     </AccountShell>

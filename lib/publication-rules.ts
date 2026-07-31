@@ -6,6 +6,7 @@ export type PublicationRule = {
 };
 
 export const defaultPublicationRules: PublicationRule[] = [
+  { title: "Verificación opcional", body: "Una escort puede adjuntar de forma voluntaria una imagen de carnet y/o examen médico para revisión interna. Estos archivos son privados, no se publican y solo pueden ser vistos por la persona dueña del perfil y administradores autorizados. No subas documentos de terceros." },
   { title: "Requisitos mínimos", body: "Las publicaciones deben corresponder a personas adultas o negocios autorizados, describirse de manera honesta y usar información de contacto propia o con permiso. Todo perfil pasa por revisión manual antes de ser visible." },
   { title: "Imágenes y videos", body: "Solo se podrán publicar fotos o videos propios o con autorización verificable de quienes aparezcan. Deben corresponder al perfil anunciado y no pueden incluir menores, violencia, coerción, contenido ilegal, marcas de terceros sin autorización ni datos que permitan ubicar una dirección privada." },
   { title: "Agencias y asociaciones", body: "Una agencia puede invitar perfiles de escort, pero la asociación solo se mostrará después de que cada escort la acepte desde su cuenta. Una agencia no puede atribuirse la representación de otra persona sin ese consentimiento." },

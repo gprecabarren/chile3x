@@ -11,7 +11,7 @@ export const defaultFaqEntries: FaqEntry[] = [
   { question: "¿Cómo se publica un perfil?", answer: "Crea una cuenta, completa el aviso y envíalo a revisión. El equipo decide si corresponde publicarlo, pedir cambios o rechazarlo. Por ahora las publicaciones iniciales se gestionan manualmente." },
   { question: "¿Por qué mi perfil o foto no se ve todavía?", answer: "Los perfiles y cada medio nuevo pasan por moderación. Mientras están en revisión permanecen privados; no se muestran en buscadores ni en el directorio público." },
   { question: "¿Cómo funcionan favoritos, likes y reseñas?", answer: "Necesitas una cuenta para guardar favoritos o reaccionar. Las reseñas se moderan antes de publicarse para reducir spam, suplantaciones y contenido que incumpla las reglas." },
-  { question: "¿Chile3X guarda documentos de identidad o certificados médicos?", answer: "No. La verificación se registra como un estado interno de revisión. No se habilita la carga ni el almacenamiento de documentos sensibles dentro del portal." },
+  { question: "¿Chile3X guarda documentos de identidad o certificados médicos?", answer: "Solo si una escort decide adjuntarlos de forma opcional para revisión. Se almacenan de forma privada, no se muestran en el perfil ni se indexan, y solo la persona dueña o administradores autorizados pueden acceder a ellos." },
   { question: "¿Chile3X cobra o interviene en los acuerdos?", answer: "No interviene en pagos, citas ni acuerdos entre visitantes y anunciantes. Cualquier plan de publicación se coordina de forma directa con el equipo del portal." },
 ];
 

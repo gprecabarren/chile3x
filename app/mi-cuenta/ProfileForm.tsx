@@ -72,7 +72,7 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
   }
 
   return (
-    <form action={action} method="post" className="profile-form">
+    <form action={action} method="post" className="profile-form" encType="multipart/form-data">
       <section className="profile-form-section">
         <div className="profile-form-section-heading">
           <p>01 · TIPO DE PUBLICACIÓN</p>
@@ -146,6 +146,14 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
               Valor por 1 hora (opcional)
               <input name="price_60_min" inputMode="numeric" min="1" type="number" defaultValue={metadataValue(initial, "price_60_min")} placeholder="Ej. 50000" />
             </label>
+            <label>
+              Valor por momento (opcional)
+              <input name="price_moment" inputMode="numeric" min="1" type="number" defaultValue={metadataValue(initial, "price_moment")} placeholder="Ej. 20000" />
+            </label>
+            <label>
+              Valor por noche (opcional)
+              <input name="price_night" inputMode="numeric" min="1" type="number" defaultValue={metadataValue(initial, "price_night")} placeholder="Ej. 150000" />
+            </label>
           </> : <label>
             {type === "rental" ? "Valor mensual (opcional)" : "Valor referencial (opcional)"}
             <input name="price_amount" inputMode="numeric" min="1" type="number" defaultValue={initial?.details.priceAmount ?? ""} placeholder={type === "rental" ? "Ej. 350000" : "Monto referencial"} />
@@ -204,6 +212,18 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
             <label>Tipo de cuerpo<select name="body_type" defaultValue={metadataValue(initial, "body_type")}><option value="">Seleccionar</option>{bodyTypes.map((item) => <option key={item}>{item}</option>)}</select></label>
             <label>Tamaño de busto<select name="bust_size" defaultValue={metadataValue(initial, "bust_size")}><option value="">Seleccionar</option>{bustSizes.map((item) => <option key={item}>{item}</option>)}</select></label>
           </div>
+          <fieldset className="language-checklist"><legend>Idiomas</legend><p>Marca todos los idiomas que puedes atender.</p><div className="check-grid">{spokenLanguages.map((language) => <label key={language}><input name="languages" type="checkbox" value={language} defaultChecked={metadataValue(initial, "languages").split(", ").includes(language)} />{language}</label>)}</div></fieldset>
+        </section>
+      )}
+
+      {type === "escort" && (
+        <section className="profile-form-section verification-documents-section">
+          <div className="profile-form-section-heading"><p>05 · VERIFICACIÓN OPCIONAL</p><h2>Documentos privados</h2></div>
+          <p className="profile-form-help">Puedes adjuntar imágenes de tu carnet y examen médico. Son opcionales, no se publican y solo pueden revisarlos tú y administradores autorizados. Un archivo nuevo reemplaza y elimina el anterior.</p>
+          <div className="form-grid form-grid-two">
+            <label>Importar carnet (opcional)<input name="identity_document" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" /><small>JPG, PNG o WebP; máximo 5 MB.</small></label>
+            <label>Importar examen médico (opcional)<input name="medical_certificate" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" /><small>JPG, PNG o WebP; máximo 5 MB.</small></label>
+          </div>
         </section>
       )}
 
@@ -258,7 +278,7 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
         <fieldset className="profile-contact-fieldset">
           <legend>Contacto directo</legend>
         <div className="form-grid form-grid-three">
-          <label>WhatsApp público (opcional)<input name="contact_whatsapp" inputMode="numeric" pattern="[0-9]{8,15}" defaultValue={initial?.contactWhatsapp} placeholder="56912345678" /></label>
+          <label>WhatsApp público<input name="contact_whatsapp" required inputMode="numeric" pattern="[0-9]{8,15}" defaultValue={initial?.contactWhatsapp} placeholder="56912345678" /></label>
           <label>Teléfono alternativo<input name="contact_phone" inputMode="numeric" pattern="[0-9]{8,15}" defaultValue={initial?.details.contactPhone} /></label>
           <label>Telegram (opcional)<input name="contact_telegram" maxLength={80} defaultValue={initial?.contactTelegram} placeholder="@usuario" /></label>
           <label>Correo de contacto (opcional)<input name="contact_email" type="email" maxLength={160} defaultValue={initial?.details.contactEmail} /></label>
@@ -295,7 +315,7 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
 
       <section className="profile-media-notice" aria-label="Estado de carga de fotos y videos">
         <strong>Galería y videos</strong>
-        <p>Guarda el perfil y luego administra hasta 10 fotos desde la edición. Cada imagen puede pesar hasta 5 MB y pasa por revisión antes de verse públicamente. Los videos siguen desactivados para proteger la cuota inicial. No subimos ni guardamos documentos de identidad en el sitio.</p>
+        <p>Guarda el perfil y luego administra hasta 10 fotos desde la edición. Cada imagen puede pesar hasta 5 MB y pasa por revisión antes de verse públicamente. Los videos siguen desactivados para proteger la cuota inicial. Los documentos opcionales se almacenan de forma privada y nunca se muestran en el perfil público.</p>
       </section>
 
       <div className="profile-form-actions">

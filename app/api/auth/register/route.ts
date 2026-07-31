@@ -4,6 +4,7 @@ import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { assertSameOrigin, hashPassword, safeAccountReturnTo } from "@/lib/auth";
 import { createAccountToken, sendAccountEmail } from "@/lib/account-email";
+import { readAccountIdentity } from "@/lib/account-data";
 
 function redirectWithError(request: Request, error: string) {
   const url = new URL("/registro", request.url);
@@ -29,9 +30,10 @@ export async function POST(request: NextRequest) {
     const displayName = getFormString(formData, "display_name").trim().slice(0, 80);
     const email = getFormString(formData, "email").trim().toLowerCase().slice(0, 160);
     const password = getFormString(formData, "password");
+    const identity = readAccountIdentity(formData);
 
     if (formData.get("adult_confirmed") !== "yes") return redirectWithError(request, "adult");
-    if (displayName.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < 12) return redirectWithError(request, "invalid");
+    if (displayName.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < 12 || !identity) return redirectWithError(request, "invalid");
 
     stage = "lookup";
     const db = await getDb();
@@ -40,7 +42,20 @@ export async function POST(request: NextRequest) {
 
     const userId = `usr_${crypto.randomUUID()}`;
     stage = "create_user";
-    await db.insert(users).values({ id: userId, email, displayName, passwordHash: await hashPassword(password), role: "visitor" });
+    await db.insert(users).values({
+      id: userId,
+      email,
+      displayName,
+      passwordHash: await hashPassword(password),
+      role: "visitor",
+      firstName: identity.firstName || null,
+      lastName: identity.lastName || null,
+      documentType: identity.documentType,
+      documentNumber: identity.documentNumber,
+      birthDate: identity.birthDate,
+      city: identity.city,
+      phone: identity.phone || null,
+    });
 
     stage = "send_verification";
     const token = await createAccountToken(userId, "verify_email");

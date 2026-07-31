@@ -22,7 +22,7 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
 
   return (
     <AdminShell user={admin}>
-      <div className="admin-content">
+      <div className="admin-content"><a className="page-back-link" href="/admin">← Volver al resumen</a>
         <AdminPageHeading
           eyebrow="CONFIGURACIÓN DEL PORTAL"
           title="Configuración del portal"

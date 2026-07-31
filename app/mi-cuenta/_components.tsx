@@ -10,6 +10,7 @@ export function AccountShell({ user, children }: { user: AccountUser; children: 
         <nav aria-label="Navegación de cuenta">
           <Link href="/mi-cuenta">Mis perfiles</Link>
           <Link href="/mi-cuenta/favoritos">Favoritos</Link>
+          <Link href="/mi-cuenta/comentarios">Comentarios</Link>
           <Link href="/mi-cuenta/nuevo-perfil">Crear perfil</Link>
           <details className="account-legal-links">
             <summary>Información</summary>
@@ -30,10 +31,10 @@ export function AccountShell({ user, children }: { user: AccountUser; children: 
   );
 }
 
-export function AccountHeading({ eyebrow, title, description, children }: { eyebrow: string; title: string; description: string; children?: ReactNode }) {
+export function AccountHeading({ eyebrow, title, description, children, backHref }: { eyebrow: string; title: string; description: string; children?: ReactNode; backHref?: string }) {
   return (
     <section className="account-heading">
-      <div><p>{eyebrow}</p><h1>{title}</h1><span>{description}</span></div>
+      <div>{backHref && <Link className="page-back-link" href={backHref}>← Volver</Link>}<p>{eyebrow}</p><h1>{title}</h1><span>{description}</span></div>
       {children}
     </section>
   );

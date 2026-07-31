@@ -4,6 +4,7 @@ import { getDb } from "@/db";
 import { siteSettings } from "@/db/schema";
 import { assertSameOrigin, getCurrentUser } from "@/lib/auth";
 import { createProfile, ProfileValidationError, readProfileSubmission } from "@/lib/profile-submission";
+import { readVerificationDocuments, saveVerificationDocuments, VerificationDocumentError } from "@/lib/verification-documents";
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,11 +26,14 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const submission = readProfileSubmission(await request.formData());
-    await createProfile(user.id, submission);
+    const formData = await request.formData();
+    const submission = readProfileSubmission(formData);
+    const documents = await readVerificationDocuments(formData);
+    const profileId = await createProfile(user.id, submission);
+    if (submission.type === "escort") await saveVerificationDocuments(profileId, documents);
     return NextResponse.redirect(new URL(`/mi-cuenta?notice=${submission.intent === "submit" ? "submitted" : "saved"}`, request.url), 303);
   } catch (error) {
-    if (error instanceof ProfileValidationError) {
+    if (error instanceof ProfileValidationError || error instanceof VerificationDocumentError) {
       return NextResponse.redirect(new URL("/mi-cuenta/nuevo-perfil?error=validation", request.url), 303);
     }
     throw error;

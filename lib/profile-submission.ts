@@ -151,7 +151,7 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
     throw new ProfileValidationError("El correo de contacto no es válido.");
   }
 
-  const priceValues = ["price_30_min", "price_60_min"] as const;
+  const priceValues = ["price_30_min", "price_60_min", "price_moment", "price_night"] as const;
   const prices = Object.fromEntries(priceValues.flatMap((field) => {
     const raw = compactText(formData.get(field), 14);
     const value = optionalPositiveInteger(formData.get(field));
@@ -184,7 +184,7 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
   const languages = listFromForm(formData.getAll("languages"), spokenLanguages).join(", ");
   const availability = serializeAvailability(formData);
 
-  if (!contactWhatsapp && !contactPhone && !contactEmail && !telegram && !instagramUrl && !arsmateUrl) {
+  if (!contactWhatsapp) {
     throw new ProfileValidationError("Agrega al menos una forma de contacto o red social pública.");
   }
 

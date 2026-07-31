@@ -207,6 +207,8 @@ export function readProfilePrices(details: { metadata: Record<string, string>; p
   const prices = [
     ["30 min", details.metadata.price_30_min],
     ["1 hora", details.metadata.price_60_min],
+    ["Por momento", details.metadata.price_moment],
+    ["Por noche", details.metadata.price_night],
   ] as const;
   const parsed = prices.flatMap(([label, value]) => {
     const amount = Number(value);

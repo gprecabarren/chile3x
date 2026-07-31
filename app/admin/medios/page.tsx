@@ -29,7 +29,7 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
   const quota = getMediaQuotaState(usage.bytes);
   const pending = rows.filter((row) => row.media.moderationStatus === "pending").length;
 
-  return <AdminShell user={admin}><div className="admin-content">
+  return <AdminShell user={admin}><div className="admin-content"><a className="page-back-link" href="/admin">← Volver al resumen</a>
     <AdminPageHeading eyebrow="MODERACIÓN DE MEDIOS" title="Galerías privadas" description="Cada foto o video llega privado a R2. Apruébalo solo después de revisar que corresponde al perfil y cumple las reglas de publicación." />
     {params.notice && notices[params.notice] && <p className="admin-success" role="status">{notices[params.notice]}</p>}
     <section className={`admin-media-quota admin-media-quota-${quota.level}`}><div><p>ALMACENAMIENTO R2</p><h2>{formatMediaBytes(usage.bytes)} registrados</h2><span>{usage.files} archivos · margen interno configurado: 8 GB</span></div><strong>{pending} pendientes</strong><small>{quota.message}</small></section>

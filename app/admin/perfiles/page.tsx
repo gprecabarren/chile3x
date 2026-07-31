@@ -85,7 +85,8 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
         <AdminPageHeading
           eyebrow="MODERACIÓN GLOBAL"
           title="Perfiles y publicaciones"
-          description="Encuentra, filtra y revisa los avisos antes de publicarlos. Los documentos sensibles nunca se almacenan en el portal."
+          description="Encuentra, filtra y revisa los avisos antes de publicarlos. Los documentos opcionales de verificación se mantienen privados y solo se descargan desde la ficha administrativa."
+          backHref="/admin"
         />
         {pendingCount > 0 && <section className="admin-review-alert" role="status"><div><p>REVISIÓN PENDIENTE</p><h2>{pendingCount} {pendingCount === 1 ? "aviso requiere" : "avisos requieren"} tu aprobación</h2><span>Abre cada perfil para verlo como lo verá el público y decide su publicación desde esa ficha.</span></div><Link className="button button-primary" href="/admin/perfiles?estado=pending">Revisar ahora</Link></section>}
         <form className="admin-profile-filters" method="get" role="search">

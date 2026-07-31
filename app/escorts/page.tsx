@@ -5,6 +5,8 @@ import { DirectoryShell, ProfileGrid } from "@/app/directorio/_components";
 import { filterPublicProfiles, getPublicProfiles, prioritizeProfilesByCity, readDirectoryFilters, shuffleProfiles, type DirectoryQuery } from "@/lib/directory";
 import { cityDirectory } from "@/app/locations";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
+import { getActiveStories } from "@/lib/stories";
+import { StoryRail } from "@/app/historias/StoryRail";
 
 export const metadata: Metadata = {
   title: "Escorts en Chile",
@@ -20,7 +22,7 @@ export default async function EscortsPage({ searchParams }: { searchParams: Prom
   const filters = readDirectoryFilters(query, { type: "escort" });
   const nearbyCityValue = Array.isArray(query.cerca) ? query.cerca[0] : query.cerca;
   const nearbyCity = cityDirectory.some((item) => item.city === nearbyCityValue) ? nearbyCityValue : undefined;
-  const [allProfiles, settings] = await Promise.all([getPublicProfiles(), getSiteSettings()]);
+  const [allProfiles, settings, stories] = await Promise.all([getPublicProfiles(), getSiteSettings(), getActiveStories({ type: "escort" })]);
   const profiles = prioritizeProfilesByCity(shuffleProfiles(filterPublicProfiles(allProfiles, filters)), nearbyCity);
   const canonicalProfiles = filterPublicProfiles(allProfiles, readDirectoryFilters({}, { type: "escort" }));
   const siteUrl = siteBaseUrl(settings.site_url);
@@ -37,6 +39,7 @@ export default async function EscortsPage({ searchParams }: { searchParams: Prom
       </section>
       <section className="directory-content">
         <DirectoryFilters action="/escorts" filters={filters} />
+        <StoryRail stories={stories} />
         {filters.invalidCombination && <p className="filter-warning" role="alert">MILF y Hombres son categorías incompatibles. Selecciona solo una para buscar.</p>}
         <div className="directory-results-heading"><div><p className="eyebrow">RESULTADOS</p><h2>{profiles.length} perfil{profiles.length === 1 ? "" : "es"} encontrado{profiles.length === 1 ? "" : "s"}</h2></div><p>{nearbyCity ? `Mostramos primero los perfiles de ${nearbyCity}; puedes cambiar la ciudad desde los filtros.` : "Las etiquetas y servicios se muestran según la información aprobada de cada perfil."}</p></div>
         <ProfileGrid profiles={profiles} />

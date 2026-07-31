@@ -14,6 +14,14 @@ export const users = sqliteTable("users", {
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash"),
   displayName: text("display_name"),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  documentType: text("document_type", { enum: ["rut", "foreign"] }).notNull().default("rut"),
+  documentNumber: text("document_number").notNull().default(""),
+  birthDate: text("birth_date").notNull().default("1990-01-01"),
+  city: text("city").notNull().default(""),
+  phone: text("phone"),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   role: text("role", { enum: ["visitor", "advertiser", "admin"] }).notNull().default("visitor"),
   emailVerifiedAt: text("email_verified_at"),
   createdAt,
@@ -169,9 +177,28 @@ export const profileStatuses = sqliteTable("profile_statuses", {
   id: text("id").primaryKey(),
   profileId: text("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
   body: text("body").notNull(),
+  storyType: text("story_type", { enum: ["text", "image"] }).notNull().default("text"),
+  r2Key: text("r2_key"),
+  contentType: text("content_type"),
+  byteSize: integer("byte_size").notNull().default(0),
   expiresAt: text("expires_at"),
   createdAt,
 });
+
+// Identity and optional medical evidence are deliberately separate from public
+// media. Their R2 keys are never included in a public profile response.
+export const profileVerificationFiles = sqliteTable("profile_verification_files", {
+  id: text("id").primaryKey(),
+  profileId: text("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  kind: text("kind", { enum: ["identity", "medical"] }).notNull(),
+  r2Key: text("r2_key").notNull(),
+  byteSize: integer("byte_size").notNull().default(0),
+  contentType: text("content_type").notNull(),
+  createdAt,
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  uniqueIndex("profile_verification_file_unique").on(table.profileId, table.kind),
+]);
 
 export const favorites = sqliteTable("favorites", {
   id: text("id").primaryKey(),

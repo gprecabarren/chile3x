@@ -42,7 +42,7 @@ export default async function ProfileStatisticsPage({ params, searchParams }: { 
   const total = rows.reduce((sum, row) => sum + Number(row.total), 0);
 
   return <AccountShell user={user}>
-    <div className="account-content">
+    <div className="account-content"><Link className="page-back-link" href="/mi-cuenta">← Volver a mi cuenta</Link>
       <AccountHeading eyebrow="ALCANCE DEL AVISO" title="Visualizaciones" description={`Consulta el alcance de ${profile.displayName} por período. Una misma persona cuenta solo una vez al día para este aviso.`}>
         {profile.status === "approved" && <Link className="button button-public-preview" href={`/perfil/${profile.slug}`} target="_blank">Ver público</Link>}
       </AccountHeading>

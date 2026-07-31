@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin, hashPassword } from "@/lib/auth";
+import { readAccountIdentity } from "@/lib/account-data";
 
 function redirectWithNotice(request: Request, notice: string) {
   const url = new URL("/admin/cuentas", request.url);
@@ -30,8 +31,9 @@ export async function POST(request: NextRequest) {
   const displayName = formValue(formData, "display_name").trim().slice(0, 80);
   const email = formValue(formData, "email").trim().toLowerCase().slice(0, 160);
   const password = formValue(formData, "password");
+  const identity = readAccountIdentity(formData);
 
-  if (formData.get("adult_verified") !== "yes" || displayName.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < 12) {
+  if (formData.get("adult_verified") !== "yes" || displayName.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < 12 || !identity) {
     return redirectWithNotice(request, "invalid");
   }
 
@@ -48,6 +50,13 @@ export async function POST(request: NextRequest) {
     passwordHash: await hashPassword(password),
     role: "advertiser",
     emailVerifiedAt: new Date().toISOString(),
+    firstName: identity.firstName || null,
+    lastName: identity.lastName || null,
+    documentType: identity.documentType,
+    documentNumber: identity.documentNumber,
+    birthDate: identity.birthDate,
+    city: identity.city,
+    phone: identity.phone || null,
   });
 
   return redirectWithNotice(request, "created");

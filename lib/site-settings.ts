@@ -7,15 +7,16 @@ export const siteSettingDefaults = {
   billing_mode: "manual",
   maintenance_mode: "disabled",
   robots_indexing: "enabled",
-  site_url: "https://chile3x.chile3x-cl.workers.dev",
-  site_title: "Chile3X | Directorio adulto en todo Chile",
-  site_description: "Directorio para adultos con perfiles, agencias y arriendos en las 16 regiones y ciudades iniciales de Chile.",
+  site_url: "https://chile3x.cl",
+  site_title: "Escorts en Chile | Chile3X",
+  site_description: "Encuentra escorts en Chile por ciudad, región, categoría y servicios. Chile3X es un directorio para adultos con perfiles revisados.",
   google_site_verification: "",
   google_analytics_id: "",
   contact_whatsapp: "",
   contact_telegram: "",
   contact_instagram: "",
   contact_email: "",
+  faq_entries: "",
 } as const;
 
 export type SiteSettingKey = keyof typeof siteSettingDefaults;

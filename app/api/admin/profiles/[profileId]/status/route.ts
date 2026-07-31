@@ -33,6 +33,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const status = formData.get("status");
   const verificationStatus = formData.get("verification_status");
   const healthReviewStatus = formData.get("health_review_status");
+  const featuredInput = formData.get("is_featured");
   const { profileId } = await params;
 
   if (typeof status !== "string" || typeof verificationStatus !== "string" || typeof healthReviewStatus !== "string" || !allowedStatuses.has(status) || !allowedVerification.has(verificationStatus) || !allowedHealthReview.has(healthReviewStatus)) {
@@ -43,6 +44,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     status: status as typeof profiles.$inferInsert.status,
     verificationStatus: verificationStatus as typeof profiles.$inferInsert.verificationStatus,
     healthReviewStatus: healthReviewStatus as typeof profiles.$inferInsert.healthReviewStatus,
+    ...(featuredInput === null ? {} : { isFeatured: featuredInput === "on" }),
     updatedAt: new Date().toISOString(),
   }).where(eq(profiles.id, profileId));
 

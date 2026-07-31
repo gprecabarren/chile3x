@@ -28,11 +28,11 @@ test("server-renders the Chile3X public home", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>Perfiles adultos por región y ciudad \| Chile3X<\/title>/i);
-  assert.match(html, /DIRECTORIO PARA ADULTOS/);
+  assert.match(html, /<title>Escorts en Chile \| Chile3X<\/title>/i);
+  assert.match(html, /DIRECTORIO DE ESCORTS/);
   assert.match(html, /Este sitio está destinado exclusivamente a personas mayores de edad/);
-  assert.match(html, /Perfiles, agencias y arriendos/);
-  assert.match(html, /Publicaciones destacadas/i);
+  assert.match(html, /Directorio de escorts, agencias y arriendos/);
+  assert.match(html, /Escorts destacadas/i);
   assert.match(html, /Todas las regiones,/);
   assert.match(html, /numberOfItems":36/);
   assert.match(html, /ciudades y comunas iniciales/);

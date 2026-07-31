@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { getCurrentAdmin } from "@/lib/auth";
 import { getSiteSettings } from "@/lib/site-settings";
+import { readFaqEntries } from "@/lib/faq";
 import { AdminPageHeading, AdminShell } from "../_components";
+import { FaqSettingsEditor } from "./FaqSettingsEditor";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +15,7 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
   }
 
   const [values, params] = await Promise.all([getSiteSettings(), searchParams]);
+  const faqEntries = readFaqEntries(values.faq_entries);
 
   return (
     <AdminShell user={admin}>
@@ -58,6 +61,7 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
               <label>Correo del portal<input name="contact_email" type="email" maxLength={180} defaultValue={values.contact_email} placeholder="contacto@chile3x.cl" /></label>
             </div>
           </section>
+          <FaqSettingsEditor initialEntries={faqEntries} />
           <button className="button button-primary" type="submit">Guardar configuración</button>
         </form>
       </div>

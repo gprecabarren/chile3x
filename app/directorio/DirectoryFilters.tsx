@@ -51,7 +51,7 @@ export function DirectoryFilters({ action, filters, pinnedCity, pinnedRegion, sh
 
   return (
     <form className="directory-filters" action={action} method="get">
-      <div className="filter-heading"><div><p className="eyebrow">FILTRO AVANZADO</p><h2>Encuentra con más precisión</h2></div><button className="button button-outline" type="submit">Aplicar filtros</button></div>
+      <div className="filter-heading"><div><p className="eyebrow">FILTRO AVANZADO</p><h2>Encuentra con más precisión</h2><p>Combina ciudad, categorías, atributos y servicios según lo que buscas.</p></div></div>
       <div className="filter-grid">
         <label className="filter-full">Buscar por nombre<input name="nombre" type="search" minLength={2} maxLength={80} defaultValue={filters.name ?? ""} placeholder="Escribe el nombre del perfil" /></label>
         {!pinnedCity && <label>Región<select name="region" value={region} onChange={(event) => changeRegion(event.target.value)}><option value="">Todas las regiones</option>{regions.map((item) => <option key={item.id} value={item.title}>{item.shortTitle}</option>)}</select></label>}
@@ -60,17 +60,19 @@ export function DirectoryFilters({ action, filters, pinnedCity, pinnedRegion, sh
         <label>Categoría<select name="tier" defaultValue={filters.tier ?? ""}><option value="">Todas las categorías</option>{tiers.map((tier) => <option key={tier} value={tier}>{tierLabels[tier]}</option>)}</select></label>
         {showEscortFilters && <><label>Nacionalidad<input name="nacionalidad" defaultValue={filters.nationality} placeholder="Ej. Chilena" /></label><label>Género<select name="genero" defaultValue={filters.gender ?? ""}><option value="">Cualquiera</option><option>Femenino</option><option>Masculino</option><option>No binario</option><option>Trans</option></select></label><label>Edad mínima<input name="edad_min" inputMode="numeric" min="18" defaultValue={filters.ageMin ?? ""} /></label><label>Edad máxima<input name="edad_max" inputMode="numeric" min="18" defaultValue={filters.ageMax ?? ""} /></label><label>Color de piel<select name="piel" defaultValue={filters.skinColor ?? ""}><option value="">Cualquiera</option>{skinColors.map((item) => <option key={item}>{item}</option>)}</select></label><label>Color de pelo<select name="pelo" defaultValue={filters.hairColor ?? ""}><option value="">Cualquiera</option>{hairColors.map((item) => <option key={item}>{item}</option>)}</select></label><label>Tipo de cuerpo<select name="cuerpo" defaultValue={filters.bodyType ?? ""}><option value="">Cualquiera</option>{bodyTypes.map((item) => <option key={item}>{item}</option>)}</select></label><label>Tamaño de busto<select name="busto" defaultValue={filters.bustSize ?? ""}><option value="">Cualquiera</option>{bustSizes.map((item) => <option key={item}>{item}</option>)}</select></label><label className="filter-full">Idioma<select name="idioma" defaultValue={filters.language ?? ""}><option value="">Cualquiera</option>{spokenLanguages.map((language) => <option key={language} value={language}>{language}</option>)}</select></label></>}
       </div>
-      {showEscortFilters && <><fieldset className="filter-fieldset"><legend>Etiquetas</legend><div className="filter-check-grid">{profileTags.map((tag) => {
+      {showEscortFilters && <><fieldset className="filter-fieldset"><legend>Categorías adicionales</legend><div className="filter-check-grid">{profileTags.map((tag) => {
         const blocked = (tag === "milf" && selectedTags.includes("hombres")) || (tag === "hombres" && selectedTags.includes("milf"));
         return <label key={tag} className={blocked ? "is-blocked" : ""}><input name="tag" type="checkbox" value={tag} checked={selectedTags.includes(tag)} disabled={blocked} onChange={() => changeTag(tag)} />{tagLabels[tag]}</label>;
       })}</div><small>MILF y Hombres no se pueden combinar en la misma búsqueda.</small></fieldset>
       </>}
-      {showServices && <>
-      <div className="filter-service-columns">
-        <fieldset className="filter-fieldset"><legend>Servicios incluidos</legend><div className="filter-check-grid">{includedServices.map((service) => <label key={service}><input name="incluido" type="checkbox" value={service} defaultChecked={filters.servicesIncluded.includes(service)} />{service}</label>)}</div></fieldset>
-        <fieldset className="filter-fieldset"><legend>Servicios adicionales</legend><div className="filter-check-grid">{additionalServices.map((service) => <label key={service}><input name="adicional" type="checkbox" value={service} defaultChecked={filters.servicesAdditional.includes(service)} />{service}</label>)}</div></fieldset>
-      </div></>}
-      <div className="filter-actions"><a href={action}>Limpiar filtros</a><button className="button button-primary" type="submit">Ver resultados</button></div>
+      {showServices && <details className="filter-services" open={filters.servicesIncluded.length > 0 || filters.servicesAdditional.length > 0}>
+        <summary><span>Filtrar por servicios</span><small>Incluidos, adicionales y fetiches</small></summary>
+        <div className="filter-service-columns">
+          <fieldset className="filter-fieldset"><legend>Servicios incluidos</legend><div className="filter-check-grid">{includedServices.map((service) => <label key={service}><input name="incluido" type="checkbox" value={service} defaultChecked={filters.servicesIncluded.includes(service)} />{service}</label>)}</div></fieldset>
+          <fieldset className="filter-fieldset"><legend>Servicios adicionales</legend><div className="filter-check-grid">{additionalServices.map((service) => <label key={service}><input name="adicional" type="checkbox" value={service} defaultChecked={filters.servicesAdditional.includes(service)} />{service}</label>)}</div></fieldset>
+        </div>
+      </details>}
+      <div className="filter-actions"><a href={action}>Limpiar filtros</a><button className="button button-primary" type="submit">Buscar perfiles</button></div>
     </form>
   );
 }

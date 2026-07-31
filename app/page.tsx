@@ -1,24 +1,17 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { FloatingWhatsappButton, OadBadge, PortalContactLinks } from "./directorio/_components";
+import { FloatingWhatsappButton, PortalContactLinks, PublicFooter, ProfileGrid } from "./directorio/_components";
 import { StoryRail } from "./historias/StoryRail";
 import { cityTotal, regions } from "./locations";
-import { getCityEscortCounts } from "@/lib/directory";
+import { getCityEscortCounts, getFeaturedProfiles } from "@/lib/directory";
 import { getActiveStories } from "@/lib/stories";
 
 export const metadata: Metadata = {
-  title: "Perfiles adultos por región y ciudad",
+  title: "Escorts en Chile",
   description:
-    "Explora Chile3X por región y ciudad. Directorio para adultos con perfiles, agencias y arriendos en todo Chile.",
+    "Encuentra escorts en Chile por ciudad, región, categoría y servicios. Chile3X es un directorio para adultos con perfiles revisados.",
 };
-
-const profiles = [
-  { name: "Ámbar", slug: "ambar-providencia-demo", location: "Providencia, Metropolitana", tags: ["VIP", "Comprobada"], tone: "amber" },
-  { name: "Valentina", slug: "valentina-vina-del-mar-demo", location: "Viña del Mar, Valparaíso", tags: ["Premium", "MILF"], tone: "violet" },
-  { name: "Paola", slug: "paola-concepcion-demo", location: "Concepción, Biobío", tags: ["VIP", "TRANS"], tone: "rose" },
-  { name: "Luna", slug: "luna-concepcion-demo", location: "Concepción, Biobío", tags: ["Masajes", "Comprobada"], tone: "blue" },
-];
 
 const features = [
   ["Perfiles revisados", "Cada publicación pasa por moderación antes de hacerse visible."],
@@ -38,16 +31,40 @@ const directorySchema = {
   })),
 };
 
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      name: "Chile3X",
+      url: "https://chile3x.cl",
+      description: "Directorio para adultos con escorts, agencias y arriendos en Chile.",
+    },
+    {
+      "@type": "WebSite",
+      name: "Chile3X",
+      url: "https://chile3x.cl",
+      inLanguage: "es-CL",
+      potentialAction: {
+        "@type": "SearchAction",
+        target: "https://chile3x.cl/escorts?nombre={search_term_string}",
+        "query-input": "required name=search_term_string",
+      },
+    },
+  ],
+};
+
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [stories, cityEscortCounts] = await Promise.all([getActiveStories(), getCityEscortCounts()]);
+  const [stories, cityEscortCounts, featuredProfiles] = await Promise.all([getActiveStories(), getCityEscortCounts(), getFeaturedProfiles(6)]);
   return (
     <main>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(directorySchema) }}
       />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
 
       <div className="age-strip">
         <span>+18</span>
@@ -57,7 +74,7 @@ export default async function Home() {
 
       <header className="site-header">
         <Link className="brand" href="/" aria-label="Chile3X, inicio">
-          <Image src="/chile3x-logo-primary.jpeg" alt="Chile3X" width={800} height={225} priority />
+          <Image src="/chile3x-logo-primary.jpeg" alt="Chile3X" width={800} height={225} priority unoptimized />
         </Link>
         <nav aria-label="Navegación principal">
           <a href="#cobertura">Regiones y ciudades</a>
@@ -76,10 +93,10 @@ export default async function Home() {
 
       <section className="hero" id="explorar">
         <div className="hero-copy">
-          <p className="eyebrow">DIRECTORIO PARA ADULTOS · TODO CHILE</p>
-          <h1>Chile completo, <em>en un mismo lugar.</em></h1>
+          <p className="eyebrow">DIRECTORIO DE ESCORTS · TODO CHILE</p>
+          <h1>Escorts en Chile, <em>en un mismo lugar.</em></h1>
           <p className="hero-text">
-            Perfiles, agencias y arriendos en un espacio privado, claro y moderado. Comienza por tu región o ciudad.
+            Directorio de escorts, agencias y arriendos para adultos. Explora perfiles por región, ciudad, categoría y servicios.
           </p>
           <div className="hero-actions">
             <Link className="button button-primary" href="/escorts">Explorar perfiles</Link>
@@ -112,7 +129,7 @@ export default async function Home() {
       </section>
 
       <section className="home-photo-banner" aria-label="Chile3X, directorio adulto en Chile">
-        <Image src="/chile3x-hero-banner.jpg" alt="" fill sizes="100vw" />
+        <Image src="/chile3x-hero-banner.jpg" alt="" fill sizes="100vw" unoptimized />
         <div><p className="eyebrow">CHILE3X</p><h2>Un espacio adulto, <em>privado y claro.</em></h2><p>Encuentra publicaciones revisadas y contacta directamente a cada anunciante.</p><Link className="button button-outline" href="/escorts">Ver directorio nacional</Link></div>
       </section>
 
@@ -160,33 +177,11 @@ export default async function Home() {
 
       <section className="section listings-section">
         <div className="listings-intro">
-          <p className="eyebrow">PUBLICACIONES DESTACADAS</p>
-          <h2>Una vitrina más <em>confiable.</em></h2>
-          <p>Las fichas públicas mostrarán información validada, etiquetas claras, fotos y videos previamente moderados.</p>
+          <p className="eyebrow">ESCORTS DESTACADAS</p>
+          <h2>Lo más visto <em>del directorio.</em></h2>
+          <p>Se priorizan las escorts con más visualizaciones únicas recientes. El equipo puede destacar avisos revisados de forma manual cuando sea necesario.</p>
         </div>
-        <div className="listing-grid">
-          {profiles.map((profile) => (
-            <article className="listing-card" key={profile.name}>
-              <Link href={`/perfil/${profile.slug}`} className={`profile-visual ${profile.tone}`}>
-                <span className="profile-initial">{profile.name.slice(0, 1)}</span>
-                <span className="featured-label">DEMO</span>
-              </Link>
-              <div className="listing-content">
-                <div className="listing-title">
-                  <div>
-                    <h3><Link href={`/perfil/${profile.slug}`}>{profile.name}</Link></h3>
-                    <p>{profile.location}</p>
-                  </div>
-                  <button type="button" aria-label={`Guardar a ${profile.name}`}>♡</button>
-                </div>
-                <div className="tag-row">
-                  {profile.tags.map((tag) => <span key={tag}>{tag}</span>)}
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-        <p className="demo-note">Perfiles ficticios de demostración: sirven para revisar las tarjetas, filtros y páginas públicas antes de recibir anuncios reales.</p>
+        {featuredProfiles.length ? <ProfileGrid profiles={featuredProfiles} emptyMessage="Aún no hay escorts destacadas." /> : <p className="demo-note">Las escorts destacadas aparecerán aquí cuando existan perfiles publicados y visualizaciones registradas.</p>}
       </section>
 
       <section className="section process-section" id="como-funciona">
@@ -218,15 +213,7 @@ export default async function Home() {
         <a className="button button-light" href="/registro">Crear cuenta</a>
       </section>
 
-      <footer id="reglas">
-        <Image src="/chile3x-logo-primary.jpeg" alt="Chile3X" width={800} height={225} />
-        <p>Chile3X es un directorio para personas adultas. No interviene en acuerdos entre usuarios y anunciantes.</p>
-        <p className="home-legal-links"><Link href="/terminos">Términos y condiciones</Link><Link href="/privacidad">Privacidad</Link><Link href="/reglas-de-publicacion">Reglas de publicación</Link></p>
-        <p className="home-legal-links"><Link href="/faq">Preguntas frecuentes</Link><Link href="/contacto">Contacto</Link></p>
-        <PortalContactLinks placement="footer" />
-        <OadBadge />
-        <span>© {new Date().getFullYear()} Chile3X · Solo mayores de 18 años</span>
-      </footer>
+      <PublicFooter />
       <FloatingWhatsappButton />
     </main>
   );

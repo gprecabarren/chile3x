@@ -1,7 +1,7 @@
-import { and, count, eq, inArray, or } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, or } from "drizzle-orm";
 import { cityDirectory, getCityBySlug, regions } from "@/app/locations";
 import { getDb } from "@/db";
-import { agencyMembers, profileDetails, profileServices, profileTags, profiles } from "@/db/schema";
+import { agencyMembers, profileDetails, profileServices, profileTags, profiles, profileViews } from "@/db/schema";
 import { getApprovedMediaForProfiles } from "@/lib/media";
 import {
   additionalServices,
@@ -263,6 +263,43 @@ export async function getCityEscortCounts() {
     // use D1, while this fallback keeps each city visibly at zero in that test.
     return new Map<string, number>();
   }
+}
+
+/**
+ * The home page promotes real, approved escort profiles. A manual admin pick
+ * is respected first, then valid unique daily views over the last 30 days.
+ * This prevents a raw reload counter from deciding the public showcase.
+ */
+export async function getFeaturedProfiles(limit = 6) {
+  let publicProfiles: PublicProfile[];
+  try {
+    publicProfiles = (await getPublicProfiles()).filter((profile) => profile.type === "escort" && !profile.isDemo);
+  } catch {
+    // The static render test has no D1 binding. In production this query is
+    // available, while the empty state remains accurate before launch.
+    return [];
+  }
+  if (!publicProfiles.length) return [];
+
+  const cutoff = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000).toLocaleDateString("en-CA", { timeZone: "America/Santiago" });
+  const viewTotals = new Map<string, number>();
+
+  try {
+    const rows = await (await getDb()).select({ profileId: profileViews.profileId, total: count() })
+      .from(profileViews)
+      .where(gte(profileViews.viewedOn, cutoff))
+      .groupBy(profileViews.profileId)
+      .orderBy(desc(count()));
+    for (const row of rows) viewTotals.set(row.profileId, Number(row.total));
+  } catch {
+    // A transient statistics failure must not hide otherwise valid profiles.
+  }
+
+  return [...publicProfiles]
+    .sort((left, right) => Number(right.isFeatured) - Number(left.isFeatured)
+      || (viewTotals.get(right.id) ?? 0) - (viewTotals.get(left.id) ?? 0)
+      || right.updatedAt.localeCompare(left.updatedAt))
+    .slice(0, limit);
 }
 
 function shuffleScore(value: string, seed: string) {

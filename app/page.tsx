@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { OadBadge } from "./directorio/_components";
 import { StoryRail } from "./historias/StoryRail";
 import { cityTotal, regions } from "./locations";
+import { getCityEscortCounts } from "@/lib/directory";
 import { getActiveStories } from "@/lib/stories";
 
 export const metadata: Metadata = {
@@ -39,7 +41,7 @@ const directorySchema = {
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const stories = await getActiveStories();
+  const [stories, cityEscortCounts] = await Promise.all([getActiveStories(), getCityEscortCounts()]);
   return (
     <main>
       <script
@@ -80,6 +82,10 @@ export default async function Home() {
             <Link className="button button-primary" href="/escorts">Explorar perfiles</Link>
             <a className="text-link" href="/registro">Quiero anunciarme <span>→</span></a>
           </div>
+          <form className="home-search" action="/escorts" method="get" role="search">
+            <label htmlFor="home-profile-search">Buscar escort por nombre</label>
+            <div><input id="home-profile-search" name="nombre" type="search" minLength={2} maxLength={80} placeholder="Ej. Tomás, Valentina..." /><button type="submit">Buscar</button></div>
+          </form>
           <div className="trust-row">
             <span><b>✓</b> Moderación manual</span>
             <span><b>✓</b> Cobertura nacional</span>
@@ -135,7 +141,7 @@ export default async function Home() {
                 </div>
               </div>
               <ul className="commune-list" aria-label={`Ciudades de ${region.title}`}>
-                {region.cities.map((city) => <li key={city}><Link href={`/escorts/${city.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}>{city}</Link></li>)}
+                {region.cities.map((city) => <li key={city}><Link href={`/escorts/${city.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}>{city} <span className="city-count">({cityEscortCounts.get(city) ?? 0})</span></Link></li>)}
               </ul>
               {region.coverageNote && <p className="region-coverage-note">{region.coverageNote}</p>}
             </section>
@@ -208,6 +214,7 @@ export default async function Home() {
         <Image src="/chile3x-logo-primary.jpeg" alt="Chile3X" width={800} height={225} />
         <p>Chile3X es un directorio para personas adultas. No interviene en acuerdos entre usuarios y anunciantes.</p>
         <p className="home-legal-links"><Link href="/terminos">Términos y condiciones</Link><Link href="/privacidad">Privacidad</Link><Link href="/reglas-de-publicacion">Reglas de publicación</Link></p>
+        <OadBadge />
         <span>© {new Date().getFullYear()} Chile3X · Solo mayores de 18 años</span>
       </footer>
     </main>

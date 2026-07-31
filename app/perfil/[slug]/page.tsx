@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DirectoryShell, ProfileCard } from "@/app/directorio/_components";
 import { StoryRail } from "@/app/historias/StoryRail";
+import { ProfileViewTracker } from "../ProfileViewTracker";
 import { getCityPath, getProfileDisplayTags, getPublicProfiles, type PublicProfile } from "@/lib/directory";
 import { getAvailabilityStatus, readAvailability, readProfilePrices } from "@/lib/profile";
 import { getActiveStories } from "@/lib/stories";
@@ -116,6 +117,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
 
   return (
     <DirectoryShell>
+      {!profile.isDemo && <ProfileViewTracker profileId={profile.id} />}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <section className="profile-page-shell">
         <div className={`profile-page-visual${coverImage ? " has-image" : ""}`}>{coverImage ? <Image className="profile-page-cover" src={coverImage.url} alt={coverImage.altText ?? `Foto de ${profile.displayName}`} fill priority unoptimized sizes="(max-width: 900px) 100vw, 45vw" /> : <span>{profile.displayName.slice(0, 1)}</span>}{profile.isDemo && <p>PERFIL DE DEMOSTRACIÓN</p>}</div>

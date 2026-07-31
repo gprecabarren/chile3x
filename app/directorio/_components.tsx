@@ -11,6 +11,7 @@ const typeLabel = {
 };
 
 const visualTone = ["rose", "violet", "blue", "amber", "teal", "plum"];
+const oadBadgeImage = "data:image/jpeg;base64,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";
 
 function toneFor(value: string) {
   return visualTone[value.split("").reduce((total, character) => total + character.charCodeAt(0), 0) % visualTone.length];
@@ -42,9 +43,18 @@ export function PublicFooter() {
   return (
     <footer className="public-footer">
       <p>Chile3X es un directorio para personas adultas. Los acuerdos ocurren directamente entre visitantes y anunciantes.</p>
-      <div><Link href="/escorts">Escorts</Link><Link href="/agencias">Agencias</Link><Link href="/arriendos">Arriendos</Link><Link href="/terminos">Términos</Link><Link href="/privacidad">Privacidad</Link><Link href="/reglas-de-publicacion">Reglas</Link></div>
+      <div className="public-footer-links"><Link href="/escorts">Escorts</Link><Link href="/agencias">Agencias</Link><Link href="/arriendos">Arriendos</Link><Link href="/terminos">Términos</Link><Link href="/privacidad">Privacidad</Link><Link href="/reglas-de-publicacion">Reglas</Link></div>
+      <OadBadge />
     </footer>
   );
+}
+
+export function OadBadge() {
+  return <a className="oad-badge" href="https://openadultdirectory.com/escorts/" target="_blank" rel="noreferrer" aria-label="Ver Chile3X en Open Adult Directory">
+    {/* La insignia se mantiene sin optimización para no generar transformaciones ni cobros de imágenes. */}
+    {/* eslint-disable-next-line @next/next/no-img-element */}
+    <img src={oadBadgeImage} alt="Listed on Open Adult Directory" />
+  </a>;
 }
 
 export function ProfileCard({ profile }: { profile: PublicProfile }) {
@@ -83,6 +93,38 @@ export function ProfileGrid({ profiles, emptyMessage = "No hay perfiles que coin
     return <section className="directory-empty"><h2>Sin resultados</h2><p>{emptyMessage}</p></section>;
   }
   return <div className="public-profile-grid">{profiles.map((profile) => <ProfileCard key={profile.id} profile={profile} />)}</div>;
+}
+
+type CityProfileSectionsProps = {
+  city: string;
+  profiles: PublicProfile[];
+};
+
+function CityProfileSection({ title, description, profiles }: { title: string; description: string; profiles: PublicProfile[] }) {
+  return <details className="city-profile-section" open>
+    <summary>
+      <span><strong>{title}</strong><small>{description}</small></span>
+      <b>{profiles.length}</b>
+    </summary>
+    <div className="city-profile-section-content">
+      {profiles.length > 0 ? <ProfileGrid profiles={profiles} /> : <p>No hay publicaciones visibles en esta sección todavía.</p>}
+    </div>
+  </details>;
+}
+
+export function CityProfileSections({ city, profiles }: CityProfileSectionsProps) {
+  const escorts = profiles.filter((profile) => profile.type === "escort");
+  const sections = [
+    ["VIP", "Escorts con categoría VIP", escorts.filter((profile) => profile.tier === "vip")],
+    ["Premium", "Escorts con categoría Premium", escorts.filter((profile) => profile.tier === "premium")],
+    ["Gold", "Escorts con categoría Gold", escorts.filter((profile) => profile.tier === "gold")],
+    ["Agencias", "Agencias visibles en la ciudad", profiles.filter((profile) => profile.type === "agency")],
+    ["Arriendos", "Arriendos visibles en la ciudad", profiles.filter((profile) => profile.type === "rental")],
+  ] as const;
+
+  return <section className="city-profile-sections" aria-label={`Publicaciones en ${city}`}>
+    {sections.map(([title, description, sectionProfiles]) => <CityProfileSection key={title} title={title} description={description} profiles={sectionProfiles} />)}
+  </section>;
 }
 
 export function SeoContent({ city, count }: { city: string; count: number }) {

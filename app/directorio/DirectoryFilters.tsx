@@ -53,6 +53,7 @@ export function DirectoryFilters({ action, filters, pinnedCity, pinnedRegion, sh
     <form className="directory-filters" action={action} method="get">
       <div className="filter-heading"><div><p className="eyebrow">FILTRO AVANZADO</p><h2>Encuentra con más precisión</h2></div><button className="button button-outline" type="submit">Aplicar filtros</button></div>
       <div className="filter-grid">
+        <label className="filter-full">Buscar por nombre<input name="nombre" type="search" minLength={2} maxLength={80} defaultValue={filters.name ?? ""} placeholder="Escribe el nombre del perfil" /></label>
         {!pinnedCity && <label>Región<select name="region" value={region} onChange={(event) => changeRegion(event.target.value)}><option value="">Todas las regiones</option>{regions.map((item) => <option key={item.id} value={item.title}>{item.shortTitle}</option>)}</select></label>}
         {!pinnedCity && <label>Ciudad<select name="ciudad" value={city} onChange={(event) => setCity(event.target.value)} disabled={Boolean(region) && !availableCities.length}><option value="">Todas las ciudades</option>{(region ? availableCities : regions.flatMap((item) => item.cities)).map((item) => <option key={item} value={item}>{item}</option>)}</select></label>}
         {showType && <label>Tipo de publicación<select name="tipo" defaultValue={filters.type ?? ""}><option value="">Todos los tipos</option>{types.map((type) => <option key={type} value={type}>{type === "escort" ? "Escorts" : type === "agency" ? "Agencias" : "Arriendos"}</option>)}</select></label>}

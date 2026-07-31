@@ -126,6 +126,19 @@ export const profileMedia = sqliteTable("profile_media", {
   createdAt,
 }, (table) => [index("profile_media_profile_idx").on(table.profileId, table.sortOrder)]);
 
+// A view is stored once per profile, browser and Chilean calendar day. The
+// browser key is an opaque first-party cookie; no IP address is retained.
+export const profileViews = sqliteTable("profile_views", {
+  id: text("id").primaryKey(),
+  profileId: text("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  viewerKey: text("viewer_key").notNull(),
+  viewedOn: text("viewed_on").notNull(),
+  viewedAt: text("viewed_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  uniqueIndex("profile_view_daily_unique").on(table.profileId, table.viewerKey, table.viewedOn),
+  index("profile_views_profile_day_idx").on(table.profileId, table.viewedOn),
+]);
+
 export const listingPeriods = sqliteTable("listing_periods", {
   id: text("id").primaryKey(),
   profileId: text("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),

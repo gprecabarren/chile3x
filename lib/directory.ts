@@ -1,4 +1,4 @@
-import { eq, inArray, or } from "drizzle-orm";
+import { and, count, eq, inArray, or } from "drizzle-orm";
 import { cityDirectory, getCityBySlug, regions } from "@/app/locations";
 import { getDb } from "@/db";
 import { agencyMembers, profileDetails, profileServices, profileTags, profiles } from "@/db/schema";
@@ -22,6 +22,7 @@ type QueryValue = string | string[] | undefined;
 export type DirectoryQuery = Record<string, QueryValue>;
 
 export type DirectoryFilters = {
+  name?: string;
   region?: string;
   city?: string;
   type?: ProfileType;
@@ -114,6 +115,7 @@ export function readDirectoryFilters(query: DirectoryQuery, pinned?: { region?: 
   const invalidCombination = requestedTags.includes("milf") && requestedTags.includes("hombres");
 
   return {
+    name: one(query, "nombre")?.slice(0, 80),
     region: regions.some((item) => item.title === region) ? region : undefined,
     city: cityDirectory.some((item) => item.city === city && (!region || item.region === region)) ? city : undefined,
     type: profileTypes.includes(typeValue as ProfileType) ? typeValue as ProfileType : undefined,
@@ -225,6 +227,7 @@ export function filterPublicProfiles(profilesToFilter: PublicProfile[], filters:
     if (filters.city && profile.city !== filters.city) return false;
     if (filters.type && profile.type !== filters.type) return false;
     if (filters.tier && profile.tier !== filters.tier) return false;
+    if (!matchesText(profile.displayName, filters.name)) return false;
     if (filters.tags.some((tag) => !profile.tags.includes(tag))) return false;
     if (!matchesText(metadataValue(profile, "nationality"), filters.nationality)) return false;
     if (!matchesText(metadataValue(profile, "gender"), filters.gender)) return false;
@@ -240,6 +243,40 @@ export function filterPublicProfiles(profilesToFilter: PublicProfile[], filters:
     if (filters.servicesAdditional.some((service) => !profile.servicesAdditional.includes(service))) return false;
     return true;
   }).sort((left, right) => Number(right.isFeatured) - Number(left.isFeatured) || right.updatedAt.localeCompare(left.updatedAt));
+}
+
+export async function getCityEscortCounts() {
+  try {
+    const db = await getDb();
+    const rows = await db.select({ city: profiles.city, total: count() })
+      .from(profiles)
+      .where(and(eq(profiles.status, "approved"), eq(profiles.type, "escort")))
+      .groupBy(profiles.city);
+
+    return new Map(rows.map((row) => [row.city, Number(row.total)]));
+  } catch {
+    // The public-home render test has no D1 binding. Production requests always
+    // use D1, while this fallback keeps each city visibly at zero in that test.
+    return new Map<string, number>();
+  }
+}
+
+function shuffleScore(value: string, seed: string) {
+  let hash = 2166136261;
+  for (const character of `${seed}:${value}`) {
+    hash ^= character.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+export function shuffleProfiles(profilesToShuffle: PublicProfile[], seed = new Date().toISOString().slice(0, 10)) {
+  return [...profilesToShuffle].sort((left, right) => shuffleScore(left.id, seed) - shuffleScore(right.id, seed));
+}
+
+export function prioritizeProfilesByCity(profilesToPrioritize: PublicProfile[], city?: string) {
+  if (!city) return profilesToPrioritize;
+  return [...profilesToPrioritize].sort((left, right) => Number(right.city === city) - Number(left.city === city));
 }
 
 export function getCityPath(city: string) {

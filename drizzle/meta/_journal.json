@@ -43,6 +43,13 @@
       "when": 1785447915521,
       "tag": "0005_wild_black_panther",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1785456021009,
+      "tag": "0006_crazy_lord_hawal",
+      "breakpoints": true
     }
   ]
 }

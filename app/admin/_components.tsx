@@ -11,6 +11,7 @@ export function AdminShell({ user, children }: { user: AdminUser; children: Reac
           <Link href="/admin">Resumen</Link>
           <Link href="/admin/perfiles">Perfiles</Link>
           <Link href="/admin/medios">Fotos</Link>
+          <Link href="/admin/cuentas">Cuentas</Link>
           <Link href="/admin/configuracion">Configuración</Link>
         </nav>
         <div className="admin-account">

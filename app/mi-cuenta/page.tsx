@@ -45,6 +45,7 @@ export default async function AccountHome({ searchParams }: { searchParams: Prom
   const db = await getDb();
   const rows = await db.select({
     id: profiles.id,
+    slug: profiles.slug,
     displayName: profiles.displayName,
     type: profiles.type,
     status: profiles.status,
@@ -87,6 +88,8 @@ export default async function AccountHome({ searchParams }: { searchParams: Prom
                   <p>{profile.type} · {profile.city}, {profile.region}</p>
                 </div>
                 <div className="owner-profile-actions">
+                  {profile.status === "approved" && <Link className="button button-public-preview" href={`/perfil/${profile.slug}`} target="_blank">Ver público</Link>}
+                  <Link className="button button-outline" href={`/mi-cuenta/${profile.id}/estadisticas`}>Estadísticas</Link>
                   <Link className="button button-outline" href={`/mi-cuenta/${profile.id}/editar`}>Editar</Link>
                   {(profile.status === "draft" || profile.status === "rejected") && (
                     <form action={`/api/perfiles/${profile.id}/enviar-revision`} method="post"><button className="button button-primary" type="submit">Enviar a revisión</button></form>

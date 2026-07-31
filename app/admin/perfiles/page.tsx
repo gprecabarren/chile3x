@@ -59,7 +59,7 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
   }).from(profiles)
     .innerJoin(users, eq(profiles.ownerId, users.id))
     .orderBy(desc(profiles.updatedAt));
-  const [[pending]] = await db.select({ total: count() }).from(profiles).where(eq(profiles.status, "pending"));
+  const [pending] = await db.select({ total: count() }).from(profiles).where(eq(profiles.status, "pending"));
 
   const q = (params.q ?? "").trim().slice(0, 100).toLocaleLowerCase("es-CL");
   const status = readFilter(params.estado, Object.keys(statusLabel));

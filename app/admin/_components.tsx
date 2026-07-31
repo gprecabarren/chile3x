@@ -32,6 +32,7 @@ export async function AdminShell({ user, children }: { user: AdminUser; children
           <Link href="/admin">Resumen</Link>
           <Link className={pendingCount > 0 ? "admin-nav-alert" : undefined} href="/admin/perfiles">Perfiles{pendingCount > 0 && <b>{pendingCount}</b>}</Link>
           <Link href="/admin/medios">Fotos</Link>
+          <Link href="/admin/resenas">Reseñas</Link>
           <Link href="/admin/cuentas">Cuentas</Link>
           <Link href="/admin/configuracion">Configuración</Link>
         </nav>

@@ -47,6 +47,7 @@ interface Env {
   DB: D1Database;
   MEDIA?: R2Bucket;
   EMAIL?: SendEmail;
+  TURNSTILE_SECRET?: string;
 }
 
 declare module "cloudflare:workers" {

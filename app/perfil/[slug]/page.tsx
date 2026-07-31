@@ -11,6 +11,8 @@ import { getActiveStories } from "@/lib/stories";
 import { getCurrentAdmin, getCurrentUser } from "@/lib/auth";
 import { getProfileEngagement } from "@/lib/profile-interactions";
 import { ProfileEngagementActions } from "../ProfileEngagementActions";
+import { ProfileReviews } from "../ProfileReviews";
+import { getApprovedReviews } from "@/lib/profile-interactions";
 
 export const dynamic = "force-dynamic";
 
@@ -117,7 +119,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
   }));
   const availability = readAvailability(profile.details.metadata.availability);
   const availabilityStatus = getAvailabilityStatus(availability);
-  const stories = await getActiveStories({ profileId: profile.id });
+  const [stories, approvedReviews] = await Promise.all([getActiveStories({ profileId: profile.id }), getApprovedReviews(profile.id)]);
   const coverImage = profile.media.find((media) => media.mediaType === "image");
   const engagement = profile.status === "approved" && !profile.isDemo
     ? await getProfileEngagement(profile.id, viewer?.id)
@@ -151,6 +153,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
       </section>}
       {profile.media.some((media) => media.mediaType === "video") && <section className="profile-media-gallery profile-video-gallery" aria-label={`Videos de ${profile.displayName}`}><div><p className="eyebrow">VIDEOS</p><h2>Videos cortos</h2><p>Material publicado después de revisión del equipo Chile3X.</p></div><div className="profile-video-grid">{profile.media.filter((media) => media.mediaType === "video").map((media, index) => <figure key={media.id}><video controls preload="metadata" playsInline aria-label={`Video ${index + 1} de ${profile.displayName}`}><source src={media.url} type={media.contentType} />Tu navegador no puede reproducir este video.</video></figure>)}</div></section>}
       <div id="historias"><StoryRail stories={stories} profileOnly /></div>
+      {profile.status === "approved" && !profile.isDemo && <ProfileReviews profileId={profile.id} profileSlug={profile.slug} signedIn={Boolean(viewer)} reviews={approvedReviews} />}
       <section className="profile-detail-layout">
         <div className="profile-detail-main">
           {(availability.length > 0 || profile.details.schedule) && <section className="profile-detail-section availability-detail-section"><div className="availability-detail-heading"><div><h2>Disponibilidad</h2>{availabilityStatus && <p className={availabilityStatus.isOpen ? "availability-open" : "availability-closed"}>{availabilityStatus.text}</p>}</div>{availabilityStatus && <span aria-hidden="true" className={availabilityStatus.isOpen ? "availability-status-dot is-open" : "availability-status-dot"} />}</div>{availability.length > 0 ? <dl className="availability-list">{availability.map((day) => <div key={day.key}><dt>{day.label}</dt><dd>{day.opensAt} – {day.closesAt}</dd></div>)}</dl> : <p>{profile.details.schedule}</p>}</section>}

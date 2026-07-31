@@ -5,9 +5,24 @@ import type { AdminUser } from "@/lib/auth";
 import { getDb } from "@/db";
 import { profiles } from "@/db/schema";
 
+async function getPendingProfilesCount() {
+  try {
+    const [pending] = await (await getDb())
+      .select({ total: count() })
+      .from(profiles)
+      .where(eq(profiles.status, "pending"));
+
+    return Number(pending?.total ?? 0);
+  } catch (error) {
+    // The notification is helpful, but a transient D1 issue must never make
+    // every administrator page unavailable.
+    console.error("Unable to load pending profile count", error);
+    return 0;
+  }
+}
+
 export async function AdminShell({ user, children }: { user: AdminUser; children: ReactNode }) {
-  const [[pending]] = await (await getDb()).select({ total: count() }).from(profiles).where(eq(profiles.status, "pending"));
-  const pendingCount = Number(pending?.total ?? 0);
+  const pendingCount = await getPendingProfilesCount();
 
   return (
     <main className="admin-root">

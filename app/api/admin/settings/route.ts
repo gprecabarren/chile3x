@@ -3,6 +3,7 @@ import { getDb } from "@/db";
 import { siteSettings } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { validateFaqEntries } from "@/lib/faq";
+import { validatePublicationRules } from "@/lib/publication-rules";
 
 const allowedSettings = {
   listing_open: new Set(["closed", "waitlist", "open"]),
@@ -48,10 +49,13 @@ export async function POST(request: NextRequest) {
   const instagram = readText(formData, "contact_instagram", 180);
   const contactEmail = readText(formData, "contact_email", 180);
   const faqEntries = readText(formData, "faq_entries", 14000);
+  const publicationRules = readText(formData, "publication_rules", 32000);
 
-  if (!siteTitle || !siteDescription || !siteUrl || googleVerification === null || analyticsId === null || whatsapp === null || telegram === null || contactEmail === null || faqEntries === null) return new Response("Configuración SEO no válida.", { status: 400 });
+  if (!siteTitle || !siteDescription || !siteUrl || googleVerification === null || analyticsId === null || whatsapp === null || telegram === null || contactEmail === null || faqEntries === null || publicationRules === null) return new Response("Configuración SEO no válida.", { status: 400 });
   const validatedFaqEntries = validateFaqEntries(faqEntries);
   if (!validatedFaqEntries) return new Response("Las preguntas frecuentes no tienen un formato válido.", { status: 400 });
+  const validatedPublicationRules = validatePublicationRules(publicationRules);
+  if (!validatedPublicationRules) return new Response("Las reglas de publicación no tienen un formato válido.", { status: 400 });
 
   try {
     if (new URL(siteUrl).protocol !== "https:") throw new Error("URL no segura");
@@ -76,6 +80,8 @@ export async function POST(request: NextRequest) {
     { key: "contact_instagram", value: instagram, updatedBy: admin.id, updatedAt },
     { key: "contact_email", value: contactEmail, updatedBy: admin.id, updatedAt },
     { key: "faq_entries", value: JSON.stringify(validatedFaqEntries), updatedBy: admin.id, updatedAt },
+    { key: "publication_rules", value: JSON.stringify(validatedPublicationRules), updatedBy: admin.id, updatedAt },
+    { key: "publication_rules_updated_at", value: updatedAt, updatedBy: admin.id, updatedAt },
   );
 
   const db = await getDb();

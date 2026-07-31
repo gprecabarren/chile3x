@@ -17,6 +17,8 @@ export const siteSettingDefaults = {
   contact_instagram: "",
   contact_email: "",
   faq_entries: "",
+  publication_rules: "",
+  publication_rules_updated_at: "2026-07-30T00:00:00.000Z",
 } as const;
 
 export type SiteSettingKey = keyof typeof siteSettingDefaults;

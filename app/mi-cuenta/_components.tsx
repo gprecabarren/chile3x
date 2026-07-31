@@ -11,6 +11,14 @@ export function AccountShell({ user, children }: { user: AccountUser; children: 
           <Link href="/mi-cuenta">Mis perfiles</Link>
           <Link href="/mi-cuenta/favoritos">Favoritos</Link>
           <Link href="/mi-cuenta/nuevo-perfil">Crear perfil</Link>
+          <details className="account-legal-links">
+            <summary>Información</summary>
+            <div>
+              <Link href="/terminos">Términos</Link>
+              <Link href="/privacidad">Privacidad</Link>
+              <Link href="/reglas-de-publicacion">Reglas de publicación</Link>
+            </div>
+          </details>
         </nav>
         <div className="account-user">
           <span>{user.displayName ?? user.email}</span>

@@ -437,6 +437,14 @@ footer span { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid #272
 
 /* Navegación y directorio en pantallas pequeñas. */
 .mobile-public-menu { display: none; }
+.account-legal-links { position: relative; }
+.account-legal-links summary { display: flex; align-items: center; gap: 5px; color: #9ea6b6; cursor: pointer; font-size: 10px; list-style: none; }
+.account-legal-links summary::-webkit-details-marker { display: none; }
+.account-legal-links summary::after { color: #ef6970; content: "+"; font-size: 14px; line-height: 1; }
+.account-legal-links[open] summary::after { content: "−"; }
+.account-legal-links > div { position: absolute; z-index: 30; top: calc(100% + 10px); left: -12px; min-width: 176px; display: grid; gap: 2px; padding: 10px 12px; border: 1px solid #3c4559; box-shadow: 0 15px 30px rgba(0,0,0,.38); background: #101521; }
+.account-legal-links > div a { padding: 7px 0; border-bottom: 1px solid #262d3d; color: #e3e6ed; font-size: 11px; }
+.account-legal-links > div a:last-child { border-bottom: 0; }
 .filter-more-options { margin-top: 18px; border: 1px solid #333b50; background: #0b0e17; }
 .filter-more-options > summary, .filter-services > summary { min-height: 54px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 14px; cursor: pointer; list-style: none; color: #f3f4f7; }
 .filter-more-options > summary::-webkit-details-marker, .filter-services > summary::-webkit-details-marker { display: none; }
@@ -484,6 +492,8 @@ footer span { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid #272
   .public-tag { padding: 4px 5px; font-size: 8px; }
 }
 @media (max-width: 620px) {
+  .account-header nav { flex-wrap: wrap; gap: 11px 15px; }
+  .account-legal-links > div { right: 0; left: auto; }
   .directory-filters > .filter-grid, .filter-more-options > .filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .directory-filters > .filter-grid .filter-full, .filter-more-options > .filter-grid .filter-full { grid-column: 1 / -1; }
   .filter-heading { margin-bottom: 18px; }

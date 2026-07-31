@@ -2,8 +2,10 @@ import { redirect } from "next/navigation";
 import { getCurrentAdmin } from "@/lib/auth";
 import { getSiteSettings } from "@/lib/site-settings";
 import { readFaqEntries } from "@/lib/faq";
+import { readPublicationRules } from "@/lib/publication-rules";
 import { AdminPageHeading, AdminShell } from "../_components";
 import { FaqSettingsEditor } from "./FaqSettingsEditor";
+import { PublicationRulesEditor } from "./PublicationRulesEditor";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +18,7 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
 
   const [values, params] = await Promise.all([getSiteSettings(), searchParams]);
   const faqEntries = readFaqEntries(values.faq_entries);
+  const publicationRules = readPublicationRules(values.publication_rules);
 
   return (
     <AdminShell user={admin}>
@@ -62,6 +65,7 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
             </div>
           </section>
           <FaqSettingsEditor initialEntries={faqEntries} />
+          <PublicationRulesEditor initialRules={publicationRules} />
           <button className="button button-primary" type="submit">Guardar configuración</button>
         </form>
       </div>

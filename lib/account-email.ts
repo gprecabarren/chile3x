@@ -27,9 +27,12 @@ export async function createAccountToken(userId: string, purpose: AccountTokenPu
   return `${tokenId}.${secret}`;
 }
 
-async function accountLink(pathname: string, token: string) {
-  const settings = await getSiteSettings();
-  const url = new URL(pathname, siteBaseUrl(settings.site_url));
+function isEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function accountLink(pathname: string, token: string, siteUrl: string) {
+  const url = new URL(pathname, siteUrl);
   url.searchParams.set("token", token);
   return url.toString();
 }
@@ -37,7 +40,9 @@ async function accountLink(pathname: string, token: string) {
 export async function sendAccountEmail({ email, displayName, purpose, token }: { email: string; displayName: string | null; purpose: AccountTokenPurpose; token: string }) {
   const { env } = await import("cloudflare:workers");
   if (!env.EMAIL) return false;
-  const link = await accountLink(purpose === "verify_email" ? "/api/auth/verificar-correo" : "/restablecer-clave", token);
+  const settings = await getSiteSettings();
+  const link = accountLink(purpose === "verify_email" ? "/api/auth/verificar-correo" : "/restablecer-clave", token, siteBaseUrl(settings.site_url));
+  const replyTo = settings.contact_email.trim().toLowerCase();
   const firstName = escapeHtml(displayName?.trim() || "");
   const isVerification = purpose === "verify_email";
   const subject = isVerification ? "Verifica tu correo en Chile3X" : "Restablece tu contraseña de Chile3X";
@@ -48,6 +53,7 @@ export async function sendAccountEmail({ email, displayName, purpose, token }: {
     await env.EMAIL.send({
       to: email,
       from: { email: "noreply@chile3x.cl", name: "Chile3X" },
+      replyTo: isEmail(replyTo) ? replyTo : undefined,
       subject,
       html,
       text,

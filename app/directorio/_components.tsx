@@ -6,6 +6,7 @@ import { readProfilePrices } from "@/lib/profile";
 import { getPortalContacts, getPortalWhatsappLink } from "@/lib/site-contacts";
 import { getSiteSettings } from "@/lib/site-settings";
 import { regions } from "@/app/locations";
+import { PublicMobileMenu } from "./PublicMobileMenu";
 
 const typeLabel = {
   escort: "Escort",
@@ -41,6 +42,7 @@ export async function PublicHeader() {
           </div>
         </nav>
         <PortalContactLinks placement="header" />
+        <PublicMobileMenu coverageHref="/#cobertura" />
         <Link className="button button-outline" href="/registro">Publicar perfil</Link>
       </header>
     </>
@@ -107,7 +109,7 @@ export function ProfileCard({ profile }: { profile: PublicProfile }) {
   return (
     <article className="public-profile-card">
       <Link href={`/perfil/${profile.slug}`} className={`public-profile-visual ${toneFor(profile.slug)}${coverImage ? " has-image" : ""}`} aria-label={`Ver perfil de ${profile.displayName}`}>
-        {coverImage ? <Image className="public-profile-image" src={coverImage.url} alt={coverImage.altText ?? `Foto de ${profile.displayName}`} fill unoptimized sizes="(max-width: 620px) 100vw, (max-width: 900px) 50vw, 33vw" /> : <span className="public-profile-initial">{profile.displayName.slice(0, 1)}</span>}
+        {coverImage ? <Image className="public-profile-image" src={coverImage.url} alt={coverImage.altText ?? `Foto de ${profile.displayName}`} fill unoptimized sizes="(max-width: 360px) 100vw, (max-width: 720px) 50vw, (max-width: 1040px) 33vw, 25vw" /> : <span className="public-profile-initial">{profile.displayName.slice(0, 1)}</span>}
         <span className="public-type-label">{typeLabel[profile.type]}</span>
         {profile.isDemo && <span className="demo-label">DEMO</span>}
         {profile.isFeatured && <span className="featured-label">DESTACADA</span>}

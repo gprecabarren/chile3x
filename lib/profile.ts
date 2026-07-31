@@ -42,6 +42,7 @@ export const additionalServices = [
   "Lencería y disfraces",
 ] as const;
 export const escortGenders = ["Femenino", "Masculino", "No binario", "Trans"] as const;
+export const nationalities = ["Chilena", "Argentina", "Boliviana", "Brasileña", "Colombiana", "Ecuatoriana", "Peruana", "Venezolana", "Otra"] as const;
 export const skinColors = ["Clara", "Trigueña", "Morena", "Oscura"] as const;
 export const hairColors = ["Rubio", "Castaño", "Negro", "Rojo", "Otro"] as const;
 export const bodyTypes = ["Delgada", "Atlética", "Curvilínea", "Grande", "Otro"] as const;

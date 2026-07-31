@@ -10,6 +10,7 @@ import {
   escortGenders,
   hairColors,
   includedServices,
+  nationalities,
   profileTags,
   profileTypes,
   readAvailability,
@@ -193,7 +194,7 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
             <label>Nombre artista (opcional)<input name="artist_name" maxLength={80} defaultValue={metadataValue(initial, "artist_name")} /></label>
             <label>Género<select name="gender" defaultValue={metadataValue(initial, "gender")}><option value="">Seleccionar</option>{escortGenders.map((item) => <option key={item}>{item}</option>)}</select></label>
             <label>Edad<input name="age" type="number" min="18" defaultValue={metadataValue(initial, "age")} /></label>
-            <label>Nacionalidad<input name="nationality" maxLength={60} defaultValue={metadataValue(initial, "nationality")} /></label>
+            <label>Nacionalidad<select name="nationality" defaultValue={metadataValue(initial, "nationality")}><option value="">Seleccionar</option>{nationalities.map((item) => <option key={item}>{item}</option>)}</select></label>
             <label>Color de piel<select name="skin_color" defaultValue={metadataValue(initial, "skin_color")}><option value="">Seleccionar</option>{skinColors.map((item) => <option key={item}>{item}</option>)}</select></label>
             <label className="language-selector">Idiomas<select name="languages" multiple size={4} defaultValue={metadataValue(initial, "languages").split(", ").filter(Boolean)}>{spokenLanguages.map((language) => <option key={language} value={language}>{language}</option>)}</select><small>Selecciona uno o más idiomas.</small></label>
             <label>Estatura (cm)<input name="height_cm" type="number" min="0" defaultValue={metadataValue(initial, "height_cm")} /></label>

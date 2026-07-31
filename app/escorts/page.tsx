@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { DirectoryFilters } from "@/app/directorio/DirectoryFilters";
 import { NearbyDirectoryButton } from "@/app/directorio/NearbyDirectoryButton";
 import { DirectoryShell, ProfileGrid } from "@/app/directorio/_components";
-import { filterPublicProfiles, getPublicProfiles, prioritizeProfilesByCity, readDirectoryFilters, shuffleProfiles, type DirectoryQuery } from "@/lib/directory";
+import { filterPublicProfiles, getPublicProfiles, prioritizeProfilesByCity, readDirectoryFilters, type DirectoryQuery } from "@/lib/directory";
 import { cityDirectory } from "@/app/locations";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { getActiveStories } from "@/lib/stories";
@@ -23,7 +23,7 @@ export default async function EscortsPage({ searchParams }: { searchParams: Prom
   const nearbyCityValue = Array.isArray(query.cerca) ? query.cerca[0] : query.cerca;
   const nearbyCity = cityDirectory.some((item) => item.city === nearbyCityValue) ? nearbyCityValue : undefined;
   const [allProfiles, settings, stories] = await Promise.all([getPublicProfiles(), getSiteSettings(), getActiveStories({ type: "escort" })]);
-  const profiles = prioritizeProfilesByCity(shuffleProfiles(filterPublicProfiles(allProfiles, filters)), nearbyCity);
+  const profiles = prioritizeProfilesByCity(filterPublicProfiles(allProfiles, filters), nearbyCity);
   const canonicalProfiles = filterPublicProfiles(allProfiles, readDirectoryFilters({}, { type: "escort" }));
   const siteUrl = siteBaseUrl(settings.site_url);
   const schema = { "@context": "https://schema.org", "@type": "CollectionPage", name: "Escorts en Chile", description: "Directorio nacional de escorts por ciudad, categoría y servicios.", url: `${siteUrl}/escorts`, inLanguage: "es-CL", mainEntity: { "@type": "ItemList", numberOfItems: canonicalProfiles.length, itemListElement: canonicalProfiles.map((profile, index) => ({ "@type": "ListItem", position: index + 1, name: profile.displayName, url: `${siteUrl}/perfil/${profile.slug}` })) } };

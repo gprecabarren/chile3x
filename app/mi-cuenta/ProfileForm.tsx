@@ -65,10 +65,20 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
   const [city, setCity] = useState(initial?.city ?? availableCities[0] ?? "");
   const savedAvailability = useMemo(() => new Map(readAvailability(metadataValue(initial, "availability")).map((item) => [item.key, item])), [initial]);
   const [enabledAvailabilityDays, setEnabledAvailabilityDays] = useState(() => new Set(savedAvailability.keys()));
+  const [selectedProfileTags, setSelectedProfileTags] = useState<string[]>(initial?.tags ?? []);
 
   function onRegionChange(nextRegion: string) {
     setRegion(nextRegion);
     setCity(regions.find((item) => item.title === nextRegion)?.cities[0] ?? "");
+  }
+
+  function toggleProfileTag(tag: string) {
+    setSelectedProfileTags((current) => {
+      if (current.includes(tag)) return current.filter((item) => item !== tag);
+      if (tag === "milf") return [...current.filter((item) => item !== "trans"), tag];
+      if (tag === "trans") return [...current.filter((item) => item !== "milf"), tag];
+      return [...current, tag];
+    });
   }
 
   return (
@@ -294,7 +304,10 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
         <fieldset>
           <legend>Etiquetas complementarias</legend>
           <div className="check-grid">
-            {profileTags.map((tag) => <label key={tag}><input name="tags" type="checkbox" value={tag} defaultChecked={initial?.tags.includes(tag)} />{tag}</label>)}
+            {profileTags.map((tag) => {
+              const blocked = (tag === "milf" && selectedProfileTags.includes("trans")) || (tag === "trans" && selectedProfileTags.includes("milf"));
+              return <label key={tag} className={blocked ? "is-blocked" : ""}><input name="tags" type="checkbox" value={tag} checked={selectedProfileTags.includes(tag)} disabled={blocked} onChange={() => toggleProfileTag(tag)} />{tag}</label>;
+            })}
           </div>
         </fieldset>
         <div className="service-columns">

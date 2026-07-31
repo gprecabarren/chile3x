@@ -48,8 +48,8 @@ export function DirectoryFilters({ action, filters, pinnedCity, pinnedRegion, sh
   function changeTag(tag: string) {
     setSelectedTags((current) => {
       if (current.includes(tag)) return current.filter((item) => item !== tag);
-      if (tag === "milf") return [...current.filter((item) => item !== "hombres"), tag];
-      if (tag === "hombres") return [...current.filter((item) => item !== "milf"), tag];
+      if (tag === "milf") return [...current.filter((item) => item !== "trans"), tag];
+      if (tag === "trans") return [...current.filter((item) => item !== "milf"), tag];
       return [...current, tag];
     });
   }
@@ -67,9 +67,9 @@ export function DirectoryFilters({ action, filters, pinnedCity, pinnedRegion, sh
       {(showEscortFilters || showServices) && <details className="filter-more-options" open={hasAdvancedFilters}>
         <summary><span>Ver más filtros</span><small>Edad, apariencia, categorías, servicios y fetiches</small></summary>
         {showEscortFilters && <><div className="filter-grid filter-grid-advanced"><label>Nacionalidad<select name="nacionalidad" defaultValue={filters.nationality ?? ""}><option value="">Cualquiera</option>{nationalities.map((item) => <option key={item}>{item}</option>)}</select></label><label>Género<select name="genero" defaultValue={filters.gender ?? ""}><option value="">Cualquiera</option><option>Femenino</option><option>Masculino</option><option>No binario</option><option>Trans</option></select></label><label>Edad mínima<input name="edad_min" type="number" inputMode="numeric" min="18" defaultValue={filters.ageMin ?? ""} /></label><label>Edad máxima<input name="edad_max" type="number" inputMode="numeric" min="18" defaultValue={filters.ageMax ?? ""} /></label><label>Color de piel<select name="piel" defaultValue={filters.skinColor ?? ""}><option value="">Cualquiera</option>{skinColors.map((item) => <option key={item}>{item}</option>)}</select></label><label>Color de pelo<select name="pelo" defaultValue={filters.hairColor ?? ""}><option value="">Cualquiera</option>{hairColors.map((item) => <option key={item}>{item}</option>)}</select></label><label>Tipo de cuerpo<select name="cuerpo" defaultValue={filters.bodyType ?? ""}><option value="">Cualquiera</option>{bodyTypes.map((item) => <option key={item}>{item}</option>)}</select></label><label>Tamaño de busto<select name="busto" defaultValue={filters.bustSize ?? ""}><option value="">Cualquiera</option>{bustSizes.map((item) => <option key={item}>{item}</option>)}</select></label><label className="filter-full">Idioma<select name="idioma" defaultValue={filters.language ?? ""}><option value="">Cualquiera</option>{spokenLanguages.map((language) => <option key={language} value={language}>{language}</option>)}</select></label></div><fieldset className="filter-fieldset"><legend>Categorías adicionales</legend><div className="filter-check-grid">{profileTags.map((tag) => {
-          const blocked = (tag === "milf" && selectedTags.includes("hombres")) || (tag === "hombres" && selectedTags.includes("milf"));
+          const blocked = (tag === "milf" && selectedTags.includes("trans")) || (tag === "trans" && selectedTags.includes("milf"));
           return <label key={tag} className={blocked ? "is-blocked" : ""}><input name="tag" type="checkbox" value={tag} checked={selectedTags.includes(tag)} disabled={blocked} onChange={() => changeTag(tag)} />{tagLabels[tag]}</label>;
-        })}</div><small>MILF y Hombres no se pueden combinar en la misma búsqueda.</small></fieldset></>}
+        })}</div><small>MILF y TRANS no se pueden combinar en la misma búsqueda.</small></fieldset></>}
         {showServices && <details className="filter-services" open={filters.servicesIncluded.length > 0 || filters.servicesAdditional.length > 0}>
           <summary><span>Filtrar por servicios</span><small>Incluidos, adicionales y fetiches</small></summary>
           <div className="filter-service-columns">

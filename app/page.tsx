@@ -11,7 +11,22 @@ import { getActiveStories } from "@/lib/stories";
 export const metadata: Metadata = {
   title: "Escorts en Chile",
   description:
-    "Encuentra escorts en Chile por ciudad, región, categoría y servicios. Chile3X es un directorio para adultos con perfiles revisados.",
+    "Encuentra escorts en Chile por ciudad, región, categoría y servicios. Chile3X es un directorio nacional para adultos con perfiles revisados.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "Escorts en Chile | Chile3X",
+    description: "Directorio nacional de escorts en Chile: explora perfiles por ciudad, categoría y servicios.",
+    url: "/",
+    locale: "es_CL",
+    type: "website",
+    images: [{ url: "/chile3x-social-card.png", width: 1734, height: 907, alt: "Chile3X, directorio nacional de escorts en Chile" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Escorts en Chile | Chile3X",
+    description: "Directorio nacional de escorts por ciudad, categoría y servicios.",
+    images: ["/chile3x-social-card.png"],
+  },
 };
 
 const features = [
@@ -107,10 +122,6 @@ export default async function Home() {
             <Link className="button button-primary" href="/escorts">Explorar perfiles</Link>
             <a className="text-link" href="/registro">Quiero anunciarme <span>→</span></a>
           </div>
-          <form className="home-search" action="/escorts" method="get" role="search">
-            <label htmlFor="home-profile-search">Buscar escort por nombre</label>
-            <div><input id="home-profile-search" name="nombre" type="search" minLength={2} maxLength={80} placeholder="Ej. Tomás, Valentina..." /><button type="submit">Buscar</button></div>
-          </form>
           <div className="trust-row">
             <span><b>✓</b> Moderación manual</span>
             <span><b>✓</b> Cobertura nacional</span>
@@ -178,6 +189,10 @@ export default async function Home() {
           ))}
         </div>
         <p className="directory-note">La disponibilidad de perfiles se activará progresivamente por territorio tras la revisión de cada publicación.</p>
+        <form className="home-search home-search-after-coverage" action="/escorts" method="get" role="search">
+          <label htmlFor="home-profile-search">Buscar escort por nombre</label>
+          <div><input id="home-profile-search" name="nombre" type="search" minLength={2} maxLength={80} placeholder="Ej. Tomás, Valentina..." /><button type="submit">Buscar</button></div>
+        </form>
       </section>
 
       <section className="section listings-section">

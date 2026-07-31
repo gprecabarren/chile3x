@@ -111,6 +111,7 @@ export function ProfileCard({ profile }: { profile: PublicProfile }) {
       <Link href={`/perfil/${profile.slug}`} className={`public-profile-visual ${toneFor(profile.slug)}${coverImage ? " has-image" : ""}`} aria-label={`Ver perfil de ${profile.displayName}`}>
         {coverImage ? <Image className="public-profile-image" src={coverImage.url} alt={coverImage.altText ?? `Foto de ${profile.displayName}`} fill unoptimized sizes="(max-width: 360px) 100vw, (max-width: 720px) 50vw, (max-width: 1040px) 33vw, 25vw" /> : <span className="public-profile-initial">{profile.displayName.slice(0, 1)}</span>}
         <span className="public-type-label">{typeLabel[profile.type]}</span>
+        <span className="public-card-badges" aria-label={`Etiquetas: ${tags.join(", ")}`}>{tags.map((tag) => <span key={tag} className={`public-card-badge ${tag.toLowerCase().replaceAll(" ", "-")}`}>{tag}</span>)}</span>
         {profile.isDemo && <span className="demo-label">DEMO</span>}
         {profile.isFeatured && <span className="featured-label">DESTACADA</span>}
       </Link>
@@ -123,7 +124,6 @@ export function ProfileCard({ profile }: { profile: PublicProfile }) {
           {profile.verificationStatus === "reviewed" && profile.type === "escort" && <span className="verified-sticker" title="Perfil comprobado">✓</span>}
         </div>
         <p className="public-profile-description">{profile.shortDescription}</p>
-        <div className="public-tag-row">{tags.map((tag) => <span key={tag} className={`public-tag ${tag.toLowerCase().replaceAll(" ", "-")}`}>{tag}</span>)}</div>
         <div className="public-profile-meta"><span>{profile.region}</span>{mainPrice && <strong>{mainPrice.label} · ${mainPrice.amount.toLocaleString("es-CL")} {mainPrice.currency}</strong>}</div>
       </div>
     </article>

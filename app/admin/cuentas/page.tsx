@@ -16,7 +16,7 @@ const notices: Record<string, string> = {
   status_error: "No fue posible modificar esa cuenta.",
 };
 
-export default async function AdminAccountsPage({ searchParams }: { searchParams: Promise<{ notice?: string }> }) {
+export default async function AdminAccountsPage({ searchParams }: { searchParams: Promise<{ notice?: string; q?: string }> }) {
   const admin = await getCurrentAdmin();
   if (!admin) redirect("/api/auth/github/start?return_to=/admin/cuentas");
 
@@ -35,6 +35,8 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
     .leftJoin(profiles, eq(profiles.ownerId, users.id))
     .groupBy(users.id)
     .orderBy(desc(users.createdAt));
+  const q = (params.q ?? "").trim().toLocaleLowerCase("es-CL");
+  const filteredRows = q ? rows.filter((user) => [user.displayName, user.firstName, user.email, user.city].some((value) => value?.toLocaleLowerCase("es-CL").includes(q))) : rows;
 
   return <AdminShell user={admin}><div className="admin-content">
     <AdminPageHeading eyebrow="CUENTAS DEL PORTAL" title="Crear cuenta de anunciante" description="Crea accesos para anunciantes verificados por tu proceso externo. La persona podrá entrar, crear perfiles y administrarlos desde su cuenta." backHref="/admin" />
@@ -47,8 +49,9 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
       <label className="admin-account-check"><input name="adult_verified" type="checkbox" value="yes" required />Confirmo que la persona fue verificada como mayor de 18 años fuera del sitio.</label>
       <button className="button button-primary" type="submit">Crear cuenta</button>
     </form></section>
-    <section className="admin-account-list"><div><p className="eyebrow">REGISTRO DE USUARIOS</p><h2>{rows.length} cuenta{rows.length === 1 ? "" : "s"}</h2></div>
-      <div className="admin-table-wrap"><table className="admin-table admin-accounts-table"><thead><tr><th>Usuario</th><th>Rol</th><th>Estado</th><th>Perfiles</th><th>Creación</th><th>Acción</th></tr></thead><tbody>{rows.map((user) => <tr key={user.id}><td><strong>{user.displayName ?? "Sin nombre"}</strong><small>{user.email}</small>{(user.firstName || user.city) && <small>{user.firstName}{user.city ? ` · ${user.city}` : ""}</small>}</td><td>{user.role === "admin" ? "Administrador" : user.role === "advertiser" ? "Anunciante" : "Visitante"}</td><td><span className={`account-status ${user.isActive ? "account-status-approved" : "account-status-rejected"}`}>{user.isActive ? "Activa" : "Deshabilitada"}</span></td><td>{user.profileCount}</td><td>{new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeZone: "America/Santiago" }).format(new Date(`${user.createdAt}Z`.replace("ZZ", "Z")))}</td><td>{user.role !== "admin" && <form action={`/api/admin/users/${user.id}/estado`} method="post"><input name="next_state" type="hidden" value={user.isActive ? "disabled" : "active"} /><button className="button button-outline" type="submit">{user.isActive ? "Deshabilitar" : "Reactivar"}</button></form>}</td></tr>)}</tbody></table></div>
+    <section className="admin-account-list"><div><p className="eyebrow">REGISTRO DE USUARIOS</p><h2>{filteredRows.length} de {rows.length} cuenta{rows.length === 1 ? "" : "s"}</h2></div>
+      <form className="admin-account-filters" method="get" role="search"><label htmlFor="account-search">Buscar por correo, nombre o ciudad<input id="account-search" name="q" type="search" defaultValue={params.q ?? ""} placeholder="Ej. nombre@correo.cl o Concepción" /></label><button className="button button-primary" type="submit">Buscar</button>{q && <a className="button button-outline" href="/admin/cuentas">Limpiar</a>}</form>
+      <div className="admin-table-wrap"><table className="admin-table admin-accounts-table"><thead><tr><th>Usuario</th><th>Rol</th><th>Estado</th><th>Perfiles</th><th>Creación</th><th>Acción</th></tr></thead><tbody>{filteredRows.map((user) => <tr key={user.id}><td><strong>{user.displayName ?? "Sin nombre"}</strong><small>{user.email}</small>{(user.firstName || user.city) && <small>{user.firstName}{user.city ? ` · ${user.city}` : ""}</small>}</td><td>{user.role === "admin" ? "Administrador" : user.role === "advertiser" ? "Anunciante" : "Visitante"}</td><td><span className={`account-status ${user.isActive ? "account-status-approved" : "account-status-rejected"}`}>{user.isActive ? "Activa" : "Deshabilitada"}</span></td><td>{user.profileCount > 0 ? <a className="admin-profile-count-link" href={`/admin/perfiles?q=${encodeURIComponent(user.email)}`}>Ver {user.profileCount} perfil{user.profileCount === 1 ? "" : "es"}</a> : "Sin perfiles"}</td><td>{new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeZone: "America/Santiago" }).format(new Date(`${user.createdAt}Z`.replace("ZZ", "Z")))}</td><td>{user.role !== "admin" && <form action={`/api/admin/users/${user.id}/estado`} method="post"><input name="next_state" type="hidden" value={user.isActive ? "disabled" : "active"} /><button className="button button-outline" type="submit">{user.isActive ? "Deshabilitar" : "Reactivar"}</button></form>}</td></tr>)}{filteredRows.length === 0 && <tr><td className="admin-no-results" colSpan={6}>No hay cuentas que coincidan con esta búsqueda.</td></tr>}</tbody></table></div>
     </section>
   </div></AdminShell>;
 }

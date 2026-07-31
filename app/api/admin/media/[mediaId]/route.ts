@@ -37,6 +37,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.redirect(new URL("/admin/medios?notice=approved", request.url), 303);
   }
 
+  if (action === "unapprove") {
+    await db.update(profileMedia).set({ moderationStatus: "pending" }).where(eq(profileMedia.id, mediaId));
+    return NextResponse.redirect(new URL("/admin/medios?notice=unapproved", request.url), 303);
+  }
+
   if (action === "delete") {
     const { env } = await import("cloudflare:workers");
     if (!env.MEDIA) return new Response("El almacenamiento no está disponible.", { status: 503 });

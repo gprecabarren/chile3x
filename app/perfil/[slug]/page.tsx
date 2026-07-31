@@ -94,11 +94,14 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
   const { slug } = await params;
   const profile = (await getPublicProfiles()).find((item) => item.slug === slug);
   if (!profile) return {};
+  const coverImage = profile.media.find((media) => media.mediaType === "image" && media.isProfilePhoto) ?? profile.media.find((media) => media.mediaType === "image");
+  const socialImage = coverImage?.url ?? "/chile3x-social-card.png";
   return {
     title: profileSeoTitle(profile),
     description: profileSeoDescription(profile),
     alternates: { canonical: `/perfil/${profile.slug}` },
-    openGraph: { title: profileSeoTitle(profile), description: profileSeoDescription(profile), url: `/perfil/${profile.slug}`, locale: "es_CL", type: "profile" },
+    openGraph: { title: profileSeoTitle(profile), description: profileSeoDescription(profile), url: `/perfil/${profile.slug}`, locale: "es_CL", type: "profile", images: [{ url: socialImage, alt: `${profile.displayName}, ${profile.city}` }] },
+    twitter: { card: "summary_large_image", title: profileSeoTitle(profile), description: profileSeoDescription(profile), images: [socialImage] },
     robots: profile.isDemo ? { index: false, follow: false } : undefined,
   };
 }
@@ -146,12 +149,13 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
       {admin && <section className="admin-profile-review-bar"><div><p>{isAdminPreview ? "VISTA DE MODERACIÓN" : "ADMINISTRACIÓN DEL AVISO"}</p><h2>{isAdminPreview ? "Este aviso no es público todavía" : "Gestiona este aviso publicado"}</h2><span>Revísalo como lo ve el público y actualiza su estado, verificación o prioridad en el inicio. Los datos sensibles no se almacenan en el portal.</span></div><form action={`/api/admin/profiles/${profile.id}/status`} method="post" className="admin-profile-review-form"><input type="hidden" name="return_to" value={`/perfil/${profile.slug}`} /><label>Publicación<select name="status" defaultValue={profile.status}><option value="draft">Borrador</option><option value="pending">En revisión</option><option value="approved">Aprobar y publicar</option><option value="paused">Pausado</option><option value="rejected">Requiere cambios</option><option value="expired">Vencido</option></select></label><label>Verificación<select name="verification_status" defaultValue={profile.verificationStatus}><option value="unreviewed">Sin revisar</option><option value="in_review">En verificación</option><option value="reviewed">Comprobado</option></select></label><label>Revisión médica<select name="health_review_status" defaultValue={profile.healthReviewStatus}><option value="not_requested">No solicitada</option><option value="in_review">En revisión</option><option value="reviewed">Revisada</option></select></label><label className="admin-featured-toggle"><input name="is_featured" type="checkbox" defaultChecked={profile.isFeatured} />Destacar en el inicio</label><button className="button button-primary" type="submit">Guardar decisión</button></form></section>}
       {admin && verificationDocuments.length > 0 && <section className="admin-private-documents"><strong>Documentos privados de verificación</strong>{verificationDocuments.map((document) => <a key={document.kind} href={`/api/perfiles/${profile.id}/documentos/${document.kind}`}>{document.kind === "identity" ? "Descargar carnet" : "Descargar examen médico"}</a>)}</section>}
       <section className="profile-page-shell">
-        <div className={`profile-page-visual${coverImage ? " has-image" : ""}`}>{coverImage ? <Image className="profile-page-cover" src={coverImage.url} alt={coverImage.altText ?? `Foto de ${profile.displayName}`} fill priority unoptimized sizes="(max-width: 900px) 100vw, 45vw" /> : <span>{profile.displayName.slice(0, 1)}</span>}{stories.length > 0 && <ProfileStoryTrigger stories={stories} variant="photo" />}{profile.isDemo && <p>PERFIL DE DEMOSTRACIÓN</p>}</div>
+        <div className={`profile-page-visual${coverImage ? " has-image" : ""}`}>{coverImage ? <Image className="profile-page-cover" src={coverImage.url} alt={coverImage.altText ?? `Foto de ${profile.displayName}`} fill priority unoptimized sizes="(max-width: 900px) 100vw, 45vw" /> : <span>{profile.displayName.slice(0, 1)}</span>}{stories.length > 0 && <span className="profile-story-photo-marker" aria-hidden="true" />}{profile.isDemo && <p>PERFIL DE DEMOSTRACIÓN</p>}</div>
         <div className="profile-page-summary">
           <p className="eyebrow">{profileTypeLabel(profile.type).toUpperCase()} · {profile.city.toUpperCase()}</p>
           <h1>{profile.displayName} {profile.verificationStatus === "reviewed" && profile.type === "escort" && <span className="verified-sticker" title="Perfil comprobado">✓</span>}</h1>
           <p className="profile-page-location"><Link href={getCityPath(profile.city)}>{location}</Link></p>
           <div className="public-tag-row">{tags.map((tag) => <span key={tag} className={`public-tag ${tag.toLowerCase().replaceAll(" ", "-")}`}>{tag}</span>)}</div>
+          {stories.length > 0 && <ProfileStoryTrigger stories={stories} />}
           <p className="profile-page-description">{profile.description}</p>
           {prices.length > 0 && <section className="profile-price-panel"><p className="eyebrow">VALORES REFERENCIALES</p><div>{prices.map((price) => <article key={price.label}><span>{price.label}</span><strong>${price.amount.toLocaleString("es-CL")} {price.currency}</strong></article>)}</div></section>}
           {profile.isDemo ? <p className="profile-demo-contact-note">Este es un perfil de demostración: sus medios de contacto están desactivados.</p> : (contactButtons.some(([, href]) => href) || socialButtons.some(([, href]) => href)) && <section className="profile-contact-box">

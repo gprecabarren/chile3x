@@ -113,7 +113,9 @@ export function readDirectoryFilters(query: DirectoryQuery, pinned?: { region?: 
   const typeValue = pinned?.type ?? one(query, "tipo");
   const region = pinned?.region ?? one(query, "region");
   const city = pinned?.city ?? one(query, "ciudad");
-  const invalidCombination = requestedTags.includes("milf") && requestedTags.includes("hombres");
+  // MILF y TRANS son categorías mutuamente excluyentes. Hombres puede
+  // coexistir con cualquiera de ellas.
+  const invalidCombination = requestedTags.includes("milf") && requestedTags.includes("trans");
 
   return {
     name: one(query, "nombre")?.slice(0, 80),
@@ -221,12 +223,27 @@ function readMetadata(value: string | null | undefined): Record<string, string> 
   }
 }
 
+const tierRank: Record<Tier, number> = { vip: 0, premium: 1, gold: 2 };
+
+/**
+ * Mantiene el privilegio de cada categoría, pero evita que un perfil quede
+ * siempre primero dentro de su propio nivel. Se calcula en cada render para
+ * que una recarga entregue una rotación justa sin mezclar VIP/Premium/Gold.
+ */
+export function orderProfilesByTierAndRandom(profilesToOrder: PublicProfile[]) {
+  const randomScores = new Map(profilesToOrder.map((profile) => [profile.id, Math.random()]));
+  return [...profilesToOrder].sort((left, right) =>
+    tierRank[left.tier] - tierRank[right.tier]
+    || (randomScores.get(left.id)! - randomScores.get(right.id)!),
+  );
+}
+
 export function filterPublicProfiles(profilesToFilter: PublicProfile[], filters: DirectoryFilters) {
   if (filters.invalidCombination) {
     return [];
   }
 
-  return profilesToFilter.filter((profile) => {
+  const filtered = profilesToFilter.filter((profile) => {
     if (filters.region && profile.region !== filters.region) return false;
     if (filters.city && profile.city !== filters.city) return false;
     if (filters.type && profile.type !== filters.type) return false;
@@ -246,7 +263,8 @@ export function filterPublicProfiles(profilesToFilter: PublicProfile[], filters:
     if (filters.servicesIncluded.some((service) => !profile.servicesIncluded.includes(service))) return false;
     if (filters.servicesAdditional.some((service) => !profile.servicesAdditional.includes(service))) return false;
     return true;
-  }).sort((left, right) => Number(right.isFeatured) - Number(left.isFeatured) || right.updatedAt.localeCompare(left.updatedAt));
+  });
+  return orderProfilesByTierAndRandom(filtered);
 }
 
 export async function getCityEscortCounts() {
@@ -317,7 +335,10 @@ export function shuffleProfiles(profilesToShuffle: PublicProfile[], seed = new D
 
 export function prioritizeProfilesByCity(profilesToPrioritize: PublicProfile[], city?: string) {
   if (!city) return profilesToPrioritize;
-  return [...profilesToPrioritize].sort((left, right) => Number(right.city === city) - Number(left.city === city));
+  return [...profilesToPrioritize].sort((left, right) =>
+    tierRank[left.tier] - tierRank[right.tier]
+    || Number(right.city === city) - Number(left.city === city),
+  );
 }
 
 export function getCityPath(city: string) {
@@ -326,7 +347,7 @@ export function getCityPath(city: string) {
 }
 
 export function getProfileDisplayTags(profile: PublicProfile) {
-  const tags = [profile.tier === "gold" ? null : profile.tier.toUpperCase(), ...profile.tags.map((tag) => tagLabels[tag as keyof typeof tagLabels] ?? tag)];
+  const tags = [profile.tier.toUpperCase(), ...profile.tags.map((tag) => tagLabels[tag as keyof typeof tagLabels] ?? tag)];
   if (profile.type === "agency") tags.push("Agencia");
   if (profile.type === "rental") tags.push("Arriendo");
   if (profile.verificationStatus === "reviewed" && profile.type === "escort") tags.push("Comprobada");

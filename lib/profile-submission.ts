@@ -203,6 +203,11 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
   if (instagramUrl) metadata.instagram_url = instagramUrl;
   if (arsmateUrl) metadata.arsmate_url = arsmateUrl;
 
+  const tags = listFromForm(formData.getAll("tags"), profileTags);
+  if (tags.includes("milf") && tags.includes("trans")) {
+    throw new ProfileValidationError("MILF y TRANS no se pueden combinar en un mismo perfil.");
+  }
+
   return {
     type: typeValue,
     tier: tierValue,
@@ -223,7 +228,7 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
       currency: formData.get("currency") === "USD" ? "USD" : "CLP",
       metadata: JSON.stringify(metadata),
     },
-    tags: listFromForm(formData.getAll("tags"), profileTags),
+    tags,
     servicesIncluded: listFromForm(formData.getAll("services_included"), includedServices),
     servicesAdditional: listFromForm(formData.getAll("services_additional"), additionalServices),
     intent,

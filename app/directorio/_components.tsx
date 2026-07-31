@@ -5,6 +5,7 @@ import { getCityPath, getProfileDisplayTags, type PublicProfile } from "@/lib/di
 import { readProfilePrices } from "@/lib/profile";
 import { getPortalContacts, getPortalWhatsappLink } from "@/lib/site-contacts";
 import { getSiteSettings } from "@/lib/site-settings";
+import { regions } from "@/app/locations";
 
 const typeLabel = {
   escort: "Escort",
@@ -166,13 +167,15 @@ export function CityProfileSections({ city, profiles }: CityProfileSectionsProps
   </section>;
 }
 
-export function SeoContent({ city, count }: { city: string; count: number }) {
+export function SeoContent({ city, region, count }: { city: string; region: string; count: number }) {
+  const nearbyCities = regions.find((item) => item.title === region)?.cities.filter((item) => item !== city) ?? [];
   return (
     <section className="seo-content">
       <p className="eyebrow">GUÍA LOCAL</p>
       <h2>Escorts en {city}: directorio local</h2>
-      <p>Explora escorts, agencias y arriendos disponibles en {city}. Cada publicación visible fue revisada antes de entrar al directorio de Chile3X.</p>
+      <p>Explora escorts en {city}, además de agencias y arriendos publicados para personas adultas. Cada aviso visible pasa por revisión antes de entrar al directorio de Chile3X.</p>
       <p>{count ? `Actualmente hay ${count} perfil${count === 1 ? "" : "es"} visible${count === 1 ? "" : "s"} en ${city}; utiliza los filtros para comparar categorías, atributos y servicios.` : `La disponibilidad de escorts en ${city} se irá ampliando con nuevas publicaciones revisadas.`}</p>
+      <nav className="seo-content-links" aria-label={`Explorar escorts cerca de ${city}`}><Link href="/escorts">Ver escorts en Chile</Link>{nearbyCities.map((nearbyCity) => <Link href={getCityPath(nearbyCity)} key={nearbyCity}>Escorts en {nearbyCity}</Link>)}</nav>
     </section>
   );
 }

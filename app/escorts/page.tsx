@@ -4,11 +4,13 @@ import { NearbyDirectoryButton } from "@/app/directorio/NearbyDirectoryButton";
 import { DirectoryShell, ProfileGrid } from "@/app/directorio/_components";
 import { filterPublicProfiles, getPublicProfiles, prioritizeProfilesByCity, readDirectoryFilters, shuffleProfiles, type DirectoryQuery } from "@/lib/directory";
 import { cityDirectory } from "@/app/locations";
+import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 
 export const metadata: Metadata = {
-  title: "Escorts en Chile | Filtros por ciudad y servicios",
-  description: "Explora escorts publicadas en Chile3X y filtra por ciudad, categoría, nacionalidad, atributos y servicios.",
+  title: "Escorts en Chile",
+  description: "Encuentra escorts en Chile por ciudad, categoría y servicios. Explora perfiles publicados y filtrados en el directorio nacional Chile3X.",
   alternates: { canonical: "/escorts" },
+  openGraph: { title: "Escorts en Chile", description: "Directorio nacional de escorts por ciudad, categoría y servicios.", url: "/escorts", locale: "es_CL", type: "website" },
 };
 
 export const dynamic = "force-dynamic";
@@ -18,10 +20,15 @@ export default async function EscortsPage({ searchParams }: { searchParams: Prom
   const filters = readDirectoryFilters(query, { type: "escort" });
   const nearbyCityValue = Array.isArray(query.cerca) ? query.cerca[0] : query.cerca;
   const nearbyCity = cityDirectory.some((item) => item.city === nearbyCityValue) ? nearbyCityValue : undefined;
-  const profiles = prioritizeProfilesByCity(shuffleProfiles(filterPublicProfiles(await getPublicProfiles(), filters)), nearbyCity);
+  const [allProfiles, settings] = await Promise.all([getPublicProfiles(), getSiteSettings()]);
+  const profiles = prioritizeProfilesByCity(shuffleProfiles(filterPublicProfiles(allProfiles, filters)), nearbyCity);
+  const canonicalProfiles = filterPublicProfiles(allProfiles, readDirectoryFilters({}, { type: "escort" }));
+  const siteUrl = siteBaseUrl(settings.site_url);
+  const schema = { "@context": "https://schema.org", "@type": "CollectionPage", name: "Escorts en Chile", description: "Directorio nacional de escorts por ciudad, categoría y servicios.", url: `${siteUrl}/escorts`, inLanguage: "es-CL", mainEntity: { "@type": "ItemList", numberOfItems: canonicalProfiles.length, itemListElement: canonicalProfiles.map((profile, index) => ({ "@type": "ListItem", position: index + 1, name: profile.displayName, url: `${siteUrl}/perfil/${profile.slug}` })) } };
 
   return (
     <DirectoryShell>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <section className="directory-hero">
         <p className="eyebrow">DIRECTORIO NACIONAL</p>
         <h1>Escorts en <em>todo Chile.</em></h1>

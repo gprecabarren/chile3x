@@ -22,6 +22,18 @@ function profileTypeLabel(type: PublicProfile["type"]) {
   return type === "escort" ? "Escort" : type === "agency" ? "Agencia" : "Arriendo";
 }
 
+function profileSeoTitle(profile: PublicProfile) {
+  if (profile.type === "escort") return `${profile.displayName}, escort en ${profile.city}`;
+  if (profile.type === "agency") return `${profile.displayName}, agencia de escorts en ${profile.city}`;
+  return `${profile.displayName}, arriendo para escorts en ${profile.city}`;
+}
+
+function profileSeoDescription(profile: PublicProfile) {
+  const summary = profile.shortDescription.trim().replace(/\s+/g, " ");
+  const type = profile.type === "escort" ? "escort" : profile.type === "agency" ? "agencia de escorts" : "arriendo para escorts";
+  return `${profile.displayName}: ${type} en ${profile.city}, ${profile.region}.${summary ? ` ${summary}` : ""}`.slice(0, 160);
+}
+
 function phoneDigits(value: string | null) {
   return (value ?? "").replace(/\D/g, "");
 }
@@ -82,9 +94,10 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
   const profile = (await getPublicProfiles()).find((item) => item.slug === slug);
   if (!profile) return {};
   return {
-    title: `${profile.displayName} en ${profile.city} | Chile3X`,
-    description: profile.shortDescription,
+    title: profileSeoTitle(profile),
+    description: profileSeoDescription(profile),
     alternates: { canonical: `/perfil/${profile.slug}` },
+    openGraph: { title: profileSeoTitle(profile), description: profileSeoDescription(profile), url: `/perfil/${profile.slug}`, locale: "es_CL", type: "profile" },
     robots: profile.isDemo ? { index: false, follow: false } : undefined,
   };
 }
@@ -101,7 +114,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
   const facts = metadataFacts(profile).filter((item): item is [string, string] => Boolean(item[1]));
   const tags = getProfileDisplayTags(profile);
   const location = [profile.comuna, profile.city, profile.region].filter(Boolean).join(", ");
-  const schema = { "@context": "https://schema.org", "@type": "Person", name: profile.displayName, description: profile.shortDescription, address: { "@type": "PostalAddress", addressLocality: profile.city, addressRegion: profile.region, addressCountry: "CL" } };
+  const schema = { "@context": "https://schema.org", "@type": profile.type === "agency" ? "Organization" : profile.type === "rental" ? "Accommodation" : "Person", name: profile.displayName, description: profileSeoDescription(profile), address: { "@type": "PostalAddress", addressLocality: profile.city, addressRegion: profile.region, addressCountry: "CL" } };
   const contacts = contactLinks(profile);
   const contactButtons = [
     ["whatsapp", contacts.whatsapp, "WhatsApp", "contact-whatsapp"],

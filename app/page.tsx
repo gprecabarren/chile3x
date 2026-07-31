@@ -76,16 +76,19 @@ export default async function Home() {
         <Link className="brand" href="/" aria-label="Chile3X, inicio">
           <Image src="/chile3x-logo-primary.jpeg" alt="Chile3X" width={800} height={225} priority unoptimized />
         </Link>
-        <nav aria-label="Navegación principal">
-          <a href="#cobertura">Regiones y ciudades</a>
-          <Link href="/escorts">Escorts</Link>
-          <Link href="/agencias">Agencias</Link>
-          <Link href="/arriendos">Arriendos</Link>
-          <Link href="/faq">FAQ</Link>
-          <Link href="/contacto">Contacto</Link>
-          <a href="#como-funciona">Cómo funciona</a>
-          <a href="#anunciate">Anúnciate</a>
-          <a href="/ingresar">Mi cuenta</a>
+        <nav className="public-navigation" aria-label="Navegación principal">
+          <div className="public-navigation-group public-navigation-directory" aria-label="Directorio">
+            <a href="#cobertura">Regiones y ciudades</a>
+            <Link href="/escorts">Escorts</Link>
+            <Link href="/agencias">Agencias</Link>
+            <Link href="/arriendos">Arriendos</Link>
+          </div>
+          <div className="public-navigation-group public-navigation-site" aria-label="Información y cuenta">
+            <Link href="/quienes-somos">Quiénes somos</Link>
+            <Link href="/faq">FAQ</Link>
+            <Link href="/contacto">Contacto</Link>
+            <a href="/ingresar">Mi cuenta</a>
+          </div>
         </nav>
         <PortalContactLinks placement="header" />
         <a className="button button-outline" href="/registro">Publicar perfil</a>

@@ -25,13 +25,19 @@ export async function PublicHeader() {
       <div className="age-strip"><span>+18</span>Este sitio está destinado exclusivamente a personas mayores de edad.</div>
       <header className="site-header public-header">
         <Link className="brand" href="/" aria-label="Chile3X, inicio"><Image src="/chile3x-logo-primary.jpeg" alt="Chile3X" width={800} height={225} priority unoptimized /></Link>
-        <nav aria-label="Navegación principal">
-          <Link href="/escorts">Escorts</Link>
-          <Link href="/agencias">Agencias</Link>
-          <Link href="/arriendos">Arriendos</Link>
-          <Link href="/faq">FAQ</Link>
-          <Link href="/contacto">Contacto</Link>
-          <Link href="/ingresar">Mi cuenta</Link>
+        <nav className="public-navigation" aria-label="Navegación principal">
+          <div className="public-navigation-group public-navigation-directory" aria-label="Directorio">
+            <Link href="/#cobertura">Regiones y ciudades</Link>
+            <Link href="/escorts">Escorts</Link>
+            <Link href="/agencias">Agencias</Link>
+            <Link href="/arriendos">Arriendos</Link>
+          </div>
+          <div className="public-navigation-group public-navigation-site" aria-label="Información y cuenta">
+            <Link href="/quienes-somos">Quiénes somos</Link>
+            <Link href="/faq">FAQ</Link>
+            <Link href="/contacto">Contacto</Link>
+            <Link href="/ingresar">Mi cuenta</Link>
+          </div>
         </nav>
         <PortalContactLinks placement="header" />
         <Link className="button button-outline" href="/registro">Publicar perfil</Link>
@@ -50,7 +56,7 @@ export async function PublicFooter() {
       <div className="public-footer-brand"><Link className="public-footer-logo" href="/" aria-label="Chile3X, inicio"><Image src="/chile3x-logo-primary.jpeg" alt="Chile3X" width={800} height={225} unoptimized /></Link><p>Directorio para adultos. Los acuerdos ocurren directamente entre visitantes y anunciantes.</p></div>
       <div className="public-footer-navigation">
         <div><strong>DIRECTORIO</strong><Link href="/escorts">Escorts</Link><Link href="/agencias">Agencias</Link><Link href="/arriendos">Arriendos</Link></div>
-        <div><strong>INFORMACIÓN</strong><Link href="/faq">Preguntas frecuentes</Link><Link href="/contacto">Contacto</Link><Link href="/terminos">Términos</Link><Link href="/privacidad">Privacidad</Link><Link href="/reglas-de-publicacion">Reglas de publicación</Link></div>
+        <div><strong>INFORMACIÓN</strong><Link href="/quienes-somos">Quiénes somos</Link><Link href="/faq">Preguntas frecuentes</Link><Link href="/contacto">Contacto</Link><Link href="/terminos">Términos</Link><Link href="/privacidad">Privacidad</Link><Link href="/reglas-de-publicacion">Reglas de publicación</Link></div>
       </div>
       <div className="public-footer-extras"><div><strong>SÍGUENOS</strong><PortalContactLinks placement="footer" /></div><OadBadge /></div>
       <div className="public-footer-bottom"><span>© {new Date().getFullYear()} Chile3X · Solo mayores de 18 años</span><span>Chile · Directorio para adultos</span></div>

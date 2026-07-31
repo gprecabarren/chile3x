@@ -1,6 +1,7 @@
 /** Cloudflare Worker entry point for the vinext-starter template. */
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
+import { purgeExpiredImageStories } from "@/lib/stories";
 
 interface Env {
   ASSETS: Fetcher;
@@ -18,6 +19,11 @@ interface Env {
 interface ExecutionContext {
   waitUntil(promise: Promise<unknown>): void;
   passThroughOnException(): void;
+}
+
+interface ScheduledController {
+  cron: string;
+  scheduledTime: number;
 }
 
 // Image security config. SVG sources with .svg extension auto-skip the
@@ -42,6 +48,11 @@ const worker = {
     }
 
     return handler.fetch(request, env, ctx);
+  },
+  async scheduled(_controller: ScheduledController, _env: Env, ctx: ExecutionContext) {
+    // Expired story images are private and short-lived. This cron removes
+    // both their R2 objects and database records even during quiet periods.
+    ctx.waitUntil(purgeExpiredImageStories());
   },
 };
 

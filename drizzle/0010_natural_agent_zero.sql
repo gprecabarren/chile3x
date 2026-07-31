@@ -1,0 +1,1 @@
+ALTER TABLE `profile_media` ADD `is_profile_photo` integer DEFAULT false NOT NULL;

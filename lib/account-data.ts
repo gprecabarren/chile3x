@@ -62,8 +62,9 @@ export function readAccountIdentity(formData: FormData): AccountIdentityInput | 
   const birthDate = asString(formData, "birth_date") || defaultBirthDate;
   const city = asString(formData, "account_city");
   const phone = asString(formData, "phone").replaceAll(/[\s()-]/g, "");
-  const firstName = asString(formData, "first_name").slice(0, 80);
-  const lastName = asString(formData, "last_name").slice(0, 80);
+  // The legacy `firstName` column stores one optional full legal name.
+  const firstName = asString(formData, "full_name").slice(0, 160);
+  const lastName = "";
 
   if ((documentType !== "rut" && documentType !== "foreign") || !validBirthDate(birthDate) || !cityDirectory.some((item) => item.city === city)) {
     return null;

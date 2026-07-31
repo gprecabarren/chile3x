@@ -9,6 +9,7 @@ export function AccountShell({ user, children }: { user: AccountUser; children: 
         <Link href="/" className="account-brand">CHILE<span>3X</span><small>MI CUENTA</small></Link>
         <nav aria-label="Navegación de cuenta">
           <Link href="/mi-cuenta">Mis perfiles</Link>
+          <Link href="/mi-cuenta/datos-personales">Mis datos</Link>
           <Link href="/mi-cuenta/favoritos">Favoritos</Link>
           <Link href="/mi-cuenta/comentarios">Comentarios</Link>
           <Link href="/mi-cuenta/nuevo-perfil">Crear perfil</Link>

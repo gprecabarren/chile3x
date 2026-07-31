@@ -1,8 +1,10 @@
-import { and, desc, eq, gt } from "drizzle-orm";
+import { and, asc, desc, eq, gt, isNotNull, lt } from "drizzle-orm";
 import { getDb } from "@/db";
 import { profileStatuses, profiles } from "@/db/schema";
+import { type StoryType } from "@/lib/story-data";
 
-export type StoryType = "text" | "image";
+export { MAX_STORY_IMAGE_BYTES, MAX_STORY_TEXT_LENGTH, storyExpiresAt, storyTimeLabel, type StoryType } from "@/lib/story-data";
+
 
 export type PublicStory = {
   id: string;
@@ -24,8 +26,26 @@ type StoryScope = {
   type?: "escort" | "agency" | "rental";
 };
 
+// A request that reads or publishes stories also cleans up expired image
+// records and their private R2 objects. Text stories remain as a small audit
+// trail, but are never returned to public visitors after their 24 hours.
+export async function purgeExpiredImageStories() {
+  const db = await getDb();
+  const expired = await db.select({ id: profileStatuses.id, r2Key: profileStatuses.r2Key }).from(profileStatuses).where(and(
+    eq(profileStatuses.storyType, "image"),
+    isNotNull(profileStatuses.r2Key),
+    lt(profileStatuses.expiresAt, new Date().toISOString()),
+  )).limit(100);
+  if (!expired.length) return;
+  const { env } = await import("cloudflare:workers");
+  if (!env.MEDIA) return;
+  await Promise.all(expired.map((story) => env.MEDIA.delete(story.r2Key!)));
+  await Promise.all(expired.map((story) => db.delete(profileStatuses).where(eq(profileStatuses.id, story.id))));
+}
+
 export async function getActiveStories(scope: StoryScope = {}) {
   try {
+    await purgeExpiredImageStories();
     const db = await getDb();
     const now = new Date().toISOString();
     const conditions = [eq(profiles.status, "approved"), gt(profileStatuses.expiresAt, now)];
@@ -48,7 +68,9 @@ export async function getActiveStories(scope: StoryScope = {}) {
     }).from(profileStatuses)
       .innerJoin(profiles, eq(profileStatuses.profileId, profiles.id))
       .where(and(...conditions))
-      .orderBy(desc(profileStatuses.createdAt))
+      // Oldest first is intentional: a viewer advances towards the latest
+      // update, matching the chronological expectation of the publisher.
+      .orderBy(asc(profileStatuses.createdAt))
       .limit(80);
 
     return rows.flatMap((row) => {
@@ -75,6 +97,7 @@ export async function getActiveStories(scope: StoryScope = {}) {
 }
 
 export async function getOwnerStories(profileId: string) {
+  await purgeExpiredImageStories();
   const now = new Date().toISOString();
   return (await (await getDb()).select({
     id: profileStatuses.id,
@@ -89,14 +112,4 @@ export async function getOwnerStories(profileId: string) {
     createdAt: string;
     expiresAt: string | null;
   }>;
-}
-
-export function storyExpiresAt() {
-  return new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-}
-
-export function storyTimeLabel(expiresAt: string, now = new Date()) {
-  const minutes = Math.max(0, Math.ceil((new Date(expiresAt).getTime() - now.getTime()) / 60_000));
-  if (minutes >= 60) return `Disponible ${Math.ceil(minutes / 60)} h más`;
-  return `Disponible ${minutes} min más`;
 }

@@ -68,7 +68,7 @@ export async function PublicFooter() {
 }
 
 export async function PortalContactLinks({ placement }: { placement: "header" | "footer" }) {
-  const contacts = getPortalContacts(await getSiteSettings()).filter((contact) => placement !== "header" || contact.key !== "whatsapp");
+  const contacts = getPortalContacts(await getSiteSettings());
   if (contacts.length === 0) return null;
   return <div className={`portal-contact-links portal-contact-links-${placement}`} aria-label="Canales oficiales de Chile3X">{contacts.map((contact) => <a key={contact.key} className={`portal-contact-link portal-contact-${contact.key}`} href={contact.href} target={contact.external ? "_blank" : undefined} rel={contact.external ? "noreferrer" : undefined} aria-label={contact.label} title={contact.label}><PortalContactIcon kind={contact.key} /><span className="sr-only">{contact.label}</span></a>)}</div>;
 }
@@ -104,7 +104,7 @@ export function ProfileCard({ profile }: { profile: PublicProfile }) {
   const age = profile.details.metadata.age;
   const subtitle = [age ? `${age} años` : null, profile.comuna ?? profile.details.referenceLocation].filter(Boolean).join(" · ");
   const mainPrice = readProfilePrices(profile.details)[0];
-  const coverImage = profile.media.find((media) => media.mediaType === "image");
+  const coverImage = profile.media.find((media) => media.mediaType === "image" && media.isProfilePhoto) ?? profile.media.find((media) => media.mediaType === "image");
 
   return (
     <article className="public-profile-card">

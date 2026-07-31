@@ -143,6 +143,7 @@ export const profileMedia = sqliteTable("profile_media", {
   contentType: text("content_type").notNull().default("image/jpeg"),
   altText: text("alt_text"),
   moderationStatus: text("moderation_status", { enum: ["pending", "approved", "rejected"] }).notNull().default("pending"),
+  isProfilePhoto: integer("is_profile_photo", { mode: "boolean" }).notNull().default(false),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt,
 }, (table) => [index("profile_media_profile_idx").on(table.profileId, table.sortOrder)]);

@@ -519,3 +519,34 @@ footer span { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid #272
   .directory-filters > .filter-grid, .filter-more-options > .filter-grid { grid-template-columns: 1fr; }
   .filter-more-options > summary small, .filter-services > summary small { max-width: 120px; }
 }
+
+/* Formularios y navegación: contraste consistente en pantallas pequeñas. */
+.auth-form input, .auth-form select, .profile-form input, .profile-form select, .profile-form textarea { color-scheme: dark; }
+.auth-form select { width: 100%; min-height: 43px; padding: 10px 38px 10px 11px; border: 1px solid #41475b; border-radius: 0; color: #f7f6f2; background-color: #10131f; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='m5 7 5 5 5-5' fill='none' stroke='%23f0848a' stroke-linecap='round' stroke-linejoin='round' stroke-width='2'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; background-size: 16px; font: inherit; font-size: 13px; appearance: none; }
+.auth-form select:focus { border-color: #ed5058; box-shadow: 0 0 0 2px rgba(237,80,88,.16); outline: none; }
+.form-grid { min-width: 0; }.form-grid > label { min-width: 0; }.form-grid-full { grid-column: 1 / -1; }
+
+.site-header { position: sticky; top: 0; z-index: 110; }
+.site-header .public-navigation-directory { border: 0; border-bottom: 1px solid #3a2631; border-radius: 0; padding: 8px 3px 9px 12px; background: transparent; box-shadow: inset 3px 0 0 var(--red); }
+.site-header .public-navigation-directory a:first-child { color: #fff; }
+
+@media (max-width: 860px) {
+  .site-header .portal-contact-links-header { display: flex; order: initial; width: auto; flex: 0 0 auto; gap: 0; }
+  .site-header .portal-contact-links-header .portal-contact-link:not(.portal-contact-whatsapp) { display: none; }
+  .site-header .portal-contact-links-header .portal-contact-whatsapp { width: 36px; height: 36px; }
+  .site-header .portal-contact-links-header .portal-contact-whatsapp svg { width: 18px; height: 18px; }
+}
+@media (max-width: 420px) {
+  .site-header { gap: 7px; }
+  .brand { width: 99px; }
+  .mobile-menu-toggle { width: 40px; padding: 9px 0; }
+  .mobile-menu-toggle > span:last-child { display: none; }
+  .site-header > .button-outline { min-height: 38px; padding-right: 9px; padding-left: 9px; font-size: 8px; }
+}
+
+.account-details-form { display: grid; gap: 17px; max-width: 760px; padding: 28px; border: 1px solid #343d51; background: #111622; }
+.account-details-form label { display: grid; gap: 7px; color: #dce0e9; font-size: 12px; font-weight: 700; }.account-details-form input, .account-details-form select { width: 100%; min-height: 43px; padding: 10px 11px; border: 1px solid #414a5e; color: #f4f5f8; background: #0d111b; color-scheme: dark; font: inherit; font-size: 13px; }.account-details-form input[readonly] { color: #a9b0bf; border-color: #32394a; background: #0a0d15; }.account-details-form small { color: #9fa8ba; font-size: 10px; font-weight: 400; }.account-details-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 6px; }
+.profile-photo-manager { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 23px; padding: 18px; border: 1px solid #624c63; border-left: 3px solid #ef5b67; background: linear-gradient(135deg, #191322, #111622); }.profile-photo-manager .eyebrow { margin-bottom: 7px; }.profile-photo-manager h3 { margin: 0 0 6px; color: #fff; font-size: 20px; }.profile-photo-manager span { color: #b5bdcd; font-size: 11px; line-height: 1.5; }.profile-photo-manager label { position: relative; overflow: hidden; flex: 0 0 auto; }.profile-photo-manager input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }.profile-photo-preview-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 210px)); gap: 11px; margin-top: 12px; }.profile-photo-preview-list article { overflow: hidden; border: 1px solid #5d4960; background: #0b0e16; }.profile-photo-preview-list .media-owner-preview { min-height: 170px; }.profile-photo-preview-list article > div:last-child { display: grid; gap: 8px; padding: 10px; }.profile-photo-preview-list small { color: #b4bdcc; font-size: 10px; }.profile-photo-preview-list button { justify-self: start; padding: 0; border: 0; color: #ff9ba1; background: transparent; font: inherit; font-size: 10px; text-decoration: underline; cursor: pointer; }
+.admin-media-section { margin-top: 32px; }.admin-media-section > div:first-child { margin-bottom: 17px; }.admin-media-section h2 { margin: 0 0 5px; color: #fff; font-size: 31px; }.admin-media-section > div:first-child > span, .admin-media-empty { color: #acb5c6; font-size: 12px; line-height: 1.5; }.admin-media-empty { margin: 0; padding: 18px; border: 1px dashed #3a4356; background: #101521; }
+.profile-story-trigger-photo { position: absolute; z-index: 4; right: 16px; bottom: 16px; min-width: 78px; min-height: 78px; display: grid; place-items: center; padding: 7px; border: 3px solid #ef5d71; border-radius: 50%; outline: 3px solid rgba(252, 175, 84, .78); color: #fff; background: rgba(10, 12, 19, .58); box-shadow: 0 0 0 7px rgba(62, 36, 91, .48), 0 7px 22px rgba(0,0,0,.38); backdrop-filter: blur(5px); font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }.profile-story-trigger-photo:hover { transform: scale(1.05); }.profile-story-trigger-photo span { padding: 6px; border-radius: 50%; background: rgba(241, 83, 98, .26); }
+@media (max-width: 620px) { .account-details-form { padding: 20px; }.account-details-actions { align-items: stretch; flex-direction: column-reverse; }.account-details-actions .button { width: 100%; }.profile-photo-manager { align-items: flex-start; flex-direction: column; }.profile-photo-manager .button { width: 100%; }.profile-story-trigger-photo { right: 13px; bottom: 13px; min-width: 67px; min-height: 67px; font-size: 8px; } }

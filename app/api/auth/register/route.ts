@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       passwordHash: await hashPassword(password),
       role: "visitor",
       firstName: identity.firstName || null,
-      lastName: identity.lastName || null,
+      lastName: null,
       documentType: identity.documentType,
       documentNumber: identity.documentNumber,
       birthDate: identity.birthDate,

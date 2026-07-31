@@ -22,6 +22,7 @@ export type ProfileMediaRecord = {
   contentType: string;
   altText: string | null;
   moderationStatus: "pending" | "approved" | "rejected";
+  isProfilePhoto: boolean;
   sortOrder: number;
   createdAt: string;
 };

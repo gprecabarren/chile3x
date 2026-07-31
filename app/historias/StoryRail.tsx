@@ -77,10 +77,10 @@ export function StoryRail({ stories, city, profileOnly = false }: StoryRailProps
   </section>;
 }
 
-export function ProfileStoryTrigger({ stories }: { stories: PublicStory[] }) {
+export function ProfileStoryTrigger({ stories, variant = "button" }: { stories: PublicStory[]; variant?: "button" | "photo" }) {
   const groups = useMemo(() => groupStories(stories), [stories]);
   const [open, setOpen] = useState(false);
   const group = groups[0];
   if (!group) return null;
-  return <><button className="profile-story-trigger" type="button" onClick={() => setOpen(true)} aria-label={`Ver historias de ${group.profileName}`}><span>Ver historias</span></button>{open && <StoryViewer group={group} startAt={0} onClose={() => setOpen(false)} />}</>;
+  return <><button className={`profile-story-trigger profile-story-trigger-${variant}`} type="button" onClick={() => setOpen(true)} aria-label={`Ver historias de ${group.profileName}`}><span>{variant === "photo" ? "Historias" : "Ver historias"}</span></button>{open && <StoryViewer group={group} startAt={0} onClose={() => setOpen(false)} />}</>;
 }

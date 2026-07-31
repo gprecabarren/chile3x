@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { profileMedia } from "@/db/schema";
@@ -25,6 +25,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const action = formData.get("action");
   const db = await getDb();
   if (action === "approve") {
+    if (record.media.isProfilePhoto) {
+      await db.update(profileMedia).set({ isProfilePhoto: false }).where(and(
+        eq(profileMedia.profileId, record.media.profileId),
+        eq(profileMedia.isProfilePhoto, true),
+        ne(profileMedia.id, mediaId),
+        eq(profileMedia.moderationStatus, "approved"),
+      ));
+    }
     await db.update(profileMedia).set({ moderationStatus: "approved" }).where(eq(profileMedia.id, mediaId));
     return NextResponse.redirect(new URL("/admin/medios?notice=approved", request.url), 303);
   }

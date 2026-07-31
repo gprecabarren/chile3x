@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     role: "advertiser",
     emailVerifiedAt: new Date().toISOString(),
     firstName: identity.firstName || null,
-    lastName: identity.lastName || null,
+    lastName: null,
     documentType: identity.documentType,
     documentNumber: identity.documentNumber,
     birthDate: identity.birthDate,

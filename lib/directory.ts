@@ -73,7 +73,7 @@ export type PublicProfile = {
   tags: string[];
   servicesIncluded: string[];
   servicesAdditional: string[];
-  media: Array<{ id: string; url: string; altText: string | null }>;
+  media: Array<{ id: string; url: string; altText: string | null; mediaType: "image" | "video"; contentType: string }>;
   agencyIds: string[];
   memberIds: string[];
 };
@@ -203,7 +203,7 @@ export async function getPublicProfiles(options: { includeUnapproved?: boolean }
     tags: tagMap.get(profile.id) ?? [],
     servicesIncluded: includedMap.get(profile.id) ?? [],
     servicesAdditional: additionalMap.get(profile.id) ?? [],
-    media: (mediaByProfile.get(profile.id) ?? []).map((media) => ({ id: media.id, url: `/media/${media.id}`, altText: media.altText })),
+    media: (mediaByProfile.get(profile.id) ?? []).map((media) => ({ id: media.id, url: `/media/${media.id}`, altText: media.altText, mediaType: media.mediaType, contentType: media.contentType })),
     agencyIds: agencyMap.get(profile.id) ?? [],
     memberIds: memberMap.get(profile.id) ?? [],
   }));

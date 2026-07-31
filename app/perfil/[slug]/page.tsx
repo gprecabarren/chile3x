@@ -8,7 +8,9 @@ import { ProfileViewTracker } from "../ProfileViewTracker";
 import { getCityPath, getProfileDisplayTags, getPublicProfiles, type PublicProfile } from "@/lib/directory";
 import { getAvailabilityStatus, readAvailability, readProfilePrices } from "@/lib/profile";
 import { getActiveStories } from "@/lib/stories";
-import { getCurrentAdmin } from "@/lib/auth";
+import { getCurrentAdmin, getCurrentUser } from "@/lib/auth";
+import { getProfileEngagement } from "@/lib/profile-interactions";
+import { ProfileEngagementActions } from "../ProfileEngagementActions";
 
 export const dynamic = "force-dynamic";
 
@@ -87,7 +89,7 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
 
 export default async function PublicProfilePage({ params }: ProfilePageProps) {
   const { slug } = await params;
-  const admin = await getCurrentAdmin();
+  const [admin, viewer] = await Promise.all([getCurrentAdmin(), getCurrentUser()]);
   const profiles = await getPublicProfiles({ includeUnapproved: Boolean(admin) });
   const profile = profiles.find((item) => item.slug === slug);
   if (!profile) notFound();
@@ -116,7 +118,10 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
   const availability = readAvailability(profile.details.metadata.availability);
   const availabilityStatus = getAvailabilityStatus(availability);
   const stories = await getActiveStories({ profileId: profile.id });
-  const coverImage = profile.media[0];
+  const coverImage = profile.media.find((media) => media.mediaType === "image");
+  const engagement = profile.status === "approved" && !profile.isDemo
+    ? await getProfileEngagement(profile.id, viewer?.id)
+    : null;
 
   return (
     <DirectoryShell>
@@ -137,12 +142,14 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
             {contactButtons.some(([, href]) => href) && <div className="profile-contact-group"><span>Contacto directo</span><div className="profile-contact-actions">{contactButtons.map(([key, href, label, className]) => href && <a key={key} className={`button ${className}`} href={href} target={key === "call" || key === "email" ? undefined : "_blank"} rel={key === "call" || key === "email" ? undefined : "noreferrer"}>{label}</a>)}</div></div>}
             {socialButtons.some(([, href]) => href) && <div className="profile-contact-group"><span>Redes y plataformas</span><div className="profile-contact-actions">{socialButtons.map(([key, href, label, className]) => href && <a key={key} className={`button ${className}`} href={href} target="_blank" rel="noreferrer">{key === "arsmate" ? <em>{label}</em> : label}</a>)}</div></div>}
           </section>}
+          {engagement && <ProfileEngagementActions profileId={profile.id} profileSlug={profile.slug} signedIn={Boolean(viewer)} initialEngagement={engagement} />}
         </div>
       </section>
-      {profile.media.length > 0 && <section className="profile-media-gallery" aria-label={`Fotos de ${profile.displayName}`}>
+      {profile.media.some((media) => media.mediaType === "image") && <section className="profile-media-gallery" aria-label={`Fotos de ${profile.displayName}`}>
         <div><p className="eyebrow">GALERÍA</p><h2>Fotos</h2><p>Material publicado después de revisión del equipo Chile3X.</p></div>
-        <div className="profile-media-grid">{profile.media.map((media, index) => <figure key={media.id}><Image src={media.url} alt={media.altText ?? `Foto ${index + 1} de ${profile.displayName}`} fill unoptimized sizes="(max-width: 620px) 100vw, (max-width: 900px) 50vw, 33vw" /></figure>)}</div>
+        <div className="profile-media-grid">{profile.media.filter((media) => media.mediaType === "image").map((media, index) => <figure key={media.id}><Image src={media.url} alt={media.altText ?? `Foto ${index + 1} de ${profile.displayName}`} fill unoptimized sizes="(max-width: 620px) 100vw, (max-width: 900px) 50vw, 33vw" /></figure>)}</div>
       </section>}
+      {profile.media.some((media) => media.mediaType === "video") && <section className="profile-media-gallery profile-video-gallery" aria-label={`Videos de ${profile.displayName}`}><div><p className="eyebrow">VIDEOS</p><h2>Videos cortos</h2><p>Material publicado después de revisión del equipo Chile3X.</p></div><div className="profile-video-grid">{profile.media.filter((media) => media.mediaType === "video").map((media, index) => <figure key={media.id}><video controls preload="metadata" playsInline aria-label={`Video ${index + 1} de ${profile.displayName}`}><source src={media.url} type={media.contentType} />Tu navegador no puede reproducir este video.</video></figure>)}</div></section>}
       <div id="historias"><StoryRail stories={stories} profileOnly /></div>
       <section className="profile-detail-layout">
         <div className="profile-detail-main">

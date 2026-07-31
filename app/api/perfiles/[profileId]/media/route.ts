@@ -5,13 +5,17 @@ import { profileMedia, profiles } from "@/db/schema";
 import { assertSameOrigin, getCurrentUser } from "@/lib/auth";
 import {
   detectImageType,
+  detectVideoType,
   extensionForImageType,
+  extensionForVideoType,
   getMediaQuotaState,
   getMediaUsage,
   getProfileMedia,
   MAX_IMAGES_PER_PROFILE,
   MAX_IMAGE_BYTES,
   MAX_PROFILE_MEDIA_BYTES,
+  MAX_VIDEOS_PER_PROFILE,
+  MAX_VIDEO_BYTES,
   MEDIA_HARD_LIMIT_BYTES,
 } from "@/lib/media";
 
@@ -29,73 +33,54 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const user = await getCurrentUser();
-  if (!user) return error("Ingresa para subir fotos.", 401);
+  if (!user) return error("Ingresa para subir archivos.", 401);
 
   const { profileId } = await params;
   const db = await getDb();
   const [profile] = await db.select({ id: profiles.id, ownerId: profiles.ownerId })
     .from(profiles).where(eq(profiles.id, profileId)).limit(1);
-  if (!profile || profile.ownerId !== user.id) return error("No tienes permiso para administrar estas fotos.", 403);
+  if (!profile || profile.ownerId !== user.id) return error("No tienes permiso para administrar este material.", 403);
 
   const formData = await request.formData();
   const entry = formData.get("file");
-  if (!entry || typeof entry === "string") return error("Selecciona una imagen para subir.", 400);
-  if (entry.size === 0 || entry.size > MAX_IMAGE_BYTES) {
-    return error("Cada imagen debe pesar menos de 5 MB.", 400);
-  }
-
-  const existing = await getProfileMedia(profileId);
-  if (existing.length >= MAX_IMAGES_PER_PROFILE) {
-    return error("Este perfil ya alcanzó el máximo de 10 imágenes.", 400);
-  }
-
-  const profileBytes = existing.reduce((total, media) => total + media.byteSize, 0);
-  if (profileBytes + entry.size > MAX_PROFILE_MEDIA_BYTES) {
-    return error("Este perfil alcanzaría su límite de 25 MB en fotos. Elige una imagen más liviana.", 400);
-  }
-
-  const usage = await getMediaUsage();
-  if (usage.bytes + entry.size > MEDIA_HARD_LIMIT_BYTES) {
-    return error("La carga está pausada para proteger la cuota gratuita de almacenamiento.", 503);
-  }
+  if (!entry || typeof entry === "string") return error("Selecciona una foto o video para subir.", 400);
 
   const data = await entry.arrayBuffer();
-  const contentType = detectImageType(data);
-  if (!contentType) {
-    return error("Solo se permiten imágenes JPEG, PNG o WebP válidas.", 400);
-  }
+  const imageType = detectImageType(data);
+  const videoType = imageType ? null : detectVideoType(data);
+  if (!imageType && !videoType) return error("Solo se permiten imágenes JPEG, PNG o WebP, y videos MP4 o WebM válidos.", 400);
+
+  const mediaType = imageType ? "image" as const : "video" as const;
+  const contentType = imageType ?? videoType!;
+  const maxBytes = mediaType === "image" ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES;
+  if (entry.size === 0 || entry.size > maxBytes) return error(mediaType === "image" ? "Cada imagen debe pesar menos de 5 MB." : "Cada video debe pesar menos de 8 MB.", 400);
+
+  const existing = await getProfileMedia(profileId);
+  const sameTypeCount = existing.filter((item) => item.mediaType === mediaType).length;
+  const sameTypeLimit = mediaType === "image" ? MAX_IMAGES_PER_PROFILE : MAX_VIDEOS_PER_PROFILE;
+  if (sameTypeCount >= sameTypeLimit) return error(mediaType === "image" ? "Este perfil ya alcanzó el máximo de 10 imágenes." : "Este perfil ya alcanzó el máximo de 3 videos.", 400);
+
+  const profileBytes = existing.reduce((total, media) => total + media.byteSize, 0);
+  if (profileBytes + entry.size > MAX_PROFILE_MEDIA_BYTES) return error("Este perfil alcanzaría el límite de 45 MB para fotos y videos. Elige un archivo más liviano.", 400);
+
+  const usage = await getMediaUsage();
+  if (usage.bytes + entry.size > MEDIA_HARD_LIMIT_BYTES) return error("La carga está pausada para proteger la cuota gratuita de almacenamiento.", 503);
 
   const { env } = await import("cloudflare:workers");
-  if (!env.MEDIA) return error("El almacenamiento de fotos aún no está disponible.", 503);
+  if (!env.MEDIA) return error("El almacenamiento de medios aún no está disponible.", 503);
 
   const id = `med_${crypto.randomUUID()}`;
-  const r2Key = `profiles/${profileId}/${id}.${extensionForImageType(contentType)}`;
+  const extension = imageType ? extensionForImageType(imageType) : extensionForVideoType(videoType!);
+  const r2Key = `profiles/${profileId}/${id}.${extension}`;
   await env.MEDIA.put(r2Key, data, {
-    httpMetadata: {
-      contentType,
-      contentDisposition: "inline",
-      cacheControl: "private, no-store",
-    },
-    customMetadata: {
-      profileId,
-      uploadedBy: user.id,
-      moderation: "pending",
-    },
+    httpMetadata: { contentType, contentDisposition: "inline", cacheControl: "private, no-store" },
+    customMetadata: { profileId, uploadedBy: user.id, moderation: "pending", mediaType },
     storageClass: "Standard",
   });
 
   const sortOrder = existing.reduce((latest, media) => Math.max(latest, media.sortOrder), -1) + 1;
   try {
-    await db.insert(profileMedia).values({
-      id,
-      profileId,
-      mediaType: "image",
-      r2Key,
-      byteSize: data.byteLength,
-      contentType,
-      moderationStatus: "pending",
-      sortOrder,
-    });
+    await db.insert(profileMedia).values({ id, profileId, mediaType, r2Key, byteSize: data.byteLength, contentType, moderationStatus: "pending", sortOrder });
   } catch (cause) {
     await env.MEDIA.delete(r2Key);
     throw cause;
@@ -103,7 +88,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const totalBytes = usage.bytes + data.byteLength;
   return NextResponse.json({
-    media: { id, url: `/media/${id}`, moderationStatus: "pending", byteSize: data.byteLength },
+    media: { id, url: `/media/${id}`, mediaType, contentType, moderationStatus: "pending", byteSize: data.byteLength },
     quota: { bytes: totalBytes, ...getMediaQuotaState(totalBytes) },
   }, { status: 201 });
 }

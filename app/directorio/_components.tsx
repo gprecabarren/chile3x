@@ -29,6 +29,8 @@ export async function PublicHeader() {
           <Link href="/escorts">Escorts</Link>
           <Link href="/agencias">Agencias</Link>
           <Link href="/arriendos">Arriendos</Link>
+          <Link href="/faq">FAQ</Link>
+          <Link href="/contacto">Contacto</Link>
           <Link href="/ingresar">Mi cuenta</Link>
         </nav>
         <PortalContactLinks placement="header" />
@@ -47,6 +49,7 @@ export async function PublicFooter() {
     <footer className="public-footer">
       <p>Chile3X es un directorio para personas adultas. Los acuerdos ocurren directamente entre visitantes y anunciantes.</p>
       <div className="public-footer-links"><Link href="/escorts">Escorts</Link><Link href="/agencias">Agencias</Link><Link href="/arriendos">Arriendos</Link><Link href="/terminos">Términos</Link><Link href="/privacidad">Privacidad</Link><Link href="/reglas-de-publicacion">Reglas</Link></div>
+      <div className="public-footer-links"><Link href="/faq">FAQ</Link><Link href="/contacto">Contacto</Link></div>
       <PortalContactLinks placement="footer" />
       <OadBadge />
     </footer>
@@ -63,7 +66,9 @@ export async function FloatingWhatsappButton() {
   const settings = await getSiteSettings();
   const href = getPortalWhatsappLink(settings.contact_whatsapp);
   if (!href) return null;
-  return <a className="floating-whatsapp" href={href} target="_blank" rel="noreferrer" aria-label="Escribir al WhatsApp de Chile3X"><span aria-hidden="true">WA</span></a>;
+  return <a className="floating-whatsapp" href={href} target="_blank" rel="noreferrer" aria-label="Escribir al WhatsApp de Chile3X" title="WhatsApp de Chile3X">
+    <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M16 3.25a12.7 12.7 0 0 0-10.92 19.2L3.7 28.75l6.5-1.7A12.73 12.73 0 1 0 16 3.25Zm0 2.45a10.27 10.27 0 1 1-5.12 19.17l-.5-.3-3.86 1.01 1.03-3.75-.33-.53A10.27 10.27 0 0 1 16 5.7Zm-4.21 4.87c-.36 0-.73.1-1 .43-.28.34-1.08 1.05-1.08 2.56 0 1.5 1.1 2.95 1.25 3.16.15.2 2.14 3.43 5.2 4.81 2.56 1.16 3.08.93 3.64.87.56-.05 1.8-.74 2.05-1.45.25-.72.25-1.33.18-1.46-.08-.13-.28-.2-.59-.36-.3-.15-1.8-.89-2.08-.99-.28-.1-.49-.15-.7.15-.2.3-.8.99-.98 1.2-.18.2-.36.23-.67.08-.3-.16-1.3-.48-2.47-1.54-.92-.83-1.54-1.85-1.72-2.16-.18-.3-.02-.47.13-.62.14-.14.31-.36.46-.54.15-.18.2-.3.3-.51.1-.2.05-.38-.02-.54-.08-.15-.7-1.7-.96-2.32-.25-.61-.5-.53-.7-.54h-.58Z" fill="currentColor" /></svg>
+  </a>;
 }
 
 export function OadBadge() {
@@ -79,7 +84,7 @@ export function ProfileCard({ profile }: { profile: PublicProfile }) {
   const age = profile.details.metadata.age;
   const subtitle = [age ? `${age} años` : null, profile.comuna ?? profile.details.referenceLocation].filter(Boolean).join(" · ");
   const mainPrice = readProfilePrices(profile.details)[0];
-  const coverImage = profile.media[0];
+  const coverImage = profile.media.find((media) => media.mediaType === "image");
 
   return (
     <article className="public-profile-card">

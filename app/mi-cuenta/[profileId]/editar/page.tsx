@@ -77,7 +77,7 @@ export default async function EditProfilePage({ params, searchParams }: { params
             servicesAdditional: services.filter((item) => item.kind === "additional").map((item) => item.service),
           }}
         />
-        <ProfileMediaManager profileId={profileId} initialMedia={media.map((item) => ({ id: item.id, url: `/media/${item.id}`, moderationStatus: item.moderationStatus, byteSize: item.byteSize }))} initialQuota={{ bytes: usage.bytes, ...getMediaQuotaState(usage.bytes) }} />
+        <ProfileMediaManager profileId={profileId} initialMedia={media.map((item) => ({ id: item.id, url: `/media/${item.id}`, mediaType: item.mediaType, contentType: item.contentType, moderationStatus: item.moderationStatus, byteSize: item.byteSize }))} initialQuota={{ bytes: usage.bytes, ...getMediaQuotaState(usage.bytes) }} />
       </div>
     </AccountShell>
   );

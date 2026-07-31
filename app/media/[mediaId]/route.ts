@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export async function GET(_request: Request, { params }: { params: Promise<{ mediaId: string }> }) {
   const { mediaId } = await params;
   const record = await findProfileMedia(mediaId);
-  if (!record || record.media.mediaType !== "image") notFound();
+  if (!record) notFound();
 
   const isPublic = record.media.moderationStatus === "approved" && record.profile.status === "approved";
   if (!isPublic) {

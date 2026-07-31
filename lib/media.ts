@@ -4,12 +4,15 @@ import { profileMedia, profiles } from "@/db/schema";
 
 export const MAX_IMAGES_PER_PROFILE = 10;
 export const MAX_IMAGE_BYTES = 5_000_000;
-export const MAX_PROFILE_MEDIA_BYTES = 25_000_000;
+export const MAX_VIDEOS_PER_PROFILE = 3;
+export const MAX_VIDEO_BYTES = 8_000_000;
+export const MAX_PROFILE_MEDIA_BYTES = 45_000_000;
 // Keep a safety margin below Cloudflare's 10 GB monthly free allowance.
 export const MEDIA_WARNING_BYTES = 7_000_000_000;
 export const MEDIA_HARD_LIMIT_BYTES = 8_000_000_000;
 
 export type SupportedImageType = "image/jpeg" | "image/png" | "image/webp";
+export type SupportedVideoType = "video/mp4" | "video/webm";
 export type ProfileMediaRecord = {
   id: string;
   profileId: string;
@@ -25,7 +28,8 @@ export type ProfileMediaRecord = {
 
 export function formatMediaBytes(bytes: number) {
   if (bytes < 1_000_000) return `${Math.max(0, Math.round(bytes / 1_000))} KB`;
-  return `${(bytes / 1_000_000).toFixed(bytes >= 1_000_000_000 ? 2 : 1)} GB`;
+  if (bytes < 1_000_000_000) return `${(bytes / 1_000_000).toFixed(1)} MB`;
+  return `${(bytes / 1_000_000_000).toFixed(2)} GB`;
 }
 
 export function getMediaQuotaState(bytes: number) {
@@ -59,6 +63,18 @@ export function extensionForImageType(contentType: SupportedImageType) {
   return contentType === "image/jpeg" ? "jpg" : contentType === "image/png" ? "png" : "webp";
 }
 
+export function detectVideoType(data: ArrayBuffer): SupportedVideoType | null {
+  const bytes = new Uint8Array(data);
+  const marker = String.fromCharCode(...bytes.slice(0, 12));
+  if (bytes.length >= 12 && marker.slice(4, 8) === "ftyp") return "video/mp4";
+  if (bytes.length >= 4 && bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3) return "video/webm";
+  return null;
+}
+
+export function extensionForVideoType(contentType: SupportedVideoType) {
+  return contentType === "video/mp4" ? "mp4" : "webm";
+}
+
 export async function getProfileMedia(profileId: string) {
   return (await (await getDb()).select().from(profileMedia)
     .where(eq(profileMedia.profileId, profileId))
@@ -80,7 +96,7 @@ export async function getApprovedMediaForProfiles(profileIds: string[]) {
     .orderBy(asc(profileMedia.sortOrder), asc(profileMedia.createdAt));
   const byProfile = new Map<string, ProfileMediaRecord[]>();
   for (const row of rows as ProfileMediaRecord[]) {
-    if (row.mediaType !== "image" || row.moderationStatus !== "approved") continue;
+    if (row.moderationStatus !== "approved") continue;
     byProfile.set(row.profileId, [...(byProfile.get(row.profileId) ?? []), row]);
   }
   return byProfile;

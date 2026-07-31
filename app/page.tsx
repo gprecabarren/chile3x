@@ -64,6 +64,8 @@ export default async function Home() {
           <Link href="/escorts">Escorts</Link>
           <Link href="/agencias">Agencias</Link>
           <Link href="/arriendos">Arriendos</Link>
+          <Link href="/faq">FAQ</Link>
+          <Link href="/contacto">Contacto</Link>
           <a href="#como-funciona">Cómo funciona</a>
           <a href="#anunciate">Anúnciate</a>
           <a href="/ingresar">Mi cuenta</a>
@@ -220,6 +222,7 @@ export default async function Home() {
         <Image src="/chile3x-logo-primary.jpeg" alt="Chile3X" width={800} height={225} />
         <p>Chile3X es un directorio para personas adultas. No interviene en acuerdos entre usuarios y anunciantes.</p>
         <p className="home-legal-links"><Link href="/terminos">Términos y condiciones</Link><Link href="/privacidad">Privacidad</Link><Link href="/reglas-de-publicacion">Reglas de publicación</Link></p>
+        <p className="home-legal-links"><Link href="/faq">Preguntas frecuentes</Link><Link href="/contacto">Contacto</Link></p>
         <PortalContactLinks placement="footer" />
         <OadBadge />
         <span>© {new Date().getFullYear()} Chile3X · Solo mayores de 18 años</span>

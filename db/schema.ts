@@ -15,6 +15,7 @@ export const users = sqliteTable("users", {
   passwordHash: text("password_hash"),
   displayName: text("display_name"),
   role: text("role", { enum: ["visitor", "advertiser", "admin"] }).notNull().default("visitor"),
+  emailVerifiedAt: text("email_verified_at"),
   createdAt,
 });
 
@@ -26,6 +27,18 @@ export const authSessions = sqliteTable("auth_sessions", {
   createdAt,
 }, (table) => [
   index("auth_sessions_user_expires_idx").on(table.userId, table.expiresAt),
+]);
+
+export const accountTokens = sqliteTable("account_tokens", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  purpose: text("purpose", { enum: ["verify_email", "reset_password"] }).notNull(),
+  tokenHash: text("token_hash").notNull().unique(),
+  expiresAt: text("expires_at").notNull(),
+  usedAt: text("used_at"),
+  createdAt,
+}, (table) => [
+  index("account_tokens_user_purpose_idx").on(table.userId, table.purpose, table.expiresAt),
 ]);
 
 export const siteSettings = sqliteTable("site_settings", {

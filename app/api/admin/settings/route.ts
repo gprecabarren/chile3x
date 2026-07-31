@@ -42,8 +42,12 @@ export async function POST(request: NextRequest) {
   const siteUrl = readText(formData, "site_url", 180);
   const googleVerification = readText(formData, "google_site_verification", 180);
   const analyticsId = readText(formData, "google_analytics_id", 20);
+  const whatsapp = readText(formData, "contact_whatsapp", 22);
+  const telegram = readText(formData, "contact_telegram", 180);
+  const instagram = readText(formData, "contact_instagram", 180);
+  const contactEmail = readText(formData, "contact_email", 180);
 
-  if (!siteTitle || !siteDescription || !siteUrl || googleVerification === null || analyticsId === null) return new Response("Configuración SEO no válida.", { status: 400 });
+  if (!siteTitle || !siteDescription || !siteUrl || googleVerification === null || analyticsId === null || whatsapp === null || telegram === null || instagram === null || contactEmail === null) return new Response("Configuración SEO no válida.", { status: 400 });
 
   try {
     if (new URL(siteUrl).protocol !== "https:") throw new Error("URL no segura");
@@ -52,6 +56,10 @@ export async function POST(request: NextRequest) {
   }
 
   if (analyticsId && !/^G-[A-Z0-9]{6,15}$/.test(analyticsId)) return new Response("El identificador de Analytics no tiene un formato válido.", { status: 400 });
+  if (whatsapp && !/^\+?[\d\s()-]{8,22}$/.test(whatsapp)) return new Response("El WhatsApp de contacto no tiene un formato válido.", { status: 400 });
+  if (telegram && !(/^@?[A-Za-z0-9_]{5,32}$/.test(telegram) || /^https:\/\/(t\.me|www\.t\.me)\/[A-Za-z0-9_]{5,32}\/?$/i.test(telegram))) return new Response("Telegram debe ser un usuario o enlace t.me válido.", { status: 400 });
+  if (instagram && !(/^@?[A-Za-z0-9._]{1,30}$/.test(instagram) || /^https:\/\/(www\.)?instagram\.com\/[A-Za-z0-9._]+\/?$/i.test(instagram))) return new Response("Instagram debe ser un usuario o enlace de Instagram válido.", { status: 400 });
+  if (contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) return new Response("El correo de contacto no tiene un formato válido.", { status: 400 });
 
   rows.push(
     { key: "site_title", value: siteTitle, updatedBy: admin.id, updatedAt },
@@ -59,6 +67,10 @@ export async function POST(request: NextRequest) {
     { key: "site_url", value: siteUrl, updatedBy: admin.id, updatedAt },
     { key: "google_site_verification", value: googleVerification, updatedBy: admin.id, updatedAt },
     { key: "google_analytics_id", value: analyticsId, updatedBy: admin.id, updatedAt },
+    { key: "contact_whatsapp", value: whatsapp, updatedBy: admin.id, updatedAt },
+    { key: "contact_telegram", value: telegram, updatedBy: admin.id, updatedAt },
+    { key: "contact_instagram", value: instagram, updatedBy: admin.id, updatedAt },
+    { key: "contact_email", value: contactEmail, updatedBy: admin.id, updatedAt },
   );
 
   const db = await getDb();

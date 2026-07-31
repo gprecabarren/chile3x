@@ -19,6 +19,7 @@ const localBindingConfig = {
           binding: d1,
           database_name: "chile3x-db",
           database_id: CHILE3X_D1_DATABASE_ID,
+          migrations_dir: "../../drizzle",
         },
       ]
     : [],
@@ -28,6 +29,13 @@ const localBindingConfig = {
     {
       binding: "MEDIA",
       bucket_name: "chile3x-media",
+    },
+  ],
+  // Transactional messages only: account verification and password recovery.
+  // The domain must be onboarded in Cloudflare Email Service before delivery.
+  send_email: [
+    {
+      name: "EMAIL",
     },
   ],
 };

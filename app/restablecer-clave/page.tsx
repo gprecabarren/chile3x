@@ -1,0 +1,7 @@
+import Link from "next/link";
+
+export default async function ResetPasswordPage({ searchParams }: { searchParams: Promise<{ token?: string; error?: string }> }) {
+  const params = await searchParams;
+  const token = (params.token ?? "").slice(0, 200);
+  return <main className="auth-page"><section className="auth-card"><Link className="auth-brand" href="/">CHILE<span>3X</span></Link><p className="eyebrow">NUEVA CONTRASEÑA</p><h1>Define una clave nueva.</h1><p>El enlace tiene una duración limitada y solo puede usarse una vez.</p>{(!token || params.error) && <p className="form-alert" role="alert">El enlace no es válido o ya venció. Solicita uno nuevo.</p>}<form action="/api/auth/restablecer-clave" method="post" className="auth-form"><input name="token" type="hidden" value={token} /><label>Nueva contraseña<input name="password" type="password" required minLength={12} autoComplete="new-password" /><small>Usa al menos 12 caracteres.</small></label><button className="button button-primary" type="submit" disabled={!token}>Actualizar contraseña</button></form><p className="auth-switch"><Link href="/recuperar-clave">Solicitar otro enlace</Link></p></section></main>;
+}

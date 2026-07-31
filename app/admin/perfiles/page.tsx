@@ -1,4 +1,5 @@
-import { desc, eq } from "drizzle-orm";
+import { count, desc, eq } from "drizzle-orm";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { profiles, users } from "@/db/schema";
@@ -22,16 +23,30 @@ const verificationLabel: Record<string, string> = {
   reviewed: "Comprobado",
 };
 
-export default async function AdminProfilesPage() {
+type AdminProfilesSearchParams = {
+  q?: string;
+  estado?: string;
+  verificacion?: string;
+  salud?: string;
+  tipo?: string;
+  ciudad?: string;
+};
+
+function readFilter(value: string | undefined, allowed: string[]) {
+  return value && allowed.includes(value) ? value : "";
+}
+
+export default async function AdminProfilesPage({ searchParams }: { searchParams: Promise<AdminProfilesSearchParams> }) {
   const admin = await getCurrentAdmin();
 
   if (!admin) {
     redirect("/api/auth/github/start?return_to=/admin/perfiles");
   }
 
-  const db = await getDb();
+  const [params, db] = await Promise.all([searchParams, getDb()]);
   const rows = await db.select({
     id: profiles.id,
+    slug: profiles.slug,
     displayName: profiles.displayName,
     type: profiles.type,
     status: profiles.status,
@@ -44,6 +59,25 @@ export default async function AdminProfilesPage() {
   }).from(profiles)
     .innerJoin(users, eq(profiles.ownerId, users.id))
     .orderBy(desc(profiles.updatedAt));
+  const [[pending]] = await db.select({ total: count() }).from(profiles).where(eq(profiles.status, "pending"));
+
+  const q = (params.q ?? "").trim().slice(0, 100).toLocaleLowerCase("es-CL");
+  const status = readFilter(params.estado, Object.keys(statusLabel));
+  const verification = readFilter(params.verificacion, Object.keys(verificationLabel));
+  const health = readFilter(params.salud, ["not_requested", "in_review", "reviewed"]);
+  const type = readFilter(params.tipo, ["escort", "agency", "rental"]);
+  const city = (params.ciudad ?? "").trim().slice(0, 80);
+  const cities = [...new Set(rows.map((row) => row.city))].sort((left, right) => left.localeCompare(right, "es-CL"));
+  const filteredRows = rows.filter((profile) => {
+    const searchable = [profile.displayName, profile.ownerEmail, profile.city, profile.region, profile.type].join(" ").toLocaleLowerCase("es-CL");
+    return (!q || searchable.includes(q))
+      && (!status || profile.status === status)
+      && (!verification || profile.verificationStatus === verification)
+      && (!health || profile.healthReviewStatus === health)
+      && (!type || profile.type === type)
+      && (!city || profile.city === city);
+  });
+  const pendingCount = Number(pending?.total ?? 0);
 
   return (
     <AdminShell user={admin}>
@@ -51,8 +85,19 @@ export default async function AdminProfilesPage() {
         <AdminPageHeading
           eyebrow="MODERACIÓN GLOBAL"
           title="Perfiles y publicaciones"
-          description="Revisa cada aviso antes de publicarlo. La verificación se realiza fuera del sitio; aquí solo registras el resultado, sin almacenar documentos sensibles."
+          description="Encuentra, filtra y revisa los avisos antes de publicarlos. Los documentos sensibles nunca se almacenan en el portal."
         />
+        {pendingCount > 0 && <section className="admin-review-alert" role="status"><div><p>REVISIÓN PENDIENTE</p><h2>{pendingCount} {pendingCount === 1 ? "aviso requiere" : "avisos requieren"} tu aprobación</h2><span>Abre cada perfil para verlo como lo verá el público y decide su publicación desde esa ficha.</span></div><Link className="button button-primary" href="/admin/perfiles?estado=pending">Revisar ahora</Link></section>}
+        <form className="admin-profile-filters" method="get" role="search">
+          <label className="admin-filter-search">Buscar por perfil, correo, ciudad o tipo<input name="q" type="search" defaultValue={q} placeholder="Ej. tomas@correo.cl o Concepción" /></label>
+          <label>Publicación<select name="estado" defaultValue={status}><option value="">Todos los estados</option>{Object.entries(statusLabel).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
+          <label>Verificación<select name="verificacion" defaultValue={verification}><option value="">Todas</option>{Object.entries(verificationLabel).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
+          <label>Revisión médica<select name="salud" defaultValue={health}><option value="">Todas</option><option value="not_requested">No solicitada</option><option value="in_review">En revisión</option><option value="reviewed">Revisada</option></select></label>
+          <label>Tipo<select name="tipo" defaultValue={type}><option value="">Todos los tipos</option><option value="escort">Escort</option><option value="agency">Agencia</option><option value="rental">Arriendo</option></select></label>
+          <label>Ciudad<select name="ciudad" defaultValue={city}><option value="">Todas las ciudades</option>{cities.map((item) => <option value={item} key={item}>{item}</option>)}</select></label>
+          <div className="admin-filter-actions"><button className="button button-primary" type="submit">Aplicar filtros</button><Link className="button button-outline" href="/admin/perfiles">Limpiar</Link></div>
+        </form>
+        <p className="admin-filter-summary">Mostrando {filteredRows.length} de {rows.length} perfil{rows.length === 1 ? "" : "es"}.</p>
         {rows.length === 0 ? (
           <section className="admin-empty">
             <h2>Aún no hay perfiles reales</h2>
@@ -62,34 +107,25 @@ export default async function AdminProfilesPage() {
           <section className="admin-table-wrap">
             <table className="admin-table admin-profile-table">
               <thead>
-                <tr><th>Perfil</th><th>Ubicación</th><th>Dueño</th><th>Publicación</th><th>Verificación</th><th>Actualizar</th></tr>
+                <tr><th>Perfil</th><th>Ubicación</th><th>Dueño</th><th>Publicación</th><th>Verificación</th><th>Revisar y actualizar</th></tr>
               </thead>
               <tbody>
-                {rows.map((profile) => (
+                {filteredRows.map((profile) => (
                   <tr key={profile.id}>
                     <td><strong>{profile.displayName}</strong><small>{profile.type}</small></td>
                     <td>{profile.city}, {profile.region}</td>
                     <td>{profile.ownerEmail}</td>
                     <td><span className={`admin-status admin-status-${profile.status}`}>{statusLabel[profile.status]}</span></td>
                     <td><span className="admin-verification">{verificationLabel[profile.verificationStatus]}<small>{profile.healthReviewStatus === "reviewed" ? "Revisión médica opcional" : ""}</small></span></td>
-                    <td>
-                      <form action={`/api/admin/profiles/${profile.id}/status`} method="post" className="admin-inline-form admin-moderation-form">
-                        <select name="status" defaultValue={profile.status} aria-label={`Estado de ${profile.displayName}`}>
-                          {Object.entries(statusLabel).map(([value, label]) => <option value={value} key={value}>{label}</option>)}
-                        </select>
-                        <select name="verification_status" defaultValue={profile.verificationStatus} aria-label={`Verificación de ${profile.displayName}`}>
-                          {Object.entries(verificationLabel).map(([value, label]) => <option value={value} key={value}>{label}</option>)}
-                        </select>
-                        <select name="health_review_status" defaultValue={profile.healthReviewStatus} aria-label={`Revisión médica de ${profile.displayName}`}>
-                          <option value="not_requested">Sin solicitud médica</option>
-                          <option value="in_review">Médico en revisión</option>
-                          <option value="reviewed">Médico revisado</option>
-                        </select>
-                        <button type="submit">Guardar</button>
-                      </form>
-                    </td>
+                    <td><div className="admin-profile-row-actions"><Link className="button button-public-preview" href={`/perfil/${profile.slug}`} target="_blank">{profile.status === "approved" ? "Ver público" : "Abrir y revisar"}</Link><form action={`/api/admin/profiles/${profile.id}/status`} method="post" className="admin-inline-form admin-moderation-form">
+                      <select name="status" defaultValue={profile.status} aria-label={`Estado de ${profile.displayName}`}>{Object.entries(statusLabel).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select>
+                      <select name="verification_status" defaultValue={profile.verificationStatus} aria-label={`Verificación de ${profile.displayName}`}>{Object.entries(verificationLabel).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select>
+                      <select name="health_review_status" defaultValue={profile.healthReviewStatus} aria-label={`Revisión médica de ${profile.displayName}`}><option value="not_requested">Sin solicitud médica</option><option value="in_review">Médico en revisión</option><option value="reviewed">Médico revisado</option></select>
+                      <button type="submit">Guardar</button>
+                    </form></div></td>
                   </tr>
                 ))}
+                {filteredRows.length === 0 && <tr><td colSpan={6} className="admin-no-results">No hay perfiles que coincidan con estos filtros.</td></tr>}
               </tbody>
             </table>
           </section>

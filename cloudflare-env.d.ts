@@ -33,9 +33,20 @@ interface R2Bucket {
   delete(keys: string | string[]): Promise<void>;
 }
 
+interface SendEmail {
+  send(message: {
+    to: string | string[];
+    from: string | { email: string; name?: string };
+    subject: string;
+    html: string;
+    text: string;
+  }): Promise<{ messageId: string }>;
+}
+
 interface Env {
   DB: D1Database;
   MEDIA?: R2Bucket;
+  EMAIL?: SendEmail;
 }
 
 declare module "cloudflare:workers" {

@@ -1,15 +1,21 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { count, eq } from "drizzle-orm";
 import type { AdminUser } from "@/lib/auth";
+import { getDb } from "@/db";
+import { profiles } from "@/db/schema";
 
-export function AdminShell({ user, children }: { user: AdminUser; children: ReactNode }) {
+export async function AdminShell({ user, children }: { user: AdminUser; children: ReactNode }) {
+  const [[pending]] = await (await getDb()).select({ total: count() }).from(profiles).where(eq(profiles.status, "pending"));
+  const pendingCount = Number(pending?.total ?? 0);
+
   return (
     <main className="admin-root">
       <header className="admin-header">
         <Link className="admin-brand" href="/admin">CHILE<span>3X</span><small>ADMIN</small></Link>
         <nav aria-label="Administración">
           <Link href="/admin">Resumen</Link>
-          <Link href="/admin/perfiles">Perfiles</Link>
+          <Link className={pendingCount > 0 ? "admin-nav-alert" : undefined} href="/admin/perfiles">Perfiles{pendingCount > 0 && <b>{pendingCount}</b>}</Link>
           <Link href="/admin/medios">Fotos</Link>
           <Link href="/admin/cuentas">Cuentas</Link>
           <Link href="/admin/configuracion">Configuración</Link>

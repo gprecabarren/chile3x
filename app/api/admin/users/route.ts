@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
     displayName,
     passwordHash: await hashPassword(password),
     role: "advertiser",
+    emailVerifiedAt: new Date().toISOString(),
   });
 
   return redirectWithNotice(request, "created");

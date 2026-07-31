@@ -12,6 +12,10 @@ export const siteSettingDefaults = {
   site_description: "Directorio para adultos con perfiles, agencias y arriendos en las 16 regiones y ciudades iniciales de Chile.",
   google_site_verification: "",
   google_analytics_id: "",
+  contact_whatsapp: "",
+  contact_telegram: "",
+  contact_instagram: "",
+  contact_email: "",
 } as const;
 
 export type SiteSettingKey = keyof typeof siteSettingDefaults;

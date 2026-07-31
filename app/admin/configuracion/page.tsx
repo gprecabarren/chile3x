@@ -20,7 +20,7 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
         <AdminPageHeading
           eyebrow="CONFIGURACIÓN DEL PORTAL"
           title="Configuración del portal"
-          description="Organiza la operación, visibilidad pública, SEO y el modo mantenimiento desde un único lugar."
+          description="Organiza la operación, visibilidad pública, SEO, contactos oficiales y el modo mantenimiento desde un único lugar."
         />
         {params.saved === "1" && <p className="admin-success" role="status">Configuración guardada.</p>}
         <form action="/api/admin/settings" method="post" className="admin-settings-form">
@@ -47,6 +47,15 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
             <div className="admin-settings-grid">
               <label>Verificación de Search Console<input name="google_site_verification" maxLength={180} defaultValue={values.google_site_verification} placeholder="Código entregado por Google" /></label>
               <label>Identificador de Google Analytics<input name="google_analytics_id" maxLength={20} defaultValue={values.google_analytics_id} placeholder="G-XXXXXXXXXX" /></label>
+            </div>
+          </section>
+          <section className="admin-settings-section">
+            <div><p>CONTACTO Y REDES</p><h2>Canales oficiales de Chile3X</h2><span>Solo se mostrarán en el header, footer y botón flotante los canales que completes aquí. Estos contactos son del portal, no de cada aviso.</span></div>
+            <div className="admin-settings-grid">
+              <label>WhatsApp del portal<input name="contact_whatsapp" inputMode="tel" maxLength={22} defaultValue={values.contact_whatsapp} placeholder="56912345678" /></label>
+              <label>Telegram<input name="contact_telegram" maxLength={180} defaultValue={values.contact_telegram} placeholder="@chile3x o https://t.me/chile3x" /></label>
+              <label>Instagram<input name="contact_instagram" maxLength={180} defaultValue={values.contact_instagram} placeholder="@chile3x o enlace de Instagram" /></label>
+              <label>Correo del portal<input name="contact_email" type="email" maxLength={180} defaultValue={values.contact_email} placeholder="contacto@chile3x.cl" /></label>
             </div>
           </section>
           <button className="button button-primary" type="submit">Guardar configuración</button>

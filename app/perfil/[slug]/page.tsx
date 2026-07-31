@@ -8,6 +8,7 @@ import { ProfileViewTracker } from "../ProfileViewTracker";
 import { getCityPath, getProfileDisplayTags, getPublicProfiles, type PublicProfile } from "@/lib/directory";
 import { getAvailabilityStatus, readAvailability, readProfilePrices } from "@/lib/profile";
 import { getActiveStories } from "@/lib/stories";
+import { getCurrentAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -86,9 +87,11 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
 
 export default async function PublicProfilePage({ params }: ProfilePageProps) {
   const { slug } = await params;
-  const profiles = await getPublicProfiles();
+  const admin = await getCurrentAdmin();
+  const profiles = await getPublicProfiles({ includeUnapproved: Boolean(admin) });
   const profile = profiles.find((item) => item.slug === slug);
   if (!profile) notFound();
+  const isAdminPreview = Boolean(admin) && profile.status !== "approved";
   const agencyProfiles = profiles.filter((item) => profile.agencyIds.includes(item.id));
   const agencyMembers = profiles.filter((item) => profile.memberIds.includes(item.id));
   const facts = metadataFacts(profile).filter((item): item is [string, string] => Boolean(item[1]));
@@ -117,8 +120,9 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
 
   return (
     <DirectoryShell>
-      {!profile.isDemo && <ProfileViewTracker profileId={profile.id} />}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+      {profile.status === "approved" && !profile.isDemo && <ProfileViewTracker profileId={profile.id} />}
+      {profile.status === "approved" && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />}
+      {isAdminPreview && <section className="admin-profile-review-bar"><div><p>VISTA DE MODERACIÓN</p><h2>Este aviso no es público todavía</h2><span>Revísalo como si fuera público y define aquí su estado. Los datos de verificación se registran sin almacenar documentos sensibles.</span></div><form action={`/api/admin/profiles/${profile.id}/status`} method="post" className="admin-profile-review-form"><input type="hidden" name="return_to" value={`/perfil/${profile.slug}`} /><label>Publicación<select name="status" defaultValue={profile.status}><option value="draft">Borrador</option><option value="pending">En revisión</option><option value="approved">Aprobar y publicar</option><option value="paused">Pausado</option><option value="rejected">Requiere cambios</option><option value="expired">Vencido</option></select></label><label>Verificación<select name="verification_status" defaultValue={profile.verificationStatus}><option value="unreviewed">Sin revisar</option><option value="in_review">En verificación</option><option value="reviewed">Comprobado</option></select></label><label>Revisión médica<select name="health_review_status" defaultValue={profile.healthReviewStatus}><option value="not_requested">No solicitada</option><option value="in_review">En revisión</option><option value="reviewed">Revisada</option></select></label><button className="button button-primary" type="submit">Guardar decisión</button></form></section>}
       <section className="profile-page-shell">
         <div className={`profile-page-visual${coverImage ? " has-image" : ""}`}>{coverImage ? <Image className="profile-page-cover" src={coverImage.url} alt={coverImage.altText ?? `Foto de ${profile.displayName}`} fill priority unoptimized sizes="(max-width: 900px) 100vw, 45vw" /> : <span>{profile.displayName.slice(0, 1)}</span>}{profile.isDemo && <p>PERFIL DE DEMOSTRACIÓN</p>}</div>
         <div className="profile-page-summary">

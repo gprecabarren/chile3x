@@ -8,6 +8,16 @@ const allowedStatuses = new Set(["draft", "pending", "approved", "paused", "reje
 const allowedVerification = new Set(["unreviewed", "in_review", "reviewed"]);
 const allowedHealthReview = new Set(["not_requested", "in_review", "reviewed"]);
 
+function safeProfileReturnTo(value: FormDataEntryValue | null) {
+  if (typeof value !== "string" || !value.startsWith("/perfil/") || value.startsWith("//")) return null;
+  try {
+    const url = new URL(value, "https://chile3x.cl");
+    return url.pathname.startsWith("/perfil/") && url.pathname.length > "/perfil/".length ? url.pathname : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest, { params }: { params: Promise<{ profileId: string }> }) {
   try {
     assertSameOrigin(request);
@@ -36,5 +46,5 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     updatedAt: new Date().toISOString(),
   }).where(eq(profiles.id, profileId));
 
-  return NextResponse.redirect(new URL("/admin/perfiles", request.url), 303);
+  return NextResponse.redirect(new URL(safeProfileReturnTo(formData.get("return_to")) ?? "/admin/perfiles", request.url), 303);
 }

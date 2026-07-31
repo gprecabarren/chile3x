@@ -46,6 +46,7 @@ export type PublicProfile = {
   id: string;
   slug: string;
   type: ProfileType;
+  status: "draft" | "pending" | "approved" | "paused" | "rejected" | "expired";
   displayName: string;
   shortDescription: string;
   description: string;
@@ -136,11 +137,13 @@ export function readDirectoryFilters(query: DirectoryQuery, pinned?: { region?: 
   };
 }
 
-export async function getPublicProfiles() {
+export async function getPublicProfiles(options: { includeUnapproved?: boolean } = {}) {
   const db = await getDb();
-  const rows = await db.select({ profile: profiles, details: profileDetails }).from(profiles)
-    .leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id))
-    .where(eq(profiles.status, "approved"));
+  const baseQuery = db.select({ profile: profiles, details: profileDetails }).from(profiles)
+    .leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id));
+  const rows = options.includeUnapproved
+    ? await baseQuery
+    : await baseQuery.where(eq(profiles.status, "approved"));
   const ids = rows.map((row) => row.profile.id);
 
   if (!ids.length) {
@@ -173,6 +176,7 @@ export async function getPublicProfiles() {
     id: profile.id,
     slug: profile.slug,
     type: profile.type,
+    status: profile.status,
     displayName: profile.displayName,
     shortDescription: profile.shortDescription,
     description: profile.description,

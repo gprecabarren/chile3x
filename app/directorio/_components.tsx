@@ -3,6 +3,8 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import { getCityPath, getProfileDisplayTags, type PublicProfile } from "@/lib/directory";
 import { readProfilePrices } from "@/lib/profile";
+import { getPortalContacts, getPortalWhatsappLink } from "@/lib/site-contacts";
+import { getSiteSettings } from "@/lib/site-settings";
 
 const typeLabel = {
   escort: "Escort",
@@ -17,7 +19,7 @@ function toneFor(value: string) {
   return visualTone[value.split("").reduce((total, character) => total + character.charCodeAt(0), 0) % visualTone.length];
 }
 
-export function PublicHeader() {
+export async function PublicHeader() {
   return (
     <>
       <div className="age-strip"><span>+18</span>Este sitio está destinado exclusivamente a personas mayores de edad.</div>
@@ -29,6 +31,7 @@ export function PublicHeader() {
           <Link href="/arriendos">Arriendos</Link>
           <Link href="/ingresar">Mi cuenta</Link>
         </nav>
+        <PortalContactLinks placement="header" />
         <Link className="button button-outline" href="/registro">Publicar perfil</Link>
       </header>
     </>
@@ -36,17 +39,31 @@ export function PublicHeader() {
 }
 
 export function DirectoryShell({ children }: { children: ReactNode }) {
-  return <main className="directory-root"><PublicHeader />{children}<PublicFooter /></main>;
+  return <main className="directory-root"><PublicHeader />{children}<PublicFooter /><FloatingWhatsappButton /></main>;
 }
 
-export function PublicFooter() {
+export async function PublicFooter() {
   return (
     <footer className="public-footer">
       <p>Chile3X es un directorio para personas adultas. Los acuerdos ocurren directamente entre visitantes y anunciantes.</p>
       <div className="public-footer-links"><Link href="/escorts">Escorts</Link><Link href="/agencias">Agencias</Link><Link href="/arriendos">Arriendos</Link><Link href="/terminos">Términos</Link><Link href="/privacidad">Privacidad</Link><Link href="/reglas-de-publicacion">Reglas</Link></div>
+      <PortalContactLinks placement="footer" />
       <OadBadge />
     </footer>
   );
+}
+
+export async function PortalContactLinks({ placement }: { placement: "header" | "footer" }) {
+  const contacts = getPortalContacts(await getSiteSettings());
+  if (contacts.length === 0) return null;
+  return <div className={`portal-contact-links portal-contact-links-${placement}`} aria-label="Canales oficiales de Chile3X">{contacts.map((contact) => <a key={contact.key} className={`portal-contact-link portal-contact-${contact.key}`} href={contact.href} target={contact.external ? "_blank" : undefined} rel={contact.external ? "noreferrer" : undefined}>{contact.label}</a>)}</div>;
+}
+
+export async function FloatingWhatsappButton() {
+  const settings = await getSiteSettings();
+  const href = getPortalWhatsappLink(settings.contact_whatsapp);
+  if (!href) return null;
+  return <a className="floating-whatsapp" href={href} target="_blank" rel="noreferrer" aria-label="Escribir al WhatsApp de Chile3X"><span aria-hidden="true">WA</span></a>;
 }
 
 export function OadBadge() {

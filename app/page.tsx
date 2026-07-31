@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { OadBadge } from "./directorio/_components";
+import { FloatingWhatsappButton, OadBadge, PortalContactLinks } from "./directorio/_components";
 import { StoryRail } from "./historias/StoryRail";
 import { cityTotal, regions } from "./locations";
 import { getCityEscortCounts } from "@/lib/directory";
@@ -68,6 +68,7 @@ export default async function Home() {
           <a href="#anunciate">Anúnciate</a>
           <a href="/ingresar">Mi cuenta</a>
         </nav>
+        <PortalContactLinks placement="header" />
         <a className="button button-outline" href="/registro">Publicar perfil</a>
       </header>
 
@@ -106,6 +107,11 @@ export default async function Home() {
           <p className="hero-card-note">Desde Arica y Parinacota hasta Magallanes y la Antártica Chilena.</p>
           <a className="button button-primary card-action" href="#cobertura">Explorar cobertura</a>
         </aside>
+      </section>
+
+      <section className="home-photo-banner" aria-label="Chile3X, directorio adulto en Chile">
+        <Image src="/chile3x-hero-banner.jpg" alt="" fill sizes="100vw" />
+        <div><p className="eyebrow">CHILE3X</p><h2>Un espacio adulto, <em>privado y claro.</em></h2><p>Encuentra publicaciones revisadas y contacta directamente a cada anunciante.</p><Link className="button button-outline" href="/escorts">Ver directorio nacional</Link></div>
       </section>
 
       <StoryRail stories={stories} />
@@ -214,9 +220,11 @@ export default async function Home() {
         <Image src="/chile3x-logo-primary.jpeg" alt="Chile3X" width={800} height={225} />
         <p>Chile3X es un directorio para personas adultas. No interviene en acuerdos entre usuarios y anunciantes.</p>
         <p className="home-legal-links"><Link href="/terminos">Términos y condiciones</Link><Link href="/privacidad">Privacidad</Link><Link href="/reglas-de-publicacion">Reglas de publicación</Link></p>
+        <PortalContactLinks placement="footer" />
         <OadBadge />
         <span>© {new Date().getFullYear()} Chile3X · Solo mayores de 18 años</span>
       </footer>
+      <FloatingWhatsappButton />
     </main>
   );
 }

@@ -89,6 +89,14 @@ export async function sendAccountEmail({ email, displayName, purpose, token }: {
   const action = isVerification ? "Verificar correo" : "Restablecer contraseña";
   const text = `${firstName ? `Hola ${displayName},\n\n` : ""}${isVerification ? "Confirma tu correo para activar tu cuenta." : "Recibimos una solicitud para restablecer tu contraseña."}\n\n${action}: ${link}\n\n${isVerification ? "Este enlace vence en 24 horas." : "Este enlace vence en 1 hora. Si no solicitaste este cambio, ignora este correo."}`;
   const html = `<main style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px;color:#171922"><p style="color:#d4151d;font-size:12px;font-weight:700;letter-spacing:.08em">CHILE3X</p><h1 style="font-family:Georgia,serif;font-weight:400">${isVerification ? "Verifica tu correo" : "Restablece tu contraseña"}</h1>${firstName ? `<p>Hola ${firstName},</p>` : ""}<p>${isVerification ? "Confirma tu correo para activar tu cuenta y proteger tus publicaciones." : "Recibimos una solicitud para restablecer tu contraseña."}</p><p style="margin:28px 0"><a href="${link}" style="display:inline-block;padding:13px 18px;background:#d4151d;color:#fff;text-decoration:none;font-weight:700">${action}</a></p><p style="font-size:13px;color:#5d6272">${isVerification ? "El enlace vence en 24 horas." : "El enlace vence en 1 hora. Si no solicitaste este cambio, puedes ignorar este correo."}</p></main>`;
+  const message: AccountEmailMessage = { email, subject, text, html, replyTo: isEmail(replyTo) ? replyTo : undefined };
+
+  // The Google relay is deliberately first: Cloudflare's free Email Service
+  // can accept a call without being able to deliver to arbitrary recipients.
+  // For the beta, a successful Gmail relay is the definitive delivery path.
+  if (await sendWithAppsScript(message, env.GOOGLE_APPS_SCRIPT_URL, env.GOOGLE_APPS_SCRIPT_SECRET)) return true;
+
+  if (!env.EMAIL) return false;
   try {
     await env.EMAIL.send({
       to: email,
@@ -100,14 +108,8 @@ export async function sendAccountEmail({ email, displayName, purpose, token }: {
     });
     return true;
   } catch (error) {
-    // A configured Email binding still fails on the Free plan for arbitrary
-    // recipients. Continue with the Google relay when it is configured.
     console.error("Cloudflare account email delivery failed", { purpose, error });
-    return sendWithAppsScript(
-      { email, subject, text, html, replyTo: isEmail(replyTo) ? replyTo : undefined },
-      env.GOOGLE_APPS_SCRIPT_URL,
-      env.GOOGLE_APPS_SCRIPT_SECRET,
-    );
+    return false;
   }
 }
 

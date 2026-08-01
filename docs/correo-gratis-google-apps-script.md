@@ -42,6 +42,12 @@ function doPost(event) {
   }
 }
 
+// Run this function once from the Apps Script editor before deploying.
+// It opens the authorization screen for the Gmail sending permission.
+function autorizarCorreo() {
+  return MailApp.getRemainingDailyQuota();
+}
+
 function isEmail(value) {
   return typeof value === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
@@ -60,7 +66,17 @@ En el editor de Apps Script abre **Project Settings** > **Script properties** y 
 - Propiedad: `CHILE3X_RELAY_SECRET`
 - Valor: una contrasena aleatoria larga (minimo 32 caracteres). No la publiques ni la pegues en el codigo.
 
-## 3. Publicar como aplicacion web
+## 3. Autorizar el envio
+
+En el selector de funciones superior elige `autorizarCorreo` y presiona **Run**.
+Acepta los permisos con la misma cuenta `chile3x.site@gmail.com`. Si aparece el
+aviso de app sin verificar, abre **Advanced** y continua solo porque el script
+es propio y acabas de pegar su codigo.
+
+Usa una ventana de incognito con solo esa cuenta Google iniciada. Apps Script
+no maneja bien tener varias cuentas abiertas al mismo tiempo durante este paso.
+
+## 4. Publicar como aplicacion web
 
 En **Deploy** > **New deployment** selecciona **Web app**:
 
@@ -69,7 +85,7 @@ En **Deploy** > **New deployment** selecciona **Web app**:
 
 Autoriza los permisos de `MailApp`, despliega y copia la URL que termina en `/exec`.
 
-## 4. Conectar Chile3X sin exponer secretos
+## 5. Conectar Chile3X sin exponer secretos
 
 En Cloudflare abre **Workers & Pages** > **chile3x** > **Settings** > **Variables and Secrets** y agrega, como secretos de produccion:
 
@@ -79,7 +95,7 @@ En Cloudflare abre **Workers & Pages** > **chile3x** > **Settings** > **Variable
 Guarda ambos y vuelve a desplegar el Worker si Cloudflare lo solicita. No se debe
 configurar ninguno en el navegador, D1 ni GitHub.
 
-## 5. Prueba segura
+## 6. Prueba segura
 
 Solicita recuperar la contrasena de una cuenta propia. El correo llegara desde
 `chile3x.site@gmail.com` con nombre **Chile3X**. Si no aparece, revisa Spam y el panel

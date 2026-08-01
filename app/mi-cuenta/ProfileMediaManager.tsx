@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useRef, useState } from "react";
+import { watermarkImage } from "./watermark-image";
 
 type MediaItem = {
   id: string;
@@ -21,41 +22,6 @@ function formatBytes(bytes: number) {
   if (bytes < 1_000_000) return `${Math.round(bytes / 1_000)} KB`;
   if (bytes < 1_000_000_000) return `${(bytes / 1_000_000).toFixed(1)} MB`;
   return `${(bytes / 1_000_000_000).toFixed(2)} GB`;
-}
-
-function loadImage(url: string) {
-  return new Promise<HTMLImageElement>((resolve, reject) => {
-    const image = new window.Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error("No se pudo preparar la marca de agua."));
-    image.src = url;
-  });
-}
-
-async function watermarkImage(file: File) {
-  const sourceUrl = URL.createObjectURL(file);
-  try {
-    const [source, logo] = await Promise.all([loadImage(sourceUrl), loadImage("/chile3x-logo-primary.jpeg")]);
-    const scale = Math.min(1, 2200 / Math.max(source.naturalWidth, source.naturalHeight));
-    const width = Math.max(1, Math.round(source.naturalWidth * scale));
-    const height = Math.max(1, Math.round(source.naturalHeight * scale));
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const context = canvas.getContext("2d");
-    if (!context) throw new Error("Tu navegador no pudo preparar la imagen.");
-    context.drawImage(source, 0, 0, width, height);
-    const logoWidth = Math.min(width * 0.48, Math.max(120, logo.naturalWidth * scale));
-    const logoHeight = logoWidth * (logo.naturalHeight / logo.naturalWidth);
-    context.globalAlpha = 0.23;
-    context.globalCompositeOperation = "screen";
-    context.drawImage(logo, (width - logoWidth) / 2, (height - logoHeight) / 2, logoWidth, logoHeight);
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
-    if (!blob) throw new Error("No se pudo generar la imagen con marca de agua.");
-    return new File([blob], `${file.name.replace(/\.[^.]+$/, "")}-chile3x.jpg`, { type: "image/jpeg" });
-  } finally {
-    URL.revokeObjectURL(sourceUrl);
-  }
 }
 
 function videoDuration(file: File) {
@@ -93,7 +59,7 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota }: {
           const duration = await videoDuration(originalFile);
           if (!Number.isFinite(duration) || duration > 10.05) throw new Error("Los videos deben durar 10 segundos o menos.");
         }
-        const file = image ? await watermarkImage(originalFile) : originalFile;
+        const file = image ? await watermarkImage(originalFile, { maxBytes: 4_900_000, maxDimension: 2200 }) : originalFile;
         const data = new FormData();
         data.set("file", file);
         data.set("upload_kind", uploadKind);
@@ -103,7 +69,7 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota }: {
         setMedia((current) => [...current, payload.media!]);
         setQuota(payload.quota);
       }
-      setNotice(uploadKind === "profile_photo" ? "La nueva foto de perfil quedó enviada a revisión. La foto vigente se mantiene hasta que el equipo apruebe el reemplazo." : "El material quedó enviado a revisión. Las fotos llevan una marca de agua Chile3X y nada será público hasta que lo apruebe el equipo.");
+      setNotice(uploadKind === "profile_photo" ? "La nueva foto de perfil quedó enviada a revisión. Lleva una marca Chile3X sutil y la foto vigente se mantiene hasta que el equipo apruebe el reemplazo." : "El material quedó enviado a revisión. Las fotos llevan una marca Chile3X sutil y nada será público hasta que lo apruebe el equipo.");
     } catch (cause) {
       setNotice(cause instanceof Error ? cause.message : "No se pudo subir el archivo.");
     } finally {
@@ -138,7 +104,7 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota }: {
   const canUpload = !isBusy && quota.level !== "blocked" && (images.length < 10 || videos.length < 3);
 
   return <section className="profile-media-manager">
-    <div className="profile-media-manager-heading"><div><p className="eyebrow">GALERÍA PRIVADA</p><h2>Fotos y videos</h2><span>Hasta 10 fotos con marca de agua y 3 videos de máximo 10 segundos. Cada archivo se revisa antes de publicarse.</span></div><strong>{images.length}/10 fotos<br />{videos.length}/3 videos</strong></div>
+    <div className="profile-media-manager-heading"><div><p className="eyebrow">GALERÍA PRIVADA</p><h2>Fotos y videos</h2><span>Las fotos se guardan con una marca Chile3X sutil. Puedes tener hasta 10 fotos y 3 videos de máximo 10 segundos; cada archivo se revisa antes de publicarse.</span></div><strong>{images.length}/10 fotos<br />{videos.length}/3 videos</strong></div>
     <p className={`media-quota media-quota-${quota.level}`}><b>Uso de R2: {formatBytes(quota.bytes)}</b>{quota.message}</p>
     {notice && <p className="media-manager-notice" role="status">{notice}</p>}
     <div className="profile-photo-manager"><div><p className="eyebrow">FOTO PRINCIPAL</p><h3>Foto de perfil</h3><span>Es la imagen prioritaria en el directorio y al abrir el aviso. Se revisa por separado de la galería.</span></div><label className="button button-outline">{isBusy ? "Procesando…" : "Cambiar foto de perfil"}<input ref={profilePhotoInputRef} type="file" accept="image/jpeg,image/png,image/webp" disabled={isBusy || quota.level === "blocked"} onChange={(event) => upload(event.target.files, "profile_photo")} /></label></div>

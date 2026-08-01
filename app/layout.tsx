@@ -40,7 +40,17 @@ export async function generateMetadata(): Promise<Metadata> {
       description: settings.site_description,
       images: ["/chile3x-social-card.png"],
     },
-    icons: { icon: "/chile3x-logo-primary.jpeg" },
+    icons: {
+      icon: [
+        { url: "/favicon-512.png", type: "image/png", sizes: "512x512" },
+        { url: "/favicon-192.png", type: "image/png", sizes: "192x192" },
+        { url: "/favicon-48.png", type: "image/png", sizes: "48x48" },
+        { url: "/favicon.ico", sizes: "any" },
+      ],
+      shortcut: "/favicon.ico",
+      apple: [{ url: "/apple-touch-icon.png", type: "image/png", sizes: "180x180" }],
+    },
+    manifest: "/site.webmanifest",
   };
 }
 

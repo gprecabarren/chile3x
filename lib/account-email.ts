@@ -45,6 +45,19 @@ type AccountEmailMessage = {
   replyTo?: string;
 };
 
+export type PortalEmailNotification = {
+  email: string;
+  displayName?: string | null;
+  subject: string;
+  heading: string;
+  message: string;
+  action?: {
+    label: string;
+    href: string;
+  };
+  note?: string;
+};
+
 async function sendWithAppsScript(message: AccountEmailMessage, relayUrl?: string, relaySecret?: string) {
   if (!relayUrl || !relaySecret) return false;
 
@@ -78,23 +91,28 @@ async function sendWithAppsScript(message: AccountEmailMessage, relayUrl?: strin
   }
 }
 
-export async function sendAccountEmail({ email, displayName, purpose, token }: { email: string; displayName: string | null; purpose: AccountTokenPurpose; token: string }) {
+export async function sendPortalEmail({ email, displayName, subject, heading, message, action, note }: PortalEmailNotification) {
+  if (!isEmail(email)) return false;
+
   const { env } = await import("cloudflare:workers");
   const settings = await getSiteSettings();
-  const link = accountLink(purpose === "verify_email" ? "/api/auth/verificar-correo" : "/restablecer-clave", token, siteBaseUrl(settings.site_url));
   const replyTo = settings.contact_email.trim().toLowerCase();
-  const firstName = escapeHtml(displayName?.trim() || "");
-  const isVerification = purpose === "verify_email";
-  const subject = isVerification ? "Verifica tu correo en Chile3X" : "Restablece tu contraseña de Chile3X";
-  const action = isVerification ? "Verificar correo" : "Restablecer contraseña";
-  const text = `${firstName ? `Hola ${displayName},\n\n` : ""}${isVerification ? "Confirma tu correo para activar tu cuenta." : "Recibimos una solicitud para restablecer tu contraseña."}\n\n${action}: ${link}\n\n${isVerification ? "Este enlace vence en 24 horas." : "Este enlace vence en 1 hora. Si no solicitaste este cambio, ignora este correo."}`;
-  const html = `<main style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px;color:#171922"><p style="color:#d4151d;font-size:12px;font-weight:700;letter-spacing:.08em">CHILE3X</p><h1 style="font-family:Georgia,serif;font-weight:400">${isVerification ? "Verifica tu correo" : "Restablece tu contraseña"}</h1>${firstName ? `<p>Hola ${firstName},</p>` : ""}<p>${isVerification ? "Confirma tu correo para activar tu cuenta y proteger tus publicaciones." : "Recibimos una solicitud para restablecer tu contraseña."}</p><p style="margin:28px 0"><a href="${link}" style="display:inline-block;padding:13px 18px;background:#d4151d;color:#fff;text-decoration:none;font-weight:700">${action}</a></p><p style="font-size:13px;color:#5d6272">${isVerification ? "El enlace vence en 24 horas." : "El enlace vence en 1 hora. Si no solicitaste este cambio, puedes ignorar este correo."}</p></main>`;
-  const message: AccountEmailMessage = { email, subject, text, html, replyTo: isEmail(replyTo) ? replyTo : undefined };
+  const name = displayName?.trim().replace(/[\r\n]+/g, " ") || "";
+  const safeName = escapeHtml(name);
+  const safeHeading = escapeHtml(heading);
+  const safeMessage = escapeHtml(message);
+  const safeNote = note ? escapeHtml(note) : "";
+  const safeActionLabel = action ? escapeHtml(action.label) : "";
+  const safeActionHref = action ? escapeHtml(action.href) : "";
+  const greeting = name ? `Hola ${name},\n\n` : "";
+  const text = `${greeting}${message}${action ? `\n\n${action.label}: ${action.href}` : ""}${note ? `\n\n${note}` : ""}`;
+  const html = `<main style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px;color:#171922"><p style="color:#d4151d;font-size:12px;font-weight:700;letter-spacing:.08em">CHILE3X</p><h1 style="font-family:Georgia,serif;font-weight:400">${safeHeading}</h1>${safeName ? `<p>Hola ${safeName},</p>` : ""}<p>${safeMessage}</p>${action ? `<p style="margin:28px 0"><a href="${safeActionHref}" style="display:inline-block;padding:13px 18px;background:#d4151d;color:#fff;text-decoration:none;font-weight:700">${safeActionLabel}</a></p>` : ""}${safeNote ? `<p style="font-size:13px;color:#5d6272">${safeNote}</p>` : ""}</main>`;
+  const emailMessage: AccountEmailMessage = { email, subject, text, html, replyTo: isEmail(replyTo) ? replyTo : undefined };
 
   // The Google relay is deliberately first: Cloudflare's free Email Service
   // can accept a call without being able to deliver to arbitrary recipients.
   // For the beta, a successful Gmail relay is the definitive delivery path.
-  if (await sendWithAppsScript(message, env.GOOGLE_APPS_SCRIPT_URL, env.GOOGLE_APPS_SCRIPT_SECRET)) return true;
+  if (await sendWithAppsScript(emailMessage, env.GOOGLE_APPS_SCRIPT_URL, env.GOOGLE_APPS_SCRIPT_SECRET)) return true;
 
   if (!env.EMAIL) return false;
   try {
@@ -108,9 +126,24 @@ export async function sendAccountEmail({ email, displayName, purpose, token }: {
     });
     return true;
   } catch (error) {
-    console.error("Cloudflare account email delivery failed", { purpose, error });
+    console.error("Cloudflare portal email delivery failed", { subject, error });
     return false;
   }
+}
+
+export async function sendAccountEmail({ email, displayName, purpose, token }: { email: string; displayName: string | null; purpose: AccountTokenPurpose; token: string }) {
+  const settings = await getSiteSettings();
+  const isVerification = purpose === "verify_email";
+  const link = accountLink(isVerification ? "/api/auth/verificar-correo" : "/restablecer-clave", token, siteBaseUrl(settings.site_url));
+  return sendPortalEmail({
+    email,
+    displayName,
+    subject: isVerification ? "Verifica tu correo en Chile3X" : "Restablece tu contraseña de Chile3X",
+    heading: isVerification ? "Verifica tu correo" : "Restablece tu contraseña",
+    message: isVerification ? "Confirma tu correo para activar tu cuenta y proteger tus publicaciones." : "Recibimos una solicitud para restablecer tu contraseña.",
+    action: { label: isVerification ? "Verificar correo" : "Restablecer contraseña", href: link },
+    note: isVerification ? "El enlace vence en 24 horas." : "El enlace vence en 1 hora. Si no solicitaste este cambio, puedes ignorar este correo.",
+  });
 }
 
 export async function verifyEmailToken(token: string) {

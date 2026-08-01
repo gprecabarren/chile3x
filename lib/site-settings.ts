@@ -15,7 +15,7 @@ export const siteSettingDefaults = {
   contact_whatsapp: "",
   contact_telegram: "",
   contact_instagram: "",
-  contact_email: "",
+  contact_email: "chile3x.site@gmail.com",
   faq_entries: "",
   publication_rules: "",
   publication_rules_updated_at: "2026-07-30T00:00:00.000Z",

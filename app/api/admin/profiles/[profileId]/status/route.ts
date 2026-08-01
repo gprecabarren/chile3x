@@ -1,8 +1,10 @@
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { profiles } from "@/db/schema";
+import { profiles, users } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
+import { sendPortalEmail } from "@/lib/account-email";
+import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 
 const allowedStatuses = new Set(["draft", "pending", "approved", "paused", "rejected", "expired"]);
 const allowedVerification = new Set(["unreviewed", "in_review", "reviewed"]);
@@ -40,13 +42,40 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return new Response("Estado no válido.", { status: 400 });
   }
 
-  await (await getDb()).update(profiles).set({
+  const db = await getDb();
+  const [existingProfile] = await db.select({
+    status: profiles.status,
+    type: profiles.type,
+    displayName: profiles.displayName,
+    slug: profiles.slug,
+    ownerEmail: users.email,
+    ownerName: users.displayName,
+  }).from(profiles).innerJoin(users, eq(profiles.ownerId, users.id)).where(eq(profiles.id, profileId)).limit(1);
+  if (!existingProfile) return new Response("Perfil no encontrado.", { status: 404 });
+
+  await db.update(profiles).set({
     status: status as typeof profiles.$inferInsert.status,
     verificationStatus: verificationStatus as typeof profiles.$inferInsert.verificationStatus,
     healthReviewStatus: healthReviewStatus as typeof profiles.$inferInsert.healthReviewStatus,
     ...(featuredInput === null ? {} : { isFeatured: featuredInput === "on" }),
     updatedAt: new Date().toISOString(),
   }).where(eq(profiles.id, profileId));
+
+  if (status === "approved" && existingProfile.status !== "approved") {
+    const settings = await getSiteSettings();
+    const profileUrl = new URL(`/perfil/${existingProfile.slug}`, siteBaseUrl(settings.site_url)).toString();
+    const typeLabel = existingProfile.type === "agency" ? "perfil de agencia" : existingProfile.type === "rental" ? "perfil de arriendo" : "perfil de escort";
+    const delivered = await sendPortalEmail({
+      email: existingProfile.ownerEmail,
+      displayName: existingProfile.ownerName,
+      subject: "Tu anuncio fue aprobado | Chile3X",
+      heading: "Tu anuncio ya está publicado",
+      message: `Revisamos ${existingProfile.displayName}, tu ${typeLabel}, y ahora está visible para el público en Chile3X.`,
+      action: { label: "Ver publicación", href: profileUrl },
+      note: "Puedes actualizar la información, medios y actualizaciones desde Mi cuenta. Cualquier cambio relevante volverá a revisión manual.",
+    });
+    if (!delivered) console.error("Could not send profile approval email", { profileId });
+  }
 
   return NextResponse.redirect(new URL(safeProfileReturnTo(formData.get("return_to")) ?? "/admin/perfiles", request.url), 303);
 }

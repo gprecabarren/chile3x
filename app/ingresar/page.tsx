@@ -3,6 +3,7 @@ import { safeAccountReturnTo } from "@/lib/auth";
 
 const messages: Record<string, string> = {
   invalid: "El correo o la contraseña no coinciden.",
+  disabled: "Tu cuenta ha sido deshabilitada. Si crees que es un error, contacta al equipo de Chile3X.",
   verification: "El enlace de verificación no es válido o ya venció. Solicita uno nuevo.",
 };
 

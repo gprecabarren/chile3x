@@ -27,7 +27,7 @@ export async function AdminShell({ user, children }: { user: AdminUser; children
   return (
     <main className="admin-root">
       <header className="admin-header">
-        <Link className="admin-brand" href="/admin">CHILE<span>3X</span><small>ADMIN</small></Link>
+        <Link className="admin-brand" href="/">CHILE<span>3X</span><small>ADMIN</small></Link>
         <nav aria-label="Administración">
           <Link href="/admin">Resumen</Link>
           <Link className={pendingCount > 0 ? "admin-nav-alert" : undefined} href="/admin/perfiles">Perfiles{pendingCount > 0 && <b>{pendingCount}</b>}</Link>

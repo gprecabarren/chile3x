@@ -347,9 +347,7 @@ export function getCityPath(city: string) {
 }
 
 export function getProfileDisplayTags(profile: PublicProfile) {
-  const tags = [profile.tier.toUpperCase(), ...profile.tags.map((tag) => tagLabels[tag as keyof typeof tagLabels] ?? tag)];
-  if (profile.type === "agency") tags.push("Agencia");
-  if (profile.type === "rental") tags.push("Arriendo");
+  const tags = profile.type === "escort" ? [profile.tier.toUpperCase(), ...profile.tags.map((tag) => tagLabels[tag as keyof typeof tagLabels] ?? tag)] : [];
   if (profile.verificationStatus === "reviewed" && profile.type === "escort") tags.push("Comprobada");
   return tags.filter((tag): tag is string => Boolean(tag));
 }

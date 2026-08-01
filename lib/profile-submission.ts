@@ -203,14 +203,14 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
   if (instagramUrl) metadata.instagram_url = instagramUrl;
   if (arsmateUrl) metadata.arsmate_url = arsmateUrl;
 
-  const tags = listFromForm(formData.getAll("tags"), profileTags);
+  const tags = typeValue === "escort" ? listFromForm(formData.getAll("tags"), profileTags) : [];
   if (tags.includes("milf") && tags.includes("trans")) {
     throw new ProfileValidationError("MILF y TRANS no se pueden combinar en un mismo perfil.");
   }
 
   return {
     type: typeValue,
-    tier: tierValue,
+    tier: typeValue === "escort" ? tierValue : "gold",
     displayName,
     region,
     city,

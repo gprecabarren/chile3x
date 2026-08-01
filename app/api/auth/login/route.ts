@@ -26,7 +26,8 @@ export async function POST(request: NextRequest) {
   if (!email || !password) return invalidCredentials(request);
 
   const [user] = await (await getDb()).select({ id: users.id, passwordHash: users.passwordHash, emailVerifiedAt: users.emailVerifiedAt, isActive: users.isActive }).from(users).where(eq(users.email, email)).limit(1);
-  if (!user || !user.isActive || !await verifyPassword(password, user.passwordHash)) return invalidCredentials(request);
+  if (!user || !await verifyPassword(password, user.passwordHash)) return invalidCredentials(request);
+  if (!user.isActive) return NextResponse.redirect(new URL("/ingresar?error=disabled", request.url), 303);
   if (!user.emailVerifiedAt) {
     const verificationUrl = new URL("/verificar-correo", request.url);
     verificationUrl.searchParams.set("email", email);

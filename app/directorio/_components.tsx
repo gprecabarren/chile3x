@@ -101,6 +101,8 @@ export function OadBadge() {
 
 export function ProfileCard({ profile }: { profile: PublicProfile }) {
   const tags = getProfileDisplayTags(profile);
+  const tierTag = profile.type === "escort" ? tags[0] ?? "Gold" : null;
+  const detailTags = profile.type === "escort" ? tags.slice(1) : [];
   const age = profile.details.metadata.age;
   const subtitle = [age ? `${age} años` : null, profile.comuna ?? profile.details.referenceLocation].filter(Boolean).join(" · ");
   const mainPrice = readProfilePrices(profile.details)[0];
@@ -111,7 +113,8 @@ export function ProfileCard({ profile }: { profile: PublicProfile }) {
       <Link href={`/perfil/${profile.slug}`} className={`public-profile-visual ${toneFor(profile.slug)}${coverImage ? " has-image" : ""}`} aria-label={`Ver perfil de ${profile.displayName}`}>
         {coverImage ? <Image className="public-profile-image" src={coverImage.url} alt={coverImage.altText ?? `Foto de ${profile.displayName}`} fill unoptimized sizes="(max-width: 360px) 100vw, (max-width: 720px) 50vw, (max-width: 1040px) 33vw, 25vw" /> : <span className="public-profile-initial">{profile.displayName.slice(0, 1)}</span>}
         <span className="public-type-label">{typeLabel[profile.type]}</span>
-        <span className="public-card-badges" aria-label={`Etiquetas: ${tags.join(", ")}`}>{tags.map((tag) => <span key={tag} className={`public-card-badge ${tag.toLowerCase().replaceAll(" ", "-")}`}>{tag}</span>)}</span>
+        {tierTag && <span className={`public-card-tier-badge ${tierTag.toLowerCase()}`}>{tierTag}</span>}
+        {detailTags.length > 0 && <span className="public-card-detail-badges" aria-label={`Etiquetas: ${detailTags.join(", ")}`}>{detailTags.map((tag) => <span key={tag} className={`public-card-badge ${tag.toLowerCase().replaceAll(" ", "-")}`}>{tag}</span>)}</span>}
         {profile.isDemo && <span className="demo-label">DEMO</span>}
         {profile.isFeatured && <span className="featured-label">DESTACADA</span>}
       </Link>

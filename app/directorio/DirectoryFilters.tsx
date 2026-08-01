@@ -62,7 +62,7 @@ export function DirectoryFilters({ action, filters, pinnedCity, pinnedRegion, sh
         {!pinnedCity && <label>Región<select name="region" value={region} onChange={(event) => changeRegion(event.target.value)}><option value="">Todas las regiones</option>{regions.map((item) => <option key={item.id} value={item.title}>{item.shortTitle}</option>)}</select></label>}
         {!pinnedCity && <label>Ciudad<select name="ciudad" value={city} onChange={(event) => setCity(event.target.value)} disabled={Boolean(region) && !availableCities.length}><option value="">Todas las ciudades</option>{(region ? availableCities : regions.flatMap((item) => item.cities)).map((item) => <option key={item} value={item}>{item}</option>)}</select></label>}
         {showType && <label>Tipo de publicación<select name="tipo" defaultValue={filters.type ?? ""}><option value="">Todos los tipos</option>{types.map((type) => <option key={type} value={type}>{type === "escort" ? "Escorts" : type === "agency" ? "Agencias" : "Arriendos"}</option>)}</select></label>}
-        <label>Categoría<select name="tier" defaultValue={filters.tier ?? ""}><option value="">Todas las categorías</option>{tiers.map((tier) => <option key={tier} value={tier}>{tierLabels[tier]}</option>)}</select></label>
+        {showEscortFilters && <label>Categoría<select name="tier" defaultValue={filters.tier ?? ""}><option value="">Todas las categorías</option>{tiers.map((tier) => <option key={tier} value={tier}>{tierLabels[tier]}</option>)}</select></label>}
       </div>
       {(showEscortFilters || showServices) && <details className="filter-more-options" open={hasAdvancedFilters}>
         <summary><span>Ver más filtros</span><small>Edad, apariencia, categorías, servicios y fetiches</small></summary>

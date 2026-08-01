@@ -99,12 +99,12 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
             Nombre visible
             <input name="display_name" required minLength={2} maxLength={80} defaultValue={initial?.displayName} placeholder={type === "agency" ? "Nombre de la agencia" : type === "rental" ? "Ej. Habitación en Providencia" : "Nombre de fantasía"} />
           </label>
-          <label>
+          {type === "escort" ? <label>
             Categoría de visibilidad
             <select name="tier" defaultValue={initial?.tier ?? "gold"}>
               {tiers.map((tier) => <option key={tier} value={tier}>{tier === "gold" ? "Gold" : tier === "premium" ? "Premium" : "VIP"}</option>)}
             </select>
-          </label>
+          </label> : <input name="tier" type="hidden" value="gold" />}
         </div>
       </section>
 
@@ -301,7 +301,7 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
             <label>Arsmate (opcional)<input name="arsmate_url" type="url" maxLength={180} defaultValue={metadataValue(initial, "arsmate_url")} placeholder="https://arsmate.com/..." /></label>
           </div>
         </fieldset>
-        <fieldset>
+        {type === "escort" && <fieldset>
           <legend>Etiquetas complementarias</legend>
           <div className="check-grid">
             {profileTags.map((tag) => {
@@ -309,7 +309,7 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
               return <label key={tag} className={blocked ? "is-blocked" : ""}><input name="tags" type="checkbox" value={tag} checked={selectedProfileTags.includes(tag)} disabled={blocked} onChange={() => toggleProfileTag(tag)} />{tag}</label>;
             })}
           </div>
-        </fieldset>
+        </fieldset>}
         <div className="service-columns">
           <fieldset>
             <legend>Servicios incluidos</legend>

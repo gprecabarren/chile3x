@@ -118,12 +118,7 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
                     <td>{profile.ownerEmail}</td>
                     <td><span className={`admin-status admin-status-${profile.status}`}>{statusLabel[profile.status]}</span></td>
                     <td><span className="admin-verification">{verificationLabel[profile.verificationStatus]}<small>{profile.healthReviewStatus === "reviewed" ? "Revisión médica opcional" : ""}</small></span></td>
-                    <td><div className="admin-profile-row-actions"><Link className="button button-public-preview" href={`/perfil/${profile.slug}`} target="_blank">{profile.status === "approved" ? "Ver público" : "Abrir y revisar"}</Link><form action={`/api/admin/profiles/${profile.id}/status`} method="post" className="admin-inline-form admin-moderation-form">
-                      <select name="status" defaultValue={profile.status} aria-label={`Estado de ${profile.displayName}`}>{Object.entries(statusLabel).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select>
-                      <select name="verification_status" defaultValue={profile.verificationStatus} aria-label={`Verificación de ${profile.displayName}`}>{Object.entries(verificationLabel).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select>
-                      <select name="health_review_status" defaultValue={profile.healthReviewStatus} aria-label={`Revisión médica de ${profile.displayName}`}><option value="not_requested">Sin solicitud médica</option><option value="in_review">Médico en revisión</option><option value="reviewed">Médico revisado</option></select>
-                      <button type="submit">Guardar</button>
-                    </form></div></td>
+                    <td><div className="admin-profile-row-actions"><Link className="button button-public-preview" href={`/perfil/${profile.slug}`} target="_blank">{profile.status === "approved" ? "Ver público y gestionar" : "Abrir y revisar"}</Link><small>Aprueba publicación, verificación y revisión médica dentro de la ficha.</small></div></td>
                   </tr>
                 ))}
                 {filteredRows.length === 0 && <tr><td colSpan={6} className="admin-no-results">No hay perfiles que coincidan con estos filtros.</td></tr>}

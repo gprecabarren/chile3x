@@ -47,6 +47,10 @@ interface Env {
   DB: D1Database;
   MEDIA?: R2Bucket;
   EMAIL?: SendEmail;
+  // Optional free transactional-email fallback. Both are deployed as Worker
+  // secrets, never stored in D1 or exposed to the browser.
+  GOOGLE_APPS_SCRIPT_URL?: string;
+  GOOGLE_APPS_SCRIPT_SECRET?: string;
   TURNSTILE_SECRET?: string;
 }
 

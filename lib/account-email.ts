@@ -37,9 +37,49 @@ function accountLink(pathname: string, token: string, siteUrl: string) {
   return url.toString();
 }
 
+type AccountEmailMessage = {
+  email: string;
+  subject: string;
+  text: string;
+  html: string;
+  replyTo?: string;
+};
+
+async function sendWithAppsScript(message: AccountEmailMessage, relayUrl?: string, relaySecret?: string) {
+  if (!relayUrl || !relaySecret) return false;
+
+  try {
+    const response = await fetch(relayUrl, {
+      method: "POST",
+      // Apps Script accepts plain text reliably and still lets its handler read
+      // the JSON payload. The shared secret blocks anonymous relay abuse.
+      headers: { "content-type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        secret: relaySecret,
+        to: message.email,
+        subject: message.subject,
+        text: message.text,
+        html: message.html,
+        replyTo: message.replyTo,
+      }),
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    if (!response.ok) {
+      console.error("Google Apps Script email relay returned an error", { status: response.status });
+      return false;
+    }
+
+    const result = await response.json().catch(() => null) as { ok?: unknown } | null;
+    return result?.ok === true;
+  } catch (error) {
+    console.error("Google Apps Script email relay failed", { error });
+    return false;
+  }
+}
+
 export async function sendAccountEmail({ email, displayName, purpose, token }: { email: string; displayName: string | null; purpose: AccountTokenPurpose; token: string }) {
   const { env } = await import("cloudflare:workers");
-  if (!env.EMAIL) return false;
   const settings = await getSiteSettings();
   const link = accountLink(purpose === "verify_email" ? "/api/auth/verificar-correo" : "/restablecer-clave", token, siteBaseUrl(settings.site_url));
   const replyTo = settings.contact_email.trim().toLowerCase();
@@ -60,8 +100,14 @@ export async function sendAccountEmail({ email, displayName, purpose, token }: {
     });
     return true;
   } catch (error) {
-    console.error("Account email delivery failed", { purpose, error });
-    return false;
+    // A configured Email binding still fails on the Free plan for arbitrary
+    // recipients. Continue with the Google relay when it is configured.
+    console.error("Cloudflare account email delivery failed", { purpose, error });
+    return sendWithAppsScript(
+      { email, subject, text, html, replyTo: isEmail(replyTo) ? replyTo : undefined },
+      env.GOOGLE_APPS_SCRIPT_URL,
+      env.GOOGLE_APPS_SCRIPT_SECRET,
+    );
   }
 }
 

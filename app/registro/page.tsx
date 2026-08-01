@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { AccountIdentityFields } from "@/app/account-identity-fields";
 import { safeAccountReturnTo } from "@/lib/auth";
+import { getPortalWhatsappLink } from "@/lib/site-contacts";
+import { getSiteSettings } from "@/lib/site-settings";
 
 const messages: Record<string, string> = {
   adult: "Debes confirmar que eres mayor de 18 años.",
@@ -12,6 +14,8 @@ const messages: Record<string, string> = {
 export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ error?: string; return_to?: string }> }) {
   const params = await searchParams;
   const returnTo = safeAccountReturnTo(params.return_to ?? null);
+  const settings = await getSiteSettings();
+  const whatsappHref = getPortalWhatsappLink(settings.contact_whatsapp, "Hola, quisiera solicitar que el equipo de Chile3X me cree una cuenta de anunciante.");
 
   return <main className="auth-page"><section className="auth-card">
     <Link className="auth-brand" href="/">CHILE<span>3X</span></Link>
@@ -28,6 +32,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
       <label className="checkbox-label"><input name="adult_confirmed" type="checkbox" value="yes" required />Confirmo que soy mayor de 18 años.</label>
       <button className="button button-primary" type="submit">Crear cuenta y verificar correo</button>
     </form>
+    {whatsappHref && <a className="button button-outline auth-whatsapp-request" href={whatsappHref} target="_blank" rel="noreferrer">Solicitar creación de cuenta por WhatsApp</a>}
     <p className="auth-switch">¿Ya tienes una cuenta? <Link href={`/ingresar?return_to=${encodeURIComponent(returnTo)}`}>Ingresar</Link></p>
   </section></main>;
 }

@@ -72,6 +72,10 @@ export function readAccountIdentity(formData: FormData): AccountIdentityInput | 
 
   if (phone && !/^\+?[0-9]{8,15}$/.test(phone)) return null;
 
+  if (!rawDocument) {
+    return { firstName, lastName, documentType, documentNumber: "", birthDate, city, phone };
+  }
+
   if (documentType === "rut") {
     if (!validRut(rawDocument)) return null;
     return { firstName, lastName, documentType, documentNumber: normalizeRut(rawDocument), birthDate, city, phone };

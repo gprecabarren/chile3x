@@ -1,0 +1,152 @@
+name: Chile3X off-site backup
+
+on:
+  schedule:
+    # 05:17 or 06:17 in Chile, depending on daylight saving time.
+    - cron: "17 09 * * *"
+  workflow_dispatch:
+    inputs:
+      include_media:
+        description: "Include R2 media in this run"
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chile3x-offsite-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Encrypted daily backup
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+      CF_D1_DATABASE_ID: ${{ secrets.CF_D1_DATABASE_ID }}
+      CF_D1_EXPORT_TOKEN: ${{ secrets.CF_D1_EXPORT_TOKEN }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_BACKUP_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_BACKUP_SECRET_ACCESS_KEY }}
+      R2_ENDPOINT: ${{ secrets.R2_BACKUP_ENDPOINT }}
+      RCLONE_GDRIVE_CONFIG: ${{ secrets.RCLONE_GDRIVE_CONFIG }}
+      RCLONE_CRYPT_PASSWORD: ${{ secrets.RCLONE_CRYPT_PASSWORD }}
+      RCLONE_CRYPT_PASSWORD2: ${{ secrets.RCLONE_CRYPT_PASSWORD2 }}
+      BACKUP_MIN_FREE_BYTES: "1073741824"
+      TZ: America/Santiago
+
+    steps:
+      - name: Verify the backup has been configured
+        shell: bash
+        run: |
+          required=(CF_ACCOUNT_ID CF_D1_DATABASE_ID CF_D1_EXPORT_TOKEN R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_ENDPOINT RCLONE_GDRIVE_CONFIG RCLONE_CRYPT_PASSWORD RCLONE_CRYPT_PASSWORD2)
+          missing=()
+          for name in "${required[@]}"; do
+            if [ -z "${!name}" ]; then
+              missing+=("$name")
+            fi
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::The off-site backup is not configured. Missing: ${missing[*]}"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install rclone
+        shell: bash
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          curl --fail --silent --show-error --location https://downloads.rclone.org/rclone-current-linux-amd64.zip --output /tmp/rclone.zip
+          unzip -q /tmp/rclone.zip -d /tmp/rclone
+          install "$(find /tmp/rclone -type f -name rclone -print -quit)" "$HOME/.local/bin/rclone"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Configure encrypted Drive and read-only R2 remotes
+        shell: bash
+        run: |
+          mkdir -p "$HOME/.config/rclone"
+          printf '%s\n' "$RCLONE_GDRIVE_CONFIG" > "$HOME/.config/rclone/rclone.conf"
+          {
+            echo
+            echo "[r2backup]"
+            echo "type = s3"
+            echo "provider = Cloudflare"
+            echo "access_key_id = $R2_ACCESS_KEY_ID"
+            echo "secret_access_key = $R2_SECRET_ACCESS_KEY"
+            echo "endpoint = $R2_ENDPOINT"
+            echo "region = auto"
+            echo "no_check_bucket = true"
+            echo
+            echo "[drivecrypt-db]"
+            echo "type = crypt"
+            echo "remote = gdrive:01 - Base de datos"
+            echo "filename_encryption = standard"
+            echo "directory_name_encryption = true"
+            echo "password = $(rclone obscure \"$RCLONE_CRYPT_PASSWORD\")"
+            echo "password2 = $(rclone obscure \"$RCLONE_CRYPT_PASSWORD2\")"
+            echo
+            echo "[drivecrypt-media]"
+            echo "type = crypt"
+            echo "remote = gdrive:02 - Medios cifrados"
+            echo "filename_encryption = standard"
+            echo "directory_name_encryption = true"
+            echo "password = $(rclone obscure \"$RCLONE_CRYPT_PASSWORD\")"
+            echo "password2 = $(rclone obscure \"$RCLONE_CRYPT_PASSWORD2\")"
+            echo
+            echo "[drivecrypt-manifest]"
+            echo "type = crypt"
+            echo "remote = gdrive:03 - Manifiestos"
+            echo "filename_encryption = standard"
+            echo "directory_name_encryption = true"
+            echo "password = $(rclone obscure \"$RCLONE_CRYPT_PASSWORD\")"
+            echo "password2 = $(rclone obscure \"$RCLONE_CRYPT_PASSWORD2\")"
+          } >> "$HOME/.config/rclone/rclone.conf"
+
+      - name: Stop before Drive becomes full
+        shell: bash
+        run: |
+          rclone about gdrive: --json > /tmp/drive-quota.json
+          available="$(jq -r '(.total // 0) - (.used // 0) - (.trashed // 0) - (.other // 0)' /tmp/drive-quota.json)"
+          echo "Available Drive bytes: $available"
+          if [ "$available" -lt "$BACKUP_MIN_FREE_BYTES" ]; then
+            echo "::error::Drive has less than 1 GiB free. Backup stopped before upload."
+            exit 1
+          fi
+
+      - name: Export D1 database
+        env:
+          BACKUP_OUTPUT_DIRECTORY: backup-output/database
+        run: node scripts/backup-d1.mjs
+
+      - name: Upload encrypted database snapshot
+        shell: bash
+        run: |
+          stamp="$(date +%F)"
+          rclone copy backup-output/database "drivecrypt-db:$stamp" --fast-list --checkers 2 --transfers 1 --retries 3 --low-level-retries 3
+
+      - name: Upload encrypted R2 media incrementally
+        if: ${{ github.event_name == 'schedule' || inputs.include_media }}
+        shell: bash
+        run: |
+          rclone copy r2backup:chile3x-media drivecrypt-media:current --fast-list --checkers 4 --transfers 2 --retries 3 --low-level-retries 3
+
+      - name: Upload backup manifest
+        shell: bash
+        run: |
+          stamp="$(date --iso-8601=seconds)"
+          cat > backup-output/manifest.json <<EOF
+          {
+            "createdAt": "$stamp",
+            "database": "exported",
+            "media": "${{ github.event_name == 'schedule' || inputs.include_media }}",
+            "retention": "No remote deletes are performed by this workflow."
+          }
+          EOF
+          rclone copy backup-output/manifest.json "drivecrypt-manifest:$(date +%F)" --fast-list --retries 3 --low-level-retries 3

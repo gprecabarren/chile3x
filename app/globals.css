@@ -642,3 +642,70 @@ main:has(.hero) > footer { order: 10; }
 @media (max-width: 1080px) { .admin-news-layout { grid-template-columns: 1fr; }.admin-news-list { position: static; grid-template-columns: repeat(2,minmax(0,1fr)); }.admin-news-list > .button { grid-column: 1/-1; }.admin-news-editor { grid-template-columns: 1fr; }.admin-news-sidebar { grid-template-columns: repeat(2,minmax(0,1fr)); }.admin-news-sidebar > .button, .admin-news-sidebar > p { grid-column: 1/-1; }.news-card-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media (max-width: 720px) { .profile-statistics-cards { grid-template-columns: repeat(2,minmax(0,1fr)); }.admin-report-list article { grid-template-columns: 1fr; }.exclusive-media-grid { grid-template-columns: 1fr 1fr; }.exclusive-media-grid figure { min-height: 230px; }.exclusive-access-manager form { align-items: stretch; flex-direction: column; }.admin-news-list, .admin-news-sidebar, .news-card-grid { grid-template-columns: 1fr; }.admin-news-sidebar > .button, .admin-news-sidebar > p { grid-column: auto; }.news-index, .news-article { padding: 45px 18px 75px; }.news-article-cover { min-height: 330px; }.profile-report-form { position: fixed; top: 50%; left: 50%; max-height: 90vh; overflow-y: auto; transform: translate(-50%,-50%); }.blocked-profile-list article { align-items: stretch; flex-direction: column; } }
 @media (max-width: 460px) { .profile-statistics-cards { grid-template-columns: 1fr; }.exclusive-media-grid { grid-template-columns: 1fr; }.profile-exclusive-gallery { margin: 35px 14px; padding: 20px; }.profile-verified-photo-badge { top: 12px; right: 12px; width: 32px; height: 32px; font-size: 17px; }.admin-news-main, .admin-news-sidebar { padding: 14px; }.rich-news-content { min-height: 300px; padding: 14px; } }
+
+/* Refinamiento visual: esquinas suaves y consistentes, sin perder el carácter editorial. */
+:root { --radius-xs: 5px; --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; }
+
+/* Controles. Los círculos funcionales (checks, historias y avatares) conservan su forma propia. */
+button, input:not([type="checkbox"]):not([type="radio"]), select, textarea { border-radius: var(--radius-sm); }
+input[type="checkbox"] { border-radius: 4px; }
+
+/* Home y navegación principal. */
+.site-header, .home-search, .hero-card, .process-poster, .region-index a, .region-card,
+.commune-list li, .listing-card, .tag-row span, .featured-label, .auth-card,
+.age-gate-card, .maintenance-screen section, .about-hero-panel { border-radius: var(--radius-md); }
+.site-header { border-bottom-right-radius: var(--radius-lg); border-bottom-left-radius: var(--radius-lg); }
+.home-search input, .home-search button { border-radius: var(--radius-sm); }
+.hero-card, .process-poster, .auth-card { border-radius: var(--radius-lg); }
+.region-index a, .commune-list li, .tag-row span { border-radius: var(--radius-xs); }
+.listing-card { border-radius: var(--radius-md); }
+.listing-card .profile-visual { border-top-right-radius: calc(var(--radius-md) - 1px); border-top-left-radius: calc(var(--radius-md) - 1px); }
+.featured-label { border-radius: var(--radius-xs); }
+
+/* Directorio, filtros y perfiles públicos. */
+.directory-filters, .filter-more-options, .filter-services, .filter-fieldset, .filter-warning,
+.public-profile-card, .profile-detail-section, .profile-detail-aside, .profile-contact-box,
+.profile-price-panel, .profile-media-groups article, .service-detail-section article,
+.agency-membership-panel, .agency-management-card, .membership-incoming, .membership-outgoing,
+.travel-agenda-editor, .exclusive-media-owner, .exclusive-access-manager,
+.profile-exclusive-gallery, .exclusive-media-grid figure, .profile-report-form,
+.blocked-profile-list article, .profile-statistics-cards article, .profile-contact-breakdown article { border-radius: var(--radius-md); }
+.filter-grid input, .filter-grid select, .filter-more-options > summary, .filter-services > summary,
+.agency-invite-form select, .agency-invite-form input { border-radius: var(--radius-sm); }
+.public-card-tier-badge, .public-card-badge, .public-profile-visual .featured-label { border-radius: var(--radius-xs); }
+.profile-safety-actions > button, .profile-safety-actions > a { border-radius: 0; }
+
+/* Formularios y cuenta de anunciante. */
+.profile-form-section, .owner-profile-card, .account-details-form, .profile-photo-manager,
+.verification-documents-section, .availability-editor-row, .profile-price-panel article,
+.travel-agenda-public, .exclusive-grant-list article, .profile-media-groups article { border-radius: var(--radius-md); }
+.profile-form input, .profile-form select, .profile-form textarea, .auth-form input,
+.auth-form select, .verification-documents-section input[type="file"], .availability-editor-row input[type="time"],
+.exclusive-access-manager input { border-radius: var(--radius-sm); }
+
+/* Administración y noticias. */
+.admin-stat, .admin-note, .admin-empty, .admin-table-wrap, .admin-settings-form,
+.admin-account-filters, .admin-settings-hub a, .admin-media-empty, .admin-report-list article,
+.admin-news-list > a:not(.button), .admin-news-main, .admin-news-sidebar, .news-card-grid article,
+.news-empty, .news-article > footer, .rich-news-toolbar, .rich-news-content,
+.news-cover-uploader label, .admin-news-sidebar details { border-radius: var(--radius-md); }
+.admin-table-wrap { overflow: auto; }
+.admin-inline-form select, .admin-inline-form button, .admin-settings-form input:not([type="checkbox"]),
+.admin-settings-form select, .admin-settings-form textarea, .admin-account-filters input,
+.admin-news-editor input, .admin-news-editor textarea, .admin-news-editor select,
+.rich-news-toolbar button, .rich-news-toolbar label { border-radius: var(--radius-sm); }
+.rich-news-toolbar { border-bottom-right-radius: 0; border-bottom-left-radius: 0; }
+.rich-news-content { border-top-right-radius: 0; border-top-left-radius: 0; }
+
+/* Evita que textos largos rompan tarjetas o columnas estrechas. */
+.home-search, .region-card, .listing-card, .public-profile-card, .profile-detail-section,
+.profile-detail-aside, .admin-settings-hub a, .admin-report-list article,
+.admin-news-main, .admin-news-sidebar, .news-card-grid article { min-width: 0; }
+.region-card h3, .listing-title h3, .profile-detail-section h2, .admin-settings-hub p,
+.admin-report-list h2, .news-card-grid h2 { overflow-wrap: anywhere; }
+
+@media (max-width: 620px) {
+  .site-header { border-radius: 0 0 var(--radius-md) var(--radius-md); }
+  .hero-card, .process-poster, .auth-card, .directory-filters, .profile-detail-section,
+  .profile-detail-aside, .profile-exclusive-gallery { border-radius: var(--radius-md); }
+}

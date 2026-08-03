@@ -648,6 +648,7 @@ main:has(.hero) > footer { order: 10; }
 
 /* Controles. Los círculos funcionales (checks, historias y avatares) conservan su forma propia. */
 button, input:not([type="checkbox"]):not([type="radio"]), select, textarea { border-radius: var(--radius-sm); }
+.button { border-radius: var(--radius-sm); }
 input[type="checkbox"] { border-radius: 4px; }
 
 /* Home y navegación principal. */

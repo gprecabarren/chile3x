@@ -143,6 +143,7 @@ export const profileMedia = sqliteTable("profile_media", {
   contentType: text("content_type").notNull().default("image/jpeg"),
   altText: text("alt_text"),
   moderationStatus: text("moderation_status", { enum: ["pending", "approved", "rejected"] }).notNull().default("pending"),
+  visibility: text("visibility", { enum: ["public", "exclusive"] }).notNull().default("public"),
   isProfilePhoto: integer("is_profile_photo", { mode: "boolean" }).notNull().default(false),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt,
@@ -159,6 +160,18 @@ export const profileViews = sqliteTable("profile_views", {
 }, (table) => [
   uniqueIndex("profile_view_daily_unique").on(table.profileId, table.viewerKey, table.viewedOn),
   index("profile_views_profile_day_idx").on(table.profileId, table.viewedOn),
+]);
+
+export const profileContactEvents = sqliteTable("profile_contact_events", {
+  id: text("id").primaryKey(),
+  profileId: text("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  viewerKey: text("viewer_key").notNull(),
+  kind: text("kind", { enum: ["whatsapp", "telegram", "call", "email", "instagram", "arsmate", "videocall"] }).notNull(),
+  clickedOn: text("clicked_on").notNull(),
+  createdAt,
+}, (table) => [
+  uniqueIndex("profile_contact_event_daily_unique").on(table.profileId, table.viewerKey, table.kind, table.clickedOn),
+  index("profile_contact_events_profile_day_idx").on(table.profileId, table.clickedOn),
 ]);
 
 export const listingPeriods = sqliteTable("listing_periods", {
@@ -223,3 +236,68 @@ export const reviews = sqliteTable("reviews", {
   status: text("status", { enum: ["pending", "approved", "rejected"] }).notNull().default("pending"),
   createdAt,
 }, (table) => [index("reviews_profile_status_idx").on(table.profileId, table.status)]);
+
+export const profileReports = sqliteTable("profile_reports", {
+  id: text("id").primaryKey(),
+  profileId: text("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  reporterId: text("reporter_id").references(() => users.id, { onDelete: "set null" }),
+  reason: text("reason", { enum: ["impersonation", "inappropriate", "fraud", "underage", "wrong_information", "other"] }).notNull(),
+  body: text("body").notNull(),
+  status: text("status", { enum: ["pending", "reviewed", "resolved", "dismissed"] }).notNull().default("pending"),
+  adminNote: text("admin_note"),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  createdAt,
+}, (table) => [
+  index("profile_reports_status_created_idx").on(table.status, table.createdAt),
+  index("profile_reports_profile_idx").on(table.profileId, table.createdAt),
+]);
+
+export const blockedProfiles = sqliteTable("blocked_profiles", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  profileId: text("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  createdAt,
+}, (table) => [uniqueIndex("blocked_profile_unique").on(table.userId, table.profileId)]);
+
+export const profileExclusiveAccess = sqliteTable("profile_exclusive_access", {
+  id: text("id").primaryKey(),
+  profileId: text("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  grantedBy: text("granted_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt,
+}, (table) => [
+  uniqueIndex("profile_exclusive_access_unique").on(table.profileId, table.userId),
+  index("profile_exclusive_access_user_idx").on(table.userId, table.profileId),
+]);
+
+export const newsMedia = sqliteTable("news_media", {
+  id: text("id").primaryKey(),
+  r2Key: text("r2_key").notNull().unique(),
+  byteSize: integer("byte_size").notNull().default(0),
+  contentType: text("content_type").notNull(),
+  uploadedBy: text("uploaded_by").notNull().references(() => users.id, { onDelete: "restrict" }),
+  createdAt,
+});
+
+export const newsPosts = sqliteTable("news_posts", {
+  id: text("id").primaryKey(),
+  authorId: text("author_id").notNull().references(() => users.id, { onDelete: "restrict" }),
+  title: text("title").notNull(),
+  slug: text("slug").notNull().unique(),
+  excerpt: text("excerpt").notNull().default(""),
+  contentHtml: text("content_html").notNull(),
+  coverMediaId: text("cover_media_id").references(() => newsMedia.id, { onDelete: "set null" }),
+  status: text("status", { enum: ["draft", "published"] }).notNull().default("draft"),
+  seoTitle: text("seo_title"),
+  metaDescription: text("meta_description"),
+  focusKeyword: text("focus_keyword"),
+  canonicalUrl: text("canonical_url"),
+  ogTitle: text("og_title"),
+  ogDescription: text("og_description"),
+  noindex: integer("noindex", { mode: "boolean" }).notNull().default(false),
+  publishedAt: text("published_at"),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  createdAt,
+}, (table) => [
+  index("news_posts_public_idx").on(table.status, table.publishedAt, table.createdAt),
+]);

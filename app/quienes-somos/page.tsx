@@ -3,6 +3,7 @@ import Link from "next/link";
 import { DirectoryShell, PortalContactIcon, PortalContactLinks } from "@/app/directorio/_components";
 import { getPortalWhatsappLink } from "@/lib/site-contacts";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
+import { safeJsonLd } from "@/lib/json-ld";
 
 export const metadata: Metadata = {
   title: "Directorio nacional de escorts",
@@ -34,7 +35,7 @@ export default async function AboutPage() {
   };
 
   return <DirectoryShell>
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutSchema) }} />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(aboutSchema) }} />
     <section className="about-hero">
       <div className="about-hero-copy">
         <p className="eyebrow">CHILE3X · TODO CHILE</p>

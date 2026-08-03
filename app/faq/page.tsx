@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { DirectoryShell } from "@/app/directorio/_components";
 import { getFaqEntries } from "@/lib/faq";
+import { safeJsonLd } from "@/lib/json-ld";
 
 export const metadata: Metadata = {
   title: "Preguntas frecuentes",
@@ -19,7 +20,7 @@ export default async function FaqPage() {
     mainEntity: entries.map(({ question, answer }) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })),
   };
   return <DirectoryShell>
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(faqSchema) }} />
     <section className="static-page-hero"><p className="eyebrow">AYUDA</p><h1>Preguntas <em>frecuentes.</em></h1><p>Información clara sobre el funcionamiento inicial de Chile3X.</p></section>
     <section className="static-page-content faq-content">
       {entries.map(({ question, answer }) => <details key={question}><summary>{question}</summary><p>{answer}</p></details>)}

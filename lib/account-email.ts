@@ -119,7 +119,6 @@ export async function sendPortalEmail({ email, displayName, subject, heading, me
     await env.EMAIL.send({
       to: email,
       from: { email: "noreply@chile3x.cl", name: "Chile3X" },
-      replyTo: isEmail(replyTo) ? replyTo : undefined,
       subject,
       html,
       text,

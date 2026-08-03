@@ -20,7 +20,7 @@ const statusLabel: Record<string, string> = {
 const verificationLabel: Record<string, string> = {
   unreviewed: "Sin revisar",
   in_review: "En verificación",
-  reviewed: "Comprobado",
+  reviewed: "Verificado ✓",
 };
 
 type AdminProfilesSearchParams = {

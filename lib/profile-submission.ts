@@ -15,6 +15,7 @@ import {
   serializeAvailability,
   slugify,
   spokenLanguages,
+  citiesByRegion,
   type ProfileType,
   type Tier,
 } from "@/lib/profile";
@@ -81,6 +82,10 @@ const metadataFields = [
   "utilities_included",
   "kitchen",
   "laundry",
+  "travel_city",
+  "travel_start",
+  "travel_end",
+  "travel_note",
 ] as const;
 
 function required(value: string, message: string) {
@@ -183,6 +188,17 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
   const arsmateUrl = requiredUrl(compactText(formData.get("arsmate_url"), 180), "Arsmate", "arsmate.com");
   const languages = listFromForm(formData.getAll("languages"), spokenLanguages).join(", ");
   const availability = serializeAvailability(formData);
+  const travelCity = compactText(formData.get("travel_city"), 120);
+  const travelStart = compactText(formData.get("travel_start"), 10);
+  const travelEnd = compactText(formData.get("travel_end"), 10);
+  const travelNote = compactText(formData.get("travel_note"), 180);
+  const allowedTravelCities = new Set([...citiesByRegion.values()].flat());
+  if ([travelCity, travelStart, travelEnd].some(Boolean) && !(travelCity && travelStart && travelEnd)) {
+    throw new ProfileValidationError("Para publicar un viaje indica ciudad, fecha de inicio y fecha de término.");
+  }
+  if (travelCity && (!allowedTravelCities.has(travelCity) || !/^\d{4}-\d{2}-\d{2}$/.test(travelStart) || !/^\d{4}-\d{2}-\d{2}$/.test(travelEnd) || travelStart > travelEnd)) {
+    throw new ProfileValidationError("La agenda de viaje no es válida.");
+  }
 
   if (!contactWhatsapp) {
     throw new ProfileValidationError("Agrega al menos una forma de contacto o red social pública.");
@@ -202,6 +218,12 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
   if (twitterUrl) metadata.twitter_url = twitterUrl;
   if (instagramUrl) metadata.instagram_url = instagramUrl;
   if (arsmateUrl) metadata.arsmate_url = arsmateUrl;
+  if (typeValue === "escort" && travelCity) {
+    metadata.travel_city = travelCity;
+    metadata.travel_start = travelStart;
+    metadata.travel_end = travelEnd;
+    if (travelNote) metadata.travel_note = travelNote;
+  }
 
   const tags = typeValue === "escort" ? listFromForm(formData.getAll("tags"), profileTags) : [];
   if (tags.includes("milf") && tags.includes("trans")) {

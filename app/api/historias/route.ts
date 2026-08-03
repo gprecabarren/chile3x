@@ -14,7 +14,8 @@ function acceptsJson(request: Request) {
 
 function response(request: Request, formData: FormData | null, notice: string, status = 200) {
   if (acceptsJson(request)) return NextResponse.json({ ok: status < 400, notice }, { status });
-  const destination = safeAccountReturnTo(formData && typeof formData.get("return_to") === "string" ? formData.get("return_to") : null);
+  const returnTo = formData?.get("return_to");
+  const destination = safeAccountReturnTo(typeof returnTo === "string" ? returnTo : null);
   const url = new URL(destination, request.url);
   url.searchParams.set("notice", notice);
   return NextResponse.redirect(url, 303);

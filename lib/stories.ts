@@ -40,7 +40,8 @@ export async function purgeExpiredImageStories() {
   if (!expired.length) return;
   const { env } = await import("cloudflare:workers");
   if (!env.MEDIA) return;
-  await Promise.all(expired.map((story) => env.MEDIA.delete(story.r2Key!)));
+  const mediaBucket = env.MEDIA;
+  await Promise.all(expired.map((story) => mediaBucket.delete(story.r2Key!)));
   await Promise.all(expired.map((story) => db.delete(profileStatuses).where(eq(profileStatuses.id, story.id))));
 }
 

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getCurrentAdmin, getCurrentUser } from "@/lib/auth";
 import { findProfileMedia } from "@/lib/media";
+import { canAccessExclusiveMedia } from "@/lib/profile-safety";
 
 export const dynamic = "force-dynamic";
 
@@ -9,10 +10,14 @@ export async function GET(_request: Request, { params }: { params: Promise<{ med
   const record = await findProfileMedia(mediaId);
   if (!record) notFound();
 
-  const isPublic = record.media.moderationStatus === "approved" && record.profile.status === "approved";
+  const [user, admin] = await Promise.all([getCurrentUser(), getCurrentAdmin()]);
+  const isPublic = record.media.visibility === "public" && record.media.moderationStatus === "approved" && record.profile.status === "approved";
+  const canAccessExclusive = record.media.visibility === "exclusive"
+    && record.media.moderationStatus === "approved"
+    && record.profile.status === "approved"
+    && await canAccessExclusiveMedia(record.profile.id, user?.id, Boolean(admin));
   if (!isPublic) {
-    const [user, admin] = await Promise.all([getCurrentUser(), getCurrentAdmin()]);
-    if (user?.id !== record.profile.ownerId && !admin) notFound();
+    if (!canAccessExclusive && user?.id !== record.profile.ownerId && !admin) notFound();
   }
 
   const { env } = await import("cloudflare:workers");

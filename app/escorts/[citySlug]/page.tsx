@@ -6,6 +6,8 @@ import { StoryRail } from "@/app/historias/StoryRail";
 import { filterPublicProfiles, getCityInfo, getCityPath, getPublicProfiles, readDirectoryFilters, type DirectoryQuery } from "@/lib/directory";
 import { getActiveStories } from "@/lib/stories";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
+import { getCurrentUser } from "@/lib/auth";
+import { safeJsonLd } from "@/lib/json-ld";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +30,8 @@ export default async function CityPage({ params, searchParams }: CityPageProps) 
   const city = getCityInfo(citySlug);
   if (!city) notFound();
   const filters = readDirectoryFilters(await searchParams, { region: city.region, city: city.city });
-  const [publicProfiles, settings] = await Promise.all([getPublicProfiles(), getSiteSettings()]);
+  const [viewer, settings] = await Promise.all([getCurrentUser(), getSiteSettings()]);
+  const publicProfiles = await getPublicProfiles({ viewerId: viewer?.id });
   const profiles = filterPublicProfiles(publicProfiles, filters);
   const stories = await getActiveStories({ profileIds: profiles.map((profile) => profile.id) });
   const basePath = getCityPath(city.city);
@@ -45,7 +48,7 @@ export default async function CityPage({ params, searchParams }: CityPageProps) 
 
   return (
     <DirectoryShell>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(schema) }} />
       <section className="city-hero"><p className="eyebrow">DIRECTORIO DE ESCORTS · {city.region.toUpperCase()}</p><h1>Escorts en <em>{city.city}</em></h1><p>Perfiles de escorts, agencias y arriendos disponibles en {city.city}. Navega por categoría o afina la búsqueda con filtros avanzados.</p></section>
       <section className="directory-content city-content">
         <DirectoryFilters action={basePath} filters={filters} pinnedCity={city.city} pinnedRegion={city.region} showType />

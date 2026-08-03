@@ -10,6 +10,7 @@ type MediaItem = {
   mediaType: "image" | "video";
   contentType: string;
   moderationStatus: "pending" | "approved" | "rejected";
+  visibility: "public" | "exclusive";
   isProfilePhoto: boolean;
   byteSize: number;
 };
@@ -42,8 +43,9 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota }: {
   const [isBusy, setIsBusy] = useState(false);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const profilePhotoInputRef = useRef<HTMLInputElement>(null);
+  const exclusiveInputRef = useRef<HTMLInputElement>(null);
 
-  async function upload(files: FileList | null, uploadKind: "gallery" | "profile_photo" = "gallery") {
+  async function upload(files: FileList | null, uploadKind: "gallery" | "profile_photo" | "exclusive" = "gallery") {
     if (!files?.length || isBusy) return;
     setIsBusy(true);
     setNotice("");
@@ -75,6 +77,7 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota }: {
     } finally {
       if (galleryInputRef.current) galleryInputRef.current.value = "";
       if (profilePhotoInputRef.current) profilePhotoInputRef.current.value = "";
+      if (exclusiveInputRef.current) exclusiveInputRef.current.value = "";
       setIsBusy(false);
     }
   }
@@ -98,7 +101,8 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota }: {
   }
 
   const profilePhotos = media.filter((item) => item.isProfilePhoto);
-  const galleryMedia = media.filter((item) => !item.isProfilePhoto);
+  const galleryMedia = media.filter((item) => !item.isProfilePhoto && item.visibility === "public");
+  const exclusiveMedia = media.filter((item) => !item.isProfilePhoto && item.visibility === "exclusive");
   const images = galleryMedia.filter((item) => item.mediaType === "image");
   const videos = galleryMedia.filter((item) => item.mediaType === "video");
   const canUpload = !isBusy && quota.level !== "blocked" && (images.length < 10 || videos.length < 3);
@@ -111,5 +115,8 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota }: {
     {profilePhotos.length > 0 && <div className="profile-photo-preview-list">{profilePhotos.map((item) => <article key={item.id}><div className="media-owner-preview"><Image src={item.url} alt="Vista previa de foto de perfil" fill unoptimized sizes="120px" /></div><div><span className={`media-status media-status-${item.moderationStatus}`}>{statusLabel[item.moderationStatus]}</span><small>Foto principal · {formatBytes(item.byteSize)}</small><button type="button" onClick={() => remove(item.id)} disabled={isBusy}>Eliminar</button></div></article>)}</div>}
     <div className="media-upload-row"><label className="button button-primary">{isBusy ? "Procesando…" : "Seleccionar fotos o videos"}<input ref={galleryInputRef} type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple disabled={!canUpload} onChange={(event) => upload(event.target.files)} /></label><small>Galería: fotos JPEG, PNG o WebP, hasta 5 MB. Videos MP4 o WebM, hasta 8 MB y 10 segundos.</small></div>
     {galleryMedia.length > 0 && <div className="media-owner-grid">{galleryMedia.map((item, index) => <article key={item.id}><div className="media-owner-preview">{item.mediaType === "image" ? <Image src={item.url} alt={`Vista previa de foto ${index + 1}`} fill unoptimized sizes="(max-width: 620px) 50vw, 180px" /> : <video controls preload="metadata"><source src={item.url} type={item.contentType} /></video>}</div><div><span className={`media-status media-status-${item.moderationStatus}`}>{statusLabel[item.moderationStatus]}</span><small>{item.mediaType === "video" ? "Video · " : "Foto · "}{formatBytes(item.byteSize)}</small><button type="button" onClick={() => remove(item.id)} disabled={isBusy}>Eliminar</button></div></article>)}</div>}
+    <section className="exclusive-media-owner"><div><p className="eyebrow">CONTENIDO EXCLUSIVO</p><h3>Galería privada para personas autorizadas</h3><p>Se muestra bloqueada y desenfocada al público. Solo el dueño, el equipo administrador y las cuentas que autorices podrán abrir los archivos aprobados.</p></div><label className="button button-outline">{isBusy ? "Procesando…" : "Agregar contenido exclusivo"}<input ref={exclusiveInputRef} type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple disabled={!canUpload} onChange={(event) => upload(event.target.files, "exclusive")} /></label>
+      {exclusiveMedia.length > 0 && <div className="media-owner-grid">{exclusiveMedia.map((item, index) => <article key={item.id}><div className="media-owner-preview">{item.mediaType === "image" ? <Image src={item.url} alt={`Vista previa exclusiva ${index + 1}`} fill unoptimized sizes="180px" /> : <video controls preload="metadata"><source src={item.url} type={item.contentType} /></video>}</div><div><span className={`media-status media-status-${item.moderationStatus}`}>{statusLabel[item.moderationStatus]}</span><small>Exclusivo · {formatBytes(item.byteSize)}</small><button type="button" onClick={() => remove(item.id)} disabled={isBusy}>Eliminar</button></div></article>)}</div>}
+    </section>
   </section>;
 }

@@ -17,7 +17,8 @@ export async function POST(request: NextRequest) {
   const db = await getDb();
   const [current] = await db.select({ birthDate: users.birthDate }).from(users).where(eq(users.id, user.id)).limit(1);
   const formData = await request.formData();
-  const displayName = typeof formData.get("display_name") === "string" ? formData.get("display_name").trim().slice(0, 80) : "";
+  const displayNameInput = formData.get("display_name");
+  const displayName = typeof displayNameInput === "string" ? displayNameInput.trim().slice(0, 80) : "";
   const identity = readAccountIdentity(formData);
   if (!current || !identity || identity.birthDate !== current.birthDate || displayName.length < 2) {
     return NextResponse.redirect(new URL("/mi-cuenta/datos-personales?notice=error", request.url), 303);

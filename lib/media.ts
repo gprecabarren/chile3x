@@ -1,4 +1,4 @@
-import { asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { profileMedia, profiles } from "@/db/schema";
 
@@ -22,6 +22,7 @@ export type ProfileMediaRecord = {
   contentType: string;
   altText: string | null;
   moderationStatus: "pending" | "approved" | "rejected";
+  visibility: "public" | "exclusive";
   isProfilePhoto: boolean;
   sortOrder: number;
   createdAt: string;
@@ -97,10 +98,18 @@ export async function getApprovedMediaForProfiles(profileIds: string[]) {
     .orderBy(asc(profileMedia.sortOrder), asc(profileMedia.createdAt));
   const byProfile = new Map<string, ProfileMediaRecord[]>();
   for (const row of rows as ProfileMediaRecord[]) {
-    if (row.moderationStatus !== "approved") continue;
+    if (row.moderationStatus !== "approved" || row.visibility !== "public") continue;
     byProfile.set(row.profileId, [...(byProfile.get(row.profileId) ?? []), row]);
   }
   return byProfile;
+}
+
+export async function getApprovedExclusiveMedia(profileId: string) {
+  return (await (await getDb()).select().from(profileMedia).where(and(
+    eq(profileMedia.profileId, profileId),
+    eq(profileMedia.visibility, "exclusive"),
+    eq(profileMedia.moderationStatus, "approved"),
+  )).orderBy(asc(profileMedia.sortOrder), asc(profileMedia.createdAt))) as ProfileMediaRecord[];
 }
 
 export async function findProfileMedia(mediaId: string) {

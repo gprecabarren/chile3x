@@ -43,8 +43,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const formData = await request.formData();
   const entry = formData.get("file");
-  const uploadKind = formData.get("upload_kind") === "profile_photo" ? "profile_photo" : "gallery";
+  const uploadKindInput = formData.get("upload_kind");
+  const uploadKind = uploadKindInput === "profile_photo" ? "profile_photo" : uploadKindInput === "exclusive" ? "exclusive" : "gallery";
   if (!entry || typeof entry === "string") return error("Selecciona una foto o video para subir.", 400);
+  // Reject oversized bodies before copying the file into Worker memory.
+  if (entry.size === 0 || entry.size > Math.max(MAX_IMAGE_BYTES, MAX_VIDEO_BYTES)) {
+    return error("El archivo supera el máximo permitido de 8 MB.", 400);
+  }
 
   const data = await entry.arrayBuffer();
   const imageType = detectImageType(data);
@@ -55,12 +60,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const contentType = imageType ?? videoType!;
   if (uploadKind === "profile_photo" && mediaType !== "image") return error("La foto de perfil debe ser una imagen JPEG, PNG o WebP.", 400);
   const maxBytes = mediaType === "image" ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES;
-  if (entry.size === 0 || entry.size > maxBytes) return error(mediaType === "image" ? "Cada imagen debe pesar menos de 5 MB." : "Cada video debe pesar menos de 8 MB.", 400);
+  if (entry.size > maxBytes) return error(mediaType === "image" ? "Cada imagen debe pesar menos de 5 MB." : "Cada video debe pesar menos de 8 MB.", 400);
 
   const existing = await getProfileMedia(profileId);
   const sameTypeCount = existing.filter((item) => item.mediaType === mediaType && !item.isProfilePhoto).length;
   const sameTypeLimit = mediaType === "image" ? MAX_IMAGES_PER_PROFILE : MAX_VIDEOS_PER_PROFILE;
-  if (uploadKind === "gallery" && sameTypeCount >= sameTypeLimit) return error(mediaType === "image" ? "Este perfil ya alcanzó el máximo de 10 imágenes de galería." : "Este perfil ya alcanzó el máximo de 3 videos.", 400);
+  if (uploadKind !== "profile_photo" && sameTypeCount >= sameTypeLimit) return error(mediaType === "image" ? "Este perfil ya alcanzó el máximo de 10 imágenes entre sus galerías." : "Este perfil ya alcanzó el máximo de 3 videos entre sus galerías.", 400);
 
   const profileBytes = existing.reduce((total, media) => total + media.byteSize, 0);
   if (profileBytes + entry.size > MAX_PROFILE_MEDIA_BYTES) return error("Este perfil alcanzaría el límite de 45 MB para fotos y videos. Elige un archivo más liviano.", 400);
@@ -82,7 +87,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const sortOrder = existing.reduce((latest, media) => Math.max(latest, media.sortOrder), -1) + 1;
   try {
-    await db.insert(profileMedia).values({ id, profileId, mediaType, r2Key, byteSize: data.byteLength, contentType, moderationStatus: "pending", isProfilePhoto: uploadKind === "profile_photo", sortOrder });
+    await db.insert(profileMedia).values({ id, profileId, mediaType, r2Key, byteSize: data.byteLength, contentType, moderationStatus: "pending", visibility: uploadKind === "exclusive" ? "exclusive" : "public", isProfilePhoto: uploadKind === "profile_photo", sortOrder });
   } catch (cause) {
     await env.MEDIA.delete(r2Key);
     throw cause;
@@ -90,7 +95,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const totalBytes = usage.bytes + data.byteLength;
   return NextResponse.json({
-    media: { id, url: `/media/${id}`, mediaType, contentType, moderationStatus: "pending", isProfilePhoto: uploadKind === "profile_photo", byteSize: data.byteLength },
+    media: { id, url: `/media/${id}`, mediaType, contentType, moderationStatus: "pending", visibility: uploadKind === "exclusive" ? "exclusive" : "public", isProfilePhoto: uploadKind === "profile_photo", byteSize: data.byteLength },
     quota: { bytes: totalBytes, ...getMediaQuotaState(totalBytes) },
   }, { status: 201 });
 }

@@ -3,12 +3,15 @@ import { AccountIdentityFields } from "@/app/account-identity-fields";
 import { safeAccountReturnTo } from "@/lib/auth";
 import { getPortalWhatsappLink } from "@/lib/site-contacts";
 import { getSiteSettings } from "@/lib/site-settings";
+import { AuthTurnstile } from "@/app/AuthTurnstile";
+import { TURNSTILE_AUTH_REGISTER_ACTION } from "@/lib/turnstile";
 
 const messages: Record<string, string> = {
   adult: "Debes confirmar que eres mayor de 18 años.",
   duplicate: "Ese correo ya tiene una cuenta. Puedes iniciar sesión.",
   invalid: "Revisa los datos ingresados e inténtalo nuevamente.",
   server: "No fue posible crear la cuenta en este momento. Inténtalo nuevamente en unos minutos.",
+  antispam: "No pudimos validar la protección de seguridad. Inténtalo nuevamente.",
 };
 
 export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ error?: string; return_to?: string }> }) {
@@ -30,6 +33,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
       <label>Correo electrónico<input name="email" type="email" required maxLength={160} autoComplete="email" /></label>
       <label>Contraseña<input name="password" type="password" required minLength={12} autoComplete="new-password" /><small>Usa al menos 12 caracteres.</small></label>
       <label className="checkbox-label"><input name="adult_confirmed" type="checkbox" value="yes" required />Confirmo que soy mayor de 18 años.</label>
+      <AuthTurnstile action={TURNSTILE_AUTH_REGISTER_ACTION} />
       <button className="button button-primary" type="submit">Crear cuenta y verificar correo</button>
     </form>
     {whatsappHref && <a className="button button-outline auth-whatsapp-request" href={whatsappHref} target="_blank" rel="noreferrer">Solicitar creación de cuenta por WhatsApp</a>}

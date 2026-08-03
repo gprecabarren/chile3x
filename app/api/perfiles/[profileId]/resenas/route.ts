@@ -3,11 +3,10 @@ import { getDb } from "@/db";
 import { reviews } from "@/db/schema";
 import { assertSameOrigin, getCurrentUser } from "@/lib/auth";
 import { isPublicProfile } from "@/lib/profile-interactions";
-import { expectedTurnstileHostnames, TURNSTILE_PROFILE_REVIEW_ACTION } from "@/lib/turnstile";
+import { TURNSTILE_PROFILE_REVIEW_ACTION } from "@/lib/turnstile";
+import { verifyTurnstile } from "@/lib/turnstile-server";
 
 export const dynamic = "force-dynamic";
-
-type TurnstileResult = { success?: boolean; action?: string; hostname?: string };
 
 function error(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
@@ -29,27 +28,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (body.length < 3 || body.length > 700) return error("La reseña debe tener entre 3 y 700 caracteres.", 400);
   if (!await isPublicProfile(profileId)) return error("El perfil ya no está disponible.", 404);
 
-  const expectedHostnames = expectedTurnstileHostnames(request.url);
-  const { env } = await import("cloudflare:workers");
-  if (typeof token !== "string" || token.length === 0 || token.length > 2048 || expectedHostnames.size === 0 || !env.TURNSTILE_SECRET) {
-    return error("No fue posible validar la protección antispam. Inténtalo nuevamente.", 403);
-  }
-
-  let result: TurnstileResult;
-  try {
-    const remoteip = request.headers.get("CF-Connecting-IP") ?? request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim();
-    const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      signal: AbortSignal.timeout(10_000),
-      body: new URLSearchParams({ secret: env.TURNSTILE_SECRET, response: token, ...(remoteip ? { remoteip } : {}) }),
-    });
-    if (!response.ok) throw new Error(`siteverify ${response.status}`);
-    result = await response.json() as TurnstileResult;
-  } catch {
-    return error("No fue posible validar la protección antispam. Inténtalo nuevamente.", 403);
-  }
-  if (!result.success || result.action !== TURNSTILE_PROFILE_REVIEW_ACTION || !result.hostname || !expectedHostnames.has(result.hostname)) {
+  if (!await verifyTurnstile(request, token, TURNSTILE_PROFILE_REVIEW_ACTION)) {
     return error("La verificación antispam no fue válida. Vuelve a intentarlo.", 403);
   }
 

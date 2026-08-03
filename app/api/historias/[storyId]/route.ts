@@ -21,6 +21,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const { env } = await import("cloudflare:workers");
     await env.MEDIA?.delete(row.story.r2Key);
   }
-  const destination = safeAccountReturnTo(typeof formData.get("return_to") === "string" ? formData.get("return_to") : null);
+  const returnTo = formData.get("return_to");
+  const destination = safeAccountReturnTo(typeof returnTo === "string" ? returnTo : null);
   return NextResponse.redirect(new URL(destination, request.url), 303);
 }

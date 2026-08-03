@@ -7,6 +7,8 @@ import { cityDirectory } from "@/app/locations";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { getActiveStories } from "@/lib/stories";
 import { StoryRail } from "@/app/historias/StoryRail";
+import { getCurrentUser } from "@/lib/auth";
+import { safeJsonLd } from "@/lib/json-ld";
 
 export const metadata: Metadata = {
   title: "Escorts en Chile",
@@ -22,7 +24,8 @@ export default async function EscortsPage({ searchParams }: { searchParams: Prom
   const filters = readDirectoryFilters(query, { type: "escort" });
   const nearbyCityValue = Array.isArray(query.cerca) ? query.cerca[0] : query.cerca;
   const nearbyCity = cityDirectory.some((item) => item.city === nearbyCityValue) ? nearbyCityValue : undefined;
-  const [allProfiles, settings] = await Promise.all([getPublicProfiles(), getSiteSettings()]);
+  const [viewer, settings] = await Promise.all([getCurrentUser(), getSiteSettings()]);
+  const allProfiles = await getPublicProfiles({ viewerId: viewer?.id });
   const profiles = prioritizeProfilesByCity(filterPublicProfiles(allProfiles, filters), nearbyCity);
   const stories = await getActiveStories({ profileIds: profiles.map((profile) => profile.id) });
   const canonicalProfiles = filterPublicProfiles(allProfiles, readDirectoryFilters({}, { type: "escort" }));
@@ -31,7 +34,7 @@ export default async function EscortsPage({ searchParams }: { searchParams: Prom
 
   return (
     <DirectoryShell>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(schema) }} />
       <section className="directory-hero">
         <p className="eyebrow">DIRECTORIO NACIONAL</p>
         <h1>Escorts en <em>todo Chile.</em></h1>

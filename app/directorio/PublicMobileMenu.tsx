@@ -15,6 +15,7 @@ const directoryLinks = [
 
 const portalLinks = [
   ["Quiénes somos", "/quienes-somos"],
+  ["Noticias", "/noticias"],
   ["Preguntas frecuentes", "/faq"],
   ["Contacto", "/contacto"],
   ["Mi cuenta", "/ingresar"],

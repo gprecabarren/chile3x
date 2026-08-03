@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { assertSameOrigin, createUserSession, getUserSessionCookieName, getUserSessionDuration, safeAccountReturnTo, sessionCookieOptions, verifyPassword } from "@/lib/auth";
+import { TURNSTILE_AUTH_LOGIN_ACTION } from "@/lib/turnstile";
+import { verifyTurnstile } from "@/lib/turnstile-server";
 
 function invalidCredentials(request: Request) {
   return NextResponse.redirect(new URL("/ingresar?error=invalid", request.url), 303);
@@ -21,6 +23,7 @@ export async function POST(request: NextRequest) {
   }
 
   const formData = await request.formData();
+  if (!await verifyTurnstile(request, formData.get("cf-turnstile-response"), TURNSTILE_AUTH_LOGIN_ACTION)) return NextResponse.redirect(new URL("/ingresar?error=antispam", request.url), 303);
   const email = getFormString(formData, "email").trim().toLowerCase().slice(0, 160);
   const password = getFormString(formData, "password");
   if (!email || !password) return invalidCredentials(request);

@@ -36,6 +36,7 @@ export async function PublicHeader() {
           </div>
           <div className="public-navigation-group public-navigation-site" aria-label="Información y cuenta">
             <Link href="/quienes-somos">Quiénes somos</Link>
+            <Link href="/noticias">Noticias</Link>
             <Link href="/faq">FAQ</Link>
             <Link href="/contacto">Contacto</Link>
             <Link href="/ingresar">Mi cuenta</Link>
@@ -59,7 +60,7 @@ export async function PublicFooter() {
       <div className="public-footer-brand"><Link className="public-footer-logo" href="/" aria-label="Chile3X, inicio"><Image src="/chile3x-logo-primary.jpeg" alt="Chile3X" width={800} height={225} unoptimized /></Link><p>Directorio para adultos. Los acuerdos ocurren directamente entre visitantes y anunciantes.</p></div>
       <div className="public-footer-navigation">
         <div><strong>DIRECTORIO</strong><Link href="/escorts">Escorts</Link><Link href="/agencias">Agencias</Link><Link href="/arriendos">Arriendos</Link></div>
-        <div><strong>INFORMACIÓN</strong><Link href="/quienes-somos">Quiénes somos</Link><Link href="/faq">Preguntas frecuentes</Link><Link href="/contacto">Contacto</Link><Link href="/terminos">Términos</Link><Link href="/privacidad">Privacidad</Link><Link href="/reglas-de-publicacion">Reglas de publicación</Link></div>
+        <div><strong>INFORMACIÓN</strong><Link href="/quienes-somos">Quiénes somos</Link><Link href="/noticias">Noticias</Link><Link href="/faq">Preguntas frecuentes</Link><Link href="/contacto">Contacto</Link><Link href="/terminos">Términos</Link><Link href="/privacidad">Privacidad</Link><Link href="/reglas-de-publicacion">Reglas de publicación</Link></div>
       </div>
       <div className="public-footer-extras"><div><strong>SÍGUENOS</strong><PortalContactLinks placement="footer" /></div><OadBadge /></div>
       <div className="public-footer-bottom"><span>© {new Date().getFullYear()} Chile3X · Solo mayores de 18 años</span><span>Chile · Directorio para adultos</span></div>
@@ -73,12 +74,13 @@ export async function PortalContactLinks({ placement }: { placement: "header" | 
   return <div className={`portal-contact-links portal-contact-links-${placement}`} aria-label="Canales oficiales de Chile3X">{contacts.map((contact) => <a key={contact.key} className={`portal-contact-link portal-contact-${contact.key}`} href={contact.href} target={contact.external ? "_blank" : undefined} rel={contact.external ? "noreferrer" : undefined} aria-label={contact.label} title={contact.label}><PortalContactIcon kind={contact.key} /><span className="sr-only">{contact.label}</span></a>)}</div>;
 }
 
-export function PortalContactIcon({ kind }: { kind: "whatsapp" | "telegram" | "instagram" | "email" | "call" | "arsmate" }) {
+export function PortalContactIcon({ kind }: { kind: "whatsapp" | "telegram" | "instagram" | "email" | "call" | "arsmate" | "videocall" }) {
   if (kind === "whatsapp") return <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M16 3.25a12.7 12.7 0 0 0-10.92 19.2L3.7 28.75l6.5-1.7A12.73 12.73 0 1 0 16 3.25Zm0 2.45a10.27 10.27 0 1 1-5.12 19.17l-.5-.3-3.86 1.01 1.03-3.75-.33-.53A10.27 10.27 0 0 1 16 5.7Zm-4.21 4.87c-.36 0-.73.1-1 .43-.28.34-1.08 1.05-1.08 2.56 0 1.5 1.1 2.95 1.25 3.16.15.2 2.14 3.43 5.2 4.81 2.56 1.16 3.08.93 3.64.87.56-.05 1.8-.74 2.05-1.45.25-.72.25-1.33.18-1.46-.08-.13-.28-.2-.59-.36-.3-.15-1.8-.89-2.08-.99-.28-.1-.49-.15-.7.15-.2.3-.8.99-.98 1.2-.18.2-.36.23-.67.08-.3-.16-1.3-.48-2.47-1.54-.92-.83-1.54-1.85-1.72-2.16-.18-.3-.02-.47.13-.62.14-.14.31-.36.46-.54.15-.18.2-.3.3-.51.1-.2.05-.38-.02-.54-.08-.15-.7-1.7-.96-2.32-.25-.61-.5-.53-.7-.54h-.58Z" fill="currentColor" /></svg>;
   if (kind === "telegram") return <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m21.15 3.37-18.3 7.06c-1.25.5-1.24 1.2-.23 1.5l4.7 1.47 1.82 5.57c.22.61.11.85.75.85.49 0 .7-.22.98-.48l2.28-2.22 4.74 3.5c.88.49 1.5.24 1.72-.82l3.12-14.68c.32-1.3-.5-1.89-1.58-1.4Zm-11.97 9.55 10.88-6.87c.55-.33 1.05-.15.64.21l-9.33 8.42-.36 3.82-1.93-5.58Z" fill="currentColor" /></svg>;
   if (kind === "instagram") return <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.2" y="3.2" width="17.6" height="17.6" rx="4.7" fill="none" stroke="currentColor" strokeWidth="2" /><circle cx="12" cy="12" r="4.1" fill="none" stroke="currentColor" strokeWidth="2" /><circle cx="17.4" cy="6.7" r="1.15" fill="currentColor" /></svg>;
   if (kind === "email") return <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" strokeWidth="2" /><path d="m4.5 7 7.5 5.5L19.5 7" fill="none" stroke="currentColor" strokeWidth="2" /></svg>;
   if (kind === "call") return <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7.1 3.8 9.8 3c.65-.2 1.31.16 1.53.8l1.04 3.09c.19.57.02 1.2-.44 1.59l-1.38 1.16a13.9 13.9 0 0 0 3.83 3.83l1.16-1.38c.39-.46 1.02-.63 1.59-.44l3.09 1.04c.64.22 1 .88.8 1.53l-.8 2.7c-.2.66-.8 1.1-1.49 1.08C10.4 18.71 5.29 13.6 4.02 5.3c-.1-.68.32-1.3.99-1.5Z" fill="currentColor" /></svg>;
+  if (kind === "videocall") return <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="6" width="13" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="2" /><path d="m16 10 5-3v10l-5-3Z" fill="currentColor" /></svg>;
   return <span className="arsmate-icon" aria-hidden="true">A</span>;
 }
 

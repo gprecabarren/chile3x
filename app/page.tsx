@@ -7,6 +7,9 @@ import { StoryRail } from "./historias/StoryRail";
 import { cityTotal, regions } from "./locations";
 import { getCityEscortCounts, getFeaturedProfiles } from "@/lib/directory";
 import { getActiveStories } from "@/lib/stories";
+import { getCurrentUser } from "@/lib/auth";
+import { getBlockedProfileIds } from "@/lib/profile-safety";
+import { safeJsonLd } from "@/lib/json-ld";
 
 export const metadata: Metadata = {
   title: "Escorts en Chile",
@@ -73,14 +76,18 @@ const websiteSchema = {
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [stories, cityEscortCounts, featuredProfiles] = await Promise.all([getActiveStories(), getCityEscortCounts(), getFeaturedProfiles(6)]);
+  const viewer = await getCurrentUser();
+  const featuredProfiles = await getFeaturedProfiles(6, viewer?.id);
+  const blockedProfileIds = await getBlockedProfileIds(viewer?.id);
+  const [stories, cityEscortCounts] = await Promise.all([getActiveStories(), getCityEscortCounts()]);
+  const visibleStories = stories.filter((story) => !blockedProfileIds.has(story.profileId));
   return (
     <main>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(directorySchema) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(directorySchema) }}
       />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteSchema) }} />
 
       <div className="age-strip">
         <span>+18</span>
@@ -101,6 +108,7 @@ export default async function Home() {
           </div>
           <div className="public-navigation-group public-navigation-site" aria-label="Información y cuenta">
             <Link href="/quienes-somos">Quiénes somos</Link>
+            <Link href="/noticias">Noticias</Link>
             <Link href="/faq">FAQ</Link>
             <Link href="/contacto">Contacto</Link>
             <a href="/ingresar">Mi cuenta</a>
@@ -149,7 +157,7 @@ export default async function Home() {
         <div><p className="eyebrow">CHILE3X</p><h2>Un espacio adulto, <em>privado y claro.</em></h2><p>Encuentra publicaciones revisadas y contacta directamente a cada anunciante.</p><Link className="button button-outline" href="/escorts">Ver directorio nacional</Link></div>
       </section>
 
-      <StoryRail stories={stories} />
+      <StoryRail stories={visibleStories} />
 
       <section className="section directory-section" id="cobertura">
         <div className="section-heading directory-heading">

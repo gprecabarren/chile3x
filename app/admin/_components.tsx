@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { count, eq } from "drizzle-orm";
 import type { AdminUser } from "@/lib/auth";
 import { getDb } from "@/db";
-import { profiles } from "@/db/schema";
+import { profileReports, profiles } from "@/db/schema";
 
 async function getPendingProfilesCount() {
   try {
@@ -21,8 +21,18 @@ async function getPendingProfilesCount() {
   }
 }
 
+async function getPendingReportsCount() {
+  try {
+    const [pending] = await (await getDb()).select({ total: count() }).from(profileReports).where(eq(profileReports.status, "pending"));
+    return Number(pending?.total ?? 0);
+  } catch (error) {
+    console.error("Unable to load pending report count", error);
+    return 0;
+  }
+}
+
 export async function AdminShell({ user, children }: { user: AdminUser; children: ReactNode }) {
-  const pendingCount = await getPendingProfilesCount();
+  const [pendingCount, pendingReports] = await Promise.all([getPendingProfilesCount(), getPendingReportsCount()]);
 
   return (
     <main className="admin-root">
@@ -33,7 +43,9 @@ export async function AdminShell({ user, children }: { user: AdminUser; children
           <Link className={pendingCount > 0 ? "admin-nav-alert" : undefined} href="/admin/perfiles">Perfiles{pendingCount > 0 && <b>{pendingCount}</b>}</Link>
           <Link href="/admin/medios">Fotos</Link>
           <Link href="/admin/resenas">Reseñas</Link>
+          <Link className={pendingReports > 0 ? "admin-nav-alert" : undefined} href="/admin/reportes">Reportes{pendingReports > 0 && <b>{pendingReports}</b>}</Link>
           <Link href="/admin/cuentas">Cuentas</Link>
+          <Link href="/admin/noticias">Noticias</Link>
           <Link href="/admin/configuracion">Configuración</Link>
         </nav>
         <div className="admin-account">

@@ -3,6 +3,7 @@ import { cityDirectory, getCityBySlug, regions } from "@/app/locations";
 import { getDb } from "@/db";
 import { agencyMembers, profileDetails, profileServices, profileTags, profiles, profileViews } from "@/db/schema";
 import { getApprovedMediaForProfiles } from "@/lib/media";
+import { getBlockedProfileIds } from "@/lib/profile-safety";
 import {
   additionalServices,
   bodyTypes,
@@ -139,14 +140,16 @@ export function readDirectoryFilters(query: DirectoryQuery, pinned?: { region?: 
   };
 }
 
-export async function getPublicProfiles(options: { includeUnapproved?: boolean } = {}) {
+export async function getPublicProfiles(options: { includeUnapproved?: boolean; viewerId?: string } = {}) {
   const db = await getDb();
   const baseQuery = db.select({ profile: profiles, details: profileDetails }).from(profiles)
     .leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id));
   const rows = options.includeUnapproved
     ? await baseQuery
     : await baseQuery.where(eq(profiles.status, "approved"));
-  const ids = rows.map((row) => row.profile.id);
+  const blockedIds = await getBlockedProfileIds(options.viewerId);
+  const visibleRows = rows.filter((row) => !blockedIds.has(row.profile.id));
+  const ids = visibleRows.map((row) => row.profile.id);
 
   if (!ids.length) {
     return [] as PublicProfile[];
@@ -174,7 +177,7 @@ export async function getPublicProfiles(options: { includeUnapproved?: boolean }
     memberMap.set(membership.agencyProfileId, [...(memberMap.get(membership.agencyProfileId) ?? []), membership.memberProfileId]);
   }
 
-  return rows.map(({ profile, details }): PublicProfile => ({
+  return visibleRows.map(({ profile, details }): PublicProfile => ({
     id: profile.id,
     slug: profile.slug,
     type: profile.type,
@@ -288,10 +291,10 @@ export async function getCityEscortCounts() {
  * is respected first, then valid unique daily views over the last 30 days.
  * This prevents a raw reload counter from deciding the public showcase.
  */
-export async function getFeaturedProfiles(limit = 6) {
+export async function getFeaturedProfiles(limit = 6, viewerId?: string) {
   let publicProfiles: PublicProfile[];
   try {
-    publicProfiles = (await getPublicProfiles()).filter((profile) => profile.type === "escort" && !profile.isDemo);
+    publicProfiles = (await getPublicProfiles({ viewerId })).filter((profile) => profile.type === "escort" && !profile.isDemo);
   } catch {
     // The static render test has no D1 binding. In production this query is
     // available, while the empty state remains accurate before launch.

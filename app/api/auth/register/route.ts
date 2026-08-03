@@ -5,6 +5,8 @@ import { users } from "@/db/schema";
 import { assertSameOrigin, hashPassword, safeAccountReturnTo } from "@/lib/auth";
 import { createAccountToken, sendAccountEmail } from "@/lib/account-email";
 import { readAccountIdentity } from "@/lib/account-data";
+import { TURNSTILE_AUTH_REGISTER_ACTION } from "@/lib/turnstile";
+import { verifyTurnstile } from "@/lib/turnstile-server";
 
 function redirectWithError(request: Request, error: string) {
   const url = new URL("/registro", request.url);
@@ -27,6 +29,7 @@ export async function POST(request: NextRequest) {
   let stage = "form_data";
   try {
     const formData = await request.formData();
+    if (!await verifyTurnstile(request, formData.get("cf-turnstile-response"), TURNSTILE_AUTH_REGISTER_ACTION)) return redirectWithError(request, "antispam");
     const displayName = getFormString(formData, "display_name").trim().slice(0, 80);
     const email = getFormString(formData, "email").trim().toLowerCase().slice(0, 160);
     const password = getFormString(formData, "password");

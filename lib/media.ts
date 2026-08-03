@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/db";
-import { profileMedia, profiles } from "@/db/schema";
+import { newsMedia, profileMedia, profileReportEvidence, profileStatuses, profileVerificationFiles, profiles } from "@/db/schema";
 
 export const MAX_IMAGES_PER_PROFILE = 10;
 export const MAX_IMAGE_BYTES = 5_000_000;
@@ -84,11 +84,21 @@ export async function getProfileMedia(profileId: string) {
 }
 
 export async function getMediaUsage() {
-  const [row] = await (await getDb()).select({
-    bytes: sql<number>`coalesce(sum(${profileMedia.byteSize}), 0)`,
-    files: sql<number>`count(*)`,
-  }).from(profileMedia);
-  return { bytes: Number(row?.bytes ?? 0), files: Number(row?.files ?? 0) };
+  const db = await getDb();
+  // All binary uploads share the same private R2 bucket. Count every table
+  // that owns an object so the quota warning stays meaningful as features
+  // such as reports and stories are used.
+  const totals = await Promise.all([
+    db.select({ bytes: sql<number>`coalesce(sum(${profileMedia.byteSize}), 0)`, files: sql<number>`count(*)` }).from(profileMedia),
+    db.select({ bytes: sql<number>`coalesce(sum(${profileStatuses.byteSize}), 0)`, files: sql<number>`count(*)` }).from(profileStatuses),
+    db.select({ bytes: sql<number>`coalesce(sum(${profileVerificationFiles.byteSize}), 0)`, files: sql<number>`count(*)` }).from(profileVerificationFiles),
+    db.select({ bytes: sql<number>`coalesce(sum(${newsMedia.byteSize}), 0)`, files: sql<number>`count(*)` }).from(newsMedia),
+    db.select({ bytes: sql<number>`coalesce(sum(${profileReportEvidence.byteSize}), 0)`, files: sql<number>`count(*)` }).from(profileReportEvidence),
+  ]);
+  return totals.reduce((usage, [row]) => ({
+    bytes: usage.bytes + Number(row?.bytes ?? 0),
+    files: usage.files + Number(row?.files ?? 0),
+  }), { bytes: 0, files: 0 });
 }
 
 export async function getApprovedMediaForProfiles(profileIds: string[]) {

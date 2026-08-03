@@ -252,6 +252,20 @@ export const profileReports = sqliteTable("profile_reports", {
   index("profile_reports_profile_idx").on(table.profileId, table.createdAt),
 ]);
 
+// Screenshots supplied with a report are kept in private R2 storage. The
+// database only stores the opaque object key and metadata needed to authorize
+// the reporter and the Chile3X team to view the evidence.
+export const profileReportEvidence = sqliteTable("profile_report_evidence", {
+  id: text("id").primaryKey(),
+  reportId: text("report_id").notNull().references(() => profileReports.id, { onDelete: "cascade" }),
+  r2Key: text("r2_key").notNull().unique(),
+  byteSize: integer("byte_size").notNull().default(0),
+  contentType: text("content_type").notNull(),
+  createdAt,
+}, (table) => [
+  index("profile_report_evidence_report_idx").on(table.reportId, table.createdAt),
+]);
+
 export const blockedProfiles = sqliteTable("blocked_profiles", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),

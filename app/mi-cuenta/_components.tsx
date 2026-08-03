@@ -12,6 +12,7 @@ export function AccountShell({ user, children }: { user: AccountUser; children: 
           <Link href="/mi-cuenta/datos-personales">Mis datos</Link>
           <Link href="/mi-cuenta/favoritos">Favoritos</Link>
           <Link href="/mi-cuenta/comentarios">Comentarios</Link>
+          <Link href="/mi-cuenta/reportes">Mis reportes</Link>
           <Link href="/mi-cuenta/bloqueados">Anuncios ocultos</Link>
           <Link href="/mi-cuenta/nuevo-perfil">Crear perfil</Link>
           <details className="account-legal-links">

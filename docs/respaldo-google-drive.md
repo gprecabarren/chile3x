@@ -38,7 +38,7 @@ públicas.
 | --- | --- | --- |
 | `CF_ACCOUNT_ID` | Cuenta de Cloudflare | Identificador, no se publica por comodidad. |
 | `CF_D1_DATABASE_ID` | Base `chile3x-db` | Identificador de la base. |
-| `CF_D1_EXPORT_TOKEN` | Exportar la base | Token API de Cloudflare con **Account > D1 > Read**. |
+| `CF_D1_EXPORT_TOKEN_EDIT` | Exportar la base | Token API de Cloudflare con **Account > D1 > Edit**, limitado a la cuenta. Cloudflare exige este permiso para iniciar la exportación SQL. |
 | `R2_BACKUP_ACCESS_KEY_ID` | Leer medios | Credencial R2 S3. |
 | `R2_BACKUP_SECRET_ACCESS_KEY` | Leer medios | Credencial R2 S3. |
 | `R2_BACKUP_ENDPOINT` | Endpoint R2 | `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`. |
@@ -48,8 +48,10 @@ públicas.
 
 ### Cloudflare
 
-1. Crear un token API separado, con permiso de cuenta **D1: Read**. No usar la
-   Global API Key ni el token del despliegue.
+1. Crear un token API separado, con permiso de cuenta **D1: Edit**. Cloudflare
+   exige ese permiso para iniciar una exportación SQL, aunque el workflow solo
+   llama al endpoint de exportación. No usar la Global API Key ni el token del
+   despliegue.
 2. En R2, crear un token S3 **Object Read only** limitado al bucket
    `chile3x-media`. Guardar el Access Key ID, Secret Access Key y endpoint solo
    como secretos de GitHub. El Secret Access Key se muestra una vez.

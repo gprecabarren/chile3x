@@ -1,20 +1,30 @@
 "use client";
 /* eslint-disable @next/next/no-img-element -- ephemeral R2 stories bypass image optimization intentionally. */
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { PublicStory } from "@/lib/stories";
 
 type StoryRailProps = {
   stories: PublicStory[];
   city?: string;
   profileOnly?: boolean;
+  withActivity?: boolean;
 };
 
-type StoryGroup = { profileId: string; profileSlug: string; profileName: string; city: string; stories: PublicStory[] };
+type StoryGroup = { profileId: string; profileSlug: string; profileName: string; profileImageUrl: string | null; city: string; stories: PublicStory[] };
+
+const seenStorageKey = "chile3x-seen-stories-v1";
 
 function storyTimeLabel(expiresAt: string, now = new Date()) {
   const minutes = Math.max(0, Math.ceil((new Date(expiresAt).getTime() - now.getTime()) / 60_000));
   return minutes >= 60 ? `Disponible ${Math.ceil(minutes / 60)} h más` : `Disponible ${minutes} min más`;
+}
+
+function activityTimeLabel(createdAt: string, now = new Date()) {
+  const minutes = Math.max(1, Math.floor((now.getTime() - new Date(createdAt).getTime()) / 60_000));
+  if (minutes < 60) return `hace ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  return hours < 24 ? `hace ${hours} h` : `hace ${Math.floor(hours / 24)} d`;
 }
 
 function groupStories(stories: PublicStory[]) {
@@ -22,14 +32,18 @@ function groupStories(stories: PublicStory[]) {
   for (const story of stories) {
     const group = groups.get(story.profileId);
     if (group) group.stories.push(story);
-    else groups.set(story.profileId, { profileId: story.profileId, profileSlug: story.profileSlug, profileName: story.profileName, city: story.city, stories: [story] });
+    else groups.set(story.profileId, { profileId: story.profileId, profileSlug: story.profileSlug, profileName: story.profileName, profileImageUrl: story.profileImageUrl, city: story.city, stories: [story] });
   }
-  return [...groups.values()];
+  return [...groups.values()].map((group) => ({ ...group, stories: [...group.stories].sort((first, second) => first.createdAt.localeCompare(second.createdAt)) }));
 }
 
-function StoryViewer({ group, startAt, onClose }: { group: StoryGroup; startAt: number; onClose: () => void }) {
+function StoryViewer({ group, startAt, onClose, onViewed }: { group: StoryGroup; startAt: number; onClose: () => void; onViewed?: (storyId: string) => void }) {
   const [index, setIndex] = useState(startAt);
   const story = group.stories[index];
+
+  useEffect(() => {
+    onViewed?.(story.id);
+  }, [onViewed, story.id]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -61,21 +75,73 @@ function StoryViewer({ group, startAt, onClose }: { group: StoryGroup; startAt: 
   </div>;
 }
 
-export function StoryRail({ stories, city, profileOnly = false }: StoryRailProps) {
+function StoryActivityPanel({ stories }: { stories: PublicStory[] }) {
+  const activity = useMemo(() => [...stories].filter((story) => story.storyType === "text" && story.body.trim()).sort((first, second) => second.createdAt.localeCompare(first.createdAt)).slice(0, 8), [stories]);
+  if (!activity.length) return null;
+  return <aside className="story-activity-panel" aria-label="Última actividad">
+    <header><h2>Última actividad</h2><span>24 h</span></header>
+    <div>{activity.map((story) => <a href={`/perfil/${story.profileSlug}`} key={story.id} className="story-activity-item"><span className="story-activity-avatar">{story.profileImageUrl ? <img src={story.profileImageUrl} alt="" /> : story.profileName.slice(0, 1)}</span><span><strong>{story.profileName}</strong><small>{story.city} · {activityTimeLabel(story.createdAt)}</small><p>{story.body}</p></span></a>)}</div>
+  </aside>;
+}
+
+export function StoryRail({ stories, city, profileOnly = false, withActivity = false }: StoryRailProps) {
   const groups = useMemo(() => groupStories(stories), [stories]);
+  const [seenIds, setSeenIds] = useState<string[]>([]);
   const [open, setOpen] = useState<{ group: StoryGroup; index: number } | null>(null);
+
+  useEffect(() => {
+    const loadStoredViews = window.setTimeout(() => {
+      try {
+        const stored = JSON.parse(window.localStorage.getItem(seenStorageKey) ?? "[]");
+        if (Array.isArray(stored)) setSeenIds(stored.filter((value): value is string => typeof value === "string").slice(-500));
+      } catch {
+        // A broken or unavailable local storage entry should never block stories.
+      }
+    }, 0);
+    return () => window.clearTimeout(loadStoredViews);
+  }, []);
+
+  const orderedGroups = useMemo(() => {
+    const seen = new Set(seenIds);
+    return [...groups].sort((first, second) => {
+      const firstHasNew = first.stories.some((story) => !seen.has(story.id));
+      const secondHasNew = second.stories.some((story) => !seen.has(story.id));
+      if (firstHasNew !== secondHasNew) return firstHasNew ? -1 : 1;
+      const firstLatest = first.stories.at(-1)?.createdAt ?? "";
+      const secondLatest = second.stories.at(-1)?.createdAt ?? "";
+      return secondLatest.localeCompare(firstLatest);
+    });
+  }, [groups, seenIds]);
+
+  const markStorySeen = useCallback((storyId: string) => {
+    setSeenIds((current) => {
+      if (current.includes(storyId)) return current;
+      const next = [...current, storyId].slice(-500);
+      try { window.localStorage.setItem(seenStorageKey, JSON.stringify(next)); } catch { /* Browsing remains available without storage. */ }
+      return next;
+    });
+  }, []);
+
+  function openGroup(group: StoryGroup) {
+    setOpen({ group, index: 0 });
+  }
+
   if (!groups.length) return null;
   const title = profileOnly ? "Historias activas" : city ? `Historias en ${city}` : "Actualizaciones de Chile";
-  const description = profileOnly ? "Actualizaciones visibles durante 24 horas." : city ? `Actualizaciones de publicaciones en ${city}, visibles durante 24 horas.` : "Historias recientes de publicaciones del directorio nacional.";
-
-  return <section className={`story-rail${profileOnly ? " story-rail-profile" : ""}`} aria-label={title}>
+  const description = profileOnly ? "Actualizaciones visibles durante 24 horas." : city ? `Actualizaciones de publicaciones en ${city}, visibles con o sin cuenta durante 24 horas.` : "Historias recientes del directorio nacional, visibles con o sin cuenta.";
+  const rail = <section className={`story-rail${profileOnly ? " story-rail-profile" : ""}`} aria-label={title}>
     <div className="story-rail-heading"><div><p className="eyebrow">ACTUALIZACIONES · 24 HORAS</p><h2>{title}</h2></div><p>{description}</p></div>
-    <div className="story-bubble-list">{groups.map((group) => {
-      const cover = group.stories.find((story) => story.storyType === "image");
-      return <div className="story-bubble-card" key={group.profileId}><button className="story-bubble" type="button" onClick={() => setOpen({ group, index: 0 })} aria-label={`Ver historias de ${group.profileName}`}><span className={`story-bubble-avatar${cover ? " has-image" : ""}`}>{cover?.imageUrl ? <img src={cover.imageUrl} alt="" /> : group.profileName.slice(0, 1)}</span><strong>{group.profileName}</strong>{!profileOnly && <small>{group.city}</small>}</button>{!profileOnly && <a href={`/perfil/${group.profileSlug}`} className="story-profile-link">Ver perfil</a>}</div>;
+    <div className="story-bubble-list">{orderedGroups.map((group) => {
+      const cover = [...group.stories].reverse().find((story) => story.storyType === "image");
+      const avatar = cover?.imageUrl ?? group.profileImageUrl;
+      return <div className="story-bubble-card" key={group.profileId}><button className="story-bubble" type="button" onClick={() => openGroup(group)} aria-label={`Ver historias de ${group.profileName}`}><span className={`story-bubble-avatar${avatar ? " has-image" : ""}`}>{avatar ? <img src={avatar} alt="" /> : group.profileName.slice(0, 1)}</span><strong>{group.profileName}</strong>{!profileOnly && <small>{group.city}</small>}</button>{!profileOnly && <a href={`/perfil/${group.profileSlug}`} className="story-profile-link">Ver perfil</a>}</div>;
     })}</div>
-    {open && <StoryViewer group={open.group} startAt={open.index} onClose={() => setOpen(null)} />}
+    {open && <StoryViewer group={open.group} startAt={open.index} onClose={() => setOpen(null)} onViewed={markStorySeen} />}
   </section>;
+
+  const hasActivity = stories.some((story) => story.storyType === "text" && story.body.trim());
+  if (!withActivity || !hasActivity) return rail;
+  return <div className="directory-story-context">{rail}<StoryActivityPanel stories={stories} /></div>;
 }
 
 export function ProfileStoryTrigger({ stories }: { stories: PublicStory[] }) {

@@ -1,10 +1,9 @@
-import { and, asc, desc, eq, gt, isNotNull, lt } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNotNull, lt } from "drizzle-orm";
 import { getDb } from "@/db";
-import { profileStatuses, profiles } from "@/db/schema";
+import { profileMedia, profileStatuses, profiles } from "@/db/schema";
 import { type StoryType } from "@/lib/story-data";
 
 export { MAX_STORY_IMAGE_BYTES, MAX_STORY_TEXT_LENGTH, storyExpiresAt, storyTimeLabel, type StoryType } from "@/lib/story-data";
-
 
 export type PublicStory = {
   id: string;
@@ -16,6 +15,7 @@ export type PublicStory = {
   profileId: string;
   profileSlug: string;
   profileName: string;
+  profileImageUrl: string | null;
   city: string;
   profileType: "escort" | "agency" | "rental";
 };
@@ -23,6 +23,7 @@ export type PublicStory = {
 type StoryScope = {
   city?: string;
   profileId?: string;
+  profileIds?: string[];
   type?: "escort" | "agency" | "rental";
 };
 
@@ -45,12 +46,14 @@ export async function purgeExpiredImageStories() {
 
 export async function getActiveStories(scope: StoryScope = {}) {
   try {
+    if (scope.profileIds && scope.profileIds.length === 0) return [] as PublicStory[];
     await purgeExpiredImageStories();
     const db = await getDb();
     const now = new Date().toISOString();
     const conditions = [eq(profiles.status, "approved"), gt(profileStatuses.expiresAt, now)];
     if (scope.city) conditions.push(eq(profiles.city, scope.city));
     if (scope.profileId) conditions.push(eq(profiles.id, scope.profileId));
+    if (scope.profileIds?.length) conditions.push(inArray(profiles.id, scope.profileIds));
     if (scope.type) conditions.push(eq(profiles.type, scope.type));
 
     const rows = await db.select({
@@ -68,10 +71,26 @@ export async function getActiveStories(scope: StoryScope = {}) {
     }).from(profileStatuses)
       .innerJoin(profiles, eq(profileStatuses.profileId, profiles.id))
       .where(and(...conditions))
-      // Oldest first is intentional: a viewer advances towards the latest
-      // update, matching the chronological expectation of the publisher.
+      // Stories play in chronological order inside a profile. Their profile
+      // bubbles are ordered separately by the most recent story in the UI.
       .orderBy(asc(profileStatuses.createdAt))
       .limit(80);
+
+    const profileIds = [...new Set(rows.map((row) => row.profileId))];
+    const mediaRows = profileIds.length ? await db.select({
+      id: profileMedia.id,
+      profileId: profileMedia.profileId,
+      isProfilePhoto: profileMedia.isProfilePhoto,
+      sortOrder: profileMedia.sortOrder,
+    }).from(profileMedia).where(and(
+      inArray(profileMedia.profileId, profileIds),
+      eq(profileMedia.mediaType, "image"),
+      eq(profileMedia.moderationStatus, "approved"),
+    )).orderBy(desc(profileMedia.isProfilePhoto), asc(profileMedia.sortOrder)) : [];
+    const profileImages = new Map<string, string>();
+    for (const media of mediaRows) {
+      if (!profileImages.has(media.profileId)) profileImages.set(media.profileId, `/media/${media.id}`);
+    }
 
     return rows.flatMap((row) => {
       if (row.storyType !== "text" && row.storyType !== "image") return [];
@@ -87,6 +106,7 @@ export async function getActiveStories(scope: StoryScope = {}) {
         profileId: row.profileId,
         profileSlug: row.profileSlug,
         profileName: row.profileName,
+        profileImageUrl: profileImages.get(row.profileId) ?? null,
         city: row.city,
         profileType: row.profileType,
       } satisfies PublicStory];

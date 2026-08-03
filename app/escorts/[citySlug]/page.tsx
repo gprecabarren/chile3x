@@ -28,8 +28,9 @@ export default async function CityPage({ params, searchParams }: CityPageProps) 
   const city = getCityInfo(citySlug);
   if (!city) notFound();
   const filters = readDirectoryFilters(await searchParams, { region: city.region, city: city.city });
-  const [publicProfiles, stories, settings] = await Promise.all([getPublicProfiles(), getActiveStories({ city: city.city }), getSiteSettings()]);
+  const [publicProfiles, settings] = await Promise.all([getPublicProfiles(), getSiteSettings()]);
   const profiles = filterPublicProfiles(publicProfiles, filters);
+  const stories = await getActiveStories({ profileIds: profiles.map((profile) => profile.id) });
   const basePath = getCityPath(city.city);
   const canonicalProfiles = filterPublicProfiles(publicProfiles, readDirectoryFilters({}, { region: city.region, city: city.city }));
   const siteUrl = siteBaseUrl(settings.site_url);
@@ -49,7 +50,7 @@ export default async function CityPage({ params, searchParams }: CityPageProps) 
       <section className="directory-content city-content">
         <DirectoryFilters action={basePath} filters={filters} pinnedCity={city.city} pinnedRegion={city.region} showType />
         {filters.invalidCombination && <p className="filter-warning" role="alert">MILF y Hombres son categorías incompatibles. Selecciona solo una para buscar.</p>}
-        <StoryRail stories={stories} city={city.city} />
+        <StoryRail stories={stories} city={city.city} withActivity />
         <div className="directory-results-heading"><div><p className="eyebrow">{city.city.toUpperCase()}</p><h2>{profiles.length} publicación{profiles.length === 1 ? "" : "es"} visible{profiles.length === 1 ? "" : "s"}</h2></div></div>
         <CityProfileSections city={city.city} profiles={profiles} />
         <SeoContent city={city.city} region={city.region} count={profiles.length} />

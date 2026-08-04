@@ -5,6 +5,7 @@ import { profiles, users } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { sendPortalEmail } from "@/lib/account-email";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
+import { profilePublicPath } from "@/lib/profile";
 
 const allowedStatuses = new Set(["draft", "pending", "approved", "paused", "rejected", "expired"]);
 const allowedVerification = new Set(["unreviewed", "in_review", "reviewed"]);
@@ -48,6 +49,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     type: profiles.type,
     displayName: profiles.displayName,
     slug: profiles.slug,
+    handle: profiles.handle,
     ownerEmail: users.email,
     ownerName: users.displayName,
   }).from(profiles).innerJoin(users, eq(profiles.ownerId, users.id)).where(eq(profiles.id, profileId)).limit(1);
@@ -63,7 +65,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   if (status === "approved" && existingProfile.status !== "approved") {
     const settings = await getSiteSettings();
-    const profileUrl = new URL(`/perfil/${existingProfile.slug}`, siteBaseUrl(settings.site_url)).toString();
+    const profileUrl = new URL(profilePublicPath(existingProfile), siteBaseUrl(settings.site_url)).toString();
     const typeLabel = existingProfile.type === "agency" ? "perfil de agencia" : existingProfile.type === "rental" ? "perfil de arriendo" : "perfil de escort";
     const delivered = await sendPortalEmail({
       email: existingProfile.ownerEmail,

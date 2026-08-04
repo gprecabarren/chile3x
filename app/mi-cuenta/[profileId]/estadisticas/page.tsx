@@ -5,6 +5,7 @@ import { getDb } from "@/db";
 import { favorites, profileContactEvents, profileLikes, profiles, profileViews } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { AccountHeading, AccountShell } from "../../_components";
+import { profilePublicPath } from "@/lib/profile";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,7 @@ export default async function ProfileStatisticsPage({ params, searchParams }: { 
   const period = query.periodo && query.periodo in periodOptions ? query.periodo as Period : "week";
   const option = periodOptions[period];
   const db = await getDb();
-  const [profile] = await db.select({ id: profiles.id, displayName: profiles.displayName, slug: profiles.slug, status: profiles.status })
+  const [profile] = await db.select({ id: profiles.id, displayName: profiles.displayName, slug: profiles.slug, handle: profiles.handle, status: profiles.status })
     .from(profiles)
     .where(and(eq(profiles.id, profileId), eq(profiles.ownerId, user.id)))
     .limit(1);
@@ -52,7 +53,7 @@ export default async function ProfileStatisticsPage({ params, searchParams }: { 
   return <AccountShell user={user}>
     <div className="account-content"><Link className="page-back-link" href="/mi-cuenta">← Volver a mi cuenta</Link>
       <AccountHeading eyebrow="RENDIMIENTO REAL" title="Panel de rendimiento" description={`Consulta el alcance y los contactos generados por ${profile.displayName}. Cada navegador cuenta una vez al día por tipo de interacción.`}>
-        {profile.status === "approved" && <Link className="button button-public-preview" href={`/perfil/${profile.slug}`} target="_blank">Ver público</Link>}
+        {profile.status === "approved" && <Link className="button button-public-preview" href={profilePublicPath(profile)} target="_blank">Ver público</Link>}
       </AccountHeading>
       <section className="profile-statistics-panel">
         <div className="profile-statistics-periods" aria-label="Período de estadísticas">{Object.entries(periodOptions).map(([key, item]) => <Link key={key} href={`/mi-cuenta/${profile.id}/estadisticas?periodo=${key}`} className={key === period ? "is-active" : ""}>{item.label}</Link>)}</div>

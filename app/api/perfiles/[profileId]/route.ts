@@ -24,7 +24,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.redirect(new URL(updated ? `/mi-cuenta?notice=${submission.intent === "submit" ? "submitted" : "saved"}` : "/mi-cuenta?notice=error", request.url), 303);
   } catch (error) {
     if (error instanceof ProfileValidationError || error instanceof VerificationDocumentError) {
-      return NextResponse.redirect(new URL(`/mi-cuenta/${profileId}/editar?error=validation`, request.url), 303);
+      const destination = new URL(`/mi-cuenta/${profileId}/editar`, request.url);
+      destination.searchParams.set("error", "validation");
+      destination.searchParams.set("message", error.message);
+      return NextResponse.redirect(destination, 303);
     }
     throw error;
   }

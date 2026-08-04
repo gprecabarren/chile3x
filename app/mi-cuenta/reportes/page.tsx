@@ -6,6 +6,7 @@ import { getDb } from "@/db";
 import { profileReportEvidence, profileReports, profiles } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { AccountHeading, AccountShell } from "../_components";
+import { profilePublicPath } from "@/lib/profile";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ export default async function MyReportsPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/ingresar?return_to=/mi-cuenta/reportes");
   const db = await getDb();
-  const rows = await db.select({ report: profileReports, profileName: profiles.displayName, profileSlug: profiles.slug, city: profiles.city })
+  const rows = await db.select({ report: profileReports, profileName: profiles.displayName, profileSlug: profiles.slug, profileHandle: profiles.handle, city: profiles.city })
     .from(profileReports)
     .innerJoin(profiles, eq(profileReports.profileId, profiles.id))
     .where(eq(profileReports.reporterId, user.id))
@@ -40,10 +41,10 @@ export default async function MyReportsPage() {
   for (const item of evidence) evidenceByReport.set(item.reportId, [...(evidenceByReport.get(item.reportId) ?? []), item]);
 
   return <AccountShell user={user}><div className="account-content"><Link className="page-back-link" href="/mi-cuenta">← Volver a mi cuenta</Link><AccountHeading eyebrow="SEGURIDAD Y CONFIANZA" title="Mis reportes" description="Revisa los reportes que enviaste, su estado y los pantallazos privados que adjuntaste." />
-    {rows.length ? <section className="account-report-list">{rows.map(({ report, profileName, profileSlug, city }) => {
+    {rows.length ? <section className="account-report-list">{rows.map(({ report, profileName, profileSlug, profileHandle, city }) => {
       const screenshots = evidenceByReport.get(report.id) ?? [];
       return <article key={report.id}>
-        <header><div><span className={`account-report-status is-${report.status}`}>{statusLabels[report.status]}</span><h2>{profileName}</h2><p>{city} · {new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(report.createdAt))}</p></div><Link href={`/perfil/${profileSlug}`}>Abrir anuncio</Link></header>
+        <header><div><span className={`account-report-status is-${report.status}`}>{statusLabels[report.status]}</span><h2>{profileName}</h2><p>{city} · {new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(report.createdAt))}</p></div><Link href={profilePublicPath({ handle: profileHandle, slug: profileSlug })}>Abrir anuncio</Link></header>
         <dl><div><dt>Motivo</dt><dd>{reasonLabels[report.reason]}</dd></div><div><dt>Estado</dt><dd>{report.status === "pending" ? "Nuestro equipo aún no revisa este reporte." : "El reporte fue actualizado por el equipo de Chile3X."}</dd></div></dl>
         <blockquote>{report.body}</blockquote>
         <section className="account-report-evidence"><div><h3>Pantallazos adjuntos</h3><span>{screenshots.length ? `${screenshots.length} evidencia${screenshots.length === 1 ? "" : "s"} privada${screenshots.length === 1 ? "" : "s"}` : "No adjuntaste evidencias"}</span></div>{screenshots.length > 0 && <div className="account-report-evidence-grid">{screenshots.map((item, index) => <a href={`/api/reportes/${report.id}/evidencias/${item.id}`} target="_blank" rel="noreferrer" key={item.id}><Image src={`/api/reportes/${report.id}/evidencias/${item.id}`} alt={`Evidencia ${index + 1} del reporte`} width={360} height={240} unoptimized /></a>)}</div>}</section>

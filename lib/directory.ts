@@ -46,6 +46,7 @@ export type DirectoryFilters = {
 export type PublicProfile = {
   id: string;
   slug: string;
+  handle: string | null;
   type: ProfileType;
   status: "draft" | "pending" | "approved" | "paused" | "rejected" | "expired";
   displayName: string;
@@ -180,6 +181,7 @@ export async function getPublicProfiles(options: { includeUnapproved?: boolean; 
   return visibleRows.map(({ profile, details }): PublicProfile => ({
     id: profile.id,
     slug: profile.slug,
+    handle: profile.handle,
     type: profile.type,
     status: profile.status,
     displayName: profile.displayName,

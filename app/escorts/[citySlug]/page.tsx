@@ -8,6 +8,7 @@ import { getActiveStories } from "@/lib/stories";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { getCurrentUser } from "@/lib/auth";
 import { safeJsonLd } from "@/lib/json-ld";
+import { profilePublicPath } from "@/lib/profile";
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +42,7 @@ export default async function CityPage({ params, searchParams }: CityPageProps) 
   const schema = {
     "@context": "https://schema.org",
     "@graph": [
-      { "@type": "CollectionPage", name: `Escorts en ${city.city}`, description: `Directorio de escorts en ${city.city}, ${city.region}.`, url: pageUrl, inLanguage: "es-CL", mainEntity: { "@type": "ItemList", numberOfItems: canonicalProfiles.length, itemListElement: canonicalProfiles.map((profile, index) => ({ "@type": "ListItem", position: index + 1, url: `${siteUrl}/perfil/${profile.slug}`, name: profile.displayName })) } },
+      { "@type": "CollectionPage", name: `Escorts en ${city.city}`, description: `Directorio de escorts en ${city.city}, ${city.region}.`, url: pageUrl, inLanguage: "es-CL", mainEntity: { "@type": "ItemList", numberOfItems: canonicalProfiles.length, itemListElement: canonicalProfiles.map((profile, index) => ({ "@type": "ListItem", position: index + 1, url: `${siteUrl}${profilePublicPath(profile)}`, name: profile.displayName })) } },
       { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Chile3X", item: siteUrl }, { "@type": "ListItem", position: 2, name: "Escorts en Chile", item: `${siteUrl}/escorts` }, { "@type": "ListItem", position: 3, name: `Escorts en ${city.city}`, item: pageUrl }] },
     ],
   };

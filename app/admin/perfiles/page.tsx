@@ -5,6 +5,7 @@ import { getDb } from "@/db";
 import { profiles, users } from "@/db/schema";
 import { getCurrentAdmin } from "@/lib/auth";
 import { AdminPageHeading, AdminShell } from "../_components";
+import { profilePublicPath } from "@/lib/profile";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,7 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
   const rows = await db.select({
     id: profiles.id,
     slug: profiles.slug,
+    handle: profiles.handle,
     displayName: profiles.displayName,
     type: profiles.type,
     status: profiles.status,
@@ -118,7 +120,7 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
                     <td>{profile.ownerEmail}</td>
                     <td><span className={`admin-status admin-status-${profile.status}`}>{statusLabel[profile.status]}</span></td>
                     <td><span className="admin-verification">{verificationLabel[profile.verificationStatus]}<small>{profile.healthReviewStatus === "reviewed" ? "Revisión médica opcional" : ""}</small></span></td>
-                    <td><div className="admin-profile-row-actions"><Link className="button button-public-preview" href={`/perfil/${profile.slug}`} target="_blank">{profile.status === "approved" ? "Ver público y gestionar" : "Abrir y revisar"}</Link><small>Aprueba publicación, verificación y revisión médica dentro de la ficha.</small></div></td>
+                    <td><div className="admin-profile-row-actions"><Link className="button button-public-preview" href={profilePublicPath(profile)} target="_blank">{profile.status === "approved" ? "Ver público y gestionar" : "Abrir y revisar"}</Link><small>Aprueba publicación, verificación y revisión médica dentro de la ficha.</small></div></td>
                   </tr>
                 ))}
                 {filteredRows.length === 0 && <tr><td colSpan={6} className="admin-no-results">No hay perfiles que coincidan con estos filtros.</td></tr>}

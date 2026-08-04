@@ -112,6 +112,34 @@ export function slugify(value: string) {
     .slice(0, 52) || "perfil";
 }
 
+const reservedProfileHandles = new Set([
+  "admin", "agencias", "api", "arriendos", "contacto", "escorts", "faq", "historias", "ingresar", "media", "mi-cuenta", "noticias", "perfil", "privacidad", "quienes-somos", "registro", "reglas-de-publicacion", "robots", "sitemap", "terminos",
+]);
+
+/**
+ * Normalizes the public identity of a listing. Handles are deliberately kept
+ * separate from account identities: one account can own several listings,
+ * each with its own @handle and public URL.
+ */
+export function normalizeProfileHandle(value: string) {
+  return slugify(value.replace(/^@+/, "")).slice(0, 40).replace(/^-+|-+$/g, "");
+}
+
+export function validateProfileHandle(value: string) {
+  const normalized = normalizeProfileHandle(value);
+  if (normalized.length < 3) {
+    throw new Error("El usuario del anuncio debe tener al menos 3 caracteres.");
+  }
+  if (reservedProfileHandles.has(normalized)) {
+    throw new Error("Ese usuario del anuncio está reservado. Elige otro.");
+  }
+  return normalized;
+}
+
+export function profilePublicPath({ handle, slug }: { handle?: string | null; slug: string }) {
+  return handle ? `/perfil/@${encodeURIComponent(handle)}` : `/perfil/${slug}`;
+}
+
 export function citySlug(value: string) {
   return slugify(value);
 }

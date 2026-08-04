@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { getCityPath, getProfileDisplayTags, type PublicProfile } from "@/lib/directory";
-import { readProfilePrices } from "@/lib/profile";
+import { profilePublicPath, readProfilePrices } from "@/lib/profile";
 import { getPortalContacts, getPortalWhatsappLink } from "@/lib/site-contacts";
 import { getSiteSettings } from "@/lib/site-settings";
 import { regions } from "@/app/locations";
@@ -109,10 +109,11 @@ export function ProfileCard({ profile }: { profile: PublicProfile }) {
   const subtitle = [age ? `${age} años` : null, profile.comuna ?? profile.details.referenceLocation].filter(Boolean).join(" · ");
   const mainPrice = readProfilePrices(profile.details)[0];
   const coverImage = profile.media.find((media) => media.mediaType === "image" && media.isProfilePhoto) ?? profile.media.find((media) => media.mediaType === "image");
+  const profileHref = profilePublicPath(profile);
 
   return (
     <article className="public-profile-card">
-      <Link href={`/perfil/${profile.slug}`} className={`public-profile-visual ${toneFor(profile.slug)}${coverImage ? " has-image" : ""}`} aria-label={`Ver perfil de ${profile.displayName}`}>
+      <Link href={profileHref} className={`public-profile-visual ${toneFor(profile.slug)}${coverImage ? " has-image" : ""}`} aria-label={`Ver perfil de ${profile.displayName}`}>
         {coverImage ? <Image className="public-profile-image" src={coverImage.url} alt={coverImage.altText ?? `Foto de ${profile.displayName}`} fill unoptimized sizes="(max-width: 360px) 100vw, (max-width: 720px) 50vw, (max-width: 1040px) 33vw, 25vw" /> : <span className="public-profile-initial">{profile.displayName.slice(0, 1)}</span>}
         <span className="public-type-label">{typeLabel[profile.type]}</span>
         {tierTag && <span className={`public-card-tier-badge ${tierTag.toLowerCase()}`}>{tierTag}</span>}
@@ -123,7 +124,8 @@ export function ProfileCard({ profile }: { profile: PublicProfile }) {
       <div className="public-profile-content">
         <div className="public-profile-title">
           <div>
-            <h2><Link href={`/perfil/${profile.slug}`}>{profile.displayName}</Link></h2>
+            <h2><Link href={profileHref}>{profile.displayName}</Link></h2>
+            {profile.handle && <small className="public-profile-handle">@{profile.handle}</small>}
             <p><Link href={getCityPath(profile.city)}>{profile.city}</Link>{subtitle && ` · ${subtitle}`}</p>
           </div>
           {profile.verificationStatus === "reviewed" && profile.type === "escort" && <span className="verified-sticker" title="Perfil comprobado">✓</span>}

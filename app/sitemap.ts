@@ -3,6 +3,7 @@ import { cityDirectory } from "@/app/locations";
 import { getPublicProfiles } from "@/lib/directory";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { listNews } from "@/lib/news";
+import { profilePublicPath } from "@/lib/profile";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/privacidad`, changeFrequency: "yearly", priority: 0.3 },
     { url: `${siteUrl}/reglas-de-publicacion`, changeFrequency: "yearly", priority: 0.3 },
     ...cityDirectory.map((city) => ({ url: `${siteUrl}/escorts/${city.citySlug}`, changeFrequency: "daily" as const, priority: 0.8 })),
-    ...profiles.filter((profile) => !profile.isDemo).map((profile) => ({ url: `${siteUrl}/perfil/${profile.slug}`, lastModified: new Date(profile.updatedAt), changeFrequency: "weekly" as const, priority: 0.6 })),
+    ...profiles.filter((profile) => !profile.isDemo).map((profile) => ({ url: `${siteUrl}${profilePublicPath(profile)}`, lastModified: new Date(profile.updatedAt), changeFrequency: "weekly" as const, priority: 0.6 })),
     ...news.map(({ post }) => ({ url: `${siteUrl}/noticias/${post.slug}`, lastModified: new Date(post.updatedAt), changeFrequency: "monthly" as const, priority: 0.6 })),
   ];
 }

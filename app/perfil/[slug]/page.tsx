@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { DirectoryShell, PortalContactIcon, ProfileCard } from "@/app/directorio/_components";
 import { ProfileStoryTrigger, StoryRail } from "@/app/historias/StoryRail";
 import { ProfileViewTracker } from "../ProfileViewTracker";
 import { getCityPath, getProfileDisplayTags, getPublicProfiles, type PublicProfile } from "@/lib/directory";
-import { getAvailabilityStatus, readAvailability, readProfilePrices } from "@/lib/profile";
+import { getAvailabilityStatus, profilePublicPath, readAvailability, readProfilePrices } from "@/lib/profile";
 import { getActiveStories } from "@/lib/stories";
 import { getCurrentAdmin, getCurrentUser } from "@/lib/auth";
 import { getProfileEngagement } from "@/lib/profile-interactions";
@@ -23,6 +23,14 @@ import { safeJsonLd } from "@/lib/json-ld";
 export const dynamic = "force-dynamic";
 
 type ProfilePageProps = { params: Promise<{ slug: string }> };
+
+function profileForRoute(profiles: PublicProfile[], segment: string) {
+  const decoded = decodeURIComponent(segment);
+  if (decoded.startsWith("@")) {
+    return profiles.find((profile) => profile.handle === decoded.slice(1).toLowerCase());
+  }
+  return profiles.find((profile) => profile.slug === decoded);
+}
 
 function profileTypeLabel(type: PublicProfile["type"]) {
   return type === "escort" ? "Escort" : type === "agency" ? "Agencia" : "Arriendo";
@@ -97,15 +105,15 @@ function metadataFacts(profile: PublicProfile) {
 
 export async function generateMetadata({ params }: ProfilePageProps): Promise<Metadata> {
   const { slug } = await params;
-  const profile = (await getPublicProfiles()).find((item) => item.slug === slug);
+  const profile = profileForRoute(await getPublicProfiles(), slug);
   if (!profile) return {};
   const coverImage = profile.media.find((media) => media.mediaType === "image" && media.isProfilePhoto) ?? profile.media.find((media) => media.mediaType === "image");
   const socialImage = coverImage?.url ?? "/chile3x-social-card.png";
   return {
     title: profileSeoTitle(profile),
     description: profileSeoDescription(profile),
-    alternates: { canonical: `/perfil/${profile.slug}` },
-    openGraph: { title: profileSeoTitle(profile), description: profileSeoDescription(profile), url: `/perfil/${profile.slug}`, locale: "es_CL", type: "profile", images: [{ url: socialImage, alt: `${profile.displayName}, ${profile.city}` }] },
+    alternates: { canonical: profilePublicPath(profile) },
+    openGraph: { title: profileSeoTitle(profile), description: profileSeoDescription(profile), url: profilePublicPath(profile), locale: "es_CL", type: "profile", images: [{ url: socialImage, alt: `${profile.displayName}, ${profile.city}` }] },
     twitter: { card: "summary_large_image", title: profileSeoTitle(profile), description: profileSeoDescription(profile), images: [socialImage] },
     robots: profile.isDemo ? { index: false, follow: false } : undefined,
   };
@@ -115,8 +123,10 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
   const { slug } = await params;
   const [admin, viewer] = await Promise.all([getCurrentAdmin(), getCurrentUser()]);
   const profiles = await getPublicProfiles({ includeUnapproved: Boolean(admin), viewerId: viewer?.id });
-  const profile = profiles.find((item) => item.slug === slug);
+  const profile = profileForRoute(profiles, slug);
   if (!profile) notFound();
+  if (!decodeURIComponent(slug).startsWith("@") && profile.handle) redirect(profilePublicPath(profile));
+  const profileRouteValue = profile.handle ? `@${profile.handle}` : profile.slug;
   const isAdminPreview = Boolean(admin) && profile.status !== "approved";
   const agencyProfiles = profiles.filter((item) => profile.agencyIds.includes(item.id));
   const agencyMembers = profiles.filter((item) => profile.memberIds.includes(item.id));
@@ -168,6 +178,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
         <div className="profile-page-summary">
           <p className="eyebrow">{profileTypeLabel(profile.type).toUpperCase()} · {profile.city.toUpperCase()}</p>
           <h1>{profile.displayName} {profile.verificationStatus === "reviewed" && profile.type === "escort" && <span className="verified-sticker" title="Perfil verificado">✓</span>}</h1>
+          {profile.handle && <p className="profile-public-handle">@{profile.handle}</p>}
           <p className="profile-page-location"><Link href={getCityPath(profile.city)}>{location}</Link></p>
           <div className="public-tag-row">{tags.map((tag) => <span key={tag} className={`public-tag ${tag.toLowerCase().replaceAll(" ", "-")}`}>{tag}</span>)}</div>
           {stories.length > 0 && <ProfileStoryTrigger stories={stories} />}
@@ -178,8 +189,8 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
             {contactButtons.some(([, href]) => href) && <div className="profile-contact-group"><span>Contacto directo</span><div className="profile-contact-actions">{contactButtons.map(([key, href, label, className]) => href && <TrackedContactLink profileId={profile.id} kind={key} key={key} className={`button ${className}`} href={href} target={key === "call" || key === "email" ? undefined : "_blank"} rel={key === "call" || key === "email" ? undefined : "noreferrer"} aria-label={label} title={label}><PortalContactIcon kind={key} /><span className="sr-only">{label}</span></TrackedContactLink>)}{videoCallHref && <TrackedContactLink profileId={profile.id} kind="videocall" className="button contact-videocall" href={videoCallHref} target="_blank" rel="noreferrer"><PortalContactIcon kind="videocall" /><span>Videollamada</span></TrackedContactLink>}</div></div>}
             {socialButtons.some(([, href]) => href) && <div className="profile-contact-group"><span>Redes y plataformas</span><div className="profile-contact-actions">{socialButtons.map(([key, href, label, className]) => href && <TrackedContactLink profileId={profile.id} kind={key} key={key} className={`button ${className}`} href={href} target="_blank" rel="noreferrer" aria-label={label} title={label}><PortalContactIcon kind={key} /><span className="sr-only">{label}</span></TrackedContactLink>)}</div></div>}
           </section>}
-          {engagement && <ProfileEngagementActions profileId={profile.id} profileSlug={profile.slug} signedIn={Boolean(viewer)} initialEngagement={engagement} />}
-          {profile.status === "approved" && !profile.isDemo && <ProfileSafetyActions profileId={profile.id} profileSlug={profile.slug} signedIn={Boolean(viewer)} />}
+          {engagement && <ProfileEngagementActions profileId={profile.id} profileSlug={profileRouteValue} signedIn={Boolean(viewer)} initialEngagement={engagement} />}
+          {profile.status === "approved" && !profile.isDemo && <ProfileSafetyActions profileId={profile.id} profileSlug={profileRouteValue} signedIn={Boolean(viewer)} />}
         </div>
       </section>
       {profile.media.some((media) => media.mediaType === "image" && !media.isProfilePhoto) && <section className="profile-media-gallery" aria-label={`Fotos de ${profile.displayName}`}>
@@ -200,7 +211,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
       </section>
       {profile.type === "agency" && <section className="profile-association-section"><p className="eyebrow">PERFILES ASOCIADOS</p><h2>Escorts de {profile.displayName}</h2><p>Los perfiles se muestran aquí solo después de aceptar la invitación de la agencia.</p><div className="public-profile-grid">{agencyMembers.map((member) => <ProfileCard profile={member} key={member.id} />)}</div>{agencyMembers.length === 0 && <p className="association-empty">Esta agencia aún no tiene perfiles asociados aprobados.</p>}</section>}
       {profile.type === "escort" && agencyProfiles.length > 0 && <section className="profile-association-section compact"><p className="eyebrow">ASOCIACIONES ACEPTADAS</p><h2>Agencias relacionadas</h2><div className="public-profile-grid">{agencyProfiles.map((agency) => <ProfileCard profile={agency} key={agency.id} />)}</div></section>}
-      {profile.status === "approved" && !profile.isDemo && <ProfileReviews profileId={profile.id} profileSlug={profile.slug} signedIn={Boolean(viewer)} reviews={approvedReviews} />}
+      {profile.status === "approved" && !profile.isDemo && <ProfileReviews profileId={profile.id} profileSlug={profileRouteValue} signedIn={Boolean(viewer)} reviews={approvedReviews} />}
     </DirectoryShell>
   );
 }

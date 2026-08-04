@@ -6,6 +6,7 @@ import { getDb } from "@/db";
 import { profileReportEvidence, profileReports, profiles, users } from "@/db/schema";
 import { getCurrentAdmin } from "@/lib/auth";
 import { AdminPageHeading, AdminShell } from "../_components";
+import { profilePublicPath } from "@/lib/profile";
 
 export const dynamic = "force-dynamic";
 const labels: Record<string, string> = { pending: "Pendiente", reviewed: "Revisado", resolved: "Resuelto", dismissed: "Descartado" };
@@ -16,7 +17,7 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
   const query = await searchParams;
   const selected = Object.hasOwn(labels, query.estado ?? "") ? query.estado! : "pending";
   const db = await getDb();
-  const rows = await db.select({ report: profileReports, profileName: profiles.displayName, profileSlug: profiles.slug, reporterEmail: users.email })
+  const rows = await db.select({ report: profileReports, profileName: profiles.displayName, profileSlug: profiles.slug, profileHandle: profiles.handle, reporterEmail: users.email })
     .from(profileReports).innerJoin(profiles, eq(profileReports.profileId, profiles.id)).leftJoin(users, eq(profileReports.reporterId, users.id))
     .where(eq(profileReports.status, selected as typeof profileReports.$inferSelect.status)).orderBy(desc(profileReports.createdAt));
   const reportIds = rows.map(({ report }) => report.id);
@@ -27,10 +28,10 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
   return <AdminShell user={admin}><div className="admin-content"><AdminPageHeading eyebrow="SEGURIDAD Y CONFIANZA" title="Reportes de anuncios" description="Revisa denuncias privadas, consulta sus evidencias, abre el anuncio señalado y documenta la decisión tomada." backHref="/admin" />
     {query.notice === "updated" && <p className="admin-success">El reporte fue actualizado.</p>}
     <nav className="admin-review-tabs">{Object.entries(labels).map(([key, label]) => <Link className={selected === key ? "is-active" : undefined} href={`/admin/reportes?estado=${key}`} key={key}>{label}</Link>)}</nav>
-    {rows.length ? <section className="admin-report-list">{rows.map(({ report, profileName, profileSlug, reporterEmail }) => {
+    {rows.length ? <section className="admin-report-list">{rows.map(({ report, profileName, profileSlug, profileHandle, reporterEmail }) => {
       const screenshots = evidenceByReport.get(report.id) ?? [];
       return <article key={report.id}>
-        <div><span className="media-status media-status-pending">{reasons[report.reason]}</span><h2>{profileName}</h2><p>{reporterEmail ? `Enviado por ${reporterEmail}` : "Cuenta reportante eliminada"} · {new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(report.createdAt))}</p><blockquote>{report.body}</blockquote><Link className="button button-public-preview" href={`/perfil/${profileSlug}`} target="_blank">Abrir anuncio</Link>
+        <div><span className="media-status media-status-pending">{reasons[report.reason]}</span><h2>{profileName}</h2><p>{reporterEmail ? `Enviado por ${reporterEmail}` : "Cuenta reportante eliminada"} · {new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(report.createdAt))}</p><blockquote>{report.body}</blockquote><Link className="button button-public-preview" href={profilePublicPath({ handle: profileHandle, slug: profileSlug })} target="_blank">Abrir anuncio</Link>
           <section className="report-evidence"><div><h3>Evidencias adjuntas</h3><span>{screenshots.length ? `${screenshots.length} pantallazo${screenshots.length === 1 ? "" : "s"} privado${screenshots.length === 1 ? "" : "s"}` : "No se adjuntaron pantallazos"}</span></div>{screenshots.length > 0 && <div className="report-evidence-grid">{screenshots.map((item, index) => <a href={`/api/reportes/${report.id}/evidencias/${item.id}`} target="_blank" rel="noreferrer" key={item.id}><Image src={`/api/reportes/${report.id}/evidencias/${item.id}`} alt={`Evidencia ${index + 1} del reporte de ${profileName}`} width={360} height={240} unoptimized /></a>)}</div>}</section>
         </div>
         <form action={`/api/admin/reportes/${report.id}`} method="post"><label>Nota interna<textarea name="admin_note" maxLength={1000} defaultValue={report.adminNote ?? ""} rows={3} /></label><div><button className="button button-outline" name="status" value="reviewed">Marcar revisado</button><button className="button button-primary" name="status" value="resolved">Resolver</button><button className="button button-outline" name="status" value="dismissed">Descartar</button></div></form>

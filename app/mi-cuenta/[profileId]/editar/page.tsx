@@ -25,7 +25,7 @@ function readMetadata(value: string | null): Record<string, string> {
   }
 }
 
-export default async function EditProfilePage({ params, searchParams }: { params: Promise<{ profileId: string }>; searchParams: Promise<{ error?: string; notice?: string }> }) {
+export default async function EditProfilePage({ params, searchParams }: { params: Promise<{ profileId: string }>; searchParams: Promise<{ error?: string; notice?: string; message?: string }> }) {
   const user = await getCurrentUser();
   if (!user) {
     redirect("/ingresar?return_to=/mi-cuenta");
@@ -52,12 +52,13 @@ export default async function EditProfilePage({ params, searchParams }: { params
     <AccountShell user={user}>
       <div className="account-content"><a className="page-back-link" href="/mi-cuenta">← Volver a mi cuenta</a>
         <AccountHeading eyebrow="EDITAR PUBLICACIÓN" title={row.profile.displayName} description="Si el aviso estaba publicado, cualquier actualización vuelve a revisión manual para proteger la calidad del directorio." />
-        {query.error && <p className="form-alert" role="alert">No se pudieron guardar los cambios. Revisa los campos obligatorios.</p>}
+        {query.error && <p className="form-alert" role="alert">{query.message ?? "No se pudieron guardar los cambios. Revisa los campos obligatorios."}</p>}
         <ProfileForm
           action={`/api/perfiles/${profileId}`}
           submitLabel="Guardar y enviar a revisión"
           initial={{
             type: row.profile.type,
+            handle: row.profile.handle,
             displayName: row.profile.displayName,
             region: row.profile.region,
             city: row.profile.city,

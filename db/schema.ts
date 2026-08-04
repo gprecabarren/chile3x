@@ -62,6 +62,10 @@ export const profiles = sqliteTable("profiles", {
   type: text("type", { enum: ["escort", "agency", "rental"] }).notNull(),
   status: text("status", { enum: ["draft", "pending", "approved", "paused", "rejected", "expired"] }).notNull().default("draft"),
   slug: text("slug").notNull().unique(),
+  // The public @identifier belongs to an individual listing, never to the
+  // account. It is nullable only while the migration assigns handles to the
+  // listings that already existed before this field was introduced.
+  handle: text("handle"),
   displayName: text("display_name").notNull(),
   shortDescription: text("short_description").notNull().default(""),
   description: text("description").notNull().default(""),
@@ -80,6 +84,7 @@ export const profiles = sqliteTable("profiles", {
 }, (table) => [
   index("profiles_status_region_city_idx").on(table.status, table.region, table.city),
   index("profiles_owner_idx").on(table.ownerId),
+  uniqueIndex("profiles_handle_unique").on(table.handle),
 ]);
 
 export const profileTags = sqliteTable("profile_tags", {

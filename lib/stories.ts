@@ -14,6 +14,7 @@ export type PublicStory = {
   expiresAt: string;
   profileId: string;
   profileSlug: string;
+  profileHandle: string | null;
   profileName: string;
   profileImageUrl: string | null;
   city: string;
@@ -66,6 +67,7 @@ export async function getActiveStories(scope: StoryScope = {}) {
       expiresAt: profileStatuses.expiresAt,
       profileId: profiles.id,
       profileSlug: profiles.slug,
+      profileHandle: profiles.handle,
       profileName: profiles.displayName,
       city: profiles.city,
       profileType: profiles.type,
@@ -106,6 +108,7 @@ export async function getActiveStories(scope: StoryScope = {}) {
         expiresAt: row.expiresAt ?? now,
         profileId: row.profileId,
         profileSlug: row.profileSlug,
+        profileHandle: row.profileHandle,
         profileName: row.profileName,
         profileImageUrl: profileImages.get(row.profileId) ?? null,
         city: row.city,

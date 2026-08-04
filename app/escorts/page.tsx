@@ -9,6 +9,7 @@ import { getActiveStories } from "@/lib/stories";
 import { StoryRail } from "@/app/historias/StoryRail";
 import { getCurrentUser } from "@/lib/auth";
 import { safeJsonLd } from "@/lib/json-ld";
+import { profilePublicPath } from "@/lib/profile";
 
 export const metadata: Metadata = {
   title: "Escorts en Chile",
@@ -30,7 +31,7 @@ export default async function EscortsPage({ searchParams }: { searchParams: Prom
   const stories = await getActiveStories({ profileIds: profiles.map((profile) => profile.id) });
   const canonicalProfiles = filterPublicProfiles(allProfiles, readDirectoryFilters({}, { type: "escort" }));
   const siteUrl = siteBaseUrl(settings.site_url);
-  const schema = { "@context": "https://schema.org", "@type": "CollectionPage", name: "Escorts en Chile", description: "Directorio nacional de escorts por ciudad, categoría y servicios.", url: `${siteUrl}/escorts`, inLanguage: "es-CL", mainEntity: { "@type": "ItemList", numberOfItems: canonicalProfiles.length, itemListElement: canonicalProfiles.map((profile, index) => ({ "@type": "ListItem", position: index + 1, name: profile.displayName, url: `${siteUrl}/perfil/${profile.slug}` })) } };
+  const schema = { "@context": "https://schema.org", "@type": "CollectionPage", name: "Escorts en Chile", description: "Directorio nacional de escorts por ciudad, categoría y servicios.", url: `${siteUrl}/escorts`, inLanguage: "es-CL", mainEntity: { "@type": "ItemList", numberOfItems: canonicalProfiles.length, itemListElement: canonicalProfiles.map((profile, index) => ({ "@type": "ListItem", position: index + 1, name: profile.displayName, url: `${siteUrl}${profilePublicPath(profile)}` })) } };
 
   return (
     <DirectoryShell>

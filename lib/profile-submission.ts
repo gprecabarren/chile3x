@@ -15,6 +15,7 @@ import {
   serializeAvailability,
   slugify,
   spokenLanguages,
+  validateProfileHandle,
   citiesByRegion,
   type ProfileType,
   type Tier,
@@ -25,6 +26,7 @@ export class ProfileValidationError extends Error {}
 export type ProfileSubmission = {
   type: ProfileType;
   tier: Tier;
+  handle: string | null;
   displayName: string;
   region: string;
   city: string;
@@ -129,10 +131,20 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
   const region = compactText(formData.get("region"), 120);
   const city = compactText(formData.get("city"), 120);
   const displayName = required(compactText(formData.get("display_name"), 80), "Indica un nombre visible.");
+  const requestedHandle = compactText(formData.get("handle"), 48);
   const shortDescription = required(compactText(formData.get("short_description"), 180), "Agrega una descripción breve.");
   const description = required(longText(formData.get("description"), 4000), "Agrega una descripción completa.");
   const contactWhatsapp = compactText(formData.get("contact_whatsapp"), 15);
   const intent = formData.get("intent") === "submit" ? "submit" : "draft";
+
+  let handle: string | null = null;
+  if (requestedHandle) {
+    try {
+      handle = validateProfileHandle(requestedHandle);
+    } catch (error) {
+      throw new ProfileValidationError(error instanceof Error ? error.message : "El usuario del anuncio no es válido.");
+    }
+  }
 
   if (!isProfileType(typeValue) || !isTier(tierValue)) {
     throw new ProfileValidationError("El tipo de perfil o categoría no es válido.");
@@ -233,6 +245,7 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
   return {
     type: typeValue,
     tier: typeValue === "escort" ? tierValue : "gold",
+    handle,
     displayName,
     region,
     city,
@@ -255,6 +268,48 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
     servicesAdditional: listFromForm(formData.getAll("services_additional"), additionalServices),
     intent,
   };
+}
+
+function automaticHandleBase(displayName: string) {
+  return normalizeHandleBase(displayName) || "perfil";
+}
+
+function normalizeHandleBase(value: string) {
+  return slugify(value).slice(0, 34).replace(/^-+|-+$/g, "");
+}
+
+function handleWithSuffix(base: string) {
+  return `${base.slice(0, 34).replace(/-+$/g, "")}-${crypto.randomUUID().replaceAll("-", "").slice(0, 5)}`;
+}
+
+async function isProfileHandleAvailable(handle: string, currentProfileId?: string) {
+  const db = await getDb();
+  const [existing] = await db.select({ id: profiles.id }).from(profiles).where(eq(profiles.handle, handle)).limit(1);
+  return !existing || existing.id === currentProfileId;
+}
+
+async function resolveProfileHandle(requestedHandle: string | null, displayName: string, currentProfileId?: string) {
+  if (requestedHandle) {
+    if (!await isProfileHandleAvailable(requestedHandle, currentProfileId)) {
+      throw new ProfileValidationError(`@${requestedHandle} ya está en uso. Elige otro usuario para este anuncio.`);
+    }
+    return requestedHandle;
+  }
+
+  let base = automaticHandleBase(displayName);
+  try {
+    validateProfileHandle(base);
+  } catch {
+    base = "perfil";
+  }
+  if (await isProfileHandleAvailable(base, currentProfileId)) return base;
+
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const candidate = handleWithSuffix(base);
+    if (await isProfileHandleAvailable(candidate, currentProfileId)) return candidate;
+  }
+
+  throw new ProfileValidationError("No pudimos asignar un usuario único. Intenta elegir uno manualmente.");
 }
 
 async function replaceProfileCollections(profileId: string, submission: ProfileSubmission) {
@@ -287,6 +342,7 @@ export async function createProfile(ownerId: string, submission: ProfileSubmissi
   const status = submission.intent === "submit" ? "pending" : "draft";
   const updatedAt = now.toISOString();
   const slug = [slugify(submission.displayName), slugify(submission.city), crypto.randomUUID().slice(0, 8)].join("-");
+  const handle = await resolveProfileHandle(submission.handle, submission.displayName);
 
   await db.insert(profiles).values({
     id,
@@ -294,6 +350,7 @@ export async function createProfile(ownerId: string, submission: ProfileSubmissi
     type: submission.type,
     status,
     slug,
+    handle,
     displayName: submission.displayName,
     shortDescription: submission.shortDescription,
     description: submission.description,
@@ -324,7 +381,7 @@ export async function createProfile(ownerId: string, submission: ProfileSubmissi
 
 export async function updateProfile(profileId: string, ownerId: string, submission: ProfileSubmission) {
   const db = await getDb();
-  const [existing] = await db.select({ id: profiles.id, status: profiles.status }).from(profiles)
+  const [existing] = await db.select({ id: profiles.id, status: profiles.status, handle: profiles.handle }).from(profiles)
     .where(and(eq(profiles.id, profileId), eq(profiles.ownerId, ownerId))).limit(1);
 
   if (!existing) {
@@ -333,10 +390,15 @@ export async function updateProfile(profileId: string, ownerId: string, submissi
 
   const updatedAt = new Date().toISOString();
   const status = existing.status === "paused" ? "paused" : submission.intent === "submit" || existing.status === "approved" ? "pending" : existing.status;
+  const handle = submission.handle ?? existing.handle ?? await resolveProfileHandle(null, submission.displayName, profileId);
+  if (submission.handle && submission.handle !== existing.handle && !await isProfileHandleAvailable(submission.handle, profileId)) {
+    throw new ProfileValidationError(`@${submission.handle} ya está en uso. Elige otro usuario para este anuncio.`);
+  }
 
   await db.update(profiles).set({
     type: submission.type,
     status,
+    handle,
     displayName: submission.displayName,
     shortDescription: submission.shortDescription,
     description: submission.description,

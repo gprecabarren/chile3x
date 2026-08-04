@@ -34,7 +34,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.redirect(new URL(`/mi-cuenta?notice=${submission.intent === "submit" ? "submitted" : "saved"}`, request.url), 303);
   } catch (error) {
     if (error instanceof ProfileValidationError || error instanceof VerificationDocumentError) {
-      return NextResponse.redirect(new URL("/mi-cuenta/nuevo-perfil?error=validation", request.url), 303);
+      const destination = new URL("/mi-cuenta/nuevo-perfil", request.url);
+      destination.searchParams.set("error", "validation");
+      destination.searchParams.set("message", error.message);
+      return NextResponse.redirect(destination, 303);
     }
     throw error;
   }

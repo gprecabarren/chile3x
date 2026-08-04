@@ -22,6 +22,7 @@ import {
 
 type ProfileFormInitial = {
   type: ProfileType;
+  handle?: string | null;
   displayName: string;
   region: string;
   city: string;
@@ -98,6 +99,11 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
           <label>
             Nombre visible
             <input name="display_name" required minLength={2} maxLength={80} defaultValue={initial?.displayName} placeholder={type === "agency" ? "Nombre de la agencia" : type === "rental" ? "Ej. Habitación en Providencia" : "Nombre de fantasía"} />
+          </label>
+          <label>
+            Usuario del anuncio (opcional)
+            <span className="profile-handle-input"><b>@</b><input name="handle" minLength={3} maxLength={41} defaultValue={initial?.handle ?? ""} placeholder={type === "agency" ? "agenciaejemplo" : type === "rental" ? "arriendo-centro" : "tu-nombre"} autoCapitalize="none" autoCorrect="off" /></span>
+            <small>Será parte de tu enlace. Si lo dejas vacío, Chile3X crea uno único basado en el nombre del anuncio.</small>
           </label>
           {type === "escort" ? <label>
             Categoría de visibilidad

@@ -94,7 +94,7 @@ export default async function Home() {
       <div className="age-strip">
         <span>+18</span>
         Este sitio está destinado exclusivamente a personas mayores de edad.
-        <a href="#reglas">Conocer reglas</a>
+        <a href="/reglas-de-publicacion">Conocer reglas</a>
       </div>
 
       <header className="site-header">

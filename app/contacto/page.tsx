@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import { DirectoryShell, PortalContactLinks } from "@/app/directorio/_components";
 import { getPortalContacts } from "@/lib/site-contacts";
 import { getSiteSettings } from "@/lib/site-settings";
+import { publicPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   title: "Contacto",
   description: "Canales oficiales de contacto de Chile3X para consultas relacionadas con el directorio y la publicación de perfiles.",
-  alternates: { canonical: "/contacto" },
-};
+  path: "/contacto",
+  socialTitle: "Contacto | Chile3X",
+});
 
 export const dynamic = "force-dynamic";
 

@@ -3,12 +3,14 @@ import Link from "next/link";
 import { DirectoryShell } from "@/app/directorio/_components";
 import { getFaqEntries } from "@/lib/faq";
 import { safeJsonLd } from "@/lib/json-ld";
+import { publicPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   title: "Preguntas frecuentes",
   description: "Respuestas sobre Chile3X, cuentas, publicación, moderación y el uso responsable del directorio para adultos.",
-  alternates: { canonical: "/faq" },
-};
+  path: "/faq",
+  socialTitle: "Preguntas frecuentes | Chile3X",
+});
 
 export const dynamic = "force-dynamic";
 

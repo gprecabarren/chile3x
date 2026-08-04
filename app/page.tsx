@@ -10,6 +10,7 @@ import { getActiveStories } from "@/lib/stories";
 import { getCurrentUser } from "@/lib/auth";
 import { getBlockedProfileIds } from "@/lib/profile-safety";
 import { safeJsonLd } from "@/lib/json-ld";
+import { socialCardImage, socialCardImageUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Escorts en Chile",
@@ -22,13 +23,14 @@ export const metadata: Metadata = {
     url: "/",
     locale: "es_CL",
     type: "website",
-    images: [{ url: "/chile3x-social-card.png", width: 1734, height: 907, alt: "Chile3X, directorio nacional de escorts en Chile" }],
+    siteName: "Chile3X",
+    images: [socialCardImage],
   },
   twitter: {
     card: "summary_large_image",
     title: "Escorts en Chile | Chile3X",
     description: "Directorio nacional de escorts por ciudad, categoría y servicios.",
-    images: ["/chile3x-social-card.png"],
+    images: [socialCardImageUrl],
   },
 };
 
@@ -152,13 +154,6 @@ export default async function Home() {
         </aside>
       </section>
 
-      <section className="home-photo-banner" aria-label="Chile3X, directorio adulto en Chile">
-        <Image src="/chile3x-hero-banner.jpg" alt="" fill sizes="100vw" unoptimized />
-        <div><p className="eyebrow">CHILE3X</p><h2>Un espacio adulto, <em>privado y claro.</em></h2><p>Encuentra publicaciones revisadas y contacta directamente a cada anunciante.</p><Link className="button button-outline" href="/escorts">Ver directorio nacional</Link></div>
-      </section>
-
-      <StoryRail stories={visibleStories} />
-
       <section className="section directory-section" id="cobertura">
         <div className="section-heading directory-heading">
           <div>
@@ -201,6 +196,13 @@ export default async function Home() {
           <div><input id="home-profile-search" name="nombre" type="search" minLength={2} maxLength={80} placeholder="Ej. Tomás, Valentina..." /><button type="submit">Buscar</button></div>
         </form>
       </section>
+
+      <section className="home-photo-banner" aria-label="Chile3X, directorio adulto en Chile">
+        <Image src="/chile3x-hero-banner.jpg" alt="" fill sizes="100vw" unoptimized />
+        <div><p className="eyebrow">CHILE3X</p><h2>Un espacio adulto, <em>privado y claro.</em></h2><p>Encuentra publicaciones revisadas y contacta directamente a cada anunciante.</p><Link className="button button-outline" href="/escorts">Ver directorio nacional</Link></div>
+      </section>
+
+      <StoryRail stories={visibleStories} />
 
       <section className="section listings-section">
         <div className="listings-intro">

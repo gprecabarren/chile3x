@@ -19,6 +19,7 @@ import { canAccessExclusiveMedia } from "@/lib/profile-safety";
 import { ProfileSafetyActions } from "../ProfileSafetyActions";
 import { TrackedContactLink } from "../TrackedContactLink";
 import { safeJsonLd } from "@/lib/json-ld";
+import { socialCardImageUrl } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -108,12 +109,12 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
   const profile = profileForRoute(await getPublicProfiles(), slug);
   if (!profile) return {};
   const coverImage = profile.media.find((media) => media.mediaType === "image" && media.isProfilePhoto) ?? profile.media.find((media) => media.mediaType === "image");
-  const socialImage = coverImage?.url ?? "/chile3x-social-card.png";
+  const socialImage = coverImage?.url ?? socialCardImageUrl;
   return {
     title: profileSeoTitle(profile),
     description: profileSeoDescription(profile),
     alternates: { canonical: profilePublicPath(profile) },
-    openGraph: { title: profileSeoTitle(profile), description: profileSeoDescription(profile), url: profilePublicPath(profile), locale: "es_CL", type: "profile", images: [{ url: socialImage, alt: `${profile.displayName}, ${profile.city}` }] },
+    openGraph: { title: profileSeoTitle(profile), description: profileSeoDescription(profile), url: profilePublicPath(profile), locale: "es_CL", type: "profile", siteName: "Chile3X", images: [{ url: socialImage, alt: `${profile.displayName}, ${profile.city}` }] },
     twitter: { card: "summary_large_image", title: profileSeoTitle(profile), description: profileSeoDescription(profile), images: [socialImage] },
     robots: profile.isDemo ? { index: false, follow: false } : undefined,
   };

@@ -120,7 +120,8 @@ h1 em, h2 em { color: #ee3d45; font-style: italic; }
 footer { padding: 52px max(28px, calc((100vw - 1184px) / 2)); display: grid; grid-template-columns: 150px 1fr; gap: 25px 72px; align-items: start; color: #c5c8d4; background: #05060a; }
 footer p { max-width: 470px; margin: 0; font-size: 12px; line-height: 1.65; }
 footer span { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid #272b39; color: #73798c; font-size: 10px; }
-.oad-badge { display: inline-flex; width: max-content; align-items: center; justify-content: center; }.oad-badge img { display: block; width: auto; max-width: 134px; height: 31px; object-fit: contain; }
+.oad-badge { display: inline-flex; width: max-content; align-items: center; justify-content: center; border-radius: 8px; transition: transform .18s ease, filter .18s ease; touch-action: manipulation; }.oad-badge img { display: block; width: auto; max-width: 134px; height: 31px; object-fit: contain; }.oad-badge:hover, .oad-badge:focus-visible { transform: translateY(-2px) scale(1.035); filter: brightness(1.12); }.oad-badge:active { transform: translateY(0) scale(.965); }.oad-badge:focus-visible { outline: 2px solid #f15a61; outline-offset: 4px; }
+@media (prefers-reduced-motion: reduce) { .oad-badge { transition: none; }.oad-badge:hover, .oad-badge:focus-visible, .oad-badge:active { transform: none; } }
 
 .auth-page { min-height: 100vh; padding: 52px 24px; display: grid; place-items: center; background: radial-gradient(circle at 76% 12%, #292e60 0, #11142b 31%, #06070c 72%); }
 .auth-card { width: min(100%, 520px); padding: clamp(28px, 5vw, 54px); border: 1px solid rgba(255,255,255,.16); color: #f7f4f0; background: rgba(10,12,21,.88); box-shadow: 16px 18px 0 rgba(212,21,29,.56); }

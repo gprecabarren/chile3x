@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/app/legal/LegalPage";
+import { publicPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Política de privacidad", description: "Cómo Chile3X trata los datos necesarios para operar el directorio y una verificación opcional." };
+export const metadata: Metadata = publicPageMetadata({ title: "Política de privacidad", description: "Cómo Chile3X trata los datos necesarios para operar el directorio y una verificación opcional.", path: "/privacidad" });
 
 export default function PrivacyPage() {
   return <LegalPage eyebrow="DATOS Y PRIVACIDAD" title="Política de privacidad" updated="31 de julio de 2026">

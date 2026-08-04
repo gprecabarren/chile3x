@@ -10,13 +10,15 @@ import { StoryRail } from "@/app/historias/StoryRail";
 import { getCurrentUser } from "@/lib/auth";
 import { safeJsonLd } from "@/lib/json-ld";
 import { profilePublicPath } from "@/lib/profile";
+import { publicPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   title: "Escorts en Chile",
   description: "Encuentra escorts en Chile por ciudad, categoría y servicios. Explora perfiles publicados y filtrados en el directorio nacional Chile3X.",
-  alternates: { canonical: "/escorts" },
-  openGraph: { title: "Escorts en Chile", description: "Directorio nacional de escorts por ciudad, categoría y servicios.", url: "/escorts", locale: "es_CL", type: "website" },
-};
+  path: "/escorts",
+  socialTitle: "Escorts en Chile | Chile3X",
+  socialDescription: "Directorio nacional de escorts por ciudad, categoría y servicios.",
+});
 
 export const dynamic = "force-dynamic";
 

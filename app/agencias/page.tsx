@@ -4,8 +4,9 @@ import { DirectoryFilters } from "@/app/directorio/DirectoryFilters";
 import { DirectoryShell, ProfileGrid } from "@/app/directorio/_components";
 import { filterPublicProfiles, getPublicProfiles, readDirectoryFilters, type DirectoryQuery } from "@/lib/directory";
 import { getCurrentUser } from "@/lib/auth";
+import { publicPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Agencias de escorts en Chile", description: "Encuentra agencias de escorts en Chile por ciudad. Cada asociación con una escort requiere su aprobación antes de mostrarse en Chile3X.", alternates: { canonical: "/agencias" }, openGraph: { title: "Agencias de escorts en Chile", description: "Agencias publicadas por ciudad en Chile3X.", url: "/agencias", locale: "es_CL", type: "website" } };
+export const metadata: Metadata = publicPageMetadata({ title: "Agencias de escorts en Chile", description: "Encuentra agencias de escorts en Chile por ciudad. Cada asociación con una escort requiere su aprobación antes de mostrarse en Chile3X.", path: "/agencias", socialTitle: "Agencias de escorts en Chile | Chile3X", socialDescription: "Agencias publicadas por ciudad en Chile3X." });
 export const dynamic = "force-dynamic";
 
 export default async function AgenciesPage({ searchParams }: { searchParams: Promise<DirectoryQuery> }) {

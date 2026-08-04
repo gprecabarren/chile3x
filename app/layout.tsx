@@ -5,6 +5,7 @@ import { AgeGate } from "./AgeGate";
 import { MaintenanceScreen } from "./MaintenanceScreen";
 import { getCurrentAdmin } from "@/lib/auth";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
+import { socialCardImage, socialCardImageUrl } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -23,13 +24,15 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: {
       title: settings.site_title,
       description: settings.site_description,
-    type: "website",
-    locale: "es_CL",
+      url: "/",
+      type: "website",
+      locale: "es_CL",
+      siteName: "Chile3X",
     images: [
       {
-        url: "/chile3x-social-card.png",
-        width: 1734,
-        height: 907,
+        url: socialCardImageUrl,
+        width: socialCardImage.width,
+        height: socialCardImage.height,
         alt: "Chile3X — directorio para adultos en Chile",
       },
     ],
@@ -38,7 +41,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: "summary_large_image",
       title: settings.site_title,
       description: settings.site_description,
-      images: ["/chile3x-social-card.png"],
+      images: [socialCardImageUrl],
     },
     icons: {
       icon: [

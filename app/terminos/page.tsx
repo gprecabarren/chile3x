@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/app/legal/LegalPage";
+import { publicPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Términos y condiciones", description: "Términos de uso de Chile3X para visitantes y anunciantes mayores de edad." };
+export const metadata: Metadata = publicPageMetadata({ title: "Términos y condiciones", description: "Términos de uso de Chile3X para visitantes y anunciantes mayores de edad.", path: "/terminos" });
 
 export default function TermsPage() {
   return <LegalPage eyebrow="MARCO DE USO" title="Términos y condiciones" updated="30 de julio de 2026">

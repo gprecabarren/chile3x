@@ -9,6 +9,7 @@ import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { getCurrentUser } from "@/lib/auth";
 import { safeJsonLd } from "@/lib/json-ld";
 import { profilePublicPath } from "@/lib/profile";
+import { publicPageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -18,12 +19,13 @@ export async function generateMetadata({ params }: CityPageProps): Promise<Metad
   const { citySlug } = await params;
   const city = getCityInfo(citySlug);
   if (!city) return {};
-  return {
+  return publicPageMetadata({
     title: `Escorts en ${city.city}`,
     description: `Encuentra escorts en ${city.city}, ${city.region}. Explora perfiles, agencias y arriendos para adultos con filtros por categoría, atributos y servicios.`,
-    alternates: { canonical: `/escorts/${city.citySlug}` },
-    openGraph: { title: `Escorts en ${city.city}`, description: `Directorio de escorts en ${city.city}, Chile.`, url: `/escorts/${city.citySlug}`, locale: "es_CL", type: "website" },
-  };
+    path: `/escorts/${city.citySlug}`,
+    socialTitle: `Escorts en ${city.city} | Chile3X`,
+    socialDescription: `Directorio de escorts en ${city.city}, Chile.`,
+  });
 }
 
 export default async function CityPage({ params, searchParams }: CityPageProps) {

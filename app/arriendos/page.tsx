@@ -4,8 +4,9 @@ import { DirectoryFilters } from "@/app/directorio/DirectoryFilters";
 import { DirectoryShell, ProfileGrid } from "@/app/directorio/_components";
 import { filterPublicProfiles, getPublicProfiles, readDirectoryFilters, type DirectoryQuery } from "@/lib/directory";
 import { getCurrentUser } from "@/lib/auth";
+import { publicPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Arriendos para escorts en Chile", description: "Explora arriendos para escorts en Chile por ciudad, con características y servicios incluidos publicados en Chile3X.", alternates: { canonical: "/arriendos" }, openGraph: { title: "Arriendos para escorts en Chile", description: "Arriendos publicados por ciudad en Chile3X.", url: "/arriendos", locale: "es_CL", type: "website" } };
+export const metadata: Metadata = publicPageMetadata({ title: "Arriendos para escorts en Chile", description: "Explora arriendos para escorts en Chile por ciudad, con características y servicios incluidos publicados en Chile3X.", path: "/arriendos", socialTitle: "Arriendos para escorts en Chile | Chile3X", socialDescription: "Arriendos publicados por ciudad en Chile3X." });
 export const dynamic = "force-dynamic";
 
 export default async function RentalsPage({ searchParams }: { searchParams: Promise<DirectoryQuery> }) {

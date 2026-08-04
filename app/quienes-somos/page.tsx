@@ -4,12 +4,14 @@ import { DirectoryShell, PortalContactIcon, PortalContactLinks } from "@/app/dir
 import { getPortalWhatsappLink } from "@/lib/site-contacts";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { safeJsonLd } from "@/lib/json-ld";
+import { publicPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   title: "Directorio nacional de escorts",
   description: "Chile3X es un directorio nacional de escorts en Chile, con perfiles por ciudad, agencias y arriendos para adultos. Cobertura nacional, revisión manual y soporte cercano.",
-  alternates: { canonical: "/quienes-somos" },
-};
+  path: "/quienes-somos",
+  socialTitle: "Directorio nacional de escorts | Chile3X",
+});
 
 export const dynamic = "force-dynamic";
 

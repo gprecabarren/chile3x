@@ -12,7 +12,7 @@ export const siteSettingDefaults = {
   site_description: "Encuentra escorts en Chile por ciudad, región, categoría y servicios. Chile3X es un directorio para adultos con perfiles revisados.",
   google_site_verification: "",
   google_analytics_id: "",
-  contact_whatsapp: "",
+  contact_whatsapp: "56933365005",
   contact_telegram: "",
   contact_instagram: "",
   contact_email: "chile3x.site@gmail.com",

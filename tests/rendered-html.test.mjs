@@ -42,5 +42,6 @@ test("server-renders the Chile3X public home", async () => {
   assert.match(html, /ciudades y comunas iniciales/);
   assert.match(html, /Región de Arica y Parinacota/);
   assert.match(html, /Región de Magallanes y de la Antártica Chilena/);
+  assert.match(html, /wa\.me\/56933365005\?text=/);
   assert.doesNotMatch(html, /Your site is taking shape|Building your site|codex-preview/i);
 });

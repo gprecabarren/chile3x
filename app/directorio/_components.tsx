@@ -118,17 +118,15 @@ export function ProfileCard({ profile }: { profile: PublicProfile }) {
         <span className="public-type-label">{typeLabel[profile.type]}</span>
         {tierTag && <span className={`public-card-tier-badge ${tierTag.toLowerCase()}`}>{tierTag}</span>}
         {detailTags.length > 0 && <span className="public-card-detail-badges" aria-label={`Etiquetas: ${detailTags.join(", ")}`}>{detailTags.map((tag) => <span key={tag} className={`public-card-badge ${tag.toLowerCase().replaceAll(" ", "-")}`}>{tag}</span>)}</span>}
-        {profile.isDemo && <span className="demo-label">DEMO</span>}
         {profile.isFeatured && <span className="featured-label">DESTACADA</span>}
       </Link>
       <div className="public-profile-content">
         <div className="public-profile-title">
           <div>
-            <h3><Link href={profileHref}>{profile.displayName}</Link></h3>
+            <h3><Link href={profileHref}>{profile.displayName}</Link>{profile.verificationStatus === "reviewed" && profile.type === "escort" && <span className="verified-sticker" title="Perfil comprobado" aria-label="Perfil comprobado">✓</span>}</h3>
             {profile.handle && <small className="public-profile-handle">@{profile.handle}</small>}
             <p><Link href={getCityPath(profile.city)}>{profile.city}</Link>{subtitle && ` · ${subtitle}`}</p>
           </div>
-          {profile.verificationStatus === "reviewed" && profile.type === "escort" && <span className="verified-sticker" title="Perfil comprobado">✓</span>}
         </div>
         <p className="public-profile-description">{profile.shortDescription}</p>
         <div className="public-profile-meta"><span>{profile.region}</span>{mainPrice && <strong>{mainPrice.label} · ${mainPrice.amount.toLocaleString("es-CL")} {mainPrice.currency}</strong>}</div>
@@ -168,6 +166,7 @@ export function CityProfileSections({ city, profiles }: CityProfileSectionsProps
     ["Premium", "Escorts con categoría Premium", escorts.filter((profile) => profile.tier === "premium")],
     ["Gold", "Escorts con categoría Gold", escorts.filter((profile) => profile.tier === "gold")],
     ["Agencias", "Agencias visibles en la ciudad", profiles.filter((profile) => profile.type === "agency")],
+    ["Masajes", "Escorts con la etiqueta Masajes; también aparecen en su categoría de visibilidad", escorts.filter((profile) => profile.tags.includes("masajes"))],
     ["Arriendos", "Arriendos visibles en la ciudad", profiles.filter((profile) => profile.type === "rental")],
   ] as const;
 

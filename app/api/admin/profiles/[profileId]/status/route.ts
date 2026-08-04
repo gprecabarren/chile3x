@@ -11,11 +11,13 @@ const allowedStatuses = new Set(["draft", "pending", "approved", "paused", "reje
 const allowedVerification = new Set(["unreviewed", "in_review", "reviewed"]);
 const allowedHealthReview = new Set(["not_requested", "in_review", "reviewed"]);
 
-function safeProfileReturnTo(value: FormDataEntryValue | null) {
-  if (typeof value !== "string" || !value.startsWith("/perfil/") || value.startsWith("//")) return null;
+function safeReturnTo(value: FormDataEntryValue | null) {
+  if (typeof value !== "string" || value.startsWith("//")) return null;
   try {
     const url = new URL(value, "https://chile3x.cl");
-    return url.pathname.startsWith("/perfil/") && url.pathname.length > "/perfil/".length ? url.pathname : null;
+    const isProfile = url.pathname.startsWith("/perfil/") && url.pathname.length > "/perfil/".length;
+    const isAdminList = url.pathname === "/admin/perfiles";
+    return isProfile || isAdminList ? `${url.pathname}${url.search}` : null;
   } catch {
     return null;
   }
@@ -79,5 +81,5 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!delivered) console.error("Could not send profile approval email", { profileId });
   }
 
-  return NextResponse.redirect(new URL(safeProfileReturnTo(formData.get("return_to")) ?? "/admin/perfiles", request.url), 303);
+  return NextResponse.redirect(new URL(safeReturnTo(formData.get("return_to")) ?? "/admin/perfiles", request.url), 303);
 }

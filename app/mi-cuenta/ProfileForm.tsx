@@ -20,6 +20,12 @@ import {
   type ProfileType,
 } from "@/lib/profile";
 
+const tierVisibilityOptions = {
+  gold: "Gold — visibilidad estándar (futura opción más económica) · GRATIS ahora",
+  premium: "Premium — mayor visibilidad (futura opción intermedia) · GRATIS ahora",
+  vip: "VIP — máxima visibilidad (futura opción más cara) · GRATIS ahora",
+} as const;
+
 type ProfileFormInitial = {
   type: ProfileType;
   handle?: string | null;
@@ -108,8 +114,9 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
           {type === "escort" ? <label>
             Categoría de visibilidad
             <select name="tier" defaultValue={initial?.tier ?? "gold"}>
-              {tiers.map((tier) => <option key={tier} value={tier}>{tier === "gold" ? "Gold" : tier === "premium" ? "Premium" : "VIP"}</option>)}
+              {tiers.map((tier) => <option key={tier} value={tier}>{tierVisibilityOptions[tier]}</option>)}
             </select>
+            <small>Por lanzamiento, todas las categorías son gratis. Sus valores se definirán más adelante.</small>
           </label> : <input name="tier" type="hidden" value="gold" />}
         </div>
       </section>

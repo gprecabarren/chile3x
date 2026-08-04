@@ -154,6 +154,13 @@ export default async function Home() {
         </aside>
       </section>
 
+      <section className="home-photo-banner" aria-label="Chile3X, directorio adulto en Chile">
+        <Image src="/chile3x-hero-banner.jpg" alt="" fill sizes="100vw" unoptimized />
+        <div><p className="eyebrow">CHILE3X</p><h2>Un espacio adulto, <em>privado y claro.</em></h2><p>Encuentra publicaciones revisadas y contacta directamente a cada anunciante.</p><Link className="button button-outline" href="/escorts">Ver directorio nacional</Link></div>
+      </section>
+
+      <StoryRail stories={visibleStories} />
+
       <section className="section directory-section" id="cobertura">
         <div className="section-heading directory-heading">
           <div>
@@ -196,13 +203,6 @@ export default async function Home() {
           <div><input id="home-profile-search" name="nombre" type="search" minLength={2} maxLength={80} placeholder="Ej. Tomás, Valentina..." /><button type="submit">Buscar</button></div>
         </form>
       </section>
-
-      <section className="home-photo-banner" aria-label="Chile3X, directorio adulto en Chile">
-        <Image src="/chile3x-hero-banner.jpg" alt="" fill sizes="100vw" unoptimized />
-        <div><p className="eyebrow">CHILE3X</p><h2>Un espacio adulto, <em>privado y claro.</em></h2><p>Encuentra publicaciones revisadas y contacta directamente a cada anunciante.</p><Link className="button button-outline" href="/escorts">Ver directorio nacional</Link></div>
-      </section>
-
-      <StoryRail stories={visibleStories} />
 
       <section className="section listings-section">
         <div className="listings-intro">

@@ -124,7 +124,7 @@ export function ProfileCard({ profile }: { profile: PublicProfile }) {
       <div className="public-profile-content">
         <div className="public-profile-title">
           <div>
-            <h2><Link href={profileHref}>{profile.displayName}</Link></h2>
+            <h3><Link href={profileHref}>{profile.displayName}</Link></h3>
             {profile.handle && <small className="public-profile-handle">@{profile.handle}</small>}
             <p><Link href={getCityPath(profile.city)}>{profile.city}</Link>{subtitle && ` · ${subtitle}`}</p>
           </div>

@@ -298,7 +298,7 @@ footer span { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid #272
 .public-profile-initial { position: relative; z-index: 1; font-family: Georgia, serif; font-size: 104px; font-style: italic; }
 .public-type-label, .demo-label, .featured-label { position: absolute; z-index: 2; padding: 6px 8px; color: #fff; font-size: 8px; font-weight: 800; letter-spacing: .08em; }
 .public-type-label { top: 12px; left: 12px; border: 1px solid rgba(255,255,255,.45); background: rgba(7,8,13,.34); }.demo-label { top: 12px; right: 12px; color: #07080d; background: #f0c455; }.public-profile-visual .featured-label { right: 12px; bottom: 12px; background: #d4151d; }
-.public-profile-content { padding: 17px; }.public-profile-title { display: flex; justify-content: space-between; gap: 12px; }.public-profile-title h2 { margin: 0 0 4px; color: #fff; font-size: 25px; }.public-profile-handle { display: block; margin: -1px 0 4px; color: #de8a91; font-size: 10px; font-weight: 700; letter-spacing: .03em; }.public-profile-title p { margin: 0; color: #aeb4c3; font-size: 11px; }.public-profile-title p a:hover { color: #ff858b; }
+.public-profile-content { padding: 17px; }.public-profile-title { display: flex; justify-content: space-between; gap: 12px; }.public-profile-title h3 { margin: 0 0 4px; color: #fff; font-family: Georgia, "Times New Roman", serif; font-size: 25px; font-weight: 400; letter-spacing: -.045em; }.public-profile-handle { display: block; margin: -1px 0 4px; color: #de8a91; font-size: 10px; font-weight: 700; letter-spacing: .03em; }.public-profile-title p { margin: 0; color: #aeb4c3; font-size: 11px; }.public-profile-title p a:hover { color: #ff858b; }
 .verified-sticker { display: inline-grid; width: 25px; height: 25px; place-items: center; border-radius: 50%; color: #07110a; background: #63d37a; font-family: Arial, sans-serif; font-size: 15px; font-weight: 900; vertical-align: 4px; }
 .public-profile-description { min-height: 37px; margin: 14px 0; color: #c9cdd7; font-size: 12px; line-height: 1.5; }
 .public-tag-row { display: flex; flex-wrap: wrap; gap: 6px; }.public-tag { padding: 5px 7px; border: 1px solid #394054; color: #d8dbe4; background: #0d101a; font-size: 9px; font-weight: 800; letter-spacing: .045em; text-transform: uppercase; }.public-tag.vip { border-color: #f1ba41; color: #ffd87e; }.public-tag.premium { border-color: #bd7dff; color: #d6b1ff; }.public-tag.trans { border-color: #62c0de; color: #a3e7fa; }.public-tag.masajes { border-color: #7fbe9a; color: #b2e2c6; }.public-tag.comprobada { border-color: #49b966; color: #a5edb5; }
@@ -397,7 +397,7 @@ footer span { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid #272
 .site-header .public-navigation-group { display: flex; align-items: center; gap: 14px; white-space: nowrap; }
 .site-header .public-navigation-directory { padding: 8px 12px; border: 1px solid #2e3444; border-radius: 3px; background: linear-gradient(135deg, rgba(30, 35, 53, .8), rgba(12, 14, 23, .8)); box-shadow: inset 3px 0 0 var(--red); }
 .site-header .public-navigation-directory a:first-child { color: #f4f5f8; }
-.site-header .public-navigation-site { gap: 13px; padding-left: 2px; }
+.site-header .public-navigation-site { gap: 13px; margin-left: 4px; padding: 8px 0 8px 16px; border-left: 1px solid #363b4b; }
 .site-header .public-navigation a { font-size: 11px; }
 
 /* Landing "Quiénes somos". */

@@ -7,6 +7,14 @@ import { findProfileMedia } from "@/lib/media";
 
 export const dynamic = "force-dynamic";
 
+function destination(request: NextRequest, formData: FormData, notice: string) {
+  const requested = String(formData.get("return_to") ?? "");
+  const path = requested.startsWith("/admin/medios") ? requested : "/admin/medios";
+  const url = new URL(path, request.url);
+  url.searchParams.set("notice", notice);
+  return url;
+}
+
 export async function POST(request: NextRequest, { params }: { params: Promise<{ mediaId: string }> }) {
   try {
     assertSameOrigin(request);
@@ -19,9 +27,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const { mediaId } = await params;
   const record = await findProfileMedia(mediaId);
-  if (!record) return NextResponse.redirect(new URL("/admin/medios?notice=missing", request.url), 303);
-
   const formData = await request.formData();
+  if (!record) return NextResponse.redirect(destination(request, formData, "missing"), 303);
   const action = formData.get("action");
   const db = await getDb();
   if (action === "approve") {
@@ -34,12 +41,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       ));
     }
     await db.update(profileMedia).set({ moderationStatus: "approved" }).where(eq(profileMedia.id, mediaId));
-    return NextResponse.redirect(new URL("/admin/medios?notice=approved", request.url), 303);
+    return NextResponse.redirect(destination(request, formData, "approved"), 303);
   }
 
   if (action === "unapprove") {
     await db.update(profileMedia).set({ moderationStatus: "pending" }).where(eq(profileMedia.id, mediaId));
-    return NextResponse.redirect(new URL("/admin/medios?notice=unapproved", request.url), 303);
+    return NextResponse.redirect(destination(request, formData, "unapproved"), 303);
   }
 
   if (action === "delete") {
@@ -47,8 +54,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!env.MEDIA) return new Response("El almacenamiento no está disponible.", { status: 503 });
     await env.MEDIA.delete(record.media.r2Key);
     await db.delete(profileMedia).where(eq(profileMedia.id, mediaId));
-    return NextResponse.redirect(new URL("/admin/medios?notice=deleted", request.url), 303);
+    return NextResponse.redirect(destination(request, formData, "deleted"), 303);
   }
 
-  return NextResponse.redirect(new URL("/admin/medios?notice=error", request.url), 303);
+  return NextResponse.redirect(destination(request, formData, "error"), 303);
 }

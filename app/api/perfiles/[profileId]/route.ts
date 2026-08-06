@@ -18,7 +18,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const formData = await request.formData();
     const submission = readProfileSubmission(formData);
     const updated = await updateProfile(profileId, user.id, submission);
-    return NextResponse.redirect(new URL(updated ? `/mi-cuenta?notice=${submission.intent === "submit" ? "submitted" : "saved"}` : "/mi-cuenta?notice=error", request.url), 303);
+    return NextResponse.redirect(new URL(updated ? `/mi-cuenta/${profileId}/editar?notice=${submission.intent === "submit" ? "submitted" : "saved"}` : "/mi-cuenta?notice=error", request.url), 303);
   } catch (error) {
     if (error instanceof ProfileValidationError) {
       const destination = new URL(`/mi-cuenta/${profileId}/editar`, request.url);

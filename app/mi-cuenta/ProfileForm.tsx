@@ -304,7 +304,7 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
           <div className="form-grid form-grid-three">
             <label>Nombre artista (opcional)<input name="artist_name" maxLength={80} defaultValue={metadataValue(initial, "artist_name")} /></label>
             <label>Género (opcional)<select name="gender" defaultValue={metadataValue(initial, "gender")}><option value="">Seleccionar</option>{escortGenders.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label>Edad (opcional)<input name="age" type="number" min="18" defaultValue={metadataValue(initial, "age")} onChange={(event) => { if (event.target.value && Number(event.target.value) < 18) setUnderageNotice(true); }} /></label>
+            <label>Edad (opcional)<input name="age" type="number" min="18" defaultValue={metadataValue(initial, "age")} onChange={(event) => setUnderageNotice(Boolean(event.target.value && Number(event.target.value) < 18))} />{underageNotice && <small className="field-warning" role="alert">Solo se admiten publicaciones de personas mayores de 18 años.</small>}</label>
             <label>Nacionalidad (opcional)<select name="nationality" defaultValue={metadataValue(initial, "nationality")}><option value="">Seleccionar</option>{nationalities.map((item) => <option key={item}>{item}</option>)}</select></label>
             <label>Color de piel (opcional)<select name="skin_color" defaultValue={metadataValue(initial, "skin_color")}><option value="">Seleccionar</option>{skinColors.map((item) => <option key={item}>{item}</option>)}</select></label>
             <label className="language-selector">Idiomas (opcional)<select name="languages" multiple size={4} defaultValue={metadataValue(initial, "languages").split(", ").filter(Boolean)}>{spokenLanguages.map((language) => <option key={language} value={language}>{language}</option>)}</select><small>Selecciona uno o más idiomas.</small></label>
@@ -424,7 +424,6 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
         <button className="button button-outline" name="intent" type="submit" value="draft">Guardar borrador</button>
         <button className="button button-primary" name="intent" type="submit" value="submit">{submitLabel}</button>
       </div>
-      {underageNotice && <div className="form-modal-backdrop" role="presentation"><section className="form-modal" role="alertdialog" aria-modal="true" aria-labelledby="underage-title"><p className="eyebrow">REQUISITO DE EDAD</p><h2 id="underage-title">Debes ser mayor de 18 años.</h2><p>Chile3X solo permite publicaciones de personas adultas. Corrige la edad antes de continuar.</p><button className="button button-primary" type="button" onClick={() => setUnderageNotice(false)}>Entendido</button></section></div>}
     </form>
   );
 }

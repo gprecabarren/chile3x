@@ -73,7 +73,7 @@ function contactLinks(profile: PublicProfile) {
   return {
     whatsapp: whatsappNumber ? `https://wa.me/${whatsappNumber}?text=${message}` : null,
     call: callNumber ? `tel:${callNumber}` : null,
-    telegram: /^[A-Za-z0-9_]{5,32}$/.test(telegramUsername) ? `https://t.me/${telegramUsername}` : null,
+    telegram: /^[A-Za-z0-9_]{3,64}$/.test(telegramUsername) ? `https://t.me/${telegramUsername}` : null,
     email: profile.details.contactEmail ? `mailto:${profile.details.contactEmail}` : null,
     instagram: safeExternalUrl(profile.details.metadata.instagram_url, "instagram.com"),
     arsmate: safeExternalUrl(profile.details.metadata.arsmate_url, "arsmate.com"),

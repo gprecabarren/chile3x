@@ -136,6 +136,30 @@ function normalizePlatformUsername(value: string, label: string, host: string) {
   return `https://${host}/${username}`;
 }
 
+function normalizeTelegram(value: string) {
+  if (!value) return "";
+
+  let username = value.trim();
+  const looksLikeTelegramLink = /^(?:https?:\/\/)?(?:www\.)?(?:t\.me|telegram\.me)\//i.test(username);
+  if (looksLikeTelegramLink) {
+    try {
+      const url = new URL(/^https?:\/\//i.test(username) ? username : `https://${username}`);
+      const isTelegramHost = /^(?:www\.)?(?:t\.me|telegram\.me)$/i.test(url.hostname);
+      const segments = url.pathname.split("/").filter(Boolean);
+      if (!isTelegramHost || segments.length !== 1) throw new Error("invalid Telegram URL");
+      username = segments[0];
+    } catch {
+      throw new ProfileValidationError("Telegram debe ser un usuario válido, @usuario o un enlace t.me/usuario.");
+    }
+  }
+
+  username = username.replace(/^@/, "");
+  if (!/^[A-Za-z0-9_]{3,64}$/.test(username)) {
+    throw new ProfileValidationError("Telegram debe ser un usuario válido, @usuario o un enlace t.me/usuario.");
+  }
+  return username;
+}
+
 export function readProfileSubmission(formData: FormData): ProfileSubmission {
   const typeValue = compactText(formData.get("type"), 20);
   const tierValue = compactText(formData.get("tier"), 20);
@@ -194,10 +218,7 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
     throw new ProfileValidationError("El valor debe ser un número mayor que cero.");
   }
 
-  const telegram = compactText(formData.get("contact_telegram"), 80).replace(/^@/, "");
-  if (telegram && !/^[A-Za-z0-9_]{5,32}$/.test(telegram)) {
-    throw new ProfileValidationError("Telegram debe ser un nombre de usuario válido.");
-  }
+  const telegram = normalizeTelegram(compactText(formData.get("contact_telegram"), 80));
 
   const age = compactText(formData.get("age"), 2);
   if (age && (!/^[0-9]{2,3}$/.test(age) || Number(age) < 18)) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { regions } from "@/app/locations";
 import {
   additionalServices,
@@ -77,6 +77,8 @@ function metadataValue(initial: ProfileFormInitial | undefined, key: string) {
 }
 
 export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) {
+  const formRef = useRef<HTMLFormElement>(null);
+  const storageKey = `chile3x-profile-draft:${action}`;
   const [type, setType] = useState<ProfileType>(initial?.type ?? "escort");
   const [region, setRegion] = useState(initial?.region ?? regions[0].title);
   const availableCities = useMemo(
@@ -88,6 +90,61 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
   const [enabledAvailabilityDays, setEnabledAvailabilityDays] = useState(() => new Set(savedAvailability.keys()));
   const [selectedProfileTags, setSelectedProfileTags] = useState<string[]>(initial?.tags ?? []);
   const [underageNotice, setUnderageNotice] = useState(false);
+
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    if (!query.get("error")) {
+      window.sessionStorage.removeItem(storageKey);
+      return;
+    }
+
+    const raw = window.sessionStorage.getItem(storageKey);
+    if (!raw || !formRef.current) return;
+    let saved: Record<string, string[]>;
+    try {
+      saved = JSON.parse(raw) as Record<string, string[]>;
+    } catch {
+      return;
+    }
+
+    const savedType = saved.type?.[0];
+    const savedRegion = saved.region?.[0];
+    const savedCity = saved.city?.[0];
+    if (savedType && profileTypes.includes(savedType as ProfileType)) setType(savedType as ProfileType);
+    if (savedRegion && regions.some((item) => item.title === savedRegion)) setRegion(savedRegion);
+    if (savedCity) setCity(savedCity);
+    setSelectedProfileTags((saved.tags ?? []).filter((tag) => profileTags.includes(tag)));
+    setEnabledAvailabilityDays(new Set(availabilityDays.filter((day) => saved[`availability_${day.key}_enabled`]?.includes("on")).map((day) => day.key)));
+
+    const restore = window.requestAnimationFrame(() => {
+      const form = formRef.current;
+      if (!form) return;
+      for (const [name, values] of Object.entries(saved)) {
+        const fields = Array.from(form.elements).filter((element): element is HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement =>
+          "name" in element && (element as HTMLInputElement).name === name,
+        );
+        for (const field of fields) {
+          if (field instanceof HTMLInputElement && field.type === "checkbox") {
+            field.checked = values.includes(field.value);
+          } else if (field instanceof HTMLSelectElement && field.multiple) {
+            for (const option of Array.from(field.options)) option.selected = values.includes(option.value);
+          } else if (!(field instanceof HTMLInputElement && field.type === "file")) {
+            field.value = values[0] ?? "";
+          }
+        }
+      }
+    });
+    return () => window.cancelAnimationFrame(restore);
+  }, [storageKey]);
+
+  function saveFormBeforeSubmit(form: HTMLFormElement) {
+    const saved: Record<string, string[]> = {};
+    for (const [name, value] of new FormData(form).entries()) {
+      if (typeof value !== "string") continue;
+      (saved[name] ??= []).push(value);
+    }
+    window.sessionStorage.setItem(storageKey, JSON.stringify(saved));
+  }
 
   function onRegionChange(nextRegion: string) {
     setRegion(nextRegion);
@@ -104,7 +161,8 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
   }
 
   return (
-    <form action={action} method="post" className="profile-form" onSubmit={(event) => {
+    <form ref={formRef} action={action} method="post" className="profile-form" onSubmit={(event) => {
+      saveFormBeforeSubmit(event.currentTarget);
       const form = event.currentTarget;
       const age = Number(new FormData(form).get("age") || 0);
       if (type === "escort" && age > 0 && age < 18) {
@@ -162,12 +220,12 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
             </select>
           </label>
           <label>
-            Comuna o barrio
+            Comuna o barrio (opcional)
             <input name="comuna" maxLength={80} defaultValue={initial?.comuna} placeholder="Ej. El Golf" />
           </label>
         </div>
         <label className="form-wide-label">
-          Ubicación referencial
+          Ubicación referencial (opcional)
           <input name="reference_location" maxLength={120} defaultValue={initial?.details.referenceLocation} placeholder="No incluyas direcciones exactas" />
         </label>
       </section>
@@ -245,24 +303,24 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
           </div>
           <div className="form-grid form-grid-three">
             <label>Nombre artista (opcional)<input name="artist_name" maxLength={80} defaultValue={metadataValue(initial, "artist_name")} /></label>
-            <label>Género<select name="gender" defaultValue={metadataValue(initial, "gender")}><option value="">Seleccionar</option>{escortGenders.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label>Edad<input name="age" type="number" min="18" defaultValue={metadataValue(initial, "age")} onChange={(event) => { if (event.target.value && Number(event.target.value) < 18) setUnderageNotice(true); }} /></label>
-            <label>Nacionalidad<select name="nationality" defaultValue={metadataValue(initial, "nationality")}><option value="">Seleccionar</option>{nationalities.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label>Color de piel<select name="skin_color" defaultValue={metadataValue(initial, "skin_color")}><option value="">Seleccionar</option>{skinColors.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label className="language-selector">Idiomas<select name="languages" multiple size={4} defaultValue={metadataValue(initial, "languages").split(", ").filter(Boolean)}>{spokenLanguages.map((language) => <option key={language} value={language}>{language}</option>)}</select><small>Selecciona uno o más idiomas.</small></label>
-            <label>Estatura (cm)<input name="height_cm" type="number" min="0" defaultValue={metadataValue(initial, "height_cm")} /></label>
-            <label>Peso (kg)<input name="weight_kg" type="number" min="0" defaultValue={metadataValue(initial, "weight_kg")} /></label>
-            <label>Medidas corporales<input name="measurements" maxLength={50} defaultValue={metadataValue(initial, "measurements")} placeholder="Busto - cintura - cadera" /></label>
-            <label>Color de pelo<select name="hair_color" defaultValue={metadataValue(initial, "hair_color")}><option value="">Seleccionar</option>{hairColors.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label>Tipo de cuerpo<select name="body_type" defaultValue={metadataValue(initial, "body_type")}><option value="">Seleccionar</option>{bodyTypes.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label>Tamaño de busto<select name="bust_size" defaultValue={metadataValue(initial, "bust_size")}><option value="">Seleccionar</option>{bustSizes.map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label>Género (opcional)<select name="gender" defaultValue={metadataValue(initial, "gender")}><option value="">Seleccionar</option>{escortGenders.map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label>Edad (opcional)<input name="age" type="number" min="18" defaultValue={metadataValue(initial, "age")} onChange={(event) => { if (event.target.value && Number(event.target.value) < 18) setUnderageNotice(true); }} /></label>
+            <label>Nacionalidad (opcional)<select name="nationality" defaultValue={metadataValue(initial, "nationality")}><option value="">Seleccionar</option>{nationalities.map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label>Color de piel (opcional)<select name="skin_color" defaultValue={metadataValue(initial, "skin_color")}><option value="">Seleccionar</option>{skinColors.map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label className="language-selector">Idiomas (opcional)<select name="languages" multiple size={4} defaultValue={metadataValue(initial, "languages").split(", ").filter(Boolean)}>{spokenLanguages.map((language) => <option key={language} value={language}>{language}</option>)}</select><small>Selecciona uno o más idiomas.</small></label>
+            <label>Estatura (cm, opcional)<input name="height_cm" type="number" min="0" defaultValue={metadataValue(initial, "height_cm")} /></label>
+            <label>Peso (kg, opcional)<input name="weight_kg" type="number" min="0" defaultValue={metadataValue(initial, "weight_kg")} /></label>
+            <label>Medidas corporales (opcional)<input name="measurements" maxLength={50} defaultValue={metadataValue(initial, "measurements")} placeholder="Busto - cintura - cadera" /></label>
+            <label>Color de pelo (opcional)<select name="hair_color" defaultValue={metadataValue(initial, "hair_color")}><option value="">Seleccionar</option>{hairColors.map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label>Tipo de cuerpo (opcional)<select name="body_type" defaultValue={metadataValue(initial, "body_type")}><option value="">Seleccionar</option>{bodyTypes.map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label>Tamaño de busto (opcional)<select name="bust_size" defaultValue={metadataValue(initial, "bust_size")}><option value="">Seleccionar</option>{bustSizes.map((item) => <option key={item}>{item}</option>)}</select></label>
           </div>
-          <fieldset className="language-checklist"><legend>Idiomas</legend><p>Marca todos los idiomas que puedes atender.</p><div className="check-grid">{spokenLanguages.map((language) => <label key={language}><input name="languages" type="checkbox" value={language} defaultChecked={metadataValue(initial, "languages").split(", ").includes(language)} />{language}</label>)}</div></fieldset>
+          <fieldset className="language-checklist"><legend>Idiomas (opcional)</legend><p>Marca todos los idiomas que puedes atender.</p><div className="check-grid">{spokenLanguages.map((language) => <label key={language}><input name="languages" type="checkbox" value={language} defaultChecked={metadataValue(initial, "languages").split(", ").includes(language)} />{language}</label>)}</div></fieldset>
           <fieldset className="travel-agenda-editor"><legend>Agenda de viajes (opcional)</legend><p>Informa una visita temporal a otra ciudad. Tu anuncio seguirá perteneciendo a su ciudad habitual.</p><div className="form-grid form-grid-two">
-            <label>Ciudad del próximo viaje<select name="travel_city" defaultValue={metadataValue(initial, "travel_city")}><option value="">Sin viaje programado</option>{regions.map((item) => <optgroup label={item.title} key={item.title}>{item.cities.map((travelCity) => <option value={travelCity} key={travelCity}>{travelCity}</option>)}</optgroup>)}</select></label>
-            <label>Nota breve<input name="travel_note" maxLength={180} defaultValue={metadataValue(initial, "travel_note")} placeholder="Ej. Agenda abierta durante esos días" /></label>
-            <label>Desde<input name="travel_start" type="date" defaultValue={metadataValue(initial, "travel_start")} /></label>
-            <label>Hasta<input name="travel_end" type="date" defaultValue={metadataValue(initial, "travel_end")} /></label>
+            <label>Ciudad del próximo viaje (opcional)<select name="travel_city" defaultValue={metadataValue(initial, "travel_city")}><option value="">Sin viaje programado</option>{regions.map((item) => <optgroup label={item.title} key={item.title}>{item.cities.map((travelCity) => <option value={travelCity} key={travelCity}>{travelCity}</option>)}</optgroup>)}</select></label>
+            <label>Nota breve (opcional)<input name="travel_note" maxLength={180} defaultValue={metadataValue(initial, "travel_note")} placeholder="Ej. Agenda abierta durante esos días" /></label>
+            <label>Desde (opcional)<input name="travel_start" type="date" defaultValue={metadataValue(initial, "travel_start")} /></label>
+            <label>Hasta (opcional)<input name="travel_end" type="date" defaultValue={metadataValue(initial, "travel_end")} /></label>
           </div></fieldset>
         </section>
       )}
@@ -274,14 +332,14 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
             <h2>Información complementaria</h2>
           </div>
           <div className="form-grid form-grid-two">
-            <label>Años en el mercado<input name="agency_years" type="number" min="0" max="99" defaultValue={metadataValue(initial, "agency_years")} /></label>
+            <label>Años en el mercado (opcional)<input name="agency_years" type="number" min="0" max="99" defaultValue={metadataValue(initial, "agency_years")} /></label>
             <label>Sitio web (opcional)<input name="website" type="url" maxLength={180} defaultValue={metadataValue(initial, "website")} placeholder="https://" /></label>
             <label>Facebook (opcional)<input name="facebook_url" type="url" maxLength={180} defaultValue={metadataValue(initial, "facebook_url")} placeholder="https://" /></label>
             <label>Usuario de Instagram (opcional)<input name="instagram_url" maxLength={64} defaultValue={socialUsername(metadataValue(initial, "instagram_url"))} placeholder="nombredeusuario" /></label>
             <label>Twitter/X (opcional)<input name="twitter_url" type="url" maxLength={180} defaultValue={metadataValue(initial, "twitter_url")} placeholder="https://" /></label>
-            <label>Métodos preferidos<input name="contact_methods" maxLength={120} defaultValue={metadataValue(initial, "contact_methods")} placeholder="WhatsApp, correo" /></label>
+            <label>Métodos preferidos (opcional)<input name="contact_methods" maxLength={120} defaultValue={metadataValue(initial, "contact_methods")} placeholder="WhatsApp, correo" /></label>
           </div>
-          <label className="form-wide-label">Descuentos o promociones<textarea name="promotions" maxLength={500} rows={3} defaultValue={metadataValue(initial, "promotions")} /></label>
+          <label className="form-wide-label">Descuentos o promociones (opcional)<textarea name="promotions" maxLength={500} rows={3} defaultValue={metadataValue(initial, "promotions")} /></label>
         </section>
       )}
 
@@ -292,19 +350,19 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
             <h2>Características principales</h2>
           </div>
           <div className="form-grid form-grid-three">
-            <label>Tipo de habitación<select name="room_type" defaultValue={metadataValue(initial, "room_type")}><option value="">Seleccionar</option><option value="individual">Individual</option><option value="compartida">Compartida</option></select></label>
-            <label>Amoblada<select name="furnished" defaultValue={metadataValue(initial, "furnished")}><option value="">Seleccionar</option><option value="si">Sí</option><option value="no">No</option></select></label>
-            <label>Baño privado<select name="private_bathroom" defaultValue={metadataValue(initial, "private_bathroom")}><option value="">Seleccionar</option><option value="si">Sí</option><option value="no">No</option></select></label>
-            <label>Ventana al exterior<select name="exterior_window" defaultValue={metadataValue(initial, "exterior_window")}><option value="">Seleccionar</option><option value="si">Sí</option><option value="no">No</option></select></label>
-            <label>Tamaño (m²)<input name="room_size" type="number" min="0" defaultValue={metadataValue(initial, "room_size")} /></label>
-            <label>Gastos comunes incluidos<select name="common_expenses" defaultValue={metadataValue(initial, "common_expenses")}><option value="">Seleccionar</option><option value="si">Sí</option><option value="no">No</option></select></label>
-            <label>Depósito/garantía<input name="deposit" inputMode="numeric" type="number" min="0" defaultValue={metadataValue(initial, "deposit")} /></label>
-            <label>Duración mínima<select name="minimum_rental" defaultValue={metadataValue(initial, "minimum_rental")}><option value="">Seleccionar</option><option value="semanas">Semanas</option><option value="meses">Meses</option></select></label>
-            <label>Disponibilidad inmediata<select name="immediate_available" defaultValue={metadataValue(initial, "immediate_available")}><option value="">Seleccionar</option><option value="si">Sí</option><option value="no">No</option></select></label>
-            <label>Internet/Wi-Fi<select name="wifi" defaultValue={metadataValue(initial, "wifi")}><option value="">Seleccionar</option><option value="si">Sí</option><option value="no">No</option></select></label>
-            <label>Agua, luz y gas<select name="utilities_included" defaultValue={metadataValue(initial, "utilities_included")}><option value="">Seleccionar</option><option value="si">Sí</option><option value="no">No</option></select></label>
-            <label>Uso de cocina<select name="kitchen" defaultValue={metadataValue(initial, "kitchen")}><option value="">Seleccionar</option><option value="si">Sí</option><option value="no">No</option></select></label>
-            <label>Lavadora/secadora<select name="laundry" defaultValue={metadataValue(initial, "laundry")}><option value="">Seleccionar</option><option value="si">Sí</option><option value="no">No</option></select></label>
+            <label>Tipo de habitación (opcional)<select name="room_type" defaultValue={metadataValue(initial, "room_type")}><option value="">Seleccionar</option><option value="individual">Individual</option><option value="compartida">Compartida</option></select></label>
+            <label>Amoblada (opcional)<select name="furnished" defaultValue={metadataValue(initial, "furnished")}><option value="">Seleccionar</option><option value="si">Sí</option><option value="no">No</option></select></label>
+            <label>Baño privado (opcional)<select name="private_bathroom" defaultValue={metadataValue(initial, "private_bathroom")}><option value="">Seleccionar</option><option value="si">Sí</option><option value="no">No</option></select></label>
+            <label>Ventana al exterior (opcional)<select name="exterior_window" defaultValue={metadataValue(initial, "exterior_window")}><option value="">Seleccionar</option><option value="si">Sí</option><option value="no">No</option></select></label>
+            <label>Tamaño (m², opcional)<input name="room_size" type="number" min="0" defaultValue={metadataValue(initial, "room_size")} /></label>
+            <label>Gastos comunes incluidos (opcional)<select name="common_expenses" defaultValue={metadataValue(initial, "common_expenses")}><option value="">Seleccionar</option><option value="si">Sí</option><option value="no">No</option></select></label>
+            <label>Depósito/garantía (opcional)<input name="deposit" inputMode="numeric" type="number" min="0" defaultValue={metadataValue(initial, "deposit")} /></label>
+            <label>Duración mínima (opcional)<select name="minimum_rental" defaultValue={metadataValue(initial, "minimum_rental")}><option value="">Seleccionar</option><option value="semanas">Semanas</option><option value="meses">Meses</option></select></label>
+            <label>Disponibilidad inmediata (opcional)<select name="immediate_available" defaultValue={metadataValue(initial, "immediate_available")}><option value="">Seleccionar</option><option value="si">Sí</option><option value="no">No</option></select></label>
+            <label>Internet/Wi-Fi (opcional)<select name="wifi" defaultValue={metadataValue(initial, "wifi")}><option value="">Seleccionar</option><option value="si">Sí</option><option value="no">No</option></select></label>
+            <label>Agua, luz y gas (opcional)<select name="utilities_included" defaultValue={metadataValue(initial, "utilities_included")}><option value="">Seleccionar</option><option value="si">Sí</option><option value="no">No</option></select></label>
+            <label>Uso de cocina (opcional)<select name="kitchen" defaultValue={metadataValue(initial, "kitchen")}><option value="">Seleccionar</option><option value="si">Sí</option><option value="no">No</option></select></label>
+            <label>Lavadora/secadora (opcional)<select name="laundry" defaultValue={metadataValue(initial, "laundry")}><option value="">Seleccionar</option><option value="si">Sí</option><option value="no">No</option></select></label>
           </div>
         </section>
       )}
@@ -319,8 +377,8 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
           <legend>Contacto directo</legend>
         <div className="form-grid form-grid-three">
           <label>WhatsApp público<input name="contact_whatsapp" required inputMode="numeric" pattern="[0-9]{8,15}" defaultValue={initial?.contactWhatsapp} placeholder="56912345678" /></label>
-          <label>Teléfono alternativo<input name="contact_phone" inputMode="numeric" pattern="[0-9]{8,15}" defaultValue={initial?.details.contactPhone} /></label>
-          <label>Telegram (opcional)<input name="contact_telegram" maxLength={80} defaultValue={initial?.contactTelegram} placeholder="@usuario" /></label>
+            <label>Teléfono alternativo (opcional)<input name="contact_phone" inputMode="numeric" pattern="[0-9]{8,15}" defaultValue={initial?.details.contactPhone} /></label>
+          <label>Telegram (opcional)<input name="contact_telegram" maxLength={80} defaultValue={initial?.contactTelegram} placeholder="@usuario o t.me/usuario" /><small>Puedes ingresar usuario, @usuario o un enlace t.me.</small></label>
           <label>Correo de contacto (opcional)<input name="contact_email" type="email" maxLength={160} defaultValue={initial?.details.contactEmail} /></label>
         </div>
         </fieldset>
@@ -333,7 +391,7 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
           </div>
         </fieldset>
         {type === "escort" && <fieldset>
-          <legend>Etiquetas complementarias</legend>
+          <legend>Etiquetas complementarias (opcional)</legend>
           <div className="check-grid">
             {profileTags.map((tag) => {
               const blocked = (tag === "milf" && selectedProfileTags.includes("trans")) || (tag === "trans" && selectedProfileTags.includes("milf"));
@@ -343,13 +401,13 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
         </fieldset>}
         <div className="service-columns">
           <fieldset>
-            <legend>Servicios incluidos</legend>
+            <legend>Servicios incluidos (opcional)</legend>
             <div className="check-grid">
               {includedServices.map((service) => <label key={service}><input name="services_included" type="checkbox" value={service} defaultChecked={initial?.servicesIncluded.includes(service)} />{service}</label>)}
             </div>
           </fieldset>
           <fieldset>
-            <legend>Servicios adicionales</legend>
+            <legend>Servicios adicionales (opcional)</legend>
             <div className="check-grid">
               {additionalServices.map((service) => <label key={service}><input name="services_additional" type="checkbox" value={service} defaultChecked={initial?.servicesAdditional.includes(service)} />{service}</label>)}
             </div>

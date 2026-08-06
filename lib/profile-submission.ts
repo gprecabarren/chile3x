@@ -13,6 +13,7 @@ import {
   optionalPositiveInteger,
   profileTags,
   serializeAvailability,
+  validateAvailability,
   slugify,
   spokenLanguages,
   validateProfileHandle,
@@ -69,6 +70,7 @@ const metadataFields = [
   "instagram_url",
   "twitter_url",
   "arsmate_url",
+  "onlyfans_url",
   "promotions",
   "contact_methods",
   "room_type",
@@ -123,6 +125,15 @@ function normalizeInstagram(value: string) {
     return `https://www.instagram.com/${value.replace(/^@/, "")}/`;
   }
   return requiredUrl(value, "Instagram", "instagram.com");
+}
+
+function normalizePlatformUsername(value: string, label: string, host: string) {
+  if (!value) return "";
+  const username = value.replace(/^@/, "");
+  if (!/^[A-Za-z0-9._-]{1,64}$/.test(username)) {
+    throw new ProfileValidationError(`${label} debe ser solo tu nombre de usuario, sin enlace ni espacios.`);
+  }
+  return `https://${host}/${username}`;
 }
 
 export function readProfileSubmission(formData: FormData): ProfileSubmission {
@@ -196,9 +207,12 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
   const website = requiredUrl(compactText(formData.get("website"), 180), "El sitio web");
   const facebookUrl = requiredUrl(compactText(formData.get("facebook_url"), 180), "Facebook", "facebook.com");
   const twitterUrl = requiredUrl(compactText(formData.get("twitter_url"), 180), "Twitter/X", ["x.com", "twitter.com"]);
-  const instagramUrl = normalizeInstagram(compactText(formData.get("instagram_url"), 180));
-  const arsmateUrl = requiredUrl(compactText(formData.get("arsmate_url"), 180), "Arsmate", "arsmate.com");
+  const instagramUrl = normalizePlatformUsername(compactText(formData.get("instagram_url"), 64), "Instagram", "www.instagram.com");
+  const arsmateUrl = normalizePlatformUsername(compactText(formData.get("arsmate_url"), 64), "Arsmate", "arsmate.com");
+  const onlyfansUrl = normalizePlatformUsername(compactText(formData.get("onlyfans_url"), 64), "OnlyFans", "onlyfans.com");
   const languages = listFromForm(formData.getAll("languages"), spokenLanguages).join(", ");
+  const availabilityError = validateAvailability(formData);
+  if (availabilityError) throw new ProfileValidationError(availabilityError);
   const availability = serializeAvailability(formData);
   const travelCity = compactText(formData.get("travel_city"), 120);
   const travelStart = compactText(formData.get("travel_start"), 10);
@@ -230,6 +244,7 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
   if (twitterUrl) metadata.twitter_url = twitterUrl;
   if (instagramUrl) metadata.instagram_url = instagramUrl;
   if (arsmateUrl) metadata.arsmate_url = arsmateUrl;
+  if (onlyfansUrl) metadata.onlyfans_url = onlyfansUrl;
   if (typeValue === "escort" && travelCity) {
     metadata.travel_city = travelCity;
     metadata.travel_start = travelStart;

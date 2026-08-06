@@ -48,7 +48,7 @@ export default async function ProfileStatisticsPage({ params, searchParams }: { 
     db.select({ total: count() }).from(profileLikes).where(eq(profileLikes.profileId, profile.id)),
   ]);
   const contactTotal = contactRows.reduce((sum, row) => sum + Number(row.total), 0);
-  const contactLabels: Record<string, string> = { whatsapp: "WhatsApp", telegram: "Telegram", call: "Llamadas", email: "Correo", instagram: "Instagram", arsmate: "Arsmate", videocall: "Videollamada" };
+  const contactLabels: Record<string, string> = { whatsapp: "WhatsApp", telegram: "Telegram", call: "Llamadas", email: "Correo", instagram: "Instagram", arsmate: "Arsmate", onlyfans: "OnlyFans", videocall: "Videollamada" };
 
   return <AccountShell user={user}>
     <div className="account-content"><Link className="page-back-link" href="/mi-cuenta">← Volver a mi cuenta</Link>

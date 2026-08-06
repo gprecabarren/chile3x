@@ -9,6 +9,7 @@ import { ProfileMediaManager } from "../../ProfileMediaManager";
 import { ProfileForm } from "../../ProfileForm";
 import { getVerificationDocuments } from "@/lib/verification-documents";
 import { ExclusiveAccessManager } from "../../ExclusiveAccessManager";
+import { ProfileVerificationDocuments } from "../../ProfileVerificationDocuments";
 
 export const dynamic = "force-dynamic";
 
@@ -82,7 +83,7 @@ export default async function EditProfilePage({ params, searchParams }: { params
             servicesAdditional: services.filter((item) => item.kind === "additional").map((item) => item.service),
           }}
         />
-        {row.profile.type === "escort" && <section className="private-documents-status"><strong>Verificación privada</strong><p>{documents.length ? `Hay ${documents.length} documento${documents.length === 1 ? "" : "s"} privado${documents.length === 1 ? "" : "s"} adjunto${documents.length === 1 ? "" : "s"}. Puedes reemplazarlo desde el formulario anterior.` : "No hay documentos privados adjuntos. Son opcionales y nunca se mostrarán en tu perfil público."}</p>{documents.map((document) => <a key={document.kind} href={`/api/perfiles/${profileId}/documentos/${document.kind}`}>{document.kind === "identity" ? "Descargar carnet privado" : "Descargar examen médico privado"}</a>)}</section>}
+        {row.profile.type === "escort" && <ProfileVerificationDocuments profileId={profileId} initialDocuments={documents} />}
         <ProfileMediaManager profileId={profileId} initialMedia={media.map((item) => ({ id: item.id, url: `/media/${item.id}`, mediaType: item.mediaType, contentType: item.contentType, moderationStatus: item.moderationStatus, visibility: item.visibility, isProfilePhoto: item.isProfilePhoto, byteSize: item.byteSize }))} initialQuota={{ bytes: usage.bytes, ...getMediaQuotaState(usage.bytes) }} />
         <ExclusiveAccessManager profileId={profileId} initialGrants={grants} />
       </div>

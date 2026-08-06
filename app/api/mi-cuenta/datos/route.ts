@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
     lastName: null,
     documentType: identity.documentType,
     documentNumber: identity.documentNumber,
+    foreignCountry: identity.foreignCountry,
     city: identity.city,
     phone: identity.phone || null,
   }).where(eq(users.id, user.id));

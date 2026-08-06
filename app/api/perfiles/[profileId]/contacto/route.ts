@@ -5,7 +5,7 @@ import { profileContactEvents, profiles } from "@/db/schema";
 import { assertSameOrigin, createOpaqueToken } from "@/lib/auth";
 
 const VIEWER_COOKIE = "chile3x_profile_viewer";
-const kinds = new Set(["whatsapp", "telegram", "call", "email", "instagram", "arsmate", "videocall"]);
+const kinds = new Set(["whatsapp", "telegram", "call", "email", "instagram", "arsmate", "onlyfans", "videocall"]);
 function chileanDay() {
   const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/Santiago", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
   const value = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));

@@ -18,6 +18,7 @@ export const users = sqliteTable("users", {
   lastName: text("last_name"),
   documentType: text("document_type", { enum: ["rut", "foreign"] }).notNull().default("rut"),
   documentNumber: text("document_number").notNull().default(""),
+  foreignCountry: text("foreign_country").notNull().default(""),
   birthDate: text("birth_date").notNull().default("1990-01-01"),
   city: text("city").notNull().default(""),
   phone: text("phone"),
@@ -171,7 +172,7 @@ export const profileContactEvents = sqliteTable("profile_contact_events", {
   id: text("id").primaryKey(),
   profileId: text("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
   viewerKey: text("viewer_key").notNull(),
-  kind: text("kind", { enum: ["whatsapp", "telegram", "call", "email", "instagram", "arsmate", "videocall"] }).notNull(),
+  kind: text("kind", { enum: ["whatsapp", "telegram", "call", "email", "instagram", "arsmate", "onlyfans", "videocall"] }).notNull(),
   clickedOn: text("clicked_on").notNull(),
   createdAt,
 }, (table) => [

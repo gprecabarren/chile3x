@@ -77,6 +77,7 @@ function contactLinks(profile: PublicProfile) {
     email: profile.details.contactEmail ? `mailto:${profile.details.contactEmail}` : null,
     instagram: safeExternalUrl(profile.details.metadata.instagram_url, "instagram.com"),
     arsmate: safeExternalUrl(profile.details.metadata.arsmate_url, "arsmate.com"),
+    onlyfans: safeExternalUrl(profile.details.metadata.onlyfans_url, "onlyfans.com"),
   };
 }
 
@@ -145,6 +146,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
   const socialButtons = [
     ["instagram", contacts.instagram, "Instagram", "contact-instagram"],
     ["arsmate", contacts.arsmate, "Arsmate", "contact-arsmate"],
+    ["onlyfans", contacts.onlyfans, "OnlyFans", "contact-onlyfans"],
   ] as const;
   const videoCallHref = profile.servicesIncluded.includes("Videollamada") && contacts.whatsapp
     ? contacts.whatsapp.replace(/text=[^&]*/, `text=${encodeURIComponent(`Hola ${profile.displayName}, vi que ofreces videollamada en Chile3X y quisiera consultar.`)}`)

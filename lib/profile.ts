@@ -171,6 +171,25 @@ function timeAsMinutes(value: string) {
   return hours * 60 + minutes;
 }
 
+export const availabilityTimeOptions = Array.from({ length: 48 }, (_, index) => {
+  const hours = Math.floor(index / 2);
+  const minutes = index % 2 === 0 ? "00" : "30";
+  const period = hours < 12 ? "AM" : "PM";
+  const displayHour = hours % 12 || 12;
+  return { value: `${String(hours).padStart(2, "0")}:${minutes}`, label: `${displayHour}:${minutes} ${period}` };
+});
+
+export function validateAvailability(formData: FormData) {
+  for (const day of availabilityDays) {
+    if (formData.get(`availability_${day.key}_enabled`) !== "on") continue;
+    const opensAt = compactText(formData.get(`availability_${day.key}_opens`), 5);
+    const closesAt = compactText(formData.get(`availability_${day.key}_closes`), 5);
+    if (!isTime(opensAt) || !isTime(closesAt)) return `Selecciona una hora de inicio y término para ${day.label}.`;
+    if (timeAsMinutes(opensAt) >= timeAsMinutes(closesAt)) return `En ${day.label}, la hora de término debe ser posterior a la hora de inicio.`;
+  }
+  return null;
+}
+
 /** A compact format keeps the weekly range in the existing metadata column. */
 export function readAvailability(value: string | null | undefined): AvailabilityEntry[] {
   const ranges = new Map(

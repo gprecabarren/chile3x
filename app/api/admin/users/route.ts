@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { users } from "@/db/schema";
@@ -42,6 +42,10 @@ export async function POST(request: NextRequest) {
   if (existing) {
     return redirectWithNotice(request, "duplicate");
   }
+  if (identity.documentType === "rut" && identity.documentNumber) {
+    const [existingRut] = await db.select({ id: users.id }).from(users).where(and(eq(users.documentType, "rut"), eq(users.documentNumber, identity.documentNumber))).limit(1);
+    if (existingRut) return redirectWithNotice(request, "duplicate_rut");
+  }
 
   await db.insert(users).values({
     id: `usr_${crypto.randomUUID()}`,
@@ -54,6 +58,7 @@ export async function POST(request: NextRequest) {
     lastName: null,
     documentType: identity.documentType,
     documentNumber: identity.documentNumber,
+    foreignCountry: identity.foreignCountry,
     birthDate: identity.birthDate,
     city: identity.city,
     phone: identity.phone || null,

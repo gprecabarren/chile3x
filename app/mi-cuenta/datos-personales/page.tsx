@@ -17,6 +17,7 @@ export default async function AccountDetailsPage({ searchParams }: { searchParam
     firstName: users.firstName,
     documentType: users.documentType,
     documentNumber: users.documentNumber,
+    foreignCountry: users.foreignCountry,
     birthDate: users.birthDate,
     city: users.city,
     phone: users.phone,
@@ -31,7 +32,7 @@ export default async function AccountDetailsPage({ searchParams }: { searchParam
     {notice === "error" && <p className="form-alert" role="alert">No se pudieron guardar los cambios. Revisa el documento y la ciudad.</p>}
     <form action="/api/mi-cuenta/datos" method="post" className="account-details-form">
       <label>Nombre visible<input name="display_name" required minLength={2} maxLength={80} defaultValue={record.displayName ?? ""} /></label>
-      <AccountIdentityFields values={{ fullName: record.firstName, documentType: record.documentType, documentNumber: record.documentNumber, birthDate: record.birthDate, city: record.city, phone: record.phone }} birthDateReadOnly />
+      <AccountIdentityFields values={{ fullName: record.firstName, documentType: record.documentType, documentNumber: record.documentNumber, foreignCountry: record.foreignCountry, birthDate: record.birthDate, city: record.city, phone: record.phone }} birthDateReadOnly />
       <label>Correo electrónico<input value={record.email} readOnly aria-readonly="true" /><small>El correo no se puede modificar desde aquí.</small></label>
       <div className="account-details-actions"><Link className="button button-outline" href="/mi-cuenta">Cancelar</Link><button className="button button-primary" type="submit">Guardar datos</button></div>
     </form>

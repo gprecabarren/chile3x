@@ -5,6 +5,7 @@ import { regions } from "@/app/locations";
 import {
   additionalServices,
   availabilityDays,
+  availabilityTimeOptions,
   bodyTypes,
   bustSizes,
   escortGenders,
@@ -58,6 +59,19 @@ type ProfileFormProps = {
   initial?: ProfileFormInitial;
 };
 
+function socialUsername(value: string) {
+  if (!value) return "";
+  try {
+    return new URL(value).pathname.split("/").filter(Boolean).at(-1) ?? "";
+  } catch {
+    return value.replace(/^@/, "");
+  }
+}
+
+function titleCase(value: string) {
+  return value ? `${value[0].toUpperCase()}${value.slice(1)}` : value;
+}
+
 function metadataValue(initial: ProfileFormInitial | undefined, key: string) {
   return initial?.details.metadata?.[key] ?? "";
 }
@@ -73,6 +87,7 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
   const savedAvailability = useMemo(() => new Map(readAvailability(metadataValue(initial, "availability")).map((item) => [item.key, item])), [initial]);
   const [enabledAvailabilityDays, setEnabledAvailabilityDays] = useState(() => new Set(savedAvailability.keys()));
   const [selectedProfileTags, setSelectedProfileTags] = useState<string[]>(initial?.tags ?? []);
+  const [underageNotice, setUnderageNotice] = useState(false);
 
   function onRegionChange(nextRegion: string) {
     setRegion(nextRegion);
@@ -89,7 +104,14 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
   }
 
   return (
-    <form action={action} method="post" className="profile-form" encType="multipart/form-data">
+    <form action={action} method="post" className="profile-form" onSubmit={(event) => {
+      const form = event.currentTarget;
+      const age = Number(new FormData(form).get("age") || 0);
+      if (type === "escort" && age > 0 && age < 18) {
+        event.preventDefault();
+        setUnderageNotice(true);
+      }
+    }}>
       <section className="profile-form-section">
         <div className="profile-form-section-heading">
           <p>01 · TIPO DE PUBLICACIÓN</p>
@@ -202,8 +224,8 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
                   if (next.has(day.key)) next.delete(day.key); else next.add(day.key);
                   return next;
                 })} />{day.label}</label>
-                <label>Desde<input name={`availability_${day.key}_opens`} type="time" disabled={!enabled} defaultValue={entry?.opensAt ?? ""} /></label>
-                <label>Hasta<input name={`availability_${day.key}_closes`} type="time" disabled={!enabled} defaultValue={entry?.closesAt ?? ""} /></label>
+                <label>Desde<select name={`availability_${day.key}_opens`} disabled={!enabled} defaultValue={entry?.opensAt ?? ""} required={enabled}><option value="">Hora</option>{availabilityTimeOptions.map((time) => <option key={time.value} value={time.value}>{time.label}</option>)}</select></label>
+                <label>Hasta<select name={`availability_${day.key}_closes`} disabled={!enabled} defaultValue={entry?.closesAt ?? ""} required={enabled}><option value="">Hora</option>{availabilityTimeOptions.map((time) => <option key={time.value} value={time.value}>{time.label}</option>)}</select></label>
               </div>;
             })}
           </div>
@@ -224,7 +246,7 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
           <div className="form-grid form-grid-three">
             <label>Nombre artista (opcional)<input name="artist_name" maxLength={80} defaultValue={metadataValue(initial, "artist_name")} /></label>
             <label>Género<select name="gender" defaultValue={metadataValue(initial, "gender")}><option value="">Seleccionar</option>{escortGenders.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label>Edad<input name="age" type="number" min="18" defaultValue={metadataValue(initial, "age")} /></label>
+            <label>Edad<input name="age" type="number" min="18" defaultValue={metadataValue(initial, "age")} onChange={(event) => { if (event.target.value && Number(event.target.value) < 18) setUnderageNotice(true); }} /></label>
             <label>Nacionalidad<select name="nationality" defaultValue={metadataValue(initial, "nationality")}><option value="">Seleccionar</option>{nationalities.map((item) => <option key={item}>{item}</option>)}</select></label>
             <label>Color de piel<select name="skin_color" defaultValue={metadataValue(initial, "skin_color")}><option value="">Seleccionar</option>{skinColors.map((item) => <option key={item}>{item}</option>)}</select></label>
             <label className="language-selector">Idiomas<select name="languages" multiple size={4} defaultValue={metadataValue(initial, "languages").split(", ").filter(Boolean)}>{spokenLanguages.map((language) => <option key={language} value={language}>{language}</option>)}</select><small>Selecciona uno o más idiomas.</small></label>
@@ -245,17 +267,6 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
         </section>
       )}
 
-      {type === "escort" && (
-        <section className="profile-form-section verification-documents-section">
-          <div className="profile-form-section-heading"><p>05 · VERIFICACIÓN OPCIONAL</p><h2>Documentos privados</h2></div>
-          <p className="profile-form-help">Puedes adjuntar imágenes de tu carnet y examen médico. Son opcionales, no se publican y solo pueden revisarlos tú y administradores autorizados. Un archivo nuevo reemplaza y elimina el anterior.</p>
-          <div className="form-grid form-grid-two">
-            <label>Importar carnet (opcional)<input name="identity_document" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" /><small>JPG, PNG o WebP; máximo 5 MB.</small></label>
-            <label>Importar examen médico (opcional)<input name="medical_certificate" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" /><small>JPG, PNG o WebP; máximo 5 MB.</small></label>
-          </div>
-        </section>
-      )}
-
       {type === "agency" && (
         <section className="profile-form-section">
           <div className="profile-form-section-heading">
@@ -266,7 +277,7 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
             <label>Años en el mercado<input name="agency_years" type="number" min="0" max="99" defaultValue={metadataValue(initial, "agency_years")} /></label>
             <label>Sitio web (opcional)<input name="website" type="url" maxLength={180} defaultValue={metadataValue(initial, "website")} placeholder="https://" /></label>
             <label>Facebook (opcional)<input name="facebook_url" type="url" maxLength={180} defaultValue={metadataValue(initial, "facebook_url")} placeholder="https://" /></label>
-            <label>Instagram (opcional)<input name="instagram_url" type="url" maxLength={180} defaultValue={metadataValue(initial, "instagram_url")} placeholder="https://" /></label>
+            <label>Usuario de Instagram (opcional)<input name="instagram_url" maxLength={64} defaultValue={socialUsername(metadataValue(initial, "instagram_url"))} placeholder="nombredeusuario" /></label>
             <label>Twitter/X (opcional)<input name="twitter_url" type="url" maxLength={180} defaultValue={metadataValue(initial, "twitter_url")} placeholder="https://" /></label>
             <label>Métodos preferidos<input name="contact_methods" maxLength={120} defaultValue={metadataValue(initial, "contact_methods")} placeholder="WhatsApp, correo" /></label>
           </div>
@@ -316,8 +327,9 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
         <fieldset className="profile-contact-fieldset">
           <legend>Redes y plataformas</legend>
           <div className="form-grid form-grid-three">
-            {type !== "agency" && <label>Instagram (opcional)<input name="instagram_url" maxLength={180} defaultValue={metadataValue(initial, "instagram_url")} placeholder="@usuario o https://instagram.com/..." /></label>}
-            <label>Arsmate (opcional)<input name="arsmate_url" type="url" maxLength={180} defaultValue={metadataValue(initial, "arsmate_url")} placeholder="https://arsmate.com/..." /></label>
+            {type !== "agency" && <label>Usuario de Instagram (opcional)<input name="instagram_url" maxLength={64} defaultValue={socialUsername(metadataValue(initial, "instagram_url"))} placeholder="nombredeusuario" /><small>Se enlazará a instagram.com/tuusuario.</small></label>}
+            <label>Usuario de Arsmate (opcional)<input name="arsmate_url" maxLength={64} defaultValue={socialUsername(metadataValue(initial, "arsmate_url"))} placeholder="nombredeusuario" /><small>Se enlazará a arsmate.com/tuusuario.</small></label>
+            <label>Usuario de OnlyFans (opcional)<input name="onlyfans_url" maxLength={64} defaultValue={socialUsername(metadataValue(initial, "onlyfans_url"))} placeholder="nombredeusuario" /><small>Se enlazará a onlyfans.com/tuusuario.</small></label>
           </div>
         </fieldset>
         {type === "escort" && <fieldset>
@@ -325,7 +337,7 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
           <div className="check-grid">
             {profileTags.map((tag) => {
               const blocked = (tag === "milf" && selectedProfileTags.includes("trans")) || (tag === "trans" && selectedProfileTags.includes("milf"));
-              return <label key={tag} className={blocked ? "is-blocked" : ""}><input name="tags" type="checkbox" value={tag} checked={selectedProfileTags.includes(tag)} disabled={blocked} onChange={() => toggleProfileTag(tag)} />{tag}</label>;
+              return <label key={tag} className={blocked ? "is-blocked" : ""}><input name="tags" type="checkbox" value={tag} checked={selectedProfileTags.includes(tag)} disabled={blocked} onChange={() => toggleProfileTag(tag)} />{titleCase(tag)}</label>;
             })}
           </div>
         </fieldset>}
@@ -347,13 +359,14 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
 
       <section className="profile-media-notice" aria-label="Estado de carga de fotos y videos">
         <strong>Galería y videos</strong>
-        <p>Guarda el perfil y luego administra hasta 10 fotos desde la edición. Cada imagen puede pesar hasta 5 MB y pasa por revisión antes de verse públicamente. Los videos siguen desactivados para proteger la cuota inicial. Los documentos opcionales se almacenan de forma privada y nunca se muestran en el perfil público.</p>
+        <p>Guarda el perfil y luego administra hasta 10 fotos desde la edición. Cada imagen puede pesar hasta 5 MB y pasa por revisión antes de verse públicamente. Los videos siguen desactivados para proteger la cuota inicial. Si eres escort, después de guardar podrás adjuntar por separado tu carnet o examen médico privado (JPG, PNG, WebP o PDF de hasta 15 MB).</p>
       </section>
 
       <div className="profile-form-actions">
         <button className="button button-outline" name="intent" type="submit" value="draft">Guardar borrador</button>
         <button className="button button-primary" name="intent" type="submit" value="submit">{submitLabel}</button>
       </div>
+      {underageNotice && <div className="form-modal-backdrop" role="presentation"><section className="form-modal" role="alertdialog" aria-modal="true" aria-labelledby="underage-title"><p className="eyebrow">REQUISITO DE EDAD</p><h2 id="underage-title">Debes ser mayor de 18 años.</h2><p>Chile3X solo permite publicaciones de personas adultas. Corrige la edad antes de continuar.</p><button className="button button-primary" type="button" onClick={() => setUnderageNotice(false)}>Entendido</button></section></div>}
     </form>
   );
 }

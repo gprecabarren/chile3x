@@ -3,14 +3,13 @@ import { getDb } from "@/db";
 import { profileVerificationFiles, profiles } from "@/db/schema";
 import { detectImageType, extensionForImageType, type SupportedImageType } from "@/lib/media";
 
-export const MAX_VERIFICATION_DOCUMENT_BYTES = 5_000_000;
 export type VerificationDocumentKind = "identity" | "medical";
 
 export class VerificationDocumentError extends Error {}
 
 export type PendingVerificationDocument = {
   kind: VerificationDocumentKind;
-  contentType: SupportedImageType;
+  contentType: SupportedImageType | "application/pdf";
   bytes: ArrayBuffer;
 };
 
@@ -19,14 +18,21 @@ function fileFromForm(formData: FormData, field: string) {
   return value instanceof File && value.size > 0 ? value : null;
 }
 
-async function prepareFile(kind: VerificationDocumentKind, file: File): Promise<PendingVerificationDocument> {
+export const MAX_VERIFICATION_DOCUMENT_BYTES = 15_000_000;
+
+function isPdf(bytes: ArrayBuffer) {
+  const header = new TextDecoder().decode(bytes.slice(0, 5));
+  return header === "%PDF-";
+}
+
+export async function prepareVerificationDocument(kind: VerificationDocumentKind, file: File): Promise<PendingVerificationDocument> {
   if (file.size > MAX_VERIFICATION_DOCUMENT_BYTES) {
-    throw new VerificationDocumentError("Cada documento puede pesar como máximo 5 MB.");
+    throw new VerificationDocumentError("Cada documento puede pesar como máximo 15 MB.");
   }
   const bytes = await file.arrayBuffer();
-  const contentType = detectImageType(bytes);
+  const contentType = isPdf(bytes) ? "application/pdf" : detectImageType(bytes);
   if (!contentType) {
-    throw new VerificationDocumentError("Los documentos deben ser imágenes JPG, PNG o WebP.");
+    throw new VerificationDocumentError("Los documentos deben ser JPG, PNG, WebP o PDF.");
   }
   return { kind, contentType, bytes };
 }
@@ -35,8 +41,8 @@ export async function readVerificationDocuments(formData: FormData) {
   const entries: PendingVerificationDocument[] = [];
   const identity = fileFromForm(formData, "identity_document");
   const medical = fileFromForm(formData, "medical_certificate");
-  if (identity) entries.push(await prepareFile("identity", identity));
-  if (medical) entries.push(await prepareFile("medical", medical));
+  if (identity) entries.push(await prepareVerificationDocument("identity", identity));
+  if (medical) entries.push(await prepareVerificationDocument("medical", medical));
   return entries;
 }
 
@@ -50,7 +56,8 @@ export async function saveVerificationDocuments(profileId: string, documents: Pe
       eq(profileVerificationFiles.profileId, profileId),
       eq(profileVerificationFiles.kind, document.kind),
     )).limit(1);
-    const key = `private-verification/${profileId}/${document.kind}-${crypto.randomUUID()}.${extensionForImageType(document.contentType)}`;
+    const extension = document.contentType === "application/pdf" ? "pdf" : extensionForImageType(document.contentType);
+    const key = `private-verification/${profileId}/${document.kind}-${crypto.randomUUID()}.${extension}`;
     await env.MEDIA.put(key, document.bytes, {
       httpMetadata: { contentType: document.contentType, cacheControl: "private, no-store", contentDisposition: "attachment" },
       customMetadata: { category: "private-verification", profileId, kind: document.kind },
@@ -78,6 +85,18 @@ export async function saveVerificationDocuments(profileId: string, documents: Pe
       await env.MEDIA.delete(existing.r2Key);
     }
   }
+}
+
+export async function deleteVerificationDocument(profileId: string, kind: VerificationDocumentKind) {
+  const [{ env }, db] = await Promise.all([import("cloudflare:workers"), getDb()]);
+  const [existing] = await db.select().from(profileVerificationFiles).where(and(
+    eq(profileVerificationFiles.profileId, profileId),
+    eq(profileVerificationFiles.kind, kind),
+  )).limit(1);
+  if (!existing) return false;
+  await db.delete(profileVerificationFiles).where(eq(profileVerificationFiles.id, existing.id));
+  if (env.MEDIA) await env.MEDIA.delete(existing.r2Key);
+  return true;
 }
 
 export async function getVerificationDocuments(profileId: string) {

@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 const notices: Record<string, string> = {
   created: "La cuenta de anunciante fue creada. Comparte la contraseña inicial por un canal seguro.",
   duplicate: "Ese correo ya tiene una cuenta registrada.",
+  duplicate_rut: "Ya existe una cuenta registrada con ese RUT.",
   invalid: "Revisa los datos solicitados, incluidos documento, ciudad, fecha de nacimiento y confirmación de mayoría de edad.",
   status_updated: "El estado de la cuenta fue actualizado.",
   status_error: "No fue posible modificar esa cuenta.",

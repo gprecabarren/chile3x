@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 
 // A stable, branded fallback for every public page that does not have its own
-// approved cover. It uses the 1200×630 Open Graph format with generous safe
-// margins, so social platforms do not crop the Chile3X wordmark.
-export const socialCardImageUrl = "/chile3x-social-card-v2.png";
+// approved cover. Keep this to the official Chile3X logo only: link previews
+// must never substitute the brand for generic artwork.
+export const socialCardImageUrl = "/chile3x-logo-dark.jpeg?v=3";
 
 export const socialCardImage = {
   url: socialCardImageUrl,
-  width: 1200,
-  height: 630,
+  width: 1025,
+  height: 576,
   alt: "Chile3X, directorio nacional de escorts en Chile",
 };
 

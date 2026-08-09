@@ -29,3 +29,27 @@ La idea es sencilla: un aviso claro ayuda a filtrar conversaciones poco serias, 
 Dejo la guía por si le sirve a alguien que esté empezando: https://chile3x.cl/noticias/como-publicar-perfil-escort-chile-privacidad
 
 Aclaro la relación para no confundir a nadie: soy parte del proyecto Chile3X. Antes de dejar este enlace en una comunidad, corresponde pedir autorización a su moderación.
+
+## Publicación 3 — prevención de estafas
+
+**Título sugerido:** Armamos una guía corta para reconocer estafas en avisos
+
+Hola. Soy el dueño de Chile3X. No vengo a vender una supuesta experiencia ni a pedir que alguien nos recomiende: quiero compartir una guía que preparamos a partir de dudas que se repiten mucho cuando se revisan avisos en internet.
+
+Las señales que más conviene mirar no tienen que ver con una foto bonita o con un precio. Son cosas simples: cambios bruscos de nombre o ciudad, presión para transferir dinero de inmediato, solicitudes de códigos de WhatsApp o datos personales, y perfiles que no pueden explicar información básica con claridad. Cuando aparece urgencia artificial, lo más sano es frenar.
+
+En Chile3X queremos que la gente pueda distinguir entre un aviso ordenado y una conversación que ya muestra señales raras. Dejamos la guía aquí: https://chile3x.cl/noticias/como-evitar-estafas-avisos-escorts-chile
+
+Si este tipo de enlace no corresponde en el hilo, lo retiro sin problema. Comparto mi relación con el sitio precisamente para que nadie lo tome como una recomendación independiente.
+
+## Publicación 4 — privacidad al contactar
+
+**Título sugerido:** Un recordatorio simple sobre privacidad al escribir a un aviso
+
+Soy el dueño de Chile3X y quise dejar un recurso breve sobre privacidad digital. Muchas veces se habla de seguridad solo después de que algo sale mal, cuando bastaría con revisar qué muestra la foto de WhatsApp, quién puede ver la hora de conexión o cuántos datos personales se entregan en el primer mensaje.
+
+No hace falta enviar nombre completo, domicilio, documentos ni redes personales para hacer una consulta básica. También es importante no reenviar capturas, teléfonos o fotos de otras personas sin permiso. La privacidad no es desconfianza: es una forma de poner límites claros y de tratar bien a quien está al otro lado.
+
+La guía completa quedó publicada acá: https://chile3x.cl/noticias/privacidad-digital-contactar-avisos-adultos-chile
+
+Dejo el contexto con transparencia: Chile3X es mi proyecto. Si moderación estima que el enlace no aporta, puede quitarse y el texto sigue siendo útil por sí mismo.

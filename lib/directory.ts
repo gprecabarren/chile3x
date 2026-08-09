@@ -353,7 +353,17 @@ export function getCityPath(city: string) {
 
 export function getProfileDisplayTags(profile: PublicProfile) {
   const tags = profile.type === "escort" ? [profile.tier.toUpperCase(), ...profile.tags.map((tag) => tagLabels[tag as keyof typeof tagLabels] ?? tag)] : [];
-  return tags.filter((tag): tag is string => Boolean(tag));
+  // Tier is always the primary tag. A manually assigned tag can have the same
+  // label (for example, tier "vip" plus tag "vip"), so normalize before
+  // rendering to guarantee visitors never see a duplicate badge.
+  const seen = new Set<string>();
+  return tags.filter((tag): tag is string => {
+    if (!tag) return false;
+    const key = tag.trim().toLocaleLowerCase("es-CL");
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export function getFilterOptions() {

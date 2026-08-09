@@ -29,7 +29,9 @@ test("server-renders the Chile3X public home", async () => {
   assert.equal(response.headers.get("x-content-type-options"), "nosniff");
   assert.equal(response.headers.get("x-frame-options"), "DENY");
   assert.match(response.headers.get("strict-transport-security") ?? "", /max-age=31536000/);
-  assert.match(response.headers.get("content-security-policy") ?? "", /frame-ancestors 'none'/);
+  const contentSecurityPolicy = response.headers.get("content-security-policy") ?? "";
+  assert.match(contentSecurityPolicy, /frame-ancestors 'none'/);
+  assert.match(contentSecurityPolicy, /frame-src[^;]*www\.googletagmanager\.com/);
 
   const html = await response.text();
   assert.match(html, /<title>Escorts en Chile \| Chile3X<\/title>/i);
@@ -43,5 +45,7 @@ test("server-renders the Chile3X public home", async () => {
   assert.match(html, /Región de Arica y Parinacota/);
   assert.match(html, /Región de Magallanes y de la Antártica Chilena/);
   assert.match(html, /wa\.me\/56933365005\?text=/);
+  assert.match(html, /GTM-NCJ3ZNH3/);
+  assert.match(html, /www\.googletagmanager\.com\/ns\.html\?id=GTM-NCJ3ZNH3/);
   assert.doesNotMatch(html, /Your site is taking shape|Building your site|codex-preview/i);
 });

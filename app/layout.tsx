@@ -9,6 +9,8 @@ import { socialCardImage, socialCardImageUrl } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
+const googleTagManagerId = "GTM-NCJ3ZNH3";
+
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
   const indexingEnabled = settings.robots_indexing === "enabled";
@@ -68,7 +70,11 @@ export default async function RootLayout({
 
   return (
     <html lang="es">
+      <head>
+        <Script id="google-tag-manager" strategy="beforeInteractive">{`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${googleTagManagerId}');`}</Script>
+      </head>
       <body>
+        <noscript><iframe src={`https://www.googletagmanager.com/ns.html?id=${googleTagManagerId}`} height="0" width="0" style={{ display: "none", visibility: "hidden" }} title="Google Tag Manager" /></noscript>
         {analyticsId && <>
           <Script src={`https://www.googletagmanager.com/gtag/js?id=${analyticsId}`} strategy="afterInteractive" />
           <Script id="google-analytics" strategy="afterInteractive">{`window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments)} gtag('js', new Date()); gtag('config', '${analyticsId}');`}</Script>

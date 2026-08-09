@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { trackAnalyticsEvent } from "@/app/AnalyticsEvent";
 import type { PublicReview } from "@/lib/profile-interactions";
 import { TURNSTILE_PROFILE_REVIEW_ACTION, TURNSTILE_PROFILE_REVIEW_SITEKEY } from "@/lib/turnstile";
 
@@ -53,6 +54,7 @@ export function ProfileReviews({ profileId, profileSlug, signedIn, reviews }: { 
       const payload = await response.json() as { error?: string; message?: string };
       if (!response.ok) throw new Error(payload.error ?? "No se pudo enviar la reseña.");
       setBody(""); setNotice(payload.message ?? "Tu reseña fue enviada a moderación.");
+      trackAnalyticsEvent("profile_review_submitted");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "No se pudo enviar la reseña.");
     } finally {

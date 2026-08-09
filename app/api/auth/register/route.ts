@@ -89,6 +89,7 @@ export async function POST(request: NextRequest) {
     const url = new URL("/verificar-correo", request.url);
     url.searchParams.set("email", email);
     url.searchParams.set("return_to", returnTo);
+    url.searchParams.set("created", "1");
     url.searchParams.set(delivered ? "sent" : "delivery", "1");
     const response = NextResponse.redirect(url, 303);
     response.cookies.set(registrationStateCookie, "", { maxAge: 0, path: "/registro" });

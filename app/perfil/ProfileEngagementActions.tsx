@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { trackAnalyticsEvent } from "@/app/AnalyticsEvent";
 
 type Engagement = {
   favoritesCount: number;
@@ -47,6 +48,9 @@ export function ProfileEngagementActions({
         throw new Error(payload.error ?? "No se pudo guardar tu interacción.");
       }
       setEngagement(payload);
+      trackAnalyticsEvent(action === "favorite" ? "profile_favorite" : "profile_like", {
+        interaction_action: action === "favorite" ? (payload.saved ? "add" : "remove") : (payload.liked ? "add" : "remove"),
+      });
       setNotice(action === "favorite"
         ? (payload.saved ? "Perfil guardado en favoritos." : "Perfil quitado de favoritos.")
         : (payload.liked ? "Te gusta este perfil." : "Quitaste tu like."));

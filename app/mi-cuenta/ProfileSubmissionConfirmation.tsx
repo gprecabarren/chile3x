@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { AnalyticsEvent } from "@/app/AnalyticsEvent";
 
-export function ProfileSubmissionConfirmation({ profileType }: { profileType: "escort" | "agency" | "rental" }) {
+export function ProfileSubmissionConfirmation({ profileId, profileType }: { profileId: string; profileType: "escort" | "agency" | "rental" }) {
   const [open, setOpen] = useState(true);
   if (!open) return null;
 
@@ -14,6 +15,7 @@ export function ProfileSubmissionConfirmation({ profileType }: { profileType: "e
   }
 
   return <div className="profile-submission-backdrop" role="presentation">
+    <AnalyticsEvent event="profile_submission" parameters={{ profile_type: profileType }} dedupeKey={profileId} />
     <section className="profile-submission-confirmation" role="dialog" aria-modal="true" aria-labelledby="submission-title">
       <p className="eyebrow">DATOS RECIBIDOS</p>
       <h2 id="submission-title">Tu publicación fue enviada a revisión.</h2>

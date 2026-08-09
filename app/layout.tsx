@@ -66,7 +66,6 @@ export default async function RootLayout({
 }>) {
   const [settings, admin] = await Promise.all([getSiteSettings(), getCurrentAdmin()]);
   const maintenanceEnabled = settings.maintenance_mode === "enabled";
-  const analyticsId = /^G-[A-Z0-9]{6,15}$/.test(settings.google_analytics_id) ? settings.google_analytics_id : null;
 
   return (
     <html lang="es">
@@ -75,10 +74,6 @@ export default async function RootLayout({
       </head>
       <body>
         <noscript><iframe src={`https://www.googletagmanager.com/ns.html?id=${googleTagManagerId}`} height="0" width="0" style={{ display: "none", visibility: "hidden" }} title="Google Tag Manager" /></noscript>
-        {analyticsId && <>
-          <Script src={`https://www.googletagmanager.com/gtag/js?id=${analyticsId}`} strategy="afterInteractive" />
-          <Script id="google-analytics" strategy="afterInteractive">{`window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments)} gtag('js', new Date()); gtag('config', '${analyticsId}');`}</Script>
-        </>}
         {!maintenanceEnabled || admin ? children : <MaintenanceScreen />}
         <AgeGate />
       </body>

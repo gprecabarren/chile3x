@@ -55,7 +55,7 @@ export default async function EditProfilePage({ params, searchParams }: { params
       <div className="account-content"><a className="page-back-link" href="/mi-cuenta">← Volver a mi cuenta</a>
         <AccountHeading eyebrow="EDITAR PUBLICACIÓN" title={row.profile.displayName} description="Si el aviso estaba publicado, cualquier actualización vuelve a revisión manual para proteger la calidad del directorio." />
         {query.error && <p className="form-alert" role="alert">{query.message ?? "No se pudieron guardar los cambios. Revisa los campos obligatorios."}</p>}
-        {query.notice === "submitted" && <ProfileSubmissionConfirmation profileType={row.profile.type} />}
+        {query.notice === "submitted" && <ProfileSubmissionConfirmation profileId={profileId} profileType={row.profile.type} />}
         <ProfileForm
           action={`/api/perfiles/${profileId}`}
           submitLabel="Guardar y enviar a revisión"

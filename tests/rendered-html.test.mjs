@@ -45,7 +45,7 @@ test("server-renders the Chile3X public home", async () => {
   assert.match(html, /Región de Arica y Parinacota/);
   assert.match(html, /Región de Magallanes y de la Antártica Chilena/);
   assert.match(html, /wa\.me\/56933365005\?text=/);
-  assert.match(html, /GTM-NCJ3ZNH3/);
-  assert.match(html, /www\.googletagmanager\.com\/ns\.html\?id=GTM-NCJ3ZNH3/);
+  assert.doesNotMatch(html, /GTM-NCJ3ZNH3/);
+  assert.doesNotMatch(html, /www\.googletagmanager\.com\/ns\.html\?id=GTM-NCJ3ZNH3/);
   assert.doesNotMatch(html, /Your site is taking shape|Building your site|codex-preview/i);
 });

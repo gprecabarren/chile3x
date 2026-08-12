@@ -37,9 +37,6 @@ export default function TermsPage() {
     <LegalPage
       eyebrow="DOCUMENTACIÓN LEGAL"
       title="Términos y condiciones de uso"
-      code="T-01"
-      version="2.0"
-      updated="12 de agosto de 2026"
       summary={<p>Estas condiciones regulan el acceso y uso de <strong>chile3x.cl</strong>, un directorio para adultos con publicaciones de escorts, agencias y arriendos en Chile. Léelas antes de crear una cuenta, publicar o interactuar con un anuncio.</p>}
       notice={<><strong>Importante:</strong> este documento fue adaptado al funcionamiento actual de Chile3X. No sustituye asesoría jurídica individual. Antes de habilitar cobros integrados o venta de contenido deberán publicarse condiciones comerciales específicas.</>}
     >

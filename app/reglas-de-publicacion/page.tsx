@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/app/legal/LegalPage";
-import { formatPublicationRulesUpdatedAt, readPublicationRules } from "@/lib/publication-rules";
+import { readPublicationRules } from "@/lib/publication-rules";
 import { getSiteSettings } from "@/lib/site-settings";
 import { publicPageMetadata } from "@/lib/seo";
 
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function PublishingRulesPage() {
   const settings = await getSiteSettings();
   const rules = readPublicationRules(settings.publication_rules);
-  return <LegalPage eyebrow="MODERACIÓN" title="Reglas de publicación" updated={formatPublicationRulesUpdatedAt(settings.publication_rules_updated_at)}>
+  return <LegalPage eyebrow="MODERACIÓN" title="Reglas de publicación">
     {rules.map((rule, index) => <section key={`${index}-${rule.title}`}><h2>{index + 1}. {rule.title}</h2><p>{rule.body}</p></section>)}
   </LegalPage>;
 }

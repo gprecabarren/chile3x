@@ -38,9 +38,6 @@ export default function PrivacyPage() {
     <LegalPage
       eyebrow="DOCUMENTACIÓN LEGAL"
       title="Política de privacidad y tratamiento de datos"
-      code="T-02"
-      version="2.0"
-      updated="12 de agosto de 2026"
       summary={<p>Esta política explica qué datos trata Chile3X, para qué los utiliza, qué información puede hacerse pública y cómo ejercer tus derechos. Está redactada para el funcionamiento actual del directorio y distingue expresamente los datos públicos de los archivos privados.</p>}
       notice={<><strong>Canal de privacidad:</strong> para acceder, corregir, eliminar, bloquear o consultar por tus datos escribe a <a href="mailto:chile3x.site@gmail.com">chile3x.site@gmail.com</a>. Nunca envíes tu contraseña ni documentos completos por correo salvo que el equipo te indique un canal seguro.</>}
     >

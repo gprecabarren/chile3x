@@ -108,7 +108,7 @@ export function AdminNewsEditor({ initial }: { initial?: Initial }) {
     const seoTitle = title ? `${title.slice(0, 54)} | Chile3X` : "Noticias de escorts en Chile | Chile3X";
     setIfEmpty("seo_title", seoTitle.slice(0, 70));
     setIfEmpty("meta_description", description);
-    setIfEmpty("focus_keyword", title.split(/[|:–—-]/)[0]?.trim().slice(0, 100) || "escorts en Chile");
+    setIfEmpty("focus_keyword", title.split(/[|:–-]/)[0]?.trim().slice(0, 100) || "escorts en Chile");
     setIfEmpty("canonical_url", slug ? `https://chile3x.cl/noticias/${slug}` : "");
     setIfEmpty("og_title", seoTitle.slice(0, 100));
     setIfEmpty("og_description", description);

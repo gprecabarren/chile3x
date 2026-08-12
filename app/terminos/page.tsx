@@ -38,7 +38,6 @@ export default function TermsPage() {
       eyebrow="DOCUMENTACIÓN LEGAL"
       title="Términos y condiciones de uso"
       summary={<p>Estas condiciones regulan el acceso y uso de <strong>chile3x.cl</strong>, un directorio para adultos con publicaciones de escorts, agencias y arriendos en Chile. Léelas antes de crear una cuenta, publicar o interactuar con un anuncio.</p>}
-      notice={<><strong>Importante:</strong> este documento fue adaptado al funcionamiento actual de Chile3X. No sustituye asesoría jurídica individual. Antes de habilitar cobros integrados o venta de contenido deberán publicarse condiciones comerciales específicas.</>}
     >
       <nav className="legal-index" aria-label="Índice de términos y condiciones">
         <strong>Contenido</strong>
@@ -87,7 +86,7 @@ export default function TermsPage() {
         <p>Una agencia solo puede vincular a una escort con autorización expresa de esa persona. La invitación debe ser aceptada por la cuenta correspondiente; está prohibido crear relaciones aparentes, reutilizar identidades o agregar personas sin consentimiento. La agencia responde por la veracidad de su información institucional y por sus propios actos, sin adquirir propiedad ni control sobre las cuentas vinculadas.</p>
         <h3>6.2. Arriendos</h3>
         <p>Quien publica un arriendo declara tener derecho para ofrecer el espacio, entregar información veraz y cumplir las normas civiles, sanitarias, de copropiedad, seguridad y demás obligaciones aplicables. Chile3X no inspecciona inmuebles ni garantiza disponibilidad, condiciones, permisos o acuerdos entre las partes.</p>
-        <p>Las categorías comerciales y etiquetas propias de escorts —como VIP, Premium, Gold, MILF, Trans, Hombres o Masajes— no se aplican a agencias ni arriendos.</p>
+        <p>Las categorías comerciales y etiquetas propias de escorts, como VIP, Premium, Gold, MILF, Trans, Hombres o Masajes, no se aplican a agencias ni arriendos.</p>
       </section>
 
       <section id="obligaciones">

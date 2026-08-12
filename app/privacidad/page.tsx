@@ -49,7 +49,7 @@ export default function PrivacyPage() {
       <section id="responsable">
         <h2>1. Responsable, contacto y alcance</h2>
         <p><strong>Chile3X</strong>, nombre comercial del portal disponible en <strong>chile3x.cl</strong>, es responsable del tratamiento descrito en esta política. El canal oficial para consultas y ejercicio de derechos es <a href="mailto:chile3x.site@gmail.com">chile3x.site@gmail.com</a>.</p>
-        <p>Esta política se aplica a visitantes, personas registradas, anunciantes, agencias, responsables de arriendos, personas que aparecen en publicaciones, quienes reportan contenido y quienes interactúan con las funciones del sitio. Los servicios externos enlazados —como WhatsApp, Telegram, Instagram, Arsmate u OnlyFans— tienen políticas propias.</p>
+        <p>Esta política se aplica a visitantes, personas registradas, anunciantes, agencias, responsables de arriendos, personas que aparecen en publicaciones, quienes reportan contenido y quienes interactúan con las funciones del sitio. Los servicios externos enlazados, como WhatsApp, Telegram, Instagram, Arsmate u OnlyFans, tienen políticas propias.</p>
       </section>
 
       <section id="principios">

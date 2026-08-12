@@ -22,9 +22,9 @@ import {
 } from "@/lib/profile";
 
 const tierVisibilityOptions = {
-  gold: "Gold — visibilidad estándar (futura opción más económica) · GRATIS ahora",
-  premium: "Premium — mayor visibilidad (futura opción intermedia) · GRATIS ahora",
-  vip: "VIP — máxima visibilidad (futura opción más cara) · GRATIS ahora",
+  gold: "Gold: visibilidad estándar (futura opción más económica) · GRATIS ahora",
+  premium: "Premium: mayor visibilidad (futura opción intermedia) · GRATIS ahora",
+  vip: "VIP: máxima visibilidad (futura opción más cara) · GRATIS ahora",
 } as const;
 
 type ProfileFormInitial = {

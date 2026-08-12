@@ -33,7 +33,7 @@ export async function generateMetadata(): Promise<Metadata> {
         url: socialCardImageUrl,
         width: socialCardImage.width,
         height: socialCardImage.height,
-        alt: "Chile3X — directorio para adultos en Chile",
+        alt: "Chile3X, directorio para adultos en Chile",
       },
     ],
   },

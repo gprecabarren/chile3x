@@ -19,9 +19,7 @@ export function LegalPage({ eyebrow, title, children, summary, notice }: LegalPa
           {summary ? <div className="legal-summary">{summary}</div> : null}
         </header>
         <div className="legal-content">{children}</div>
-        <aside>
-          {notice ?? <>Estas reglas forman parte del marco operativo de Chile3X. Las funciones nuevas o los cambios relevantes se informarán antes de entrar en vigor.</>}
-        </aside>
+        {notice ? <aside>{notice}</aside> : null}
       </article>
     </DirectoryShell>
   );

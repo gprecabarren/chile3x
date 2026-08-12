@@ -1,6 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthTurnstile } from "@/app/AuthTurnstile";
 import { TURNSTILE_AUTH_EMAIL_ACTION } from "@/lib/turnstile";
+import { privatePageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = privatePageMetadata({
+  title: "Recuperar contraseña",
+  description: "Recupera el acceso a una cuenta de Chile3X.",
+  path: "/recuperar-clave",
+});
 
 export default async function ForgotPasswordPage({ searchParams }: { searchParams: Promise<{ sent?: string; error?: string }> }) {
   const params = await searchParams;

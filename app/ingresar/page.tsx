@@ -1,7 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { safeAccountReturnTo } from "@/lib/auth";
 import { AuthTurnstile } from "@/app/AuthTurnstile";
 import { TURNSTILE_AUTH_LOGIN_ACTION } from "@/lib/turnstile";
+import { privatePageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = privatePageMetadata({
+  title: "Ingresar",
+  description: "Acceso privado a cuentas de anunciante de Chile3X.",
+  path: "/ingresar",
+});
 
 const messages: Record<string, string> = {
   invalid: "El correo o la contraseña no coinciden.",

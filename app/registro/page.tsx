@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { AccountIdentityFields } from "@/app/account-identity-fields";
 import { safeAccountReturnTo } from "@/lib/auth";
@@ -7,6 +8,13 @@ import { AuthTurnstile } from "@/app/AuthTurnstile";
 import { cookies } from "next/headers";
 import { decodeRegistrationState, registrationStateCookie } from "@/lib/registration-state";
 import { TURNSTILE_AUTH_REGISTER_ACTION } from "@/lib/turnstile";
+import { privatePageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = privatePageMetadata({
+  title: "Crear cuenta de anunciante",
+  description: "Crea una cuenta de anunciante para publicar y gestionar perfiles en Chile3X.",
+  path: "/registro",
+});
 
 const messages: Record<string, string> = {
   adult: "Debes confirmar que eres mayor de 18 años.",

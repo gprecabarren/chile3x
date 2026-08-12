@@ -1,8 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { AnalyticsEvent } from "@/app/AnalyticsEvent";
 import { safeAccountReturnTo } from "@/lib/auth";
 import { AuthTurnstile } from "@/app/AuthTurnstile";
 import { TURNSTILE_AUTH_EMAIL_ACTION } from "@/lib/turnstile";
+import { privatePageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = privatePageMetadata({
+  title: "Verificar correo",
+  description: "Confirma el correo electrónico de tu cuenta Chile3X.",
+  path: "/verificar-correo",
+});
 
 export default async function VerifyEmailPage({
   searchParams,

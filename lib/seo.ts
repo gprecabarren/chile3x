@@ -20,6 +20,12 @@ type PublicPageMetadataOptions = {
   socialDescription?: string;
 };
 
+type PrivatePageMetadataOptions = {
+  title: string;
+  description: string;
+  path: string;
+};
+
 export function publicPageMetadata({
   title,
   description,
@@ -48,6 +54,21 @@ export function publicPageMetadata({
       title: openGraphTitle,
       description: openGraphDescription,
       images: [socialCardImageUrl],
+    },
+  };
+}
+
+/** Metadata for account and authentication routes that must never be indexed. */
+export function privatePageMetadata({ title, description, path }: PrivatePageMetadataOptions): Metadata {
+  return {
+    title,
+    description,
+    alternates: { canonical: path },
+    robots: {
+      index: false,
+      follow: false,
+      nocache: true,
+      googleBot: { index: false, follow: false, noarchive: true, nosnippet: true, noimageindex: true },
     },
   };
 }

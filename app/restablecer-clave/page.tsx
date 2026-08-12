@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { privatePageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = privatePageMetadata({
+  title: "Restablecer contraseña",
+  description: "Define una nueva contraseña para tu cuenta de Chile3X.",
+  path: "/restablecer-clave",
+});
 
 export default async function ResetPasswordPage({ searchParams }: { searchParams: Promise<{ token?: string; error?: string }> }) {
   const params = await searchParams;

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AccountIdentityFields } from "@/app/account-identity-fields";
+import { RegistrationEmailField } from "@/app/registro/RegistrationEmailField";
 import { safeAccountReturnTo } from "@/lib/auth";
 import { getPortalWhatsappLink } from "@/lib/site-contacts";
 import { getSiteSettings } from "@/lib/site-settings";
@@ -46,7 +47,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
       <input name="return_to" type="hidden" value={returnTo} />
       <label>Nombre visible<input name="display_name" required minLength={2} maxLength={80} autoComplete="nickname" defaultValue={saved?.displayName ?? ""} /></label>
       <AccountIdentityFields values={saved ? { fullName: saved.fullName, documentType: saved.documentType, documentNumber: saved.documentNumber, foreignCountry: saved.foreignCountry, birthDate: saved.birthDate, city: saved.city, phone: saved.phone } : undefined} />
-      <label>Correo electrónico<input name="email" type="email" required maxLength={160} autoComplete="email" defaultValue={saved?.email ?? ""} /></label>
+      <RegistrationEmailField defaultValue={saved?.email ?? ""} />
       <label>Contraseña<input name="password" type="password" required minLength={12} autoComplete="new-password" /><small>Usa al menos 12 caracteres.</small></label>
       <label>Repite tu contraseña<input name="password_confirmation" type="password" required minLength={12} autoComplete="new-password" /><small>Así evitamos errores al crear el acceso. Por seguridad nunca guardamos este campo después de un error.</small></label>
       <label className="checkbox-label"><input name="adult_confirmed" type="checkbox" value="yes" required defaultChecked={saved?.adultConfirmed ?? false} />Confirmo que soy mayor de 18 años.</label>

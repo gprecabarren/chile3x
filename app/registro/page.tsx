@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AccountIdentityFields } from "@/app/account-identity-fields";
+import { OfficialChile3xLogo } from "@/app/OfficialChile3xLogo";
 import { RegistrationEmailField } from "@/app/registro/RegistrationEmailField";
 import { safeAccountReturnTo } from "@/lib/auth";
 import { getPortalWhatsappLink } from "@/lib/site-contacts";
@@ -38,7 +39,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
   const whatsappHref = getPortalWhatsappLink(settings.contact_whatsapp, "Hola, quisiera solicitar que el equipo de Chile3X me cree una cuenta de anunciante.");
 
   return <main className="auth-page"><section className="auth-card">
-    <Link className="auth-brand" href="/">CHILE<span>3X</span></Link>
+    <Link className="auth-brand" href="/"><OfficialChile3xLogo priority /></Link>
     <p className="eyebrow">CUENTA DE ANUNCIANTE</p>
     <h1>Comienza tu publicación.</h1>
     <p>Crea una cuenta para guardar borradores, enviar avisos a revisión y gestionar sus pausas. Antes de entrar te enviaremos un correo de verificación.</p>

@@ -1,12 +1,13 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { AccountUser } from "@/lib/auth";
+import { OfficialChile3xLogo } from "@/app/OfficialChile3xLogo";
 
 export function AccountShell({ user, children }: { user: AccountUser; children: ReactNode }) {
   return (
     <main className="account-root">
       <header className="account-header">
-        <Link href="/" className="account-brand">CHILE<span>3X</span><small>MI CUENTA</small></Link>
+        <Link href="/" className="account-brand"><OfficialChile3xLogo priority /><small>MI CUENTA</small></Link>
         <nav aria-label="Navegación de cuenta">
           <Link href="/mi-cuenta">Mis perfiles</Link>
           <Link href="/mi-cuenta/datos-personales">Mis datos</Link>

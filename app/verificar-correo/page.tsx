@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AnalyticsEvent } from "@/app/AnalyticsEvent";
+import { OfficialChile3xLogo } from "@/app/OfficialChile3xLogo";
 import { safeAccountReturnTo } from "@/lib/auth";
 import { AuthTurnstile } from "@/app/AuthTurnstile";
 import { TURNSTILE_AUTH_EMAIL_ACTION } from "@/lib/turnstile";
@@ -32,7 +33,7 @@ export default async function VerifyEmailPage({
   return <main className="auth-page">
     {params.created === "1" && <AnalyticsEvent event="sign_up" parameters={{ method: "email" }} dedupeKey="email" />}
     <section className="auth-card">
-      <Link className="auth-brand" href="/">CHILE<span>3X</span></Link>
+      <Link className="auth-brand" href="/"><OfficialChile3xLogo priority /></Link>
       <p className="eyebrow">CONFIRMACIÓN DE CORREO</p>
       <h1>Revisa tu correo.</h1>
       <p>{params.delivery === "1" ? "Tu cuenta quedó creada, pero el correo aún no pudo entregarse. Puedes intentar reenviarlo más tarde." : "Enviamos un enlace para verificar tu correo y activar la cuenta."}</p>

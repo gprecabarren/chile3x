@@ -72,6 +72,10 @@ function titleCase(value: string) {
   return value ? `${value[0].toUpperCase()}${value.slice(1)}` : value;
 }
 
+function profileTypeLabel(type: ProfileType) {
+  return type === "escort" ? "Escort" : type === "agency" ? "Agencia" : "Arriendo";
+}
+
 function metadataValue(initial: ProfileFormInitial | undefined, key: string) {
   return initial?.details.metadata?.[key] ?? "";
 }
@@ -90,6 +94,7 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
   const [enabledAvailabilityDays, setEnabledAvailabilityDays] = useState(() => new Set(savedAvailability.keys()));
   const [selectedProfileTags, setSelectedProfileTags] = useState<string[]>(initial?.tags ?? []);
   const [underageNotice, setUnderageNotice] = useState(false);
+  const typeLocked = Boolean(initial);
 
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
@@ -110,13 +115,13 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
     const savedType = saved.type?.[0];
     const savedRegion = saved.region?.[0];
     const savedCity = saved.city?.[0];
-    if (savedType && profileTypes.includes(savedType as ProfileType)) setType(savedType as ProfileType);
-    if (savedRegion && regions.some((item) => item.title === savedRegion)) setRegion(savedRegion);
-    if (savedCity) setCity(savedCity);
-    setSelectedProfileTags((saved.tags ?? []).filter((tag) => profileTags.includes(tag)));
-    setEnabledAvailabilityDays(new Set(availabilityDays.filter((day) => saved[`availability_${day.key}_enabled`]?.includes("on")).map((day) => day.key)));
 
     const restore = window.requestAnimationFrame(() => {
+      if (!typeLocked && savedType && profileTypes.includes(savedType as ProfileType)) setType(savedType as ProfileType);
+      if (savedRegion && regions.some((item) => item.title === savedRegion)) setRegion(savedRegion);
+      if (savedCity) setCity(savedCity);
+      setSelectedProfileTags((saved.tags ?? []).filter((tag) => profileTags.includes(tag)));
+      setEnabledAvailabilityDays(new Set(availabilityDays.filter((day) => saved[`availability_${day.key}_enabled`]?.includes("on")).map((day) => day.key)));
       const form = formRef.current;
       if (!form) return;
       for (const [name, values] of Object.entries(saved)) {
@@ -135,7 +140,7 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
       }
     });
     return () => window.cancelAnimationFrame(restore);
-  }, [storageKey]);
+  }, [storageKey, typeLocked]);
 
   function saveFormBeforeSubmit(form: HTMLFormElement) {
     const saved: Record<string, string[]> = {};
@@ -178,9 +183,9 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
         <div className="form-grid form-grid-three">
           <label>
             Tipo de perfil
-            <select name="type" value={type} onChange={(event) => setType(event.target.value as ProfileType)}>
-              {profileTypes.map((item) => <option key={item} value={item}>{item === "escort" ? "Escort" : item === "agency" ? "Agencia" : "Arriendo"}</option>)}
-            </select>
+            {typeLocked ? <><input name="type" type="hidden" value={type} /><span className="profile-type-locked"><strong>{profileTypeLabel(type)}</strong><small>El tipo queda definido al crear el anuncio. Para otro tipo, crea una publicación nueva.</small></span></> : <select name="type" value={type} onChange={(event) => setType(event.target.value as ProfileType)}>
+              {profileTypes.map((item) => <option key={item} value={item}>{profileTypeLabel(item)}</option>)}
+            </select>}
           </label>
           <label>
             Nombre visible

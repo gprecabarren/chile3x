@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { count, eq } from "drizzle-orm";
 import type { AdminUser } from "@/lib/auth";
+import { OfficialChile3xLogo } from "@/app/OfficialChile3xLogo";
 import { getDb } from "@/db";
 import { profileReports, profiles } from "@/db/schema";
 
@@ -37,7 +38,7 @@ export async function AdminShell({ user, children }: { user: AdminUser; children
   return (
     <main className="admin-root">
       <header className="admin-header">
-        <Link className="admin-brand" href="/">CHILE<span>3X</span><small>ADMIN</small></Link>
+        <Link className="admin-brand" href="/"><OfficialChile3xLogo priority /><small>ADMIN</small></Link>
         <nav aria-label="Administración">
           <Link href="/admin">Resumen</Link>
           <Link className={pendingCount > 0 ? "admin-nav-alert" : undefined} href="/admin/perfiles">Perfiles{pendingCount > 0 && <b>{pendingCount}</b>}</Link>

@@ -119,14 +119,6 @@ function requiredUrl(value: string, fieldLabel: string, allowedHost?: string | s
   return url.toString();
 }
 
-function normalizeInstagram(value: string) {
-  if (!value) return "";
-  if (/^@?[A-Za-z0-9._]{1,30}$/.test(value)) {
-    return `https://www.instagram.com/${value.replace(/^@/, "")}/`;
-  }
-  return requiredUrl(value, "Instagram", "instagram.com");
-}
-
 function normalizePlatformUsername(value: string, label: string, host: string) {
   if (!value) return "";
   const username = value.replace(/^@/, "");
@@ -417,11 +409,15 @@ export async function createProfile(ownerId: string, submission: ProfileSubmissi
 
 export async function updateProfile(profileId: string, ownerId: string, submission: ProfileSubmission) {
   const db = await getDb();
-  const [existing] = await db.select({ id: profiles.id, status: profiles.status, handle: profiles.handle }).from(profiles)
+  const [existing] = await db.select({ id: profiles.id, type: profiles.type, status: profiles.status, handle: profiles.handle }).from(profiles)
     .where(and(eq(profiles.id, profileId), eq(profiles.ownerId, ownerId))).limit(1);
 
   if (!existing) {
     return false;
+  }
+
+  if (submission.type !== existing.type) {
+    throw new ProfileValidationError("El tipo de anuncio queda definido al crearlo. Para publicar como escort, agencia o arriendo crea un anuncio nuevo.");
   }
 
   const updatedAt = new Date().toISOString();
@@ -432,7 +428,6 @@ export async function updateProfile(profileId: string, ownerId: string, submissi
   }
 
   await db.update(profiles).set({
-    type: submission.type,
     status,
     handle,
     displayName: submission.displayName,

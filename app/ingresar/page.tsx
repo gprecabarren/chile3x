@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { safeAccountReturnTo } from "@/lib/auth";
 import { AuthTurnstile } from "@/app/AuthTurnstile";
+import { OfficialChile3xLogo } from "@/app/OfficialChile3xLogo";
 import { TURNSTILE_AUTH_LOGIN_ACTION } from "@/lib/turnstile";
 import { privatePageMetadata } from "@/lib/seo";
 
@@ -22,7 +23,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const params = await searchParams;
   const returnTo = safeAccountReturnTo(params.return_to ?? null);
   return <main className="auth-page"><section className="auth-card">
-    <Link className="auth-brand" href="/">CHILE<span>3X</span></Link>
+    <Link className="auth-brand" href="/"><OfficialChile3xLogo priority /></Link>
     <p className="eyebrow">CUENTA DE ANUNCIANTE</p><h1>Vuelve a tu panel.</h1><p>Gestiona tus perfiles, actualiza tu aviso y consulta el estado de revisión.</p>
     {params.error && <p className="form-alert" role="alert">{messages[params.error] ?? messages.invalid}</p>}
     {params.verified === "1" && <p className="auth-success" role="status">Tu correo fue verificado. Ya puedes iniciar sesión.</p>}

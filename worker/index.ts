@@ -64,6 +64,35 @@ function addPublicCacheHeaders(response: Response) {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
+/**
+ * Chile3X does not run PHP or WordPress. Automated scanners frequently probe
+ * hundreds of those legacy paths in a burst; without this early return each
+ * probe reaches the application renderer and can exhaust the Free CPU limit.
+ * Answer with a generic 404 so no implementation detail is disclosed.
+ */
+function isLegacyApplicationProbe(pathname: string) {
+  const path = pathname.toLowerCase();
+  return path.endsWith(".php")
+    || path === "/wp"
+    || path.startsWith("/wp/")
+    || path.includes("/wp-")
+    || path.includes("/.git")
+    || path.includes("/.env")
+    || path.includes("/vendor/phpunit")
+    || path.includes("/cgi-bin/");
+}
+
+function probeNotFoundResponse() {
+  return withSecurityHeaders(new Response("Not found", {
+    status: 404,
+    headers: {
+      "content-type": "text/plain; charset=utf-8",
+      "cache-control": "public, max-age=86400, s-maxage=86400",
+      "x-robots-tag": "noindex, nofollow",
+    },
+  }));
+}
+
 // Image security config. SVG sources with .svg extension auto-skip the
 // optimization endpoint on the client side (served directly, no proxy).
 // To route SVGs through the optimizer (with security headers), set
@@ -73,6 +102,10 @@ function addPublicCacheHeaders(response: Response) {
 const worker = {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+
+    if (isLegacyApplicationProbe(url.pathname)) {
+      return probeNotFoundResponse();
+    }
 
     if (url.pathname === "/_vinext/image") {
       const allowedWidths = [...DEFAULT_DEVICE_SIZES, ...DEFAULT_IMAGE_SIZES];

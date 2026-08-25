@@ -28,9 +28,11 @@ type StoryScope = {
   type?: "escort" | "agency" | "rental";
 };
 
-// A request that reads or publishes stories also cleans up expired image
-// records and their private R2 objects. Text stories remain as a small audit
-// trail, but are never returned to public visitors after their 24 hours.
+// Image stories are removed opportunistically when an advertiser publishes a
+// new one. Public reads deliberately do not perform this maintenance work:
+// a read path can run thousands of times a day, while expired stories are
+// already excluded by their expiry condition below. This keeps the public
+// directory fast on the Workers Free CPU budget.
 export async function purgeExpiredImageStories() {
   const db = await getDb();
   const expired = await db.select({ id: profileStatuses.id, r2Key: profileStatuses.r2Key }).from(profileStatuses).where(and(
@@ -49,7 +51,6 @@ export async function purgeExpiredImageStories() {
 export async function getActiveStories(scope: StoryScope = {}) {
   try {
     if (scope.profileIds && scope.profileIds.length === 0) return [] as PublicStory[];
-    await purgeExpiredImageStories();
     const db = await getDb();
     const now = new Date().toISOString();
     const conditions = [eq(profiles.status, "approved"), gt(profileStatuses.expiresAt, now)];
@@ -121,7 +122,6 @@ export async function getActiveStories(scope: StoryScope = {}) {
 }
 
 export async function getOwnerStories(profileId: string) {
-  await purgeExpiredImageStories();
   const now = new Date().toISOString();
   return (await (await getDb()).select({
     id: profileStatuses.id,

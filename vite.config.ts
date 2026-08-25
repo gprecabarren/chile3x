@@ -38,10 +38,6 @@ const localBindingConfig = {
       name: "EMAIL",
     },
   ],
-  triggers: {
-    // Expired story media must not consume storage when the site is quiet.
-    crons: ["0 * * * *"],
-  },
 };
 
 export default defineConfig(async () => {

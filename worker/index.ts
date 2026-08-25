@@ -1,7 +1,6 @@
 /** Cloudflare Worker entry point for the vinext-starter template. */
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
-import { purgeExpiredImageStories } from "@/lib/stories";
 
 interface Env {
   ASSETS: Fetcher;
@@ -21,11 +20,6 @@ interface ExecutionContext {
   passThroughOnException(): void;
 }
 
-interface ScheduledController {
-  cron: string;
-  scheduledTime: number;
-}
-
 function withSecurityHeaders(response: Response) {
   const headers = new Headers(response.headers);
   headers.set("strict-transport-security", "max-age=31536000; includeSubDomains");
@@ -34,6 +28,39 @@ function withSecurityHeaders(response: Response) {
   headers.set("referrer-policy", "strict-origin-when-cross-origin");
   headers.set("permissions-policy", "camera=(self), geolocation=(self), microphone=(self)");
   headers.set("content-security-policy", "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob:; font-src 'self' data:; frame-src https://challenges.cloudflare.com https://www.googletagmanager.com; connect-src 'self' https://challenges.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com; upgrade-insecure-requests");
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
+const PUBLIC_PAGE_CACHE_SECONDS = 120;
+
+function hasAuthenticatedSession(request: Request) {
+  const cookieHeader = request.headers.get("cookie") ?? "";
+  return /(?:^|;\s*)chile3x_(?:user|admin)_session=/.test(cookieHeader);
+}
+
+/**
+ * Public directory views have no visitor-specific server state unless the
+ * visitor has signed in. Cache only those anonymous HTML responses for a very
+ * short time, which dramatically reduces repeated SSR work from browsers and
+ * crawlers while keeping new moderation changes visible promptly.
+ */
+function isCacheablePublicPage(request: Request, url: URL) {
+  if (request.method !== "GET" || hasAuthenticatedSession(request)) return false;
+  if (url.pathname === "/" || url.pathname === "/escorts" || url.pathname === "/agencias" || url.pathname === "/arriendos") return true;
+  if (url.pathname.startsWith("/escorts/") || url.pathname.startsWith("/perfil/") || url.pathname.startsWith("/noticias/")) return true;
+  return ["/quienes-somos", "/noticias", "/faq", "/contacto", "/terminos", "/privacidad", "/reglas-de-publicacion"].includes(url.pathname);
+}
+
+function cacheableResponse(response: Response) {
+  return response.status === 200
+    && response.headers.get("content-type")?.includes("text/html")
+    && !response.headers.has("set-cookie");
+}
+
+function addPublicCacheHeaders(response: Response) {
+  const headers = new Headers(response.headers);
+  headers.set("cache-control", `public, max-age=0, s-maxage=${PUBLIC_PAGE_CACHE_SECONDS}, stale-while-revalidate=300`);
+  headers.set("x-chile3x-cache", "public");
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
@@ -58,12 +85,25 @@ const worker = {
       }, allowedWidths));
     }
 
-    return withSecurityHeaders(await handler.fetch(request, env, ctx));
-  },
-  async scheduled(_controller: ScheduledController, _env: Env, ctx: ExecutionContext) {
-    // Expired story images are private and short-lived. This cron removes
-    // both their R2 objects and database records even during quiet periods.
-    ctx.waitUntil(purgeExpiredImageStories());
+    const shouldUsePublicCache = isCacheablePublicPage(request, url);
+    const cache = shouldUsePublicCache ? caches.default : null;
+    const cacheKey = shouldUsePublicCache ? new Request(url.toString(), { method: "GET" }) : null;
+
+    if (cache && cacheKey) {
+      const cached = await cache.match(cacheKey);
+      if (cached) {
+        const headers = new Headers(cached.headers);
+        headers.set("x-chile3x-cache", "hit");
+        return new Response(cached.body, { status: cached.status, statusText: cached.statusText, headers });
+      }
+    }
+
+    const response = withSecurityHeaders(await handler.fetch(request, env, ctx));
+    if (!cache || !cacheKey || !cacheableResponse(response)) return response;
+
+    const cacheResponse = addPublicCacheHeaders(response);
+    ctx.waitUntil(cache.put(cacheKey, cacheResponse.clone()));
+    return cacheResponse;
   },
 };
 

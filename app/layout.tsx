@@ -20,6 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: { default: settings.site_title, template: `%s | Chile3X` },
     description: settings.site_description,
     robots: indexingEnabled ? { index: true, follow: true } : { index: false, follow: false },
+    other: { rating: "adult" },
     verification: settings.google_site_verification ? { google: settings.google_site_verification } : undefined,
     openGraph: {
       title: settings.site_title,

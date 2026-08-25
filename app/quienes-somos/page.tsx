@@ -10,7 +10,7 @@ export const metadata: Metadata = publicPageMetadata({
   title: "Quiénes somos",
   description: "Chile3X es un directorio nacional de escorts en Chile, con perfiles por ciudad, agencias y arriendos para adultos. Cobertura nacional, revisión manual y soporte cercano.",
   path: "/quienes-somos",
-  socialTitle: "Directorio nacional de escorts | Chile3X",
+  socialTitle: "Quiénes somos | Chile3X",
 });
 
 export const dynamic = "force-dynamic";

@@ -46,14 +46,17 @@ function hasAuthenticatedSession(request: Request) {
  */
 function isCacheablePublicPage(request: Request, url: URL) {
   if (request.method !== "GET" || hasAuthenticatedSession(request)) return false;
-  if (url.pathname === "/" || url.pathname === "/escorts" || url.pathname === "/agencias" || url.pathname === "/arriendos") return true;
-  if (url.pathname.startsWith("/escorts/") || url.pathname.startsWith("/perfil/") || url.pathname.startsWith("/noticias/")) return true;
-  return ["/quienes-somos", "/noticias", "/faq", "/contacto", "/terminos", "/privacidad", "/reglas-de-publicacion"].includes(url.pathname);
+  // Client navigation requests use the same public data through a `.rsc`
+  // endpoint. Cache it under its own URL, never together with HTML.
+  const path = url.pathname.endsWith(".rsc") ? url.pathname.slice(0, -4) || "/" : url.pathname;
+  if (path === "/" || path === "/escorts" || path === "/agencias" || path === "/arriendos") return true;
+  if (path.startsWith("/escorts/") || path.startsWith("/perfil/") || path.startsWith("/noticias/")) return true;
+  return ["/quienes-somos", "/noticias", "/faq", "/contacto", "/terminos", "/privacidad", "/reglas-de-publicacion"].includes(path);
 }
 
 function cacheableResponse(response: Response) {
   return response.status === 200
-    && response.headers.get("content-type")?.includes("text/html")
+    && /text\/(?:html|x-component)/i.test(response.headers.get("content-type") ?? "")
     && !response.headers.has("set-cookie");
 }
 

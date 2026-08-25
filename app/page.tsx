@@ -13,7 +13,7 @@ import { safeJsonLd } from "@/lib/json-ld";
 import { socialCardImage, socialCardImageUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Escorts en Chile",
+  title: "Directorio nacional de escorts",
   description:
     "Encuentra escorts en Chile por ciudad, región, categoría y servicios. Chile3X es un directorio nacional para adultos con perfiles revisados.",
   alternates: { canonical: "/" },

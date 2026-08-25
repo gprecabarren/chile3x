@@ -34,7 +34,7 @@ export default async function CityPage({ params, searchParams }: CityPageProps) 
   if (!city) notFound();
   const filters = readDirectoryFilters(await searchParams, { region: city.region, city: city.city });
   const [viewer, settings] = await Promise.all([getCurrentUser(), getSiteSettings()]);
-  const publicProfiles = await getPublicProfiles({ viewerId: viewer?.id });
+  const publicProfiles = await getPublicProfiles({ viewerId: viewer?.id, city: city.city });
   const profiles = filterPublicProfiles(publicProfiles, filters);
   const stories = await getActiveStories({ profileIds: profiles.map((profile) => profile.id) });
   const basePath = getCityPath(city.city);

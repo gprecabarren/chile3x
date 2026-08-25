@@ -28,7 +28,7 @@ export default async function EscortsPage({ searchParams }: { searchParams: Prom
   const nearbyCityValue = Array.isArray(query.cerca) ? query.cerca[0] : query.cerca;
   const nearbyCity = cityDirectory.some((item) => item.city === nearbyCityValue) ? nearbyCityValue : undefined;
   const [viewer, settings] = await Promise.all([getCurrentUser(), getSiteSettings()]);
-  const allProfiles = await getPublicProfiles({ viewerId: viewer?.id });
+  const allProfiles = await getPublicProfiles({ viewerId: viewer?.id, type: "escort" });
   const profiles = prioritizeProfilesByCity(filterPublicProfiles(allProfiles, filters), nearbyCity);
   const stories = await getActiveStories({ profileIds: profiles.map((profile) => profile.id) });
   const canonicalProfiles = filterPublicProfiles(allProfiles, readDirectoryFilters({}, { type: "escort" }));

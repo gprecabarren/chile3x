@@ -5,7 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import { DirectoryShell, PortalContactIcon, ProfileCard } from "@/app/directorio/_components";
 import { ProfileStoryTrigger, StoryRail } from "@/app/historias/StoryRail";
 import { ProfileViewTracker } from "../ProfileViewTracker";
-import { getCityPath, getProfileDisplayTags, getPublicProfiles, type PublicProfile } from "@/lib/directory";
+import { getCityPath, getProfileDisplayTags, getPublicProfileForRoute, getPublicProfiles, type PublicProfile } from "@/lib/directory";
 import { getAvailabilityStatus, profilePublicPath, readAvailability, readProfilePrices } from "@/lib/profile";
 import { getActiveStories } from "@/lib/stories";
 import { getCurrentAdmin, getCurrentUser } from "@/lib/auth";
@@ -24,14 +24,6 @@ import { socialCardImageUrl } from "@/lib/seo";
 export const dynamic = "force-dynamic";
 
 type ProfilePageProps = { params: Promise<{ slug: string }> };
-
-function profileForRoute(profiles: PublicProfile[], segment: string) {
-  const decoded = decodeURIComponent(segment);
-  if (decoded.startsWith("@")) {
-    return profiles.find((profile) => profile.handle === decoded.slice(1).toLowerCase());
-  }
-  return profiles.find((profile) => profile.slug === decoded);
-}
 
 function profileTypeLabel(type: PublicProfile["type"]) {
   return type === "escort" ? "Escort" : type === "agency" ? "Agencia" : "Arriendo";
@@ -107,7 +99,7 @@ function metadataFacts(profile: PublicProfile) {
 
 export async function generateMetadata({ params }: ProfilePageProps): Promise<Metadata> {
   const { slug } = await params;
-  const profile = profileForRoute(await getPublicProfiles(), slug);
+  const profile = await getPublicProfileForRoute(slug);
   if (!profile) return {};
   const coverImage = profile.media.find((media) => media.mediaType === "image" && media.isProfilePhoto) ?? profile.media.find((media) => media.mediaType === "image");
   const socialImage = coverImage?.url ?? socialCardImageUrl;
@@ -124,14 +116,17 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
 export default async function PublicProfilePage({ params }: ProfilePageProps) {
   const { slug } = await params;
   const [admin, viewer] = await Promise.all([getCurrentAdmin(), getCurrentUser()]);
-  const profiles = await getPublicProfiles({ includeUnapproved: Boolean(admin), viewerId: viewer?.id });
-  const profile = profileForRoute(profiles, slug);
+  const profile = await getPublicProfileForRoute(slug, { includeUnapproved: Boolean(admin), viewerId: viewer?.id });
   if (!profile) notFound();
   if (!decodeURIComponent(slug).startsWith("@") && profile.handle) redirect(profilePublicPath(profile));
   const profileRouteValue = profile.handle ? `@${profile.handle}` : profile.slug;
   const isAdminPreview = Boolean(admin) && profile.status !== "approved";
-  const agencyProfiles = profiles.filter((item) => profile.agencyIds.includes(item.id));
-  const agencyMembers = profiles.filter((item) => profile.memberIds.includes(item.id));
+  const relatedProfileIds = profile.type === "agency" ? profile.memberIds : profile.agencyIds;
+  const relatedProfiles = relatedProfileIds.length
+    ? await getPublicProfiles({ includeUnapproved: Boolean(admin), viewerId: viewer?.id, profileIds: relatedProfileIds })
+    : [];
+  const agencyProfiles = profile.type === "escort" ? relatedProfiles : [];
+  const agencyMembers = profile.type === "agency" ? relatedProfiles : [];
   const facts = metadataFacts(profile).filter((item): item is [string, string] => Boolean(item[1]));
   const tags = getProfileDisplayTags(profile);
   const location = [profile.comuna, profile.city, profile.region].filter(Boolean).join(", ");

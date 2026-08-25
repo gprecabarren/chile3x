@@ -141,13 +141,33 @@ export function readDirectoryFilters(query: DirectoryQuery, pinned?: { region?: 
   };
 }
 
-export async function getPublicProfiles(options: { includeUnapproved?: boolean; viewerId?: string } = {}) {
+type PublicProfileOptions = {
+  includeUnapproved?: boolean;
+  viewerId?: string;
+  type?: ProfileType;
+  city?: string;
+  region?: string;
+  profileIds?: string[];
+  handle?: string;
+  slug?: string;
+};
+
+export async function getPublicProfiles(options: PublicProfileOptions = {}) {
   const db = await getDb();
   const baseQuery = db.select({ profile: profiles, details: profileDetails }).from(profiles)
     .leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id));
-  const rows = options.includeUnapproved
-    ? await baseQuery
-    : await baseQuery.where(eq(profiles.status, "approved"));
+  if (options.profileIds && options.profileIds.length === 0) return [] as PublicProfile[];
+
+  const conditions = [];
+  if (!options.includeUnapproved) conditions.push(eq(profiles.status, "approved"));
+  if (options.type) conditions.push(eq(profiles.type, options.type));
+  if (options.city) conditions.push(eq(profiles.city, options.city));
+  if (options.region) conditions.push(eq(profiles.region, options.region));
+  if (options.profileIds?.length) conditions.push(inArray(profiles.id, options.profileIds));
+  if (options.handle) conditions.push(eq(profiles.handle, options.handle));
+  if (options.slug) conditions.push(eq(profiles.slug, options.slug));
+
+  const rows = conditions.length ? await baseQuery.where(and(...conditions)) : await baseQuery;
   const blockedIds = await getBlockedProfileIds(options.viewerId);
   const visibleRows = rows.filter((row) => !blockedIds.has(row.profile.id));
   const ids = visibleRows.map((row) => row.profile.id);
@@ -214,6 +234,14 @@ export async function getPublicProfiles(options: { includeUnapproved?: boolean; 
     agencyIds: agencyMap.get(profile.id) ?? [],
     memberIds: memberMap.get(profile.id) ?? [],
   }));
+}
+
+export async function getPublicProfileForRoute(segment: string, options: Omit<PublicProfileOptions, "handle" | "slug"> = {}) {
+  const decoded = decodeURIComponent(segment);
+  if (decoded.startsWith("@")) {
+    return (await getPublicProfiles({ ...options, handle: decoded.slice(1).toLowerCase() }))[0] ?? null;
+  }
+  return (await getPublicProfiles({ ...options, slug: decoded }))[0] ?? null;
 }
 
 function readMetadata(value: string | null | undefined): Record<string, string> {
@@ -296,7 +324,7 @@ export async function getCityEscortCounts() {
 export async function getFeaturedProfiles(limit = 6, viewerId?: string) {
   let publicProfiles: PublicProfile[];
   try {
-    publicProfiles = (await getPublicProfiles({ viewerId })).filter((profile) => profile.type === "escort" && !profile.isDemo);
+    publicProfiles = (await getPublicProfiles({ viewerId, type: "escort" })).filter((profile) => !profile.isDemo);
   } catch {
     // The static render test has no D1 binding. In production this query is
     // available, while the empty state remains accurate before launch.

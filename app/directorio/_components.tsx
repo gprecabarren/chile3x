@@ -18,6 +18,7 @@ const visualTone = ["rose", "violet", "blue", "amber", "teal", "plum"];
 const oadBadgeImage = "data:image/jpeg;base64,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";
 
 const angelisNetBadgeImage = "https://static4.dditscdn.com/cob/site/lsl/206878/image/picture/logo.png?vpd6ls";
+const laEstokadaBadgeImage = "https://www.laestokada.cl/foro/uploads/monthly_2019_08/LogoWeb.png.610d962af3641fb72ff0fc47e84fb4ac.png";
 
 function toneFor(value: string) {
   return visualTone[value.split("").reduce((total, character) => total + character.charCodeAt(0), 0) % visualTone.length];
@@ -66,7 +67,7 @@ export async function PublicFooter() {
       </div>
       <div className="public-footer-extras">
         <div><strong>SÍGUENOS</strong><PortalContactLinks placement="footer" /></div>
-        <div className="public-footer-partners"><strong>DIRECTORIOS ASOCIADOS</strong><div className="public-footer-partner-badges"><OadBadge /><AngelisNetBadge /></div></div>
+        <div className="public-footer-partners"><strong>DIRECTORIOS ASOCIADOS</strong><div className="public-footer-partner-badges"><OadBadge /><AngelisNetBadge /><LaEstokadaBadge /></div></div>
       </div>
       <div className="public-footer-bottom"><span>© {new Date().getFullYear()} Chile3X · Solo mayores de 18 años</span><span>Chile · Directorio para adultos</span></div>
     </footer>
@@ -111,6 +112,14 @@ export function AngelisNetBadge() {
     {/* El logo oficial se sirve desde AngelisNET para mantener la insignia vigente. */}
     {/* eslint-disable-next-line @next/next/no-img-element */}
     <img src={angelisNetBadgeImage} alt="Adult Live Sex Cams - AngelisNET" />
+  </a>;
+}
+
+export function LaEstokadaBadge() {
+  return <a className="laestokada-badge" href="https://www.laestokada.cl/foro/" target="_blank" rel="noreferrer" aria-label="Visitar el foro La EstoKada">
+    {/* El logo oficial se sirve desde La EstoKada para conservar la insignia vigente. */}
+    {/* eslint-disable-next-line @next/next/no-img-element */}
+    <img src={laEstokadaBadgeImage} alt="Foro La EstoKada" loading="lazy" />
   </a>;
 }
 

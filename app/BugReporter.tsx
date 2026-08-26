@@ -20,7 +20,8 @@ export function BugReporter() {
 
   useEffect(() => {
     const updateContext = () => setContext({
-      pageUrl: `${window.location.pathname}${window.location.search}`,
+      // Keep the report useful while never persisting URL query parameters such as reset tokens.
+      pageUrl: window.location.pathname,
       pageTitle: document.title,
       deviceType: window.matchMedia("(max-width: 767px)").matches ? "mobile" : "desktop",
       viewport: `${window.innerWidth} × ${window.innerHeight}`,

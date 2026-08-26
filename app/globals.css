@@ -819,9 +819,10 @@ input[type="checkbox"] { border-radius: 4px; }
 .google-preferred-source-google-g { width: 15px; height: 15px; flex: 0 0 15px; }
 .google-preferred-source-header { min-height: 32px; flex: 0 0 auto; padding: 7px 10px; border: 1px solid #48556e; border-radius: 999px; color: #d9e3f4; background: #111827; font-size: 10px; font-weight: 800; letter-spacing: .01em; white-space: nowrap; }
 .google-preferred-source-header:hover, .google-preferred-source-header:focus-visible { border-color: #8394b1; color: #fff; background: #182337; box-shadow: 0 6px 16px rgba(0, 0, 0, .24); transform: translateY(-1px); }
-.google-preferred-source-footer { min-height: 40px; align-self: start; padding: 10px 13px; border: 1px solid #4b5d79; border-radius: 999px; color: #f0f4fa !important; background: #151e2e; font-size: 11px !important; font-weight: 800; line-height: 1; white-space: nowrap; }
+.public-footer-google-row { grid-column: 1 / -1; display: flex; justify-content: flex-start; padding-top: 0; }
+.google-preferred-source-footer { width: min(100%, 238px); min-height: 36px; justify-content: center; align-self: start; padding: 9px 14px; border: 1px solid #4b5d79; border-radius: var(--radius-sm); color: #f0f4fa !important; background: #151e2e; font-size: 10px !important; font-weight: 800; line-height: 1; white-space: nowrap; }
 .google-preferred-source-footer:hover, .google-preferred-source-footer:focus-visible { border-color: #8aa0c3; color: #fff !important; background: #1c2a41; box-shadow: 0 9px 22px rgba(0, 0, 0, .28); transform: translateY(-1px); }
 .mobile-google-preferred-source { margin-top: 5px; padding-top: 11px !important; border-top: 1px solid #344057; color: #dfe8f8 !important; }
 
-@media (max-width: 760px) { .site-header > .google-preferred-source-header { display: none; }.google-preferred-source-footer { width: 100%; box-sizing: border-box; } }
+@media (max-width: 760px) { .site-header > .google-preferred-source-header { display: none; }.google-preferred-source-footer { box-sizing: border-box; } }
 @media (prefers-reduced-motion: reduce) { .region-card-is-selected { animation-duration: .01ms; } }

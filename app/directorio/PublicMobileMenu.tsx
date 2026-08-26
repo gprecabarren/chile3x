@@ -49,7 +49,7 @@ export function PublicMobileMenu({ coverageHref }: PublicMobileMenuProps) {
           <div>
             <p>CHILE3X</p>
             {portalLinks.map(([label, href]) => <Link href={href} onClick={closeMenu} key={href}>{label}</Link>)}
-            <a className="mobile-google-preferred-source" href={preferredSourceUrl} onClick={closeMenu}>Agregar Chile3X como fuente preferida en Google</a>
+            <a className="mobile-google-preferred-source" href={preferredSourceUrl} onClick={closeMenu}>Preferir en Google</a>
           </div>
         </div>
       )}

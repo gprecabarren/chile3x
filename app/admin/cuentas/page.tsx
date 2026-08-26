@@ -58,7 +58,7 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
   return <AdminShell user={admin}><div className="admin-content">
     <AdminPageHeading eyebrow="CUENTAS DEL PORTAL" title="Cuentas y accesos" description="Busca, revisa y administra las cuentas del portal. Desde cada ficha puedes abrir sus datos, sus anuncios y los accesos de recuperación." backHref="/admin" />
     {params.notice && notices[params.notice] && <p className="admin-success" role="status">{notices[params.notice]}</p>}
-    <details className="admin-account-create"><summary><span>Crear cuenta</span><small>Los accesos de tester sólo pueden ser creados desde este panel.</small></summary><div><form action="/api/admin/users" method="post" className="admin-settings-form">
+    <details className="admin-account-create"><summary><span><b>Crear cuenta</b><small>Abre este formulario solo cuando necesites registrar un anunciante o tester.</small></span></summary><div><form action="/api/admin/users" method="post" className="admin-settings-form">
       <label>Nombre visible<input name="display_name" required minLength={2} maxLength={80} autoComplete="nickname" /></label>
       <label>Tipo de cuenta<select name="role" defaultValue="advertiser"><option value="advertiser">Anunciante</option><option value="tester">Tester de calidad</option></select><small>El tester conserva las funciones normales y obtiene el botón privado para reportar errores.</small></label>
       <AccountIdentityFields />

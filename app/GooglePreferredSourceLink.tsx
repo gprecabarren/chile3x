@@ -18,6 +18,15 @@ type GooglePreferredSourceLinkProps = {
   placement: "header" | "footer";
 };
 
+function GoogleColorMark() {
+  return <svg className="google-preferred-source-google-g" aria-hidden="true" viewBox="0 0 18 18" focusable="false">
+    <path fill="#EA4335" d="M17.64 9.205c0-.638-.057-1.252-.164-1.841H9v3.482h4.844a4.14 4.14 0 0 1-1.797 2.716v2.258h2.909c1.702-1.568 2.684-3.878 2.684-6.615Z" />
+    <path fill="#4285F4" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.91-2.258c-.806.54-1.835.859-3.046.859-2.345 0-4.333-1.585-5.043-3.71H.993v2.33A9 9 0 0 0 9 18Z" />
+    <path fill="#FBBC05" d="M3.957 10.711A5.41 5.41 0 0 1 3.675 9c0-.594.102-1.172.282-1.711V4.96H.993A9 9 0 0 0 0 9c0 1.452.348 2.827.993 4.04l2.964-2.329Z" />
+    <path fill="#34A853" d="M9 3.58c1.322 0 2.51.455 3.444 1.348l2.585-2.585C13.463.89 11.426 0 9 0A9 9 0 0 0 .993 4.96l2.964 2.329C4.667 5.165 6.655 3.58 9 3.58Z" />
+  </svg>;
+}
+
 export function GooglePreferredSourceLink({ placement }: GooglePreferredSourceLinkProps) {
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
     const preferredSource = window.__chile3xPreferredSource;
@@ -35,19 +44,16 @@ export function GooglePreferredSourceLink({ placement }: GooglePreferredSourceLi
 
   if (placement === "footer") {
     return (
-      <div className="google-preferred-source-footer">
-        <strong>FUENTE PREFERIDA</strong>
-        <a
-          className="google-preferred-source google-preferred-source-footer-link"
-          href={preferredSourceUrl}
-          onClick={handleClick}
-          aria-label="Agregar Chile3X como fuente preferida en Google"
-        >
-          <span className="google-preferred-source-symbol" aria-hidden="true">+</span>
-          <span>Agregar Chile3X como fuente preferida en Google</span>
-        </a>
-        <small>Opcional. Ayuda a encontrar las noticias de Chile3X en los resultados de Google.</small>
-      </div>
+      <a
+        className="google-preferred-source google-preferred-source-footer"
+        href={preferredSourceUrl}
+        onClick={handleClick}
+        aria-label="Preferir Chile3X en Google"
+        title="Preferir Chile3X en Google"
+      >
+        <GoogleColorMark />
+        <span>Preferir en Google</span>
+      </a>
     );
   }
 
@@ -56,10 +62,10 @@ export function GooglePreferredSourceLink({ placement }: GooglePreferredSourceLi
       className="google-preferred-source google-preferred-source-header"
       href={preferredSourceUrl}
       onClick={handleClick}
-      aria-label="Agregar Chile3X como fuente preferida en Google"
-      title="Agregar Chile3X como fuente preferida en Google"
+      aria-label="Preferir Chile3X en Google"
+      title="Preferir Chile3X en Google"
     >
-      <span className="google-preferred-source-symbol" aria-hidden="true">+</span>
+      <GoogleColorMark />
       <span>Preferir en Google</span>
     </a>
   );

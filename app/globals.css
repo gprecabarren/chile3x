@@ -67,6 +67,8 @@ h1 em, h2 em { color: #ee3d45; font-style: italic; }
 .region-jump select:focus { border-color: #f05a61; box-shadow: 0 0 0 2px rgba(240, 90, 97, .18); }
 .regional-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .region-card { padding: 23px; border: 1px solid var(--line); background: var(--surface); scroll-margin-top: 120px; }
+.region-card-is-selected { animation: region-card-selection 2.6s ease-out both; }
+@keyframes region-card-selection { 0%, 56% { border-color: #ef5a62; background: #231523; box-shadow: 0 0 0 4px rgba(239, 90, 98, .16), 0 17px 36px rgba(0, 0, 0, .25); } 100% { border-color: var(--line); background: var(--surface); box-shadow: none; } }
 .region-card-heading { display: flex; align-items: flex-start; gap: 13px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
 .region-card-heading > span { min-width: 25px; color: #ee4b53; font-size: 10px; font-weight: 800; letter-spacing: .08em; }
 .region-card h3 { margin: -4px 0 5px; color: white; font-family: Georgia, serif; font-size: 25px; font-weight: 400; line-height: 1.03; }
@@ -805,3 +807,4 @@ input[type="checkbox"] { border-radius: 4px; }
 .mobile-google-preferred-source { margin-top: 5px; padding-top: 11px !important; border-top: 1px solid #344057; color: #dfe8f8 !important; }
 
 @media (max-width: 760px) { .site-header > .google-preferred-source-header { display: none; }.google-preferred-source-footer { width: 100%; box-sizing: border-box; } }
+@media (prefers-reduced-motion: reduce) { .region-card-is-selected { animation-duration: .01ms; } }

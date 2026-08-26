@@ -15,8 +15,14 @@ export function RegionJumpSelect({ regions }: { regions: readonly RegionOption[]
     if (!regionId) return;
 
     const target = document.getElementById(regionId);
+    document.querySelector(".region-card-is-selected")?.classList.remove("region-card-is-selected");
+    target?.classList.remove("region-card-is-selected");
+    void target?.getBoundingClientRect();
+    target?.classList.add("region-card-is-selected");
     target?.scrollIntoView({ behavior: "smooth", block: "start" });
     window.history.replaceState(null, "", `#${regionId}`);
+
+    window.setTimeout(() => target?.classList.remove("region-card-is-selected"), 2600);
   };
 
   return (

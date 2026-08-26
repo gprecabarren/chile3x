@@ -21,6 +21,8 @@ const portalLinks = [
   ["Mi cuenta", "/ingresar"],
 ] as const;
 
+const preferredSourceUrl = "https://www.google.com/preferences/source?q=chile3x.cl";
+
 export function PublicMobileMenu({ coverageHref }: PublicMobileMenuProps) {
   const [open, setOpen] = useState(false);
   const closeMenu = () => setOpen(false);
@@ -47,6 +49,7 @@ export function PublicMobileMenu({ coverageHref }: PublicMobileMenuProps) {
           <div>
             <p>CHILE3X</p>
             {portalLinks.map(([label, href]) => <Link href={href} onClick={closeMenu} key={href}>{label}</Link>)}
+            <a className="mobile-google-preferred-source" href={preferredSourceUrl} onClick={closeMenu}>Agregar Chile3X como fuente preferida en Google</a>
           </div>
         </div>
       )}

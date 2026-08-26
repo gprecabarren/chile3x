@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { FloatingWhatsappButton, PortalContactLinks, PublicFooter, ProfileGrid } from "./directorio/_components";
+import { FloatingWhatsappButton, GooglePreferredSourceLink, PortalContactLinks, PublicFooter, ProfileGrid } from "./directorio/_components";
 import { PublicMobileMenu } from "./directorio/PublicMobileMenu";
 import { StoryRail } from "./historias/StoryRail";
 import { cityTotal, regions } from "./locations";
@@ -116,6 +116,7 @@ export default async function Home() {
             <a href="/ingresar">Mi cuenta</a>
           </div>
         </nav>
+        <GooglePreferredSourceLink placement="header" />
         <PortalContactLinks placement="header" />
         <PublicMobileMenu coverageHref="#cobertura" />
         <a className="button button-outline" href="/registro">Publicar perfil</a>

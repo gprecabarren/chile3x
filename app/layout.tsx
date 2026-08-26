@@ -8,6 +8,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { BugReporter } from "./BugReporter";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { socialCardImage, socialCardImageUrl } from "@/lib/seo";
+import Script from "next/script";
 
 export const dynamic = "force-dynamic";
 
@@ -69,7 +70,21 @@ export default async function RootLayout({
 
   return (
     <html lang="es">
-      <head><meta name="rating" content="adult" /></head>
+      <head>
+        <meta name="rating" content="adult" />
+        <Script id="google-preferred-source-bootstrap" strategy="beforeInteractive">
+          {`window.PREFERRED_SOURCE = window.PREFERRED_SOURCE || [];
+window.PREFERRED_SOURCE.push(function(preferredSource) {
+  window.__chile3xPreferredSource = preferredSource;
+  preferredSource.init({ theme: "dark", lang: "es-419" });
+});`}
+        </Script>
+        <Script
+          id="google-preferred-source-library"
+          src="https://news.google.com/swg/js/v1/publisher.js"
+          strategy="beforeInteractive"
+        />
+      </head>
       <body>
         {!maintenanceEnabled || admin ? children : <MaintenanceScreen />}
         <AgeGate />

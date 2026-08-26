@@ -5,6 +5,7 @@ import { FloatingWhatsappButton, GooglePreferredSourceLink, PortalContactLinks, 
 import { PublicMobileMenu } from "./directorio/PublicMobileMenu";
 import { StoryRail } from "./historias/StoryRail";
 import { cityTotal, regions } from "./locations";
+import { RegionJumpSelect } from "./RegionJumpSelect";
 import { getCityEscortCounts, getFeaturedProfiles } from "@/lib/directory";
 import { getActiveStories } from "@/lib/stories";
 import { getCurrentUser } from "@/lib/auth";
@@ -168,22 +169,12 @@ export default async function Home() {
             <p className="eyebrow">COBERTURA TERRITORIAL</p>
             <h2>Todas las regiones,<br /><em>ciudades iniciales.</em></h2>
           </div>
-          <p>
-            Explora las regiones ordenadas por su número oficial. Este directorio muestra las {cityTotal} ciudades y comunas iniciales definidas para el lanzamiento, agrupadas por región.
-          </p>
         </div>
 
-        <nav className="region-index" aria-label="Índice de regiones">
-          {regions.map((region, index) => (
-            <a href={`#${region.id}`} key={region.id}>
-              <span>{region.numeral}</span>
-              Región {region.numeral} · {region.shortTitle}
-            </a>
-          ))}
-        </nav>
+        <RegionJumpSelect regions={regions} />
 
         <div className="regional-grid">
-          {regions.map((region, index) => (
+          {regions.map((region) => (
             <section className="region-card" id={region.id} key={region.id}>
               <div className="region-card-heading">
                 <span>{region.numeral}</span>
@@ -201,7 +192,7 @@ export default async function Home() {
         <p className="directory-note">La disponibilidad de perfiles se activará progresivamente por territorio tras la revisión de cada publicación.</p>
         <form className="home-search home-search-after-coverage" action="/escorts" method="get" role="search">
           <label htmlFor="home-profile-search">Buscar escort por nombre</label>
-          <div><input id="home-profile-search" name="nombre" type="search" minLength={2} maxLength={80} placeholder="Ej. Tomás, Valentina..." /><button type="submit">Buscar</button></div>
+          <div><input id="home-profile-search" name="nombre" type="search" minLength={2} maxLength={80} placeholder="Ej. Valentina, Camila..." /><button type="submit">Buscar</button></div>
         </form>
       </section>
 

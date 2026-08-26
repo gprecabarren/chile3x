@@ -196,7 +196,6 @@ export default function TermsPage() {
             <li><a href="https://www.bcn.cl/leychile/navegar?idNorma=141599" target="_blank" rel="noreferrer">Ley N.º 19.628 sobre protección de la vida privada</a></li>
             <li><a href="https://www.bcn.cl/leychile/navegar?idNorma=1209272" target="_blank" rel="noreferrer">Ley N.º 21.719 sobre protección de datos personales</a></li>
             <li><a href="https://www.bcn.cl/leychile/navegar?idNorma=61438" target="_blank" rel="noreferrer">Ley N.º 19.496 sobre protección de los derechos de los consumidores</a></li>
-            <li><a href="https://www.bcn.cl/leychile/navegar?idNorma=1984" target="_blank" rel="noreferrer">Código Penal de Chile</a></li>
           </ul>
         </div>
       </section>

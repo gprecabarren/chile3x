@@ -8,7 +8,7 @@ import { ProfileViewTracker } from "../ProfileViewTracker";
 import { getCityPath, getProfileDisplayTags, getPublicProfileForRoute, getPublicProfiles, type PublicProfile } from "@/lib/directory";
 import { getAvailabilityStatus, profilePublicPath, readAvailability, readProfilePrices } from "@/lib/profile";
 import { getActiveStories } from "@/lib/stories";
-import { getCurrentAdmin, getCurrentUser } from "@/lib/auth";
+import { getCurrentAdmin, getCurrentUser, safeAdminReturnTo } from "@/lib/auth";
 import { getProfileEngagement } from "@/lib/profile-interactions";
 import { ProfileEngagementActions } from "../ProfileEngagementActions";
 import { ProfileReviews } from "../ProfileReviews";
@@ -20,10 +20,11 @@ import { ProfileSafetyActions } from "../ProfileSafetyActions";
 import { TrackedContactLink } from "../TrackedContactLink";
 import { safeJsonLd } from "@/lib/json-ld";
 import { socialCardImageUrl } from "@/lib/seo";
+import { formatRegionName } from "@/app/locations";
 
 export const dynamic = "force-dynamic";
 
-type ProfilePageProps = { params: Promise<{ slug: string }> };
+type ProfilePageProps = { params: Promise<{ slug: string }>; searchParams: Promise<{ return_to?: string }> };
 
 function profileTypeLabel(type: PublicProfile["type"]) {
   return type === "escort" ? "Escort" : type === "agency" ? "Agencia" : "Arriendo";
@@ -38,7 +39,7 @@ function profileSeoTitle(profile: PublicProfile) {
 function profileSeoDescription(profile: PublicProfile) {
   const summary = profile.shortDescription.trim().replace(/\s+/g, " ");
   const type = profile.type === "escort" ? "escort" : profile.type === "agency" ? "agencia de escorts" : "arriendo para escorts";
-  return `${profile.displayName}: ${type} en ${profile.city}, ${profile.region}.${summary ? ` ${summary}` : ""}`.slice(0, 160);
+  return `${profile.displayName}: ${type} en ${profile.city}, ${formatRegionName(profile.region)}.${summary ? ` ${summary}` : ""}`.slice(0, 160);
 }
 
 function phoneDigits(value: string | null) {
@@ -113,13 +114,16 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
   };
 }
 
-export default async function PublicProfilePage({ params }: ProfilePageProps) {
+export default async function PublicProfilePage({ params, searchParams }: ProfilePageProps) {
   const { slug } = await params;
-  const [admin, viewer] = await Promise.all([getCurrentAdmin(), getCurrentUser()]);
+  const [admin, viewer, query] = await Promise.all([getCurrentAdmin(), getCurrentUser(), searchParams]);
   const profile = await getPublicProfileForRoute(slug, { includeUnapproved: Boolean(admin), viewerId: viewer?.id });
   if (!profile) notFound();
   if (!decodeURIComponent(slug).startsWith("@") && profile.handle) redirect(profilePublicPath(profile));
   const profileRouteValue = profile.handle ? `@${profile.handle}` : profile.slug;
+  const requestedReturnTo = query.return_to ?? "";
+  const adminReturnTo = requestedReturnTo.startsWith("/admin/") ? safeAdminReturnTo(requestedReturnTo) : "/admin/perfiles";
+  const previewPath = `${profilePublicPath(profile)}?return_to=${encodeURIComponent(adminReturnTo)}`;
   const isAdminPreview = Boolean(admin) && profile.status !== "approved";
   const relatedProfileIds = profile.type === "agency" ? profile.memberIds : profile.agencyIds;
   const relatedProfiles = relatedProfileIds.length
@@ -129,8 +133,8 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
   const agencyMembers = profile.type === "agency" ? relatedProfiles : [];
   const facts = metadataFacts(profile).filter((item): item is [string, string] => Boolean(item[1]));
   const tags = getProfileDisplayTags(profile);
-  const location = [profile.comuna, profile.city, profile.region].filter(Boolean).join(", ");
-  const schema = { "@context": "https://schema.org", "@type": profile.type === "agency" ? "Organization" : profile.type === "rental" ? "Accommodation" : "Person", name: profile.displayName, description: profileSeoDescription(profile), address: { "@type": "PostalAddress", addressLocality: profile.city, addressRegion: profile.region, addressCountry: "CL" } };
+  const location = [profile.comuna, profile.city, formatRegionName(profile.region)].filter(Boolean).join(", ");
+  const schema = { "@context": "https://schema.org", "@type": profile.type === "agency" ? "Organization" : profile.type === "rental" ? "Accommodation" : "Person", name: profile.displayName, description: profileSeoDescription(profile), address: { "@type": "PostalAddress", addressLocality: profile.city, addressRegion: formatRegionName(profile.region), addressCountry: "CL" } };
   const contacts = contactLinks(profile);
   const contactButtons = [
     ["whatsapp", contacts.whatsapp, "WhatsApp", "contact-whatsapp"],
@@ -169,7 +173,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
     <DirectoryShell>
       {profile.status === "approved" && !profile.isDemo && <ProfileViewTracker profileId={profile.id} />}
       {profile.status === "approved" && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(schema) }} />}
-      {admin && <section className="admin-profile-review-bar"><Link className="admin-profile-back-link" href="/admin/perfiles">← Volver a perfiles</Link><div><p>{isAdminPreview ? "VISTA DE MODERACIÓN" : "ADMINISTRACIÓN DEL AVISO"}</p><h2>{isAdminPreview ? "Este aviso no es público todavía" : "Gestiona este aviso publicado"}</h2><span>Revísalo como lo ve el público y actualiza su estado, verificación o prioridad en el inicio. Los documentos privados nunca aparecen en la ficha pública.</span><Link className="admin-profile-media-link" href={`/admin/medios?perfil=${encodeURIComponent(profile.id)}`}>Revisar fotos y videos de este anuncio</Link></div><form action={`/api/admin/profiles/${profile.id}/status`} method="post" className="admin-profile-review-form"><input type="hidden" name="return_to" value={`/perfil/${profile.slug}`} /><label>Publicación<select name="status" defaultValue={profile.status}><option value="draft">Borrador</option><option value="pending">En revisión</option><option value="approved">Aprobar y publicar</option><option value="paused">Pausado</option><option value="rejected">Requiere cambios</option><option value="expired">Vencido</option></select></label><label>Perfil verificado<select name="verification_status" defaultValue={profile.verificationStatus}><option value="unreviewed">No verificado</option><option value="in_review">Verificación en curso</option><option value="reviewed">Verificado ✓</option></select></label><label>Revisión médica<select name="health_review_status" defaultValue={profile.healthReviewStatus}><option value="not_requested">No solicitada</option><option value="in_review">En revisión</option><option value="reviewed">Revisada</option></select></label><label className="admin-featured-toggle"><input name="is_featured" type="checkbox" defaultChecked={profile.isFeatured} />Destacar en el inicio</label><button className="button button-primary" type="submit">Guardar decisión</button></form></section>}
+      {admin && <section className="admin-profile-review-bar"><Link className="admin-profile-back-link" href={adminReturnTo}>← Volver a perfiles</Link><div><p>{isAdminPreview ? "VISTA DE MODERACIÓN" : "ADMINISTRACIÓN DEL AVISO"}</p><h2>{isAdminPreview ? "Este aviso no es público todavía" : "Gestiona este aviso publicado"}</h2><span>Revísalo como lo ve el público y actualiza su estado, verificación o prioridad en el inicio. Los documentos privados nunca aparecen en la ficha pública.</span><Link className="admin-profile-media-link" href={`/admin/medios?perfil=${encodeURIComponent(profile.id)}`}>Revisar fotos y videos de este anuncio</Link></div><form action={`/api/admin/profiles/${profile.id}/status`} method="post" className="admin-profile-review-form"><input type="hidden" name="return_to" value={previewPath} /><label>Publicación<select name="status" defaultValue={profile.status}><option value="draft">Borrador</option><option value="pending">En revisión</option><option value="approved">Aprobar y publicar</option><option value="paused">Pausado</option><option value="rejected">Requiere cambios</option><option value="expired">Vencido</option></select></label><label>Perfil verificado<select name="verification_status" defaultValue={profile.verificationStatus}><option value="unreviewed">No verificado</option><option value="in_review">Verificación en curso</option><option value="reviewed">Verificado ✓</option></select></label><label>Revisión médica<select name="health_review_status" defaultValue={profile.healthReviewStatus}><option value="not_requested">No solicitada</option><option value="in_review">En revisión</option><option value="reviewed">Revisada</option></select></label><label className="admin-featured-toggle"><input name="is_featured" type="checkbox" defaultChecked={profile.isFeatured} />Destacar en el inicio</label><button className="button button-primary" type="submit">Guardar decisión</button></form></section>}
       {admin && verificationDocuments.length > 0 && <section className="admin-private-documents"><strong>Documentos privados de verificación</strong>{verificationDocuments.map((document) => <a key={document.kind} href={`/api/perfiles/${profile.id}/documentos/${document.kind}`}>{document.kind === "identity" ? "Descargar carnet" : "Descargar examen médico"}</a>)}</section>}
       <section className="profile-page-shell">
         <div className={`profile-page-visual${coverImage ? " has-image" : ""}`}>{coverImage ? <Image className="profile-page-cover" src={coverImage.url} alt={coverImage.altText ?? `Foto de ${profile.displayName}`} fill priority unoptimized sizes="(max-width: 900px) 100vw, 45vw" /> : <span>{profile.displayName.slice(0, 1)}</span>}{stories.length > 0 && <span className="profile-story-photo-marker" aria-hidden="true" />}</div>

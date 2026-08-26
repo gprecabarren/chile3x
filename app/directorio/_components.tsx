@@ -5,7 +5,7 @@ import { getCityPath, getProfileDisplayTags, type PublicProfile } from "@/lib/di
 import { profilePublicPath, readProfilePrices } from "@/lib/profile";
 import { getPortalContacts, getPortalWhatsappLink } from "@/lib/site-contacts";
 import { getSiteSettings } from "@/lib/site-settings";
-import { regions } from "@/app/locations";
+import { formatRegionName, regions } from "@/app/locations";
 import { PublicMobileMenu } from "./PublicMobileMenu";
 
 const typeLabel = {
@@ -87,7 +87,12 @@ export function PortalContactIcon({ kind }: { kind: "whatsapp" | "telegram" | "i
   if (kind === "email") return <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" strokeWidth="2" /><path d="m4.5 7 7.5 5.5L19.5 7" fill="none" stroke="currentColor" strokeWidth="2" /></svg>;
   if (kind === "call") return <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7.1 3.8 9.8 3c.65-.2 1.31.16 1.53.8l1.04 3.09c.19.57.02 1.2-.44 1.59l-1.38 1.16a13.9 13.9 0 0 0 3.83 3.83l1.16-1.38c.39-.46 1.02-.63 1.59-.44l3.09 1.04c.64.22 1 .88.8 1.53l-.8 2.7c-.2.66-.8 1.1-1.49 1.08C10.4 18.71 5.29 13.6 4.02 5.3c-.1-.68.32-1.3.99-1.5Z" fill="currentColor" /></svg>;
   if (kind === "videocall") return <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="6" width="13" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="2" /><path d="m16 10 5-3v10l-5-3Z" fill="currentColor" /></svg>;
-  return <span className="arsmate-icon" aria-hidden="true">{kind === "onlyfans" ? "OF" : "A"}</span>;
+  if (kind === "arsmate") return <>
+    {/* El recurso se sirve desde Arsmate para conservar su marca oficial vigente. */}
+    {/* eslint-disable-next-line @next/next/no-img-element */}
+    <img className="arsmate-brand-mark" src="https://arsmate.com/LOGO-CELESTE.png" alt="" />
+  </>;
+  return <span className="arsmate-icon" aria-hidden="true">OF</span>;
 }
 
 export async function FloatingWhatsappButton() {
@@ -151,7 +156,7 @@ export function ProfileCard({ profile }: { profile: PublicProfile }) {
           </div>
         </div>
         <p className="public-profile-description">{profile.shortDescription}</p>
-        <div className="public-profile-meta"><span>{profile.region}</span>{mainPrice && <strong>{mainPrice.label} · ${mainPrice.amount.toLocaleString("es-CL")} {mainPrice.currency}</strong>}</div>
+        <div className="public-profile-meta"><span>{formatRegionName(profile.region)}</span>{mainPrice && <strong>{mainPrice.label} · ${mainPrice.amount.toLocaleString("es-CL")} {mainPrice.currency}</strong>}</div>
       </div>
     </article>
   );

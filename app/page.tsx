@@ -48,7 +48,7 @@ const directorySchema = {
   itemListElement: regions.map((region, index) => ({
     "@type": "ListItem",
     position: index + 1,
-    name: [region.title, region.cities.join(", ")].join(": "),
+    name: [region.displayTitle, region.cities.join(", ")].join(": "),
   })),
 };
 
@@ -168,15 +168,15 @@ export default async function Home() {
             <h2>Todas las regiones,<br /><em>ciudades iniciales.</em></h2>
           </div>
           <p>
-            Recorre Chile de norte a sur. Este directorio muestra las {cityTotal} ciudades y comunas iniciales definidas para el lanzamiento, agrupadas por región.
+            Explora las regiones ordenadas por su número oficial. Este directorio muestra las {cityTotal} ciudades y comunas iniciales definidas para el lanzamiento, agrupadas por región.
           </p>
         </div>
 
         <nav className="region-index" aria-label="Índice de regiones">
           {regions.map((region, index) => (
             <a href={`#${region.id}`} key={region.id}>
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              {region.shortTitle}
+              <span>{region.numeral}</span>
+              Región {region.numeral} · {region.shortTitle}
             </a>
           ))}
         </nav>
@@ -185,13 +185,13 @@ export default async function Home() {
           {regions.map((region, index) => (
             <section className="region-card" id={region.id} key={region.id}>
               <div className="region-card-heading">
-                <span>{String(index + 1).padStart(2, "0")}</span>
+                <span>{region.numeral}</span>
                 <div>
-                  <h3>{region.title}</h3>
+                  <h3>{region.displayTitle}</h3>
                   <p>{region.cities.length === 1 ? "1 ciudad" : `${region.cities.length} ciudades`}</p>
                 </div>
               </div>
-              <ul className="commune-list" aria-label={`Ciudades de ${region.title}`}>
+              <ul className="commune-list" aria-label={`Ciudades de ${region.displayTitle}`}>
                 {region.cities.map((city) => <li key={city}><Link href={`/escorts/${city.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}>{city} <span className="city-count">({cityEscortCounts.get(city) ?? 0})</span></Link></li>)}
               </ul>
             </section>

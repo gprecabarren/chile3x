@@ -2,10 +2,12 @@ import { count, desc, eq, inArray } from "drizzle-orm";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
-import { profileVerificationFiles, profiles, users } from "@/db/schema";
-import { getCurrentAdmin } from "@/lib/auth";
+import { profileDetails, profileVerificationFiles, profiles, users } from "@/db/schema";
+import { getCurrentAdmin, safeAdminReturnTo } from "@/lib/auth";
 import { AdminPageHeading, AdminShell } from "../_components";
 import { profilePublicPath } from "@/lib/profile";
+import { adminCallHref, adminWhatsappHref } from "@/lib/admin-contact";
+import { formatRegionName } from "@/app/locations";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +45,12 @@ type AdminProfilesSearchParams = {
   salud?: string;
   tipo?: string;
   ciudad?: string;
+  return_to?: string;
+  notice?: string;
+};
+
+const notices: Record<string, string> = {
+  profile_created: "El aviso fue creado para esta cuenta. Puedes revisarlo y cambiar sus estados desde esta lista.",
 };
 
 function readFilter(value: string | undefined, allowed: string[]) {
@@ -69,9 +77,12 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
     verificationStatus: profiles.verificationStatus,
     healthReviewStatus: profiles.healthReviewStatus,
     ownerEmail: users.email,
+    contactWhatsapp: profiles.contactWhatsapp,
+    contactPhone: profileDetails.contactPhone,
     updatedAt: profiles.updatedAt,
   }).from(profiles)
     .innerJoin(users, eq(profiles.ownerId, users.id))
+    .leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id))
     .orderBy(desc(profiles.updatedAt));
   const [pending, verificationFiles] = await Promise.all([
     db.select({ total: count() }).from(profiles).where(eq(profiles.status, "pending")).then((result) => result[0]),
@@ -86,10 +97,13 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
   const health = readFilter(params.salud, ["not_requested", "in_review", "reviewed"]);
   const type = readFilter(params.tipo, ["escort", "agency", "rental"]);
   const city = (params.ciudad ?? "").trim().slice(0, 80);
+  const requestedReturnTo = params.return_to ?? "";
+  const profileListReturnTo = requestedReturnTo.startsWith("/admin/cuentas/") ? safeAdminReturnTo(requestedReturnTo) : "/admin";
   const returnToParams = new URLSearchParams();
   for (const [key, value] of [["q", params.q], ["estado", status], ["verificacion", verification], ["salud", health], ["tipo", type], ["ciudad", city]] as const) {
     if (value) returnToParams.set(key, value);
   }
+  if (requestedReturnTo.startsWith("/admin/cuentas/")) returnToParams.set("return_to", profileListReturnTo);
   const adminReturnTo = returnToParams.size ? `/admin/perfiles?${returnToParams.toString()}` : "/admin/perfiles";
   const cities = [...new Set(rows.map((row) => row.city))].sort((left, right) => left.localeCompare(right, "es-CL"));
   const filteredRows = rows.filter((profile) => {
@@ -116,8 +130,9 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
           eyebrow="MODERACIÓN GLOBAL"
           title="Perfiles y publicaciones"
           description="Encuentra, filtra y revisa los avisos antes de publicarlos. Los documentos opcionales de verificación se mantienen privados y se descargan desde esta tabla o la ficha administrativa."
-          backHref="/admin"
+          backHref={profileListReturnTo}
         />
+        {params.notice && notices[params.notice] && <p className="admin-success" role="status">{notices[params.notice]}</p>}
         {pendingCount > 0 && <section className="admin-review-alert" role="status"><div><p>REVISIÓN PENDIENTE</p><h2>{pendingCount} {pendingCount === 1 ? "aviso requiere" : "avisos requieren"} tu aprobación</h2><span>Actualiza sus estados directamente en esta tabla o abre la ficha si necesitas revisar el perfil completo.</span></div><Link className="button button-primary" href="/admin/perfiles?estado=pending">Revisar ahora</Link></section>}
         <form className="admin-profile-filters" method="get" role="search">
           <label className="admin-filter-search">Buscar por perfil, correo, ciudad o tipo<input name="q" type="search" defaultValue={q} placeholder="Ej. tomas@correo.cl o Concepción" /></label>
@@ -138,14 +153,17 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
           <section className="admin-profile-list" aria-label="Perfiles para moderar">
             {filteredRows.map((profile) => {
               const documents = documentsByProfile.get(profile.id) ?? [];
+              const profilePreviewHref = `${profilePublicPath(profile)}?return_to=${encodeURIComponent(adminReturnTo)}`;
+              const whatsappHref = adminWhatsappHref(profile.contactWhatsapp ?? profile.contactPhone, profile.displayName);
+              const callHref = adminCallHref(profile.contactPhone ?? profile.contactWhatsapp);
               return <article className="admin-profile-card" key={profile.id}>
                 <header>
                   <div>
                     <p className="eyebrow">{profileTypeLabel[profile.type] ?? profile.type}</p>
                     <h2>{profile.displayName}</h2>
-                    <p>{profile.city}, {profile.region}</p>
+                    <p>{profile.city}, {formatRegionName(profile.region)}</p>
                   </div>
-                  <div className="admin-profile-card-links"><Link className="button button-public-preview" href={profilePublicPath(profile)} target="_blank">Revisar perfil</Link><Link className="button button-outline" href={`/admin/medios?perfil=${encodeURIComponent(profile.id)}`}>Fotos y videos</Link></div>
+                  <div className="admin-profile-card-links"><Link className="button button-public-preview" href={profilePreviewHref} target="_blank">Revisar perfil</Link><Link className="button button-outline" href={`/admin/medios?perfil=${encodeURIComponent(profile.id)}`}>Fotos y videos</Link>{whatsappHref && <a className="button contact-whatsapp" href={whatsappHref} target="_blank" rel="noreferrer">WhatsApp</a>}{callHref && <a className="button contact-call" href={callHref}>Llamar</a>}</div>
                 </header>
                 <dl className="admin-profile-card-owner"><div><dt>Dueño</dt><dd>{profile.ownerEmail}</dd></div><div><dt>Usuario del anuncio</dt><dd>{profile.handle ? `@${profile.handle}` : "Sin usuario público"}</dd></div></dl>
                 <form className="admin-profile-card-review" action={`/api/admin/profiles/${profile.id}/status`} method="post">

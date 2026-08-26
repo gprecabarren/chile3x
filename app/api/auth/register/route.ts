@@ -8,6 +8,7 @@ import { readAccountIdentity } from "@/lib/account-data";
 import { encodeRegistrationState, registrationStateCookie, registrationStateFromForm } from "@/lib/registration-state";
 import { TURNSTILE_AUTH_REGISTER_ACTION } from "@/lib/turnstile";
 import { verifyTurnstile } from "@/lib/turnstile-server";
+import { MIN_PASSWORD_LENGTH } from "@/lib/password-policy";
 
 function redirectWithError(request: Request, error: string, formData?: FormData) {
   const url = new URL("/registro", request.url);
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
     if (displayName.length < 2) return redirectWithError(request, "display_name", formData);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return redirectWithError(request, "email", formData);
     if (!identity) return redirectWithError(request, "identity", formData);
-    if (password.length < 12) return redirectWithError(request, "password", formData);
+    if (password.length < MIN_PASSWORD_LENGTH) return redirectWithError(request, "password", formData);
     if (password !== passwordConfirmation) return redirectWithError(request, "password_mismatch", formData);
 
     stage = "lookup";

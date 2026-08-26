@@ -4,6 +4,7 @@ import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin, hashPassword } from "@/lib/auth";
 import { readAccountIdentity } from "@/lib/account-data";
+import { MIN_PASSWORD_LENGTH } from "@/lib/password-policy";
 
 function redirectWithNotice(request: Request, notice: string) {
   const url = new URL("/admin/cuentas", request.url);
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
   const password = formValue(formData, "password");
   const identity = readAccountIdentity(formData);
 
-  if (formData.get("adult_verified") !== "yes" || displayName.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < 12 || !identity) {
+  if (formData.get("adult_verified") !== "yes" || displayName.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < MIN_PASSWORD_LENGTH || !identity) {
     return redirectWithNotice(request, "invalid");
   }
 

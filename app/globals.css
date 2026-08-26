@@ -733,3 +733,55 @@ input[type="checkbox"] { border-radius: 4px; }
 @media (max-width: 620px) { .profile-public-gallery-manager { grid-template-columns: 1fr; }.profile-public-gallery-manager > label { justify-self: start; }.profile-submission-confirmation { padding: 24px 20px; }.profile-submission-confirmation h2 { font-size: 29px; }.admin-media-profile-group { padding: 18px; }.admin-media-profile-group > header { align-items: flex-start; flex-direction: column; }.admin-media-profile-group header > div:last-child { justify-content: flex-start; } }
 @media (max-width: 620px) { .privacy-consent { right: 12px; bottom: 12px; width: calc(100% - 24px); padding: 21px 18px; }.privacy-consent h2 { font-size: 28px; }.privacy-consent-actions .button { flex: 1 1 160px; } }
 @media (max-width: 620px) { .legal-page { width: min(100% - 32px, 980px); padding-top: 48px; }.legal-page header { margin-bottom: 25px; padding-bottom: 24px; }.legal-page h1 { font-size: clamp(38px, 12vw, 54px); }.legal-summary p { font-size: 14px; }.legal-index { padding: 20px 18px; }.legal-index ol { grid-template-columns: 1fr; gap: 7px; }.legal-content section { padding: 25px 0; }.legal-content h2 { font-size: 24px; }.legal-content h3 { font-size: 16px; }.legal-content p, .legal-content ul, .legal-content ol { font-size: 13px; }.legal-page aside { padding: 17px 18px; } }
+
+/* Cuentas administrativas: creación opcional y acciones que no fuerzan ancho horizontal. */
+.admin-account-create { margin-bottom: 28px; overflow: hidden; border: 1px solid #30394b; background: #111622; }
+.admin-account-create > summary { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 18px 20px; color: #fff; cursor: pointer; list-style: none; }
+.admin-account-create > summary::-webkit-details-marker { display: none; }
+.admin-account-create > summary::after { content: "+"; display: grid; width: 28px; height: 28px; place-items: center; border: 1px solid #66718a; border-radius: 50%; color: #fff; font-size: 20px; line-height: 1; }
+.admin-account-create[open] > summary::after { content: "−"; }
+.admin-account-create > summary span { font-size: 16px; font-weight: 800; }
+.admin-account-create > summary small { color: #aeb8c8; font-size: 11px; line-height: 1.45; text-align: right; }
+.admin-account-create > div { padding: 0 20px 20px; border-top: 1px solid #293244; }
+.admin-account-create .admin-settings-form { max-width: 760px; margin-top: 20px; }
+.admin-account-card, .admin-account-card header, .admin-account-card dl, .admin-account-card-actions, .admin-account-owned-profiles article, .admin-profile-card header, .admin-profile-card-links { min-width: 0; }
+.admin-account-card-actions, .admin-profile-card-links { display: flex; flex-wrap: wrap; gap: 8px; }
+.admin-account-card-actions form { margin: 0; }
+.admin-account-card-actions .button, .admin-profile-card-links .button { min-width: 0; white-space: nowrap; }
+.admin-account-detail-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr); gap: 20px; align-items: start; }
+.admin-account-details-form, .admin-account-password-actions { width: auto; max-width: none; min-width: 0; }
+.admin-account-password-actions { display: grid; gap: 17px; padding: 27px; border: 1px solid #30394b; background: #111622; }
+.admin-account-password-actions h2 { margin: 4px 0 8px; color: #fff; font-size: 27px; }
+.admin-account-password-actions p:not(.eyebrow) { margin: 0; color: #b7c1d0; font-size: 12px; line-height: 1.55; }
+.admin-password-field { display: grid; gap: 8px; min-width: 0; }
+.admin-password-field > span { color: #e5e9f1; font-size: 12px; font-weight: 800; }
+.admin-password-field > div { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; min-width: 0; }
+.admin-password-field input { width: 100%; min-width: 0; }
+.admin-password-field small { color: #aeb8c8; font-size: 11px; line-height: 1.45; }
+.admin-password-field > .button { margin-top: 4px; }
+.admin-account-owned-profiles { display: grid; gap: 17px; margin-top: 26px; padding: 27px; border: 1px solid #30394b; background: #111622; }
+.admin-account-owned-profiles h2 { margin: 4px 0 0; color: #fff; font-size: 29px; }
+.admin-account-owned-profiles > div:last-child { display: grid; gap: 10px; }
+.admin-account-owned-profiles article { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; padding: 16px; border: 1px solid #344056; background: #0d121d; }
+.admin-account-owned-profiles article h3 { margin: 8px 0 4px; color: #fff; font-size: 20px; }.admin-account-owned-profiles article p { margin: 0; color: #b7c0cf; font-size: 12px; }
+.admin-account-owned-profiles article > div:last-child { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Contacto público: un nombre largo y las plataformas no rompen la caja. */
+.profile-contact-box, .profile-contact-heading, .profile-contact-group, .profile-contact-actions { min-width: 0; }
+.profile-contact-heading h2 { overflow-wrap: anywhere; word-break: break-word; }
+.contact-instagram { border-color: transparent !important; color: #fff !important; background: radial-gradient(circle at 30% 107%, #fdf497 0 5%, #fd5949 42%, #d6249f 67%, #285aeb 100%) !important; }
+.contact-arsmate { min-width: 78px !important; padding: 7px 10px !important; border-color: #36c4df !important; background: #09202a !important; }
+.arsmate-brand-mark { display: block; width: 58px; height: 22px; object-fit: contain; }
+
+@media (max-width: 820px) {
+  .admin-account-detail-layout { grid-template-columns: 1fr; }
+  .admin-account-create > summary { grid-template-columns: minmax(0, 1fr) auto; }.admin-account-create > summary small { grid-column: 1 / 2; text-align: left; }
+  .profile-contact-box { grid-template-columns: 1fr; }.profile-contact-actions { justify-content: flex-start; }
+}
+@media (max-width: 560px) {
+  .admin-account-create > summary, .admin-account-create > div { padding-right: 15px; padding-left: 15px; }
+  .admin-password-field > div { grid-template-columns: 1fr 1fr; }.admin-password-field > div input { grid-column: 1 / -1; }
+  .admin-account-owned-profiles, .admin-account-password-actions { padding: 19px; }
+  .admin-account-owned-profiles article { align-items: flex-start; flex-direction: column; }
+  .admin-account-card-actions .button, .admin-account-card-actions form { flex: 1 1 132px; }.admin-account-card-actions form .button { width: 100%; }
+}

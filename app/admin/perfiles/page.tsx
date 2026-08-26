@@ -30,6 +30,12 @@ const healthReviewLabel: Record<string, string> = {
   reviewed: "Revisada",
 };
 
+const profileTypeLabel: Record<string, string> = {
+  escort: "Escort",
+  agency: "Agencia",
+  rental: "Arriendo",
+};
+
 type AdminProfilesSearchParams = {
   q?: string;
   estado?: string;
@@ -129,28 +135,30 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
             <p>Los avisos creados por anunciantes llegarán aquí como borradores o pendientes de revisión.</p>
           </section>
         ) : (
-          <section className="admin-table-wrap">
-            <table className="admin-table admin-profile-table">
-              <thead>
-                <tr><th>Perfil</th><th>Ubicación</th><th>Dueño</th><th>Publicación</th><th>Verificación</th><th>Revisión médica</th><th>Acciones rápidas</th></tr>
-              </thead>
-              <tbody>
-                {filteredRows.map((profile) => {
-                  const reviewFormId = `profile-review-${profile.id}`;
-                  const documents = documentsByProfile.get(profile.id) ?? [];
-                  return <tr key={profile.id}>
-                    <td><strong>{profile.displayName}</strong><small>{profile.type}</small></td>
-                    <td>{profile.city}, {profile.region}</td>
-                    <td>{profile.ownerEmail}</td>
-                    <td><select form={reviewFormId} name="status" defaultValue={profile.status} aria-label={`Publicación de ${profile.displayName}`}>{Object.entries(statusLabel).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></td>
-                    <td><select form={reviewFormId} name="verification_status" defaultValue={profile.verificationStatus} aria-label={`Verificación de ${profile.displayName}`}>{Object.entries(verificationLabel).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></td>
-                    <td><select form={reviewFormId} name="health_review_status" defaultValue={profile.healthReviewStatus} aria-label={`Revisión médica de ${profile.displayName}`}>{Object.entries(healthReviewLabel).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></td>
-                    <td><div className="admin-profile-row-actions"><form id={reviewFormId} action={`/api/admin/profiles/${profile.id}/status`} method="post"><input type="hidden" name="return_to" value={adminReturnTo} /><button className="button button-primary" type="submit">Guardar estados</button></form><Link className="button button-public-preview" href={profilePublicPath(profile)} target="_blank">Revisar perfil</Link><Link className="button button-outline" href={`/admin/medios?perfil=${encodeURIComponent(profile.id)}`}>Revisar fotos y videos</Link><div className="admin-profile-document-links">{documents.length > 0 ? documents.map((kind) => <a key={kind} href={`/api/perfiles/${profile.id}/documentos/${kind}`}>{kind === "identity" ? "Carnet" : "Examen médico"}</a>) : <small>Sin documentos privados adjuntos.</small>}</div></div></td>
-                  </tr>;
-                })}
-                {filteredRows.length === 0 && <tr><td colSpan={7} className="admin-no-results">No hay perfiles que coincidan con estos filtros.</td></tr>}
-              </tbody>
-            </table>
+          <section className="admin-profile-list" aria-label="Perfiles para moderar">
+            {filteredRows.map((profile) => {
+              const documents = documentsByProfile.get(profile.id) ?? [];
+              return <article className="admin-profile-card" key={profile.id}>
+                <header>
+                  <div>
+                    <p className="eyebrow">{profileTypeLabel[profile.type] ?? profile.type}</p>
+                    <h2>{profile.displayName}</h2>
+                    <p>{profile.city}, {profile.region}</p>
+                  </div>
+                  <div className="admin-profile-card-links"><Link className="button button-public-preview" href={profilePublicPath(profile)} target="_blank">Revisar perfil</Link><Link className="button button-outline" href={`/admin/medios?perfil=${encodeURIComponent(profile.id)}`}>Fotos y videos</Link></div>
+                </header>
+                <dl className="admin-profile-card-owner"><div><dt>Dueño</dt><dd>{profile.ownerEmail}</dd></div><div><dt>Usuario del anuncio</dt><dd>{profile.handle ? `@${profile.handle}` : "Sin usuario público"}</dd></div></dl>
+                <form className="admin-profile-card-review" action={`/api/admin/profiles/${profile.id}/status`} method="post">
+                  <input type="hidden" name="return_to" value={adminReturnTo} />
+                  <label>Publicación<select name="status" defaultValue={profile.status} aria-label={`Publicación de ${profile.displayName}`}>{Object.entries(statusLabel).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
+                  <label>Verificación<select name="verification_status" defaultValue={profile.verificationStatus} aria-label={`Verificación de ${profile.displayName}`}>{Object.entries(verificationLabel).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
+                  <label>Revisión médica<select name="health_review_status" defaultValue={profile.healthReviewStatus} aria-label={`Revisión médica de ${profile.displayName}`}>{Object.entries(healthReviewLabel).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
+                  <button className="button button-primary" type="submit">Guardar estados</button>
+                </form>
+                <div className="admin-profile-card-documents"><strong>Documentos privados</strong><div className="admin-profile-document-links">{documents.length > 0 ? documents.map((kind) => <a key={kind} href={`/api/perfiles/${profile.id}/documentos/${kind}`}>{kind === "identity" ? "Carnet" : "Examen médico"}</a>) : <small>Sin documentos privados adjuntos.</small>}</div></div>
+              </article>;
+            })}
+            {filteredRows.length === 0 && <section className="admin-no-results">No hay perfiles que coincidan con estos filtros.</section>}
           </section>
         )}
       </div>

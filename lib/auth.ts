@@ -15,7 +15,7 @@ type RuntimeAuthEnv = {
   GITHUB_CLIENT_SECRET?: string;
 };
 
-export type AccountRole = "visitor" | "advertiser" | "admin";
+export type AccountRole = "visitor" | "advertiser" | "tester" | "admin";
 
 export type AccountUser = {
   id: string;
@@ -205,7 +205,7 @@ async function getSessionUser(cookieName: string): Promise<AccountUser | null> {
     ))
     .limit(1);
 
-  if (!record || !record.isActive || !["visitor", "advertiser", "admin"].includes(record.role)) {
+  if (!record || !record.isActive || !["visitor", "advertiser", "tester", "admin"].includes(record.role)) {
     return null;
   }
 

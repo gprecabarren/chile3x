@@ -12,7 +12,7 @@ import { adminCallHref, adminWhatsappHref } from "@/lib/admin-contact";
 export const dynamic = "force-dynamic";
 
 const notices: Record<string, string> = {
-  created: "La cuenta de anunciante fue creada. Comparte la contraseña inicial por un canal seguro.",
+  created: "La cuenta fue creada. Comparte la contraseña inicial por un canal seguro.",
   duplicate: "Ese correo ya tiene una cuenta registrada.",
   duplicate_rut: "Ya existe una cuenta registrada con ese RUT.",
   invalid: "Revisa los datos solicitados, incluidos documento, ciudad, fecha de nacimiento y confirmación de mayoría de edad.",
@@ -22,7 +22,7 @@ const notices: Record<string, string> = {
 };
 
 function roleLabel(role: string) {
-  return role === "admin" ? "Administrador" : role === "advertiser" ? "Anunciante" : "Visitante";
+  return role === "admin" ? "Administrador" : role === "advertiser" ? "Anunciante" : role === "tester" ? "Tester" : "Visitante";
 }
 
 function accountProfilesHref(email: string, returnTo = "/admin/cuentas", status?: string) {
@@ -58,8 +58,9 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
   return <AdminShell user={admin}><div className="admin-content">
     <AdminPageHeading eyebrow="CUENTAS DEL PORTAL" title="Cuentas y accesos" description="Busca, revisa y administra las cuentas del portal. Desde cada ficha puedes abrir sus datos, sus anuncios y los accesos de recuperación." backHref="/admin" />
     {params.notice && notices[params.notice] && <p className="admin-success" role="status">{notices[params.notice]}</p>}
-    <details className="admin-account-create"><summary><span>Crear cuenta de anunciante</span><small>Ábrelo solo cuando necesites registrar un acceso nuevo.</small></summary><div><form action="/api/admin/users" method="post" className="admin-settings-form">
+    <details className="admin-account-create"><summary><span>Crear cuenta</span><small>Los accesos de tester sólo pueden ser creados desde este panel.</small></summary><div><form action="/api/admin/users" method="post" className="admin-settings-form">
       <label>Nombre visible<input name="display_name" required minLength={2} maxLength={80} autoComplete="nickname" /></label>
+      <label>Tipo de cuenta<select name="role" defaultValue="advertiser"><option value="advertiser">Anunciante</option><option value="tester">Tester de calidad</option></select><small>El tester conserva las funciones normales y obtiene el botón privado para reportar errores.</small></label>
       <AccountIdentityFields />
       <label>Correo electrónico<input name="email" required type="email" maxLength={160} autoComplete="email" /></label>
       <label className="admin-account-check"><input name="adult_verified" type="checkbox" value="yes" required />Confirmo que la persona fue verificada como mayor de 18 años fuera del sitio.</label>

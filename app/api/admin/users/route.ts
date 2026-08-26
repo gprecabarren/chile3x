@@ -32,9 +32,10 @@ export async function POST(request: NextRequest) {
   const displayName = formValue(formData, "display_name").trim().slice(0, 80);
   const email = formValue(formData, "email").trim().toLowerCase().slice(0, 160);
   const password = formValue(formData, "password");
+  const role = formValue(formData, "role");
   const identity = readAccountIdentity(formData);
 
-  if (formData.get("adult_verified") !== "yes" || displayName.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < MIN_PASSWORD_LENGTH || !identity) {
+  if (formData.get("adult_verified") !== "yes" || displayName.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < MIN_PASSWORD_LENGTH || !identity || !["advertiser", "tester"].includes(role)) {
     return redirectWithNotice(request, "invalid");
   }
 
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
     email,
     displayName,
     passwordHash: await hashPassword(password),
-    role: "advertiser",
+    role: role as "advertiser" | "tester",
     emailVerifiedAt: new Date().toISOString(),
     firstName: identity.firstName || null,
     lastName: null,

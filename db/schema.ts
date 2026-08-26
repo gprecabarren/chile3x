@@ -23,7 +23,7 @@ export const users = sqliteTable("users", {
   city: text("city").notNull().default(""),
   phone: text("phone"),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
-  role: text("role", { enum: ["visitor", "advertiser", "admin"] }).notNull().default("visitor"),
+  role: text("role", { enum: ["visitor", "advertiser", "tester", "admin"] }).notNull().default("visitor"),
   emailVerifiedAt: text("email_verified_at"),
   createdAt,
 });
@@ -298,6 +298,34 @@ export const newsMedia = sqliteTable("news_media", {
   uploadedBy: text("uploaded_by").notNull().references(() => users.id, { onDelete: "restrict" }),
   createdAt,
 });
+
+// Private quality-assurance tickets. Only accounts explicitly created with the
+// tester role can submit them; they never appear in public reporting flows.
+export const bugReports = sqliteTable("bug_reports", {
+  id: text("id").primaryKey(),
+  reporterId: text("reporter_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  pageUrl: text("page_url").notNull(),
+  pageTitle: text("page_title").notNull().default(""),
+  deviceType: text("device_type", { enum: ["desktop", "mobile"] }).notNull(),
+  viewport: text("viewport").notNull().default(""),
+  userAgent: text("user_agent").notNull().default(""),
+  status: text("status", { enum: ["new", "reviewing", "waiting_tester", "in_progress", "resolved", "closed"] }).notNull().default("new"),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  createdAt,
+}, (table) => [
+  index("bug_reports_status_updated_idx").on(table.status, table.updatedAt),
+  index("bug_reports_reporter_updated_idx").on(table.reporterId, table.updatedAt),
+]);
+
+export const bugReportMessages = sqliteTable("bug_report_messages", {
+  id: text("id").primaryKey(),
+  reportId: text("report_id").notNull().references(() => bugReports.id, { onDelete: "cascade" }),
+  authorId: text("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  body: text("body").notNull(),
+  createdAt,
+}, (table) => [index("bug_report_messages_report_created_idx").on(table.reportId, table.createdAt)]);
 
 export const newsPosts = sqliteTable("news_posts", {
   id: text("id").primaryKey(),

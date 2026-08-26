@@ -4,6 +4,8 @@ import { AgeGate } from "./AgeGate";
 import { MaintenanceScreen } from "./MaintenanceScreen";
 import { PrivacyConsent } from "./PrivacyConsent";
 import { getCurrentAdmin } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
+import { BugReporter } from "./BugReporter";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { socialCardImage, socialCardImageUrl } from "@/lib/seo";
 
@@ -62,7 +64,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [settings, admin] = await Promise.all([getSiteSettings(), getCurrentAdmin()]);
+  const [settings, admin, user] = await Promise.all([getSiteSettings(), getCurrentAdmin(), getCurrentUser()]);
   const maintenanceEnabled = settings.maintenance_mode === "enabled";
 
   return (
@@ -72,6 +74,7 @@ export default async function RootLayout({
         {!maintenanceEnabled || admin ? children : <MaintenanceScreen />}
         <AgeGate />
         <PrivacyConsent />
+        {user?.role === "tester" && <BugReporter />}
       </body>
     </html>
   );

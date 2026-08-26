@@ -70,12 +70,13 @@ export default async function AdminAccountDetailsPage({ params, searchParams }: 
   const detailHref = `/admin/cuentas/${encodeURIComponent(account.id)}`;
   const accountName = account.displayName ?? account.email;
   const isProtectedAdmin = account.role === "admin";
+  const accountRoleLabel = account.role === "tester" ? "Cuenta de tester" : "Cuenta de anunciante";
   return <AdminShell user={admin}><div className="admin-content">
     <AdminPageHeading eyebrow="FICHA DE CUENTA" title={accountName} description={`Administra los datos, contraseña y avisos de ${account.email}. Los cambios se realizan sin necesidad de conocer la contraseña actual.`} backHref="/admin/cuentas">
       {!isProtectedAdmin && <Link className="button button-primary" href={`${detailHref}/crear-perfil`}>Crear perfil para esta cuenta</Link>}
     </AdminPageHeading>
     {query.notice && notices[query.notice] && <p className="admin-success" role="status">{notices[query.notice]}</p>}
-    <section className="admin-account-detail-summary"><div><span className={`account-status ${account.isActive ? "account-status-approved" : "account-status-rejected"}`}>{account.isActive ? "Activa" : "Deshabilitada"}</span><strong>{account.role === "admin" ? "Cuenta administrativa protegida" : "Cuenta de anunciante"}</strong></div><p>{ownedProfiles.length} anuncio{ownedProfiles.length === 1 ? "" : "s"} asociado{ownedProfiles.length === 1 ? "" : "s"}</p></section>
+    <section className="admin-account-detail-summary"><div><span className={`account-status ${account.isActive ? "account-status-approved" : "account-status-rejected"}`}>{account.isActive ? "Activa" : "Deshabilitada"}</span><strong>{account.role === "admin" ? "Cuenta administrativa protegida" : accountRoleLabel}</strong></div><p>{ownedProfiles.length} anuncio{ownedProfiles.length === 1 ? "" : "s"} asociado{ownedProfiles.length === 1 ? "" : "s"}</p></section>
     {isProtectedAdmin ? <section className="admin-empty"><h2>Cuenta protegida</h2><p>Para prevenir bloqueos accidentales, desde aquí no se modifica una cuenta administrativa.</p></section> : <div className="admin-account-detail-layout">
       <form action={`/api/admin/users/${encodeURIComponent(account.id)}`} method="post" className="admin-settings-form admin-account-details-form">
         <input name="action" type="hidden" value="save_details" />

@@ -7,6 +7,7 @@ export type RegistrationState = {
   documentNumber: string;
   foreignCountry: string;
   birthDate: string;
+  region: string;
   city: string;
   phone: string;
   email: string;
@@ -28,6 +29,7 @@ export function registrationStateFromForm(formData: FormData): RegistrationState
     documentNumber: field(formData, "document_number", 40),
     foreignCountry: field(formData, "foreign_country", 80),
     birthDate: field(formData, "birth_date", 10),
+    region: field(formData, "account_region", 160),
     city: field(formData, "account_city", 120),
     phone: field(formData, "phone", 40),
     email: field(formData, "email", 160),
@@ -52,6 +54,7 @@ export function decodeRegistrationState(value: string | undefined): Registration
       documentNumber: typeof parsed.documentNumber === "string" ? parsed.documentNumber : "",
       foreignCountry: typeof parsed.foreignCountry === "string" ? parsed.foreignCountry : "",
       birthDate: typeof parsed.birthDate === "string" ? parsed.birthDate : "",
+      region: typeof parsed.region === "string" ? parsed.region : "",
       city: typeof parsed.city === "string" ? parsed.city : "",
       phone: typeof parsed.phone === "string" ? parsed.phone : "",
       email: typeof parsed.email === "string" ? parsed.email : "",

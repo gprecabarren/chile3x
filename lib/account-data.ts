@@ -1,4 +1,4 @@
-import { cityDirectory } from "@/app/locations";
+import { isValidAccountLocation, normalizeAccountCity } from "@/lib/account-locations";
 
 export const defaultBirthDate = "1990-01-01";
 
@@ -66,7 +66,8 @@ export function readAccountIdentity(formData: FormData): AccountIdentityInput | 
   const rawDocument = asString(formData, "document_number");
   const foreignCountry = asString(formData, "foreign_country").slice(0, 80);
   const birthDate = asString(formData, "birth_date") || defaultBirthDate;
-  const city = asString(formData, "account_city");
+  const region = asString(formData, "account_region");
+  const city = normalizeAccountCity(asString(formData, "account_city"));
   // El teléfono es opcional y puede tener formatos internacionales variados.
   // Solo lo limitamos en longitud para almacenarlo con seguridad.
   const phone = asString(formData, "phone").slice(0, 40);
@@ -74,7 +75,9 @@ export function readAccountIdentity(formData: FormData): AccountIdentityInput | 
   const firstName = asString(formData, "full_name").slice(0, 160);
   const lastName = "";
 
-  if ((documentType !== "rut" && documentType !== "foreign") || !validBirthDate(birthDate) || !cityDirectory.some((item) => item.city === city)) {
+  // La residencia administrativa de una cuenta puede estar en cualquier comuna del país.
+  // La cobertura permitida de cada anuncio se valida por separado en sus propios formularios.
+  if ((documentType !== "rut" && documentType !== "foreign") || !validBirthDate(birthDate) || !isValidAccountLocation(region, city)) {
     return null;
   }
 

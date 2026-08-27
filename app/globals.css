@@ -131,12 +131,12 @@ footer span { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid #272
 .auth-brand .official-chile3x-logo { width: 154px; height: auto; }.account-brand .official-chile3x-logo { width: 132px; height: auto; }
 .auth-card .eyebrow { margin-top: 47px; }.auth-card h1 { margin-bottom: 16px; font-size: clamp(43px, 8vw, 62px); }.auth-card > p:not(.eyebrow):not(.form-alert):not(.auth-switch) { color: #b9becd; font-size: 14px; line-height: 1.65; }
 .auth-form { margin-top: 30px; display: grid; gap: 17px; }.auth-form label, .profile-form label { display: grid; gap: 7px; color: #dbdde6; font-size: 12px; font-weight: 700; }.auth-form small { color: #9da2b4; font-size: 10px; font-weight: 400; }.auth-form .button { width: 100%; margin-top: 5px; }
-.auth-form input, .profile-form input, .profile-form select, .profile-form textarea { width: 100%; min-height: 43px; padding: 10px 11px; border: 1px solid #41475b; border-radius: 0; outline: none; color: #f7f6f2; background: #10131f; font: inherit; font-size: 13px; font-weight: 400; }
+.auth-form input, .auth-form select, .profile-form input, .profile-form select, .profile-form textarea { width: 100%; min-height: 43px; padding: 10px 11px; border: 1px solid #41475b; border-radius: 0; outline: none; color: #f7f6f2; background: #10131f; font: inherit; font-size: 13px; font-weight: 400; }
 .profile-type-locked { min-height: 61px; padding: 10px 11px; display: grid; align-content: center; gap: 4px; border: 1px solid #41475b; border-radius: var(--radius-sm); background: #10131f; }.profile-type-locked strong { color: #f7f6f2; font-size: 13px; }.profile-type-locked small { color: #9da4b5; font-size: 10px; font-weight: 400; line-height: 1.35; }
 .profile-handle-input { display: flex; align-items: stretch; min-width: 0; }.profile-handle-input b { display: grid; width: 42px; flex: 0 0 42px; place-items: center; border: 1px solid #41475b; border-right: 0; border-radius: 7px 0 0 7px; color: #f15a61; background: #171b2a; font-size: 17px; }.profile-form .profile-handle-input input { min-width: 0; border-radius: 0 7px 7px 0; }.profile-form label > small { color: #9da4b5; font-size: 10px; font-weight: 400; line-height: 1.4; }
-.auth-form input:focus, .profile-form input:focus, .profile-form select:focus, .profile-form textarea:focus { border-color: #ed5058; box-shadow: 0 0 0 2px rgba(237,80,88,.16); }.profile-form textarea { min-height: 132px; resize: vertical; line-height: 1.5; }.profile-form option { color: #11131e; background: white; }
+.auth-form input:focus, .auth-form select:focus, .profile-form input:focus, .profile-form select:focus, .profile-form textarea:focus { border-color: #ed5058; box-shadow: 0 0 0 2px rgba(237,80,88,.16); }.profile-form textarea { min-height: 132px; resize: vertical; line-height: 1.5; }.auth-form option, .profile-form option { color: #11131e; background: white; }
 .auth-form .input-warning { border-color: #e7aa59; box-shadow: 0 0 0 2px rgba(231,170,89,.14); }.auth-form .email-checking { color: #b6bdcb; }.auth-form .email-exists-warning { margin: 0; color: #ffd092; font-size: 11px; font-weight: 400; line-height: 1.45; }.auth-form .email-exists-warning a { color: #ffe1b5; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
-.checkbox-label { display: flex !important; align-items: flex-start; gap: 9px !important; color: #bdc2d1 !important; font-weight: 400 !important; line-height: 1.45; }.checkbox-label input, .check-grid input { width: auto; min-height: auto; margin: 2px 0 0; accent-color: var(--red); }
+.checkbox-label { display: flex !important; align-items: flex-start; gap: 9px !important; color: #bdc2d1 !important; font-weight: 400 !important; line-height: 1.45; }.checkbox-label input, .check-grid input { width: auto; min-height: auto; margin: 2px 0 0; accent-color: var(--red); }.checkbox-label > span { min-width: 0; }.checkbox-label a { display: inline; margin: 0; color: #ff9ba0; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 .auth-switch { margin: 26px 0 0; color: #adb2c1; font-size: 12px; }.auth-switch a { color: #ff757b; font-weight: 700; }.form-alert { margin: 22px 0 -7px; padding: 10px 12px; border-left: 3px solid #f25a60; color: #ffcbcd; background: rgba(212,21,29,.18); font-size: 12px; line-height: 1.45; }
 .auth-whatsapp-request { width: 100%; margin-top: 12px; border-color: #3f9b68; color: #c8f5d6; text-align: center; }
 .auth-success { margin: 22px 0 -7px; padding: 10px 12px; border-left: 3px solid #65ce8c; color: #c9f1d6; background: rgba(42,126,74,.25); font-size: 12px; line-height: 1.45; }
@@ -821,7 +821,7 @@ input[type="checkbox"] { border-radius: 4px; }
 @media (prefers-reduced-motion: reduce) { .region-card-is-selected { animation-duration: .01ms; } }
 
 /* Registro: los datos opcionales quedan claramente separados y no desbordan en móvil. */
-.account-identity-required { margin: 0; }
+.account-identity-required { display: grid; gap: 15px; margin: 0; }.account-location-grid { gap: 15px; }.account-identity-note { margin: -5px 0 0; color: #aeb6c5; font-size: 11px; line-height: 1.45; }
 .account-identity-optional { min-width: 0; margin: 0; padding: 18px; border: 1px solid #343d51; border-radius: var(--radius-md); background: #0d111b; }
 .account-identity-optional legend { padding: 0 6px; color: #f1f3f7; font-size: 12px; font-weight: 800; }
 .account-identity-optional > p { margin: 0 0 15px; color: #aeb6c5; font-size: 11px; line-height: 1.45; }
@@ -829,6 +829,7 @@ input[type="checkbox"] { border-radius: 4px; }
 .registration-password-entry { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: stretch; min-width: 0; }
 .registration-password-entry input { min-width: 0; }
 .registration-password-entry .account-password-visibility-button { min-width: 44px; padding: 9px; }
+.registration-consents { display: grid; gap: 8px; }.registration-consent-error { margin: -2px 0 5px 27px; color: #ffadb1; font-size: 11px; line-height: 1.4; }
 .registration-password-entry .account-password-visibility-button svg { width: 18px; height: 18px; }
 
 /* Carga de galería: cada foto declara si desea difuminar rostros antes de subir. */

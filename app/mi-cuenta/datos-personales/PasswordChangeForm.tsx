@@ -26,7 +26,6 @@ export function PasswordChangeForm() {
   const [confirmation, setConfirmation] = useState("");
   const [copyStatus, setCopyStatus] = useState("");
   const [showPassword, setShowPassword] = useState(true);
-  const [showConfirmation, setShowConfirmation] = useState(true);
 
   function generatePassword() {
     const nextPassword = createPassword();
@@ -47,7 +46,7 @@ export function PasswordChangeForm() {
 
   return <div className="account-password-fields">
     <label>Nueva contraseña<div className="account-password-entry"><input name="password" type={showPassword ? "text" : "password"} required minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" value={password} placeholder="Escribe o genera una contraseña" onChange={(event) => { setPassword(event.target.value); setCopyStatus(""); }} /><button className="button button-outline" type="button" onClick={generatePassword}>Generar clave</button><button className="button button-outline account-password-copy-button" type="button" disabled={!password} onClick={copyPassword} aria-label="Copiar nueva contraseña" title="Copiar nueva contraseña"><CopyIcon /><span className="sr-only">Copiar nueva contraseña</span></button><button className="button button-outline account-password-visibility-button" type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? "Ocultar nueva contraseña" : "Mostrar nueva contraseña"} aria-pressed={showPassword} title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}><VisibilityIcon visible={showPassword} /></button></div><small>{passwordRequirementText} Puedes crear una al azar y guardarla con seguridad.</small></label>
-    <label>Confirma la nueva contraseña<div className="account-password-confirmation"><input name="password_confirmation" type={showConfirmation ? "text" : "password"} required minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" value={confirmation} placeholder="Vuelve a escribir la misma contraseña" onChange={(event) => setConfirmation(event.target.value)} /><button className="button button-outline account-password-visibility-button" type="button" onClick={() => setShowConfirmation((visible) => !visible)} aria-label={showConfirmation ? "Ocultar confirmación de contraseña" : "Mostrar confirmación de contraseña"} aria-pressed={showConfirmation} title={showConfirmation ? "Ocultar contraseña" : "Mostrar contraseña"}><VisibilityIcon visible={showConfirmation} /></button></div></label>
+    <label>Confirma la nueva contraseña<input name="password_confirmation" type={showPassword ? "text" : "password"} required minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" value={confirmation} placeholder="Vuelve a escribir la misma contraseña" onChange={(event) => setConfirmation(event.target.value)} /></label>
     {copyStatus && <span className="account-password-copy-status" role="status">{copyStatus}</span>}
   </div>;
 }

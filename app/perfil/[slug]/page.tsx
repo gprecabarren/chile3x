@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { eq } from "drizzle-orm";
+import { getDb } from "@/db";
+import { profiles } from "@/db/schema";
 import { DirectoryShell, PortalContactIcon, ProfileCard } from "@/app/directorio/_components";
 import { ProfileStoryTrigger, StoryRail } from "@/app/historias/StoryRail";
 import { ProfileViewTracker } from "../ProfileViewTracker";
@@ -157,6 +160,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   const availability = readAvailability(profile.details.metadata.availability);
   const availabilityStatus = getAvailabilityStatus(availability);
   const [stories, approvedReviews, verificationDocuments, exclusiveMedia] = await Promise.all([getActiveStories({ profileId: profile.id }), getApprovedReviews(profile.id), admin && profile.type === "escort" ? getVerificationDocuments(profile.id) : Promise.resolve([]), getApprovedExclusiveMedia(profile.id)]);
+  const viewerOwnsProfile = viewer ? (await (await getDb()).select({ ownerId: profiles.ownerId }).from(profiles).where(eq(profiles.id, profile.id)).limit(1))[0]?.ownerId === viewer.id : false;
   const coverImage = profile.media.find((media) => media.mediaType === "image" && media.isProfilePhoto) ?? profile.media.find((media) => media.mediaType === "image");
   const engagement = profile.status === "approved" && !profile.isDemo
     ? await getProfileEngagement(profile.id, viewer?.id)
@@ -213,7 +217,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
       </section>
       {profile.type === "agency" && <section className="profile-association-section"><p className="eyebrow">PERFILES ASOCIADOS</p><h2>Escorts de {profile.displayName}</h2><p>Los perfiles se muestran aquí solo después de aceptar la invitación de la agencia.</p><div className="public-profile-grid">{agencyMembers.map((member) => <ProfileCard profile={member} key={member.id} />)}</div>{agencyMembers.length === 0 && <p className="association-empty">Esta agencia aún no tiene perfiles asociados aprobados.</p>}</section>}
       {profile.type === "escort" && agencyProfiles.length > 0 && <section className="profile-association-section compact"><p className="eyebrow">ASOCIACIONES ACEPTADAS</p><h2>Agencias relacionadas</h2><div className="public-profile-grid">{agencyProfiles.map((agency) => <ProfileCard profile={agency} key={agency.id} />)}</div></section>}
-      {profile.status === "approved" && !profile.isDemo && <ProfileReviews profileId={profile.id} profileSlug={profileRouteValue} signedIn={Boolean(viewer)} reviews={approvedReviews} />}
+      {profile.status === "approved" && !profile.isDemo && <ProfileReviews profileId={profile.id} profileSlug={profileRouteValue} signedIn={Boolean(viewer)} viewerOwnsProfile={viewerOwnsProfile} reviews={approvedReviews} />}
     </DirectoryShell>
   );
 }

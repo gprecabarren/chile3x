@@ -1,6 +1,7 @@
+import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { reviews } from "@/db/schema";
+import { profiles, reviews } from "@/db/schema";
 import { assertSameOrigin, getCurrentUser } from "@/lib/auth";
 import { isPublicProfile } from "@/lib/profile-interactions";
 import { TURNSTILE_PROFILE_REVIEW_ACTION } from "@/lib/turnstile";
@@ -28,10 +29,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (body.length < 3 || body.length > 700) return error("La reseña debe tener entre 3 y 700 caracteres.", 400);
   if (!await isPublicProfile(profileId)) return error("El perfil ya no está disponible.", 404);
 
+  const db = await getDb();
+  const [profile] = await db.select({ ownerId: profiles.ownerId }).from(profiles).where(eq(profiles.id, profileId)).limit(1);
+  if (profile?.ownerId === user.id) return error("No puedes dejar una reseña en tu propio anuncio.", 403);
+
   if (!await verifyTurnstile(request, token, TURNSTILE_PROFILE_REVIEW_ACTION)) {
     return error("La verificación antispam no fue válida. Vuelve a intentarlo.", 403);
   }
 
-  await (await getDb()).insert(reviews).values({ id: `rev_${crypto.randomUUID()}`, authorId: user.id, profileId, body, status: "pending" });
+  await db.insert(reviews).values({ id: `rev_${crypto.randomUUID()}`, authorId: user.id, profileId, body, status: "pending" });
   return NextResponse.json({ message: "Gracias. Tu reseña quedó enviada a moderación antes de publicarse." }, { status: 201 });
 }

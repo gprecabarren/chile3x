@@ -1,4 +1,5 @@
 import { and, count, desc, eq, gte, inArray, or } from "drizzle-orm";
+import { cache } from "react";
 import { cityDirectory, getCityBySlug, regions } from "@/app/locations";
 import { getDb } from "@/db";
 import { agencyMembers, profileDetails, profileServices, profileTags, profiles, profileViews } from "@/db/schema";
@@ -236,12 +237,25 @@ export async function getPublicProfiles(options: PublicProfileOptions = {}) {
   }));
 }
 
-export async function getPublicProfileForRoute(segment: string, options: Omit<PublicProfileOptions, "handle" | "slug"> = {}) {
+const getPublicProfileForRouteCached = cache(async function getPublicProfileForRouteCached(
+  segment: string,
+  includeUnapproved: boolean,
+  viewerId?: string,
+) {
   const decoded = decodeURIComponent(segment);
   if (decoded.startsWith("@")) {
-    return (await getPublicProfiles({ ...options, handle: decoded.slice(1).toLowerCase() }))[0] ?? null;
+    return (await getPublicProfiles({ includeUnapproved, viewerId, handle: decoded.slice(1).toLowerCase() }))[0] ?? null;
   }
-  return (await getPublicProfiles({ ...options, slug: decoded }))[0] ?? null;
+  return (await getPublicProfiles({ includeUnapproved, viewerId, slug: decoded }))[0] ?? null;
+});
+
+/**
+ * Route metadata and the page body both need the same listing. Keep that
+ * lookup request-scoped so a profile view never rebuilds its whole media,
+ * tags and services graph twice during one render.
+ */
+export async function getPublicProfileForRoute(segment: string, options: Omit<PublicProfileOptions, "handle" | "slug"> = {}) {
+  return getPublicProfileForRouteCached(segment, Boolean(options.includeUnapproved), options.viewerId);
 }
 
 function readMetadata(value: string | null | undefined): Record<string, string> {
@@ -322,35 +336,52 @@ export async function getCityEscortCounts() {
  * This prevents a raw reload counter from deciding the public showcase.
  */
 export async function getFeaturedProfiles(limit = 6, viewerId?: string) {
-  let publicProfiles: PublicProfile[];
+  const candidateLimit = Math.max(limit * 3, 18);
+  const cutoff = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000).toLocaleDateString("en-CA", { timeZone: "America/Santiago" });
+
   try {
-    publicProfiles = (await getPublicProfiles({ viewerId, type: "escort" })).filter((profile) => !profile.isDemo);
+    const db = await getDb();
+    // Do not hydrate every escort in the directory just to show six cards on
+    // the home page. We first select a small, representative candidate set:
+    // manually highlighted/recent listings plus the most-viewed recent ones.
+    const [manualCandidates, viewedCandidates] = await Promise.all([
+      db.select({ id: profiles.id }).from(profiles).where(and(
+        eq(profiles.status, "approved"),
+        eq(profiles.type, "escort"),
+        eq(profiles.isDemo, false),
+      )).orderBy(desc(profiles.isFeatured), desc(profiles.updatedAt)).limit(candidateLimit),
+      db.select({ profileId: profileViews.profileId, total: count() }).from(profileViews)
+        .innerJoin(profiles, eq(profileViews.profileId, profiles.id))
+        .where(and(
+          gte(profileViews.viewedOn, cutoff),
+          eq(profiles.status, "approved"),
+          eq(profiles.type, "escort"),
+          eq(profiles.isDemo, false),
+        ))
+        .groupBy(profileViews.profileId)
+        .orderBy(desc(count()))
+        .limit(candidateLimit),
+    ]);
+
+    const candidateIds = [...new Set([
+      ...manualCandidates.map((candidate) => candidate.id),
+      ...viewedCandidates.map((candidate) => candidate.profileId),
+    ])];
+    if (!candidateIds.length) return [];
+
+    const publicProfiles = await getPublicProfiles({ viewerId, type: "escort", profileIds: candidateIds });
+    const viewTotals = new Map(viewedCandidates.map((candidate) => [candidate.profileId, Number(candidate.total)]));
+
+    return [...publicProfiles]
+    .sort((left, right) => Number(right.isFeatured) - Number(left.isFeatured)
+      || (viewTotals.get(right.id) ?? 0) - (viewTotals.get(left.id) ?? 0)
+      || right.updatedAt.localeCompare(left.updatedAt))
+    .slice(0, limit);
   } catch {
     // The static render test has no D1 binding. In production this query is
     // available, while the empty state remains accurate before launch.
     return [];
   }
-  if (!publicProfiles.length) return [];
-
-  const cutoff = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000).toLocaleDateString("en-CA", { timeZone: "America/Santiago" });
-  const viewTotals = new Map<string, number>();
-
-  try {
-    const rows = await (await getDb()).select({ profileId: profileViews.profileId, total: count() })
-      .from(profileViews)
-      .where(gte(profileViews.viewedOn, cutoff))
-      .groupBy(profileViews.profileId)
-      .orderBy(desc(count()));
-    for (const row of rows) viewTotals.set(row.profileId, Number(row.total));
-  } catch {
-    // A transient statistics failure must not hide otherwise valid profiles.
-  }
-
-  return [...publicProfiles]
-    .sort((left, right) => Number(right.isFeatured) - Number(left.isFeatured)
-      || (viewTotals.get(right.id) ?? 0) - (viewTotals.get(left.id) ?? 0)
-      || right.updatedAt.localeCompare(left.updatedAt))
-    .slice(0, limit);
 }
 
 function shuffleScore(value: string, seed: string) {

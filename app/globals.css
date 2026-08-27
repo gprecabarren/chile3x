@@ -822,7 +822,7 @@ input[type="checkbox"] { border-radius: 4px; }
 @media (prefers-reduced-motion: reduce) { .region-card-is-selected { animation-duration: .01ms; } }
 
 /* Registro: los datos opcionales quedan claramente separados y no desbordan en móvil. */
-.account-identity-required { display: grid; gap: 15px; margin: 0; }.account-birth-date { width: min(100%, 220px); }.account-location-grid { gap: 15px; }.account-identity-note { margin: -5px 0 0; color: #aeb6c5; font-size: 11px; line-height: 1.45; }
+.account-identity-required { display: grid; gap: 15px; margin: 0; }.account-birth-date { width: min(100%, 205px); }.account-location-grid { gap: 15px; }.account-identity-note { margin: -5px 0 0; color: #aeb6c5; font-size: 11px; line-height: 1.45; }
 .account-identity-optional { min-width: 0; margin: 0; padding: 18px; border: 1px solid #343d51; border-radius: var(--radius-md); background: #0d111b; }
 .account-identity-optional legend { padding: 0 6px; color: #f1f3f7; font-size: 12px; font-weight: 800; }
 .account-identity-optional > p { margin: 0 0 15px; color: #aeb6c5; font-size: 11px; line-height: 1.45; }

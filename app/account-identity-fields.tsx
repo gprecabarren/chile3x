@@ -27,7 +27,7 @@ export function AccountIdentityFields({ values, birthDateReadOnly = false }: { v
 
   return <>
     <div className="account-identity-required">
-      <label>Fecha de nacimiento<input name="birth_date" type="date" required readOnly={birthDateReadOnly} defaultValue={values?.birthDate ?? defaultBirthDate} max={maximumBirthDate()} autoComplete="bday" /><small>{birthDateReadOnly ? "Para corregir tu fecha de nacimiento, contacta a soporte." : "Debes ser mayor de 18 años."}</small></label>
+      <label className="account-birth-date">Fecha de nacimiento<input name="birth_date" type="date" required readOnly={birthDateReadOnly} defaultValue={values?.birthDate ?? defaultBirthDate} max={maximumBirthDate()} autoComplete="bday" /><small>{birthDateReadOnly ? "Para corregir tu fecha de nacimiento, contacta a soporte." : "Debes ser mayor de 18 años."}</small></label>
       <div className="form-grid form-grid-two account-location-grid">
         <label>Región<select name="account_region" required value={region} onChange={(event) => { setRegion(event.target.value); setCity(""); }}><option value="" disabled>Selecciona una región</option>{accountLocationRegions.map((entry) => <option key={entry.id} value={entry.title}>{entry.displayTitle}</option>)}</select></label>
         <label>Ciudad o comuna<select name="account_city" required value={city} onChange={(event) => setCity(event.target.value)} disabled={!region}><option value="" disabled>{region ? "Selecciona una ciudad o comuna" : "Primero selecciona una región"}</option>{cities.map((entry) => <option key={entry} value={entry}>{entry}</option>)}</select></label>

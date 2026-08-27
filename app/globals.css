@@ -128,8 +128,9 @@ footer span { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid #272
 .auth-page { min-height: 100vh; padding: 52px 24px; display: grid; place-items: center; background: radial-gradient(circle at 76% 12%, #292e60 0, #11142b 31%, #06070c 72%); }
 .auth-card { width: min(100%, 520px); padding: clamp(28px, 5vw, 54px); border: 1px solid rgba(255,255,255,.16); color: #f7f4f0; background: rgba(10,12,21,.88); box-shadow: 16px 18px 0 rgba(212,21,29,.56); }
 .auth-brand, .account-brand { display: inline-flex; align-items: center; color: white; }
-.auth-brand .official-chile3x-logo { width: 154px; height: auto; }.account-brand .official-chile3x-logo { width: 132px; height: auto; }
-.auth-card .eyebrow { margin-top: 47px; }.auth-card h1 { margin-bottom: 16px; font-size: clamp(43px, 8vw, 62px); }.auth-card > p:not(.eyebrow):not(.form-alert):not(.auth-switch) { color: #b9becd; font-size: 14px; line-height: 1.65; }
+.auth-brand { overflow: hidden; border-radius: var(--radius-sm); background: #05060a; }.auth-brand .official-chile3x-logo { display: block; width: 154px; height: auto; }.account-brand .official-chile3x-logo { width: 132px; height: auto; }
+.auth-register-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }.auth-login-shortcut { margin: 0; color: #adb2c1; font-size: 11px; line-height: 1.35; text-align: right; white-space: nowrap; }.auth-login-shortcut a { color: #ff858b; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+.auth-card .eyebrow { margin-top: 16px; }.auth-card h1 { margin-bottom: 16px; font-size: clamp(43px, 8vw, 62px); }.auth-card > p:not(.eyebrow):not(.form-alert):not(.auth-switch):not(.auth-login-shortcut) { color: #b9becd; font-size: 14px; line-height: 1.65; }
 .auth-form { margin-top: 30px; display: grid; gap: 17px; }.auth-form label, .profile-form label { display: grid; gap: 7px; color: #dbdde6; font-size: 12px; font-weight: 700; }.auth-form small { color: #9da2b4; font-size: 10px; font-weight: 400; }.auth-form .button { width: 100%; margin-top: 5px; }
 .auth-form input, .auth-form select, .profile-form input, .profile-form select, .profile-form textarea { width: 100%; min-height: 43px; padding: 10px 11px; border: 1px solid #41475b; border-radius: 0; outline: none; color: #f7f6f2; background: #10131f; font: inherit; font-size: 13px; font-weight: 400; }
 .profile-type-locked { min-height: 61px; padding: 10px 11px; display: grid; align-content: center; gap: 4px; border: 1px solid #41475b; border-radius: var(--radius-sm); background: #10131f; }.profile-type-locked strong { color: #f7f6f2; font-size: 13px; }.profile-type-locked small { color: #9da4b5; font-size: 10px; font-weight: 400; line-height: 1.35; }
@@ -199,7 +200,7 @@ footer span { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid #272
   footer { padding-inline: 22px; grid-template-columns: 1fr; gap: 20px; }
   footer img { width: 130px; }
   footer span { grid-column: auto; }
-  .auth-page { padding: 24px 16px; }.auth-card { padding: 28px 23px; box-shadow: 9px 10px 0 rgba(212,21,29,.48); }
+  .auth-page { padding: 24px 16px; }.auth-card { padding: 28px 23px; box-shadow: 9px 10px 0 rgba(212,21,29,.48); }.auth-register-topbar { flex-wrap: wrap; gap: 10px; }.auth-brand .official-chile3x-logo { width: 132px; }.auth-login-shortcut { margin-left: auto; font-size: 10px; }
   .account-content { width: min(100% - 40px, 1128px); }.account-header nav { gap: 15px; }.account-user { font-size: 10px; }.account-user span { max-width: 125px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .owner-profile-card { display: block; }.owner-profile-actions { justify-content: flex-start; margin-top: 20px; }.form-grid-three, .form-grid-two, .service-columns { grid-template-columns: 1fr; }.profile-form-section { padding: 21px 18px; }.profile-form-section-heading h2 { font-size: 27px; }.profile-form-actions .button { width: 100%; }
 }
@@ -821,7 +822,7 @@ input[type="checkbox"] { border-radius: 4px; }
 @media (prefers-reduced-motion: reduce) { .region-card-is-selected { animation-duration: .01ms; } }
 
 /* Registro: los datos opcionales quedan claramente separados y no desbordan en móvil. */
-.account-identity-required { display: grid; gap: 15px; margin: 0; }.account-location-grid { gap: 15px; }.account-identity-note { margin: -5px 0 0; color: #aeb6c5; font-size: 11px; line-height: 1.45; }
+.account-identity-required { display: grid; gap: 15px; margin: 0; }.account-birth-date { width: min(100%, 220px); }.account-location-grid { gap: 15px; }.account-identity-note { margin: -5px 0 0; color: #aeb6c5; font-size: 11px; line-height: 1.45; }
 .account-identity-optional { min-width: 0; margin: 0; padding: 18px; border: 1px solid #343d51; border-radius: var(--radius-md); background: #0d111b; }
 .account-identity-optional legend { padding: 0 6px; color: #f1f3f7; font-size: 12px; font-weight: 800; }
 .account-identity-optional > p { margin: 0 0 15px; color: #aeb6c5; font-size: 11px; line-height: 1.45; }
@@ -866,7 +867,7 @@ input::placeholder, textarea::placeholder { color: #8d98aa; font-style: normal; 
 
 /* Safari amplía los controles de texto menores de 16 px al enfocarlos. */
 @media (max-width: 760px) {
-  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]), select, textarea { font-size: 16px !important; }
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]), select, textarea { font-size: 16px !important; font-weight: 400 !important; }
 }
 
 /* Búsqueda administrativa de cuentas: criterios combinables sin obligar a usar tablas anchas. */

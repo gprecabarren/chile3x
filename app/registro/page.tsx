@@ -41,9 +41,10 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
   const returnTo = safeAccountReturnTo(params.return_to ?? null);
   const settings = await getSiteSettings();
   const whatsappHref = getPortalWhatsappLink(settings.contact_whatsapp, "Hola, quisiera solicitar que el equipo de Chile3X me cree una cuenta de anunciante.");
+  const loginHref = `/ingresar?return_to=${encodeURIComponent(returnTo)}`;
 
   return <main className="auth-page"><section className="auth-card">
-    <Link className="auth-brand" href="/"><OfficialChile3xLogo priority /></Link>
+    <div className="auth-register-topbar"><Link className="auth-brand" href="/"><OfficialChile3xLogo priority /></Link><p className="auth-login-shortcut">¿Ya tienes cuenta? <Link href={loginHref}>Ingresar</Link></p></div>
     <p className="eyebrow">CUENTA DE ANUNCIANTE</p>
     <h1>Crea tu cuenta para empezar a publicar.</h1>
     <p>Guarda borradores, envía anuncios a revisión y gestiona sus pausas. Antes de entrar te enviaremos un correo de verificación.</p>
@@ -59,6 +60,6 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
       <button className="button button-primary" type="submit">Crear cuenta y verificar correo</button>
     </form>
     {whatsappHref && <a className="button button-outline auth-whatsapp-request" href={whatsappHref} target="_blank" rel="noreferrer">Solicitar creación de cuenta por WhatsApp</a>}
-    <p className="auth-switch">¿Ya tienes una cuenta? <Link href={`/ingresar?return_to=${encodeURIComponent(returnTo)}`}>Ingresar</Link></p>
+    <p className="auth-switch">¿Ya tienes una cuenta? <Link href={loginHref}>Ingresar</Link></p>
   </section></main>;
 }

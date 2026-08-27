@@ -11,6 +11,8 @@ const allowedSettings = {
   billing_mode: new Set(["manual", "planned"]),
   maintenance_mode: new Set(["disabled", "enabled"]),
   robots_indexing: new Set(["enabled", "disabled"]),
+  profile_gallery_watermark_enabled: new Set(["enabled", "disabled"]),
+  profile_gallery_face_blur_enabled: new Set(["enabled", "disabled"]),
 };
 
 function readText(formData: FormData, key: string, maximum: number) {

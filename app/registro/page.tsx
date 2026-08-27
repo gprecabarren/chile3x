@@ -11,7 +11,8 @@ import { cookies } from "next/headers";
 import { decodeRegistrationState, registrationStateCookie } from "@/lib/registration-state";
 import { TURNSTILE_AUTH_REGISTER_ACTION } from "@/lib/turnstile";
 import { privatePageMetadata } from "@/lib/seo";
-import { MIN_PASSWORD_LENGTH, passwordRequirementText } from "@/lib/password-policy";
+import { passwordRequirementText } from "@/lib/password-policy";
+import { RegistrationPasswordFields } from "./RegistrationPasswordFields";
 
 export const metadata: Metadata = privatePageMetadata({
   title: "Crear cuenta de anunciante",
@@ -30,6 +31,7 @@ const messages: Record<string, string> = {
   duplicate_rut: "Ya existe una cuenta con este RUT. Si es tuya, puedes recuperar la contraseña.",
   server: "No fue posible crear la cuenta en este momento. Inténtalo nuevamente en unos minutos.",
   antispam: "No pudimos validar la protección de seguridad. Inténtalo nuevamente.",
+  legal: "Debes aceptar los Términos y condiciones y la Política de privacidad.",
 };
 
 export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ error?: string; return_to?: string }> }) {
@@ -50,9 +52,9 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
       <label>Nombre visible<input name="display_name" required minLength={2} maxLength={80} autoComplete="nickname" defaultValue={saved?.displayName ?? ""} placeholder="Ej. Valentina" /></label>
       <AccountIdentityFields values={saved ? { fullName: saved.fullName, documentType: saved.documentType, documentNumber: saved.documentNumber, foreignCountry: saved.foreignCountry, birthDate: saved.birthDate, city: saved.city, phone: saved.phone } : undefined} />
       <RegistrationEmailField defaultValue={saved?.email ?? ""} />
-      <label>Contraseña<input name="password" type="password" required minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" /><small>{passwordRequirementText}</small></label>
-      <label>Repite tu contraseña<input name="password_confirmation" type="password" required minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" /><small>Así evitamos errores al crear el acceso. Por seguridad nunca guardamos este campo después de un error.</small></label>
+      <RegistrationPasswordFields />
       <label className="checkbox-label"><input name="adult_confirmed" type="checkbox" value="yes" required defaultChecked={saved?.adultConfirmed ?? false} />Confirmo que soy mayor de 18 años.</label>
+      <label className="checkbox-label"><input name="legal_confirmed" type="checkbox" value="yes" required defaultChecked={saved?.legalConfirmed ?? false} />Leí y acepto los <Link href="/terminos">Términos y condiciones</Link> y la <Link href="/privacidad">Política de privacidad</Link>.</label>
       <AuthTurnstile action={TURNSTILE_AUTH_REGISTER_ACTION} />
       <button className="button button-primary" type="submit">Crear cuenta y verificar correo</button>
     </form>

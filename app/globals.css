@@ -820,6 +820,45 @@ input[type="checkbox"] { border-radius: 4px; }
 @media (max-width: 760px) { .home-google-preferred { display: none; }.public-footer .google-preferred-source-footer { width: min(100%, 380px); height: 52px; min-height: 52px; max-height: 52px; }.google-preferred-source-label { font-size: 13px; } }
 @media (prefers-reduced-motion: reduce) { .region-card-is-selected { animation-duration: .01ms; } }
 
+/* Registro: los datos opcionales quedan claramente separados y no desbordan en móvil. */
+.account-identity-required { margin: 0; }
+.account-identity-optional { min-width: 0; margin: 0; padding: 18px; border: 1px solid #343d51; border-radius: var(--radius-md); background: #0d111b; }
+.account-identity-optional legend { padding: 0 6px; color: #f1f3f7; font-size: 12px; font-weight: 800; }
+.account-identity-optional > p { margin: 0 0 15px; color: #aeb6c5; font-size: 11px; line-height: 1.45; }
+.registration-password-fields { display: grid; gap: 17px; min-width: 0; }
+.registration-password-entry { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: stretch; min-width: 0; }
+.registration-password-entry input { min-width: 0; }
+.registration-password-entry .account-password-visibility-button { min-width: 44px; padding: 9px; }
+.registration-password-entry .account-password-visibility-button svg { width: 18px; height: 18px; }
+
+/* Carga de galería: cada foto declara si desea difuminar rostros antes de subir. */
+.gallery-upload-candidates { display: grid; gap: 10px; margin-top: 18px; padding: 16px; border: 1px solid #39465d; border-radius: var(--radius-md); background: #0b101a; }
+.gallery-upload-candidates > div:first-child { display: grid; gap: 3px; }
+.gallery-upload-candidates > div:first-child strong { color: #fff; font-size: 14px; }
+.gallery-upload-candidates > div:first-child span { color: #aeb7c7; font-size: 11px; }
+.gallery-upload-candidates article { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: 11px; align-items: center; padding: 11px; border: 1px solid #303b4f; border-radius: var(--radius-sm); background: #121825; }
+.gallery-upload-candidates article > div { min-width: 0; display: grid; gap: 3px; }.gallery-upload-candidates article strong { overflow: hidden; color: #f4f6fa; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }.gallery-upload-candidates article small { color: #9fa9ba; font-size: 10px; }
+.gallery-face-blur-option { display: inline-flex !important; align-items: center; gap: 7px !important; color: #dce2ea !important; font-size: 11px !important; font-weight: 700 !important; white-space: nowrap; }.gallery-face-blur-option input { width: auto; min-height: auto; accent-color: #ef565d; }
+.gallery-upload-status { max-width: 190px; color: #aeb9cd; font-size: 10px; line-height: 1.35; }.gallery-upload-status.is-failed { color: #ffb0b3; }.gallery-upload-status.is-completed { color: #a8e3b7; }
+.gallery-candidate-remove { padding: 6px 8px; border: 1px solid #56627b; border-radius: 7px; color: #dce2ec; background: transparent; font: inherit; font-size: 10px; font-weight: 800; cursor: pointer; }.gallery-candidate-remove:disabled { opacity: .5; cursor: wait; }
+
+/* Fuente preferida: un único control horizontal, sin raya decorativa ni texto bajo el botón. */
+.public-footer-preferred-source { grid-column: 1 / -1; display: flex; justify-content: center; width: 100%; margin: 12px 0 0; padding: 0; border: 0; }
+.public-footer .google-preferred-source-footer { width: auto; min-width: 0; height: 48px; min-height: 48px; max-height: none; padding: 0 20px; border: 1px solid #3a4559; border-radius: 10px; color: #eff3f9 !important; background: #11151e; box-shadow: none; }
+.google-preferred-source::before, .google-preferred-source::after { display: none !important; content: none !important; }
+.google-preferred-source-google-g { width: 20px; height: 20px; min-width: 20px; flex-basis: 20px; }.google-preferred-source-label { color: inherit; font-size: 14px; font-weight: 800; line-height: 1; white-space: nowrap; }.google-preferred-source-external { display: none; }
+.public-footer .google-preferred-source-footer:hover, .public-footer .google-preferred-source-footer:focus-visible { border-color: #5f83c8; color: #fff !important; background: #151d2b; box-shadow: 0 5px 18px rgba(0, 0, 0, .2); transform: translateY(-1px); }
+
+@media (max-width: 620px) {
+  .account-identity-optional { padding: 16px 14px; }
+  .auth-form input[type="date"] { min-width: 0; max-width: 100%; font-size: 12px; }
+  .registration-password-entry { grid-template-columns: minmax(0, 1fr) 42px; }
+  .gallery-upload-candidates article { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+  .gallery-face-blur-option, .gallery-upload-status { grid-column: 1 / -1; }
+  .gallery-candidate-remove { justify-self: start; }
+  .public-footer .google-preferred-source-footer { height: 46px; min-height: 46px; padding: 0 17px; }
+}
+
 /* Los ejemplos de los campos son una ayuda visual, no un título en negrita. */
 input::placeholder, textarea::placeholder { color: #8d98aa; font-style: normal; font-weight: 400 !important; opacity: 1; }
 

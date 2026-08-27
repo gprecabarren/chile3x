@@ -9,6 +9,7 @@ const sections = [
   ["google", "Google y medición", "Search Console y Google Analytics."],
   ["contacto", "Contacto y redes", "WhatsApp, Telegram, Instagram y correo oficiales."],
   ["contenido", "FAQ y reglas", "Edita las preguntas frecuentes y las reglas de publicación."],
+  ["medios", "Fotos de galería", "Marca de agua y desenfoque facial para futuras fotos públicas."],
 ] as const;
 
 export const dynamic = "force-dynamic";

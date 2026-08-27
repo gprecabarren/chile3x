@@ -11,6 +11,7 @@ export type RegistrationState = {
   phone: string;
   email: string;
   adultConfirmed: boolean;
+  legalConfirmed: boolean;
 };
 
 function field(formData: FormData, name: string, maxLength: number) {
@@ -31,6 +32,7 @@ export function registrationStateFromForm(formData: FormData): RegistrationState
     phone: field(formData, "phone", 40),
     email: field(formData, "email", 160),
     adultConfirmed: formData.get("adult_confirmed") === "yes",
+    legalConfirmed: formData.get("legal_confirmed") === "yes",
   };
 }
 
@@ -54,6 +56,7 @@ export function decodeRegistrationState(value: string | undefined): Registration
       phone: typeof parsed.phone === "string" ? parsed.phone : "",
       email: typeof parsed.email === "string" ? parsed.email : "",
       adultConfirmed: parsed.adultConfirmed === true,
+      legalConfirmed: parsed.legalConfirmed === true,
     };
   } catch {
     return null;

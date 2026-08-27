@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
     const identity = readAccountIdentity(formData);
 
     if (formData.get("adult_confirmed") !== "yes") return redirectWithError(request, "adult", formData);
+    if (formData.get("legal_confirmed") !== "yes") return redirectWithError(request, "legal", formData);
     if (displayName.length < 2) return redirectWithError(request, "display_name", formData);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return redirectWithError(request, "email", formData);
     if (!identity) return redirectWithError(request, "identity", formData);

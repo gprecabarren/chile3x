@@ -19,6 +19,8 @@ export const siteSettingDefaults = {
   faq_entries: "",
   publication_rules: "",
   publication_rules_updated_at: "2026-07-30T00:00:00.000Z",
+  profile_gallery_watermark_enabled: "enabled",
+  profile_gallery_face_blur_enabled: "enabled",
 } as const;
 
 export type SiteSettingKey = keyof typeof siteSettingDefaults;

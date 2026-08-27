@@ -12,7 +12,6 @@ import { getCurrentUser } from "@/lib/auth";
 import { getBlockedProfileIds } from "@/lib/profile-safety";
 import { safeJsonLd } from "@/lib/json-ld";
 import { socialCardImage, socialCardImageUrl } from "@/lib/seo";
-import { GooglePreferredSourceLink } from "./GooglePreferredSourceLink";
 
 export const metadata: Metadata = {
   title: "Directorio nacional de escorts",
@@ -134,7 +133,6 @@ export default async function Home() {
             <Link className="button button-primary" href="/escorts">Explorar perfiles</Link>
             <a className="text-link" href="/registro">Quiero anunciarme <span>→</span></a>
           </div>
-          <div className="home-google-preferred"><GooglePreferredSourceLink placement="home" /></div>
           <div className="trust-row">
             <span><b>✓</b> Moderación manual</span>
             <span><b>✓</b> Cobertura nacional</span>

@@ -50,7 +50,7 @@ Cambiar el tipo de un anuncio ya creado no está permitido. Si se necesita otro 
 
 Los anuncios no se muestran públicamente hasta que queden aprobados. La administración revisa el anuncio antes de aprobar sus medios. Los documentos de identidad y exámenes médicos, cuando se entregan, son privados y solo se muestran al equipo autorizado.
 
-Una fotografía principal se modera por separado de la galería. Las cargas pasan por R2, reciben una marca Chile3X sutil en imágenes y se sirven a través de rutas que validan permisos. Los videos se validan por formato, peso y duración antes de quedar pendientes de revisión.
+Una fotografía principal se modera por separado de la galería. Las nuevas fotos de la galería pública pueden recibir una marca Chile3X sutil según el ajuste del portal. Quien publica puede pedir difuminado de rostros por imagen; el procesamiento ocurre en su navegador antes de cargar el archivo. Foto principal, videos, historias y contenido exclusivo no se transforman. Los videos se validan por formato, peso y duración antes de quedar pendientes de revisión.
 
 ### Contenido exclusivo
 
@@ -119,6 +119,13 @@ Las uniones de infraestructura están definidas en [`.openai/hosting.json`](.ope
 2. Revisar los archivos agrupados por anuncio y las bibliotecas exclusivas agrupadas por cuenta.
 3. Aprobar, cancelar aprobación o eliminar. La cancelación devuelve el archivo a revisión sin borrarlo.
 4. Verificar primero el anuncio y después sus documentos y medios relacionados.
+
+### Preparar fotos de la galería pública
+
+1. La persona abre su anuncio y elige archivos en **Galería pública**.
+2. Para cada foto puede activar **Difuminar rostros** si el administrador tiene la función disponible.
+3. El navegador indica preparación, detección de rostros, marca de agua y carga. Si la detección no puede ejecutarse, esa foto no se carga hasta que se desactive esa opción o se intente con otra imagen.
+4. La marca de agua y el difuminado se ajustan en `Administración > Configuración > Fotos de galería`; los cambios solo afectan futuras fotos.
 
 ### Operar contenido exclusivo
 

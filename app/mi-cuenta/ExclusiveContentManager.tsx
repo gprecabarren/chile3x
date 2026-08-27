@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import { useRef, useState } from "react";
-import { watermarkImage } from "./watermark-image";
 
 type Media = {
   id: string;
@@ -109,8 +108,7 @@ export function ExclusiveContentManager({
           if (videos.length + addedVideos >= 4 || !Number.isFinite(duration) || duration > 10.05) throw new Error("Puedes subir hasta 4 videos de 10 segundos o menos.");
         }
         if (isImage && images.length + addedImages >= 20) throw new Error("Puedes subir hasta 20 imágenes de contenido exclusivo.");
-        const file = isImage ? await watermarkImage(original, { maxBytes: 4_900_000, maxDimension: 2200 }) : original;
-        const form = new FormData(); form.set("file", file);
+        const form = new FormData(); form.set("file", original);
         const response = await fetch("/api/mi-cuenta/contenido/medios", { method: "POST", body: form });
         const payload = await response.json() as { error?: string; media?: Media; quota?: Quota };
         if (!response.ok || !payload.media || !payload.quota) throw new Error(payload.error ?? "No se pudo subir el archivo.");
@@ -118,7 +116,7 @@ export function ExclusiveContentManager({
         if (isImage) addedImages += 1;
         if (isVideo) addedVideos += 1;
       }
-      setNotice("El material se guardó de forma privada y quedó pendiente de revisión. Las imágenes llevan una marca Chile3X sutil.");
+      setNotice("El material se guardó de forma privada y quedó pendiente de revisión.");
     } catch (cause) { setNotice(cause instanceof Error ? cause.message : "No se pudo subir el archivo."); } finally { if (inputRef.current) inputRef.current.value = ""; setBusy(false); }
   }
 

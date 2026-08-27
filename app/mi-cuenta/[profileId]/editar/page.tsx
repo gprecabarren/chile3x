@@ -10,6 +10,7 @@ import { ProfileForm } from "../../ProfileForm";
 import { getVerificationDocuments } from "@/lib/verification-documents";
 import { ProfileVerificationDocuments } from "../../ProfileVerificationDocuments";
 import { ProfileSubmissionConfirmation } from "../../ProfileSubmissionConfirmation";
+import { getSiteSettings } from "@/lib/site-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -39,12 +40,13 @@ export default async function EditProfilePage({ params, searchParams }: { params
   if (!row) {
     notFound();
   }
-  const [tags, services, media, usage, documents] = await Promise.all([
+  const [tags, services, media, usage, documents, settings] = await Promise.all([
     db.select({ tag: profileTags.tag }).from(profileTags).where(eq(profileTags.profileId, profileId)),
     db.select({ service: profileServices.service, kind: profileServices.kind }).from(profileServices).where(eq(profileServices.profileId, profileId)),
     getProfileMedia(profileId),
     getMediaUsage(),
     getVerificationDocuments(profileId),
+    getSiteSettings(),
   ]);
   const query = await searchParams;
 
@@ -84,7 +86,7 @@ export default async function EditProfilePage({ params, searchParams }: { params
           }}
         />
         {row.profile.type === "escort" && <ProfileVerificationDocuments profileId={profileId} initialDocuments={documents} />}
-        <ProfileMediaManager profileId={profileId} initialMedia={media.map((item) => ({ id: item.id, url: `/media/${item.id}`, mediaType: item.mediaType, contentType: item.contentType, moderationStatus: item.moderationStatus, visibility: item.visibility, isProfilePhoto: item.isProfilePhoto, byteSize: item.byteSize }))} initialQuota={{ bytes: usage.bytes, ...getMediaQuotaState(usage.bytes) }} />
+        <ProfileMediaManager profileId={profileId} initialMedia={media.map((item) => ({ id: item.id, url: `/media/${item.id}`, mediaType: item.mediaType, contentType: item.contentType, moderationStatus: item.moderationStatus, visibility: item.visibility, isProfilePhoto: item.isProfilePhoto, byteSize: item.byteSize }))} initialQuota={{ bytes: usage.bytes, ...getMediaQuotaState(usage.bytes) }} mediaSettings={{ watermarkEnabled: settings.profile_gallery_watermark_enabled === "enabled", faceBlurEnabled: settings.profile_gallery_face_blur_enabled === "enabled" }} />
       </div>
     </AccountShell>
   );

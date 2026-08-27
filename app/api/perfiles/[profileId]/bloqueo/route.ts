@@ -16,7 +16,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const db = await getDb();
   const [profile] = await db.select({ id: profiles.id, ownerId: profiles.ownerId }).from(profiles).where(eq(profiles.id, profileId)).limit(1);
   if (!profile) return error("El anuncio no existe.", 404);
-  if (profile.ownerId === user.id) return error("No puedes ocultar tu propio anuncio.", 400);
+  if (profile.ownerId === user.id) return error("No puedes ocultar tu propio anuncio.", 403);
   await db.insert(blockedProfiles).values({ id: `block_${crypto.randomUUID()}`, userId: user.id, profileId }).onConflictDoNothing();
   return NextResponse.json({ blocked: true, message: "El anuncio quedó oculto de tu directorio." });
 }

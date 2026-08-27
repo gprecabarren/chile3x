@@ -24,6 +24,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const user = await getCurrentUser();
   if (!user) return error("Inicia sesión para reportar un anuncio.", 401);
 
+  const { profileId } = await params;
+  const db = await getDb();
+  const [profile] = await db.select({ id: profiles.id, ownerId: profiles.ownerId }).from(profiles).where(and(eq(profiles.id, profileId), eq(profiles.status, "approved"))).limit(1);
+  if (!profile) return error("El anuncio ya no está disponible.", 404);
+  if (profile.ownerId === user.id) return error("No puedes reportar tu propio anuncio.", 403);
+
   const form = await request.formData();
   const reason = String(form.get("reason") ?? "");
   const body = String(form.get("body") ?? "").trim().replace(/\s+/g, " ");
@@ -47,11 +53,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   })).then((evidence) => ({ evidence })).catch((cause) => ({ error: cause instanceof Error ? cause.message : "No se pudieron leer las evidencias." }));
   if ("error" in evidenceResult) return error(evidenceResult.error, 400);
   const evidence = evidenceResult.evidence;
-
-  const { profileId } = await params;
-  const db = await getDb();
-  const [profile] = await db.select({ id: profiles.id }).from(profiles).where(and(eq(profiles.id, profileId), eq(profiles.status, "approved"))).limit(1);
-  if (!profile) return error("El anuncio ya no está disponible.", 404);
 
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const recent = await db.select({ id: profileReports.id }).from(profileReports).where(and(eq(profileReports.profileId, profileId), eq(profileReports.reporterId, user.id), gte(profileReports.createdAt, since))).limit(1);

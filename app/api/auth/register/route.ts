@@ -9,6 +9,7 @@ import { encodeRegistrationState, registrationStateCookie, registrationStateFrom
 import { TURNSTILE_AUTH_REGISTER_ACTION } from "@/lib/turnstile";
 import { verifyTurnstile } from "@/lib/turnstile-server";
 import { MIN_PASSWORD_LENGTH } from "@/lib/password-policy";
+import { generateUniqueAccountUsername } from "@/lib/account-username";
 
 function redirectWithError(request: Request, error: string, formData?: FormData) {
   const url = new URL("/registro", request.url);
@@ -66,10 +67,12 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = `usr_${crypto.randomUUID()}`;
+    const username = await generateUniqueAccountUsername(displayName);
     stage = "create_user";
     await db.insert(users).values({
       id: userId,
       email,
+      username,
       displayName,
       passwordHash: await hashPassword(password),
       role: "visitor",

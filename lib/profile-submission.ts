@@ -312,8 +312,14 @@ function handleWithSuffix(base: string) {
 
 async function isProfileHandleAvailable(handle: string, currentProfileId?: string) {
   const db = await getDb();
-  const [existing] = await db.select({ id: profiles.id }).from(profiles).where(eq(profiles.handle, handle)).limit(1);
-  return !existing || existing.id === currentProfileId;
+  const [profileRows, accountRows] = await Promise.all([
+    db.select({ id: profiles.id }).from(profiles).where(eq(profiles.handle, handle)).limit(1),
+    db.select({ id: users.id }).from(users).where(eq(users.username, handle)).limit(1),
+  ]);
+  const existing = profileRows[0];
+  // A handle may belong to the announcement currently being edited, but it
+  // may never overlap an account username, including its owner's username.
+  return (!existing || existing.id === currentProfileId) && !accountRows[0];
 }
 
 async function resolveProfileHandle(requestedHandle: string | null, displayName: string, currentProfileId?: string) {
@@ -365,6 +371,15 @@ async function replaceProfileCollections(profileId: string, submission: ProfileS
 
 export async function createProfile(ownerId: string, submission: ProfileSubmission) {
   const db = await getDb();
+  if (submission.type === "escort") {
+    const [existingEscort] = await db.select({ id: profiles.id }).from(profiles).where(and(
+      eq(profiles.ownerId, ownerId),
+      eq(profiles.type, "escort"),
+    )).limit(1);
+    if (existingEscort) {
+      throw new ProfileValidationError("Esta cuenta ya administra un anuncio Escort. Puedes crear varios anuncios de Agencia o Arriendo, pero solo un anuncio Escort por cuenta.");
+    }
+  }
   const id = `prf_${crypto.randomUUID()}`;
   const now = new Date();
   const status = submission.intent === "submit" ? "pending" : "draft";

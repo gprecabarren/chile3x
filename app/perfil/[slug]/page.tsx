@@ -17,8 +17,7 @@ import { ProfileEngagementActions } from "../ProfileEngagementActions";
 import { ProfileReviews } from "../ProfileReviews";
 import { getApprovedReviews } from "@/lib/profile-interactions";
 import { getVerificationDocuments } from "@/lib/verification-documents";
-import { getApprovedExclusiveMedia } from "@/lib/media";
-import { canAccessExclusiveMedia } from "@/lib/profile-safety";
+import { canAccessExclusiveContent, getExclusiveContentForProfile } from "@/lib/exclusive-content";
 import { ProfileSafetyActions } from "../ProfileSafetyActions";
 import { TrackedContactLink } from "../TrackedContactLink";
 import { safeJsonLd } from "@/lib/json-ld";
@@ -159,13 +158,14 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   }));
   const availability = readAvailability(profile.details.metadata.availability);
   const availabilityStatus = getAvailabilityStatus(availability);
-  const [stories, approvedReviews, verificationDocuments, exclusiveMedia] = await Promise.all([getActiveStories({ profileId: profile.id }), getApprovedReviews(profile.id), admin && profile.type === "escort" ? getVerificationDocuments(profile.id) : Promise.resolve([]), getApprovedExclusiveMedia(profile.id)]);
+  const [stories, approvedReviews, verificationDocuments, exclusiveContent] = await Promise.all([getActiveStories({ profileId: profile.id }), getApprovedReviews(profile.id), admin && profile.type === "escort" ? getVerificationDocuments(profile.id) : Promise.resolve([]), getExclusiveContentForProfile(profile.id)]);
   const viewerOwnsProfile = viewer ? (await (await getDb()).select({ ownerId: profiles.ownerId }).from(profiles).where(eq(profiles.id, profile.id)).limit(1))[0]?.ownerId === viewer.id : false;
   const coverImage = profile.media.find((media) => media.mediaType === "image" && media.isProfilePhoto) ?? profile.media.find((media) => media.mediaType === "image");
   const engagement = profile.status === "approved" && !profile.isDemo
     ? await getProfileEngagement(profile.id, viewer?.id)
     : null;
-  const hasExclusiveAccess = exclusiveMedia.length > 0 && await canAccessExclusiveMedia(profile.id, viewer?.id, Boolean(admin));
+  const exclusiveMedia = exclusiveContent.media;
+  const hasExclusiveAccess = exclusiveMedia.length > 0 && exclusiveContent.collection && await canAccessExclusiveContent(exclusiveContent.collection.id, viewer?.id, Boolean(admin));
   const travel = profile.type === "escort" && profile.details.metadata.travel_city && profile.details.metadata.travel_start && profile.details.metadata.travel_end ? {
     city: profile.details.metadata.travel_city,
     start: profile.details.metadata.travel_start,
@@ -204,7 +204,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
         <div className="profile-media-grid">{profile.media.filter((media) => media.mediaType === "image" && !media.isProfilePhoto).map((media, index) => <figure key={media.id}><Image src={media.url} alt={media.altText ?? `Foto ${index + 1} de ${profile.displayName}`} fill unoptimized sizes="(max-width: 620px) 100vw, (max-width: 900px) 50vw, 33vw" /></figure>)}</div>
       </section>}
       {profile.media.some((media) => media.mediaType === "video") && <section className="profile-media-gallery profile-video-gallery" aria-label={`Videos de ${profile.displayName}`}><div><p className="eyebrow">VIDEOS</p><h2>Videos cortos</h2><p>Material publicado después de revisión del equipo del sitio web.</p></div><div className="profile-video-grid">{profile.media.filter((media) => media.mediaType === "video").map((media, index) => <figure key={media.id}><video controls preload="metadata" playsInline aria-label={`Video ${index + 1} de ${profile.displayName}`}><source src={media.url} type={media.contentType} />Tu navegador no puede reproducir este video.</video></figure>)}</div></section>}
-      {exclusiveMedia.length > 0 && <section className={`profile-exclusive-gallery${hasExclusiveAccess ? " is-unlocked" : " is-locked"}`}><div><p className="eyebrow">CONTENIDO EXCLUSIVO</p><h2>{hasExclusiveAccess ? "Contenido desbloqueado" : "Galería privada"}</h2><p>{hasExclusiveAccess ? "Tu cuenta fue autorizada directamente por la persona anunciante." : "Consulta directamente a la persona anunciante para solicitar acceso. Chile3X no procesa este pago."}</p></div><div className="exclusive-media-grid">{exclusiveMedia.map((media, index) => hasExclusiveAccess ? <figure key={media.id}>{media.mediaType === "image" ? <Image src={`/media/${media.id}`} alt={`Contenido exclusivo ${index + 1} de ${profile.displayName}`} fill unoptimized sizes="(max-width: 620px) 90vw, 33vw" /> : <video controls playsInline preload="metadata"><source src={`/media/${media.id}`} type={media.contentType} /></video>}</figure> : <figure className="exclusive-media-locked" key={media.id}><span aria-hidden="true">🔒</span><strong>Contenido privado</strong></figure>)}</div></section>}
+      {exclusiveMedia.length > 0 && <section className={`profile-exclusive-gallery${hasExclusiveAccess ? " is-unlocked" : " is-locked"}`}><div><p className="eyebrow">CONTENIDO EXCLUSIVO</p><h2>{hasExclusiveAccess ? "Contenido desbloqueado" : "Galería privada"}</h2><p>{hasExclusiveAccess ? "Tu cuenta fue autorizada directamente por la persona anunciante." : "Consulta directamente a la persona anunciante para solicitar acceso. Chile3X no procesa este pago."}</p></div><div className="exclusive-media-grid">{exclusiveMedia.map((media, index) => hasExclusiveAccess ? <figure key={media.id}>{media.mediaType === "image" ? <Image src={`/contenido/${media.id}`} alt={`Contenido exclusivo ${index + 1} de ${profile.displayName}`} fill unoptimized sizes="(max-width: 620px) 90vw, 33vw" /> : <video controls playsInline preload="metadata"><source src={`/contenido/${media.id}`} type={media.contentType} /></video>}</figure> : <figure className="exclusive-media-locked" key={media.id}><span aria-hidden="true">🔒</span><strong>Contenido privado</strong></figure>)}</div></section>}
       <div id="historias"><StoryRail stories={stories} profileOnly /></div>
       <section className="profile-detail-layout">
         <div className="profile-detail-main">

@@ -43,9 +43,8 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota }: {
   const [isBusy, setIsBusy] = useState(false);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const profilePhotoInputRef = useRef<HTMLInputElement>(null);
-  const exclusiveInputRef = useRef<HTMLInputElement>(null);
 
-  async function upload(files: FileList | null, uploadKind: "gallery" | "profile_photo" | "exclusive" = "gallery") {
+  async function upload(files: FileList | null, uploadKind: "gallery" | "profile_photo" = "gallery") {
     if (!files?.length || isBusy) return;
     setIsBusy(true);
     setNotice("");
@@ -77,7 +76,6 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota }: {
     } finally {
       if (galleryInputRef.current) galleryInputRef.current.value = "";
       if (profilePhotoInputRef.current) profilePhotoInputRef.current.value = "";
-      if (exclusiveInputRef.current) exclusiveInputRef.current.value = "";
       setIsBusy(false);
     }
   }
@@ -102,20 +100,16 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota }: {
 
   const profilePhotos = media.filter((item) => item.isProfilePhoto);
   const galleryMedia = media.filter((item) => !item.isProfilePhoto && item.visibility === "public");
-  const exclusiveMedia = media.filter((item) => !item.isProfilePhoto && item.visibility === "exclusive");
   const images = galleryMedia.filter((item) => item.mediaType === "image");
   const videos = galleryMedia.filter((item) => item.mediaType === "video");
   const canUpload = !isBusy && quota.level !== "blocked" && (images.length < 10 || videos.length < 3);
 
   return <section className="profile-media-manager">
-    <div className="profile-media-manager-heading"><div><p className="eyebrow">MEDIOS DEL ANUNCIO</p><h2>Fotos y videos</h2><span>Separa tu foto principal, la galería pública y el contenido exclusivo. Todo material llega primero a revisión.</span></div><strong>{images.length}/10 fotos<br />{videos.length}/3 videos</strong></div>
+    <div className="profile-media-manager-heading"><div><p className="eyebrow">MEDIOS DEL ANUNCIO</p><h2>Fotos y videos</h2><span>Separa tu foto principal de la galería pública. Todo material llega primero a revisión. El contenido exclusivo se administra desde la sección Contenido de tu cuenta.</span></div><strong>{images.length}/10 fotos<br />{videos.length}/3 videos</strong></div>
     <p className={`media-quota media-quota-${quota.level}`}><b>Uso de R2: {formatBytes(quota.bytes)}</b>{quota.message}</p>
     {notice && <p className="media-manager-notice" role="status">{notice}</p>}
     <div className="profile-photo-manager"><div><p className="eyebrow">FOTO PRINCIPAL</p><h3>Foto de perfil</h3><span>Es la imagen prioritaria en el directorio y al abrir el aviso. Se revisa por separado de la galería.</span></div><label className="button button-outline">{isBusy ? "Procesando…" : "Cambiar foto de perfil"}<input ref={profilePhotoInputRef} type="file" accept="image/jpeg,image/png,image/webp" disabled={isBusy || quota.level === "blocked"} onChange={(event) => upload(event.target.files, "profile_photo")} /></label></div>
     {profilePhotos.length > 0 && <div className="profile-photo-preview-list">{profilePhotos.map((item) => <article key={item.id}><div className="media-owner-preview"><Image src={item.url} alt="Vista previa de foto de perfil" fill unoptimized sizes="120px" /></div><div><span className={`media-status media-status-${item.moderationStatus}`}>{statusLabel[item.moderationStatus]}</span><small>Foto principal · {formatBytes(item.byteSize)}</small><button type="button" onClick={() => remove(item.id)} disabled={isBusy}>Eliminar</button></div></article>)}</div>}
     <section className="profile-public-gallery-manager"><div><p className="eyebrow">GALERÍA PÚBLICA</p><h3>Fotos y videos del anuncio</h3><p>Estas imágenes y videos aparecerán en tu perfil solo después de la aprobación del equipo.</p></div><label className="button button-primary">{isBusy ? "Procesando…" : "Agregar a la galería"}<input ref={galleryInputRef} type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple disabled={!canUpload} onChange={(event) => upload(event.target.files)} /></label><small>Fotos JPEG, PNG o WebP: hasta 5 MB. Videos MP4 o WebM: hasta 8 MB y 10 segundos.</small>{galleryMedia.length > 0 ? <div className="media-owner-grid">{galleryMedia.map((item, index) => <article key={item.id}><div className="media-owner-preview">{item.mediaType === "image" ? <Image src={item.url} alt={`Vista previa de foto ${index + 1}`} fill unoptimized sizes="(max-width: 620px) 50vw, 180px" /> : <video controls preload="metadata"><source src={item.url} type={item.contentType} /></video>}</div><div><span className={`media-status media-status-${item.moderationStatus}`}>{statusLabel[item.moderationStatus]}</span><small>{item.mediaType === "video" ? "Video · " : "Foto · "}{formatBytes(item.byteSize)}</small><button type="button" onClick={() => remove(item.id)} disabled={isBusy}>Eliminar</button></div></article>)}</div> : <p className="profile-media-empty">Aún no has agregado fotos o videos a la galería pública.</p>}</section>
-    <section className="exclusive-media-owner"><div><p className="eyebrow">CONTENIDO EXCLUSIVO</p><h3>Galería privada para personas autorizadas</h3><p>Se muestra bloqueada y desenfocada al público. Solo el dueño, el equipo administrador y las cuentas que autorices podrán abrir los archivos aprobados.</p></div><label className="button button-outline">{isBusy ? "Procesando…" : "Agregar contenido exclusivo"}<input ref={exclusiveInputRef} type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple disabled={!canUpload} onChange={(event) => upload(event.target.files, "exclusive")} /></label>
-      {exclusiveMedia.length > 0 && <div className="media-owner-grid">{exclusiveMedia.map((item, index) => <article key={item.id}><div className="media-owner-preview">{item.mediaType === "image" ? <Image src={item.url} alt={`Vista previa exclusiva ${index + 1}`} fill unoptimized sizes="180px" /> : <video controls preload="metadata"><source src={item.url} type={item.contentType} /></video>}</div><div><span className={`media-status media-status-${item.moderationStatus}`}>{statusLabel[item.moderationStatus]}</span><small>Exclusivo · {formatBytes(item.byteSize)}</small><button type="button" onClick={() => remove(item.id)} disabled={isBusy}>Eliminar</button></div></article>)}</div>}
-    </section>
   </section>;
 }

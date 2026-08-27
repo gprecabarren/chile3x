@@ -6,6 +6,7 @@ import { accountTokens, authSessions, users } from "@/db/schema";
 import { readAccountIdentity } from "@/lib/account-data";
 import { assertSameOrigin, getCurrentUser, hashPassword } from "@/lib/auth";
 import { MIN_PASSWORD_LENGTH } from "@/lib/password-policy";
+import { AccountUsernameError, assertAccountUsernameAvailable, validateAccountUsername } from "@/lib/account-username";
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,12 +40,29 @@ export async function POST(request: NextRequest) {
   const [current] = await db.select({ birthDate: users.birthDate }).from(users).where(eq(users.id, user.id)).limit(1);
   const displayNameInput = formData.get("display_name");
   const displayName = typeof displayNameInput === "string" ? displayNameInput.trim().slice(0, 80) : "";
+  const usernameInput = formData.get("username");
+  let username = "";
+  try {
+    username = validateAccountUsername(typeof usernameInput === "string" ? usernameInput : "");
+  } catch (error) {
+    void error;
+    return NextResponse.redirect(new URL("/mi-cuenta/datos-personales?notice=username_invalid", request.url), 303);
+  }
+  try {
+    await assertAccountUsernameAvailable(username, user.id);
+  } catch (error) {
+    if (error instanceof AccountUsernameError) {
+      return NextResponse.redirect(new URL("/mi-cuenta/datos-personales?notice=username_taken", request.url), 303);
+    }
+    return NextResponse.redirect(new URL("/mi-cuenta/datos-personales?notice=error", request.url), 303);
+  }
   const identity = readAccountIdentity(formData);
   if (!current || !identity || identity.birthDate !== current.birthDate || displayName.length < 2) {
     return NextResponse.redirect(new URL("/mi-cuenta/datos-personales?notice=error", request.url), 303);
   }
   await db.update(users).set({
     displayName,
+    username,
     firstName: identity.firstName || null,
     lastName: null,
     documentType: identity.documentType,
@@ -53,5 +71,5 @@ export async function POST(request: NextRequest) {
     city: identity.city,
     phone: identity.phone || null,
   }).where(eq(users.id, user.id));
-  return NextResponse.redirect(new URL("/mi-cuenta/datos-personales?notice=saved", request.url), 303);
+  return NextResponse.redirect(new URL("/mi-cuenta/datos-personales?notice=username_saved", request.url), 303);
 }

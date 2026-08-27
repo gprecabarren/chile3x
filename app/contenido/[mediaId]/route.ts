@@ -1,33 +1,27 @@
 import { notFound } from "next/navigation";
 import { getCurrentAdmin, getCurrentUser } from "@/lib/auth";
-import { findProfileMedia } from "@/lib/media";
+import { canAccessExclusiveContent, findExclusiveContentMedia } from "@/lib/exclusive-content";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ mediaId: string }> }) {
   const { mediaId } = await params;
-  const record = await findProfileMedia(mediaId);
+  const record = await findExclusiveContentMedia(mediaId);
   if (!record) notFound();
-
   const [user, admin] = await Promise.all([getCurrentUser(), getCurrentAdmin()]);
-  const isPublic = record.media.visibility === "public" && record.media.moderationStatus === "approved" && record.profile.status === "approved";
-  if (!isPublic) {
-    // Legacy private media is only retained as a migration source. Access for
-    // buyers is served exclusively by /contenido/:id, whose authorization is
-    // based on the account-owned collection rather than a listing status.
-    if (user?.id !== record.profile.ownerId && !admin) notFound();
-  }
+  const canManage = user?.id === record.collection.ownerId || Boolean(admin);
+  const canAccess = canManage || (record.media.moderationStatus === "approved" && await canAccessExclusiveContent(record.collection.id, user?.id, Boolean(admin)));
+  if (!canAccess) notFound();
 
   const { env } = await import("cloudflare:workers");
   if (!env.MEDIA) return new Response("El almacenamiento no está disponible.", { status: 503 });
   const object = await env.MEDIA.get(record.media.r2Key);
   if (!object) notFound();
-
   const headers = new Headers();
   object.writeHttpMetadata(headers);
   headers.set("content-type", record.media.contentType);
   headers.set("x-content-type-options", "nosniff");
   headers.set("etag", object.httpEtag);
-  headers.set("cache-control", isPublic ? "public, max-age=86400, stale-while-revalidate=604800" : "private, no-store");
+  headers.set("cache-control", "private, no-store");
   return new Response(object.body, { headers });
 }

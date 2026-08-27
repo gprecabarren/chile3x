@@ -55,7 +55,6 @@ export function GooglePreferredSourceLink({ placement = "footer" }: { placement?
       <GoogleColorMark />
       <span className="google-preferred-source-label">Preferir en Google</span>
       <ExternalLinkMark />
-      <span className="google-preferred-source-colors" aria-hidden="true"><i /><i /><i /><i /></span>
     </a>
   );
 }

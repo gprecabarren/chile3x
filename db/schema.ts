@@ -12,6 +12,11 @@ const createdAt = text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`);
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
+  // Public account identifier. It is intentionally separate from an
+  // announcement handle: one account can administer several announcements.
+  // Existing accounts receive a generated value in the corresponding
+  // migration; new accounts always receive one at creation time.
+  username: text("username"),
   passwordHash: text("password_hash"),
   displayName: text("display_name"),
   firstName: text("first_name"),
@@ -26,7 +31,7 @@ export const users = sqliteTable("users", {
   role: text("role", { enum: ["visitor", "advertiser", "tester", "admin"] }).notNull().default("visitor"),
   emailVerifiedAt: text("email_verified_at"),
   createdAt,
-});
+}, (table) => [uniqueIndex("users_username_unique").on(table.username)]);
 
 export const authSessions = sqliteTable("auth_sessions", {
   id: text("id").primaryKey(),
@@ -298,6 +303,44 @@ export const newsMedia = sqliteTable("news_media", {
   uploadedBy: text("uploaded_by").notNull().references(() => users.id, { onDelete: "restrict" }),
   createdAt,
 });
+
+// Premium content belongs to an account rather than to an announcement. An
+// account can associate that collection with one Escort announcement for its
+// public preview, while the library and buyer access remain available if that
+// announcement is paused or deleted.
+export const exclusiveContentCollections = sqliteTable("exclusive_content_collections", {
+  id: text("id").primaryKey(),
+  ownerId: text("owner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  profileId: text("profile_id").references(() => profiles.id, { onDelete: "set null" }),
+  createdAt,
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  uniqueIndex("exclusive_content_collection_owner_unique").on(table.ownerId),
+  uniqueIndex("exclusive_content_collection_profile_unique").on(table.profileId),
+]);
+
+export const exclusiveContentMedia = sqliteTable("exclusive_content_media", {
+  id: text("id").primaryKey(),
+  collectionId: text("collection_id").notNull().references(() => exclusiveContentCollections.id, { onDelete: "cascade" }),
+  mediaType: text("media_type", { enum: ["image", "video"] }).notNull(),
+  r2Key: text("r2_key").notNull().unique(),
+  byteSize: integer("byte_size").notNull().default(0),
+  contentType: text("content_type").notNull().default("image/jpeg"),
+  moderationStatus: text("moderation_status", { enum: ["pending", "approved", "rejected"] }).notNull().default("pending"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt,
+}, (table) => [index("exclusive_content_media_collection_idx").on(table.collectionId, table.sortOrder)]);
+
+export const exclusiveContentAccess = sqliteTable("exclusive_content_access", {
+  id: text("id").primaryKey(),
+  collectionId: text("collection_id").notNull().references(() => exclusiveContentCollections.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  grantedBy: text("granted_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt,
+}, (table) => [
+  uniqueIndex("exclusive_content_access_unique").on(table.collectionId, table.userId),
+  index("exclusive_content_access_user_idx").on(table.userId, table.collectionId),
+]);
 
 // Private quality-assurance tickets. Only accounts explicitly created with the
 // tester role can submit them; they never appear in public reporting flows.

@@ -5,6 +5,7 @@ import { users } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin, hashPassword } from "@/lib/auth";
 import { readAccountIdentity } from "@/lib/account-data";
 import { MIN_PASSWORD_LENGTH } from "@/lib/password-policy";
+import { generateUniqueAccountUsername } from "@/lib/account-username";
 
 function redirectWithNotice(request: Request, notice: string) {
   const url = new URL("/admin/cuentas", request.url);
@@ -49,9 +50,11 @@ export async function POST(request: NextRequest) {
     if (existingRut) return redirectWithNotice(request, "duplicate_rut");
   }
 
+  const username = await generateUniqueAccountUsername(displayName);
   await db.insert(users).values({
     id: `usr_${crypto.randomUUID()}`,
     email,
+    username,
     displayName,
     passwordHash: await hashPassword(password),
     role: role as "advertiser" | "tester",

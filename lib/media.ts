@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/db";
-import { newsMedia, profileMedia, profileReportEvidence, profileStatuses, profileVerificationFiles, profiles } from "@/db/schema";
+import { exclusiveContentMedia, newsMedia, profileMedia, profileReportEvidence, profileStatuses, profileVerificationFiles, profiles } from "@/db/schema";
 
 export const MAX_IMAGES_PER_PROFILE = 10;
 export const MAX_IMAGE_BYTES = 5_000_000;
@@ -89,11 +89,14 @@ export async function getMediaUsage() {
   // that owns an object so the quota warning stays meaningful as features
   // such as reports and stories are used.
   const totals = await Promise.all([
-    db.select({ bytes: sql<number>`coalesce(sum(${profileMedia.byteSize}), 0)`, files: sql<number>`count(*)` }).from(profileMedia),
+    // New exclusive media lives in exclusiveContentMedia. Ignore historical
+    // profile-exclusive rows here so migrated R2 objects are not counted twice.
+    db.select({ bytes: sql<number>`coalesce(sum(${profileMedia.byteSize}), 0)`, files: sql<number>`count(*)` }).from(profileMedia).where(eq(profileMedia.visibility, "public")),
     db.select({ bytes: sql<number>`coalesce(sum(${profileStatuses.byteSize}), 0)`, files: sql<number>`count(*)` }).from(profileStatuses),
     db.select({ bytes: sql<number>`coalesce(sum(${profileVerificationFiles.byteSize}), 0)`, files: sql<number>`count(*)` }).from(profileVerificationFiles),
     db.select({ bytes: sql<number>`coalesce(sum(${newsMedia.byteSize}), 0)`, files: sql<number>`count(*)` }).from(newsMedia),
     db.select({ bytes: sql<number>`coalesce(sum(${profileReportEvidence.byteSize}), 0)`, files: sql<number>`count(*)` }).from(profileReportEvidence),
+    db.select({ bytes: sql<number>`coalesce(sum(${exclusiveContentMedia.byteSize}), 0)`, files: sql<number>`count(*)` }).from(exclusiveContentMedia),
   ]);
   return totals.reduce((usage, [row]) => ({
     bytes: usage.bytes + Number(row?.bytes ?? 0),

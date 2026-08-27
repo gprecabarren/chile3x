@@ -1,14 +1,13 @@
 import { and, eq } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { getDb } from "@/db";
-import { profileDetails, profileExclusiveAccess, profileServices, profileTags, profiles, users } from "@/db/schema";
+import { profileDetails, profileServices, profileTags, profiles } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { getMediaQuotaState, getMediaUsage, getProfileMedia } from "@/lib/media";
 import { AccountHeading, AccountShell } from "../../_components";
 import { ProfileMediaManager } from "../../ProfileMediaManager";
 import { ProfileForm } from "../../ProfileForm";
 import { getVerificationDocuments } from "@/lib/verification-documents";
-import { ExclusiveAccessManager } from "../../ExclusiveAccessManager";
 import { ProfileVerificationDocuments } from "../../ProfileVerificationDocuments";
 import { ProfileSubmissionConfirmation } from "../../ProfileSubmissionConfirmation";
 
@@ -40,13 +39,12 @@ export default async function EditProfilePage({ params, searchParams }: { params
   if (!row) {
     notFound();
   }
-  const [tags, services, media, usage, documents, grants] = await Promise.all([
+  const [tags, services, media, usage, documents] = await Promise.all([
     db.select({ tag: profileTags.tag }).from(profileTags).where(eq(profileTags.profileId, profileId)),
     db.select({ service: profileServices.service, kind: profileServices.kind }).from(profileServices).where(eq(profileServices.profileId, profileId)),
     getProfileMedia(profileId),
     getMediaUsage(),
     getVerificationDocuments(profileId),
-    db.select({ userId: users.id, email: users.email, displayName: users.displayName }).from(profileExclusiveAccess).innerJoin(users, eq(profileExclusiveAccess.userId, users.id)).where(eq(profileExclusiveAccess.profileId, profileId)),
   ]);
   const query = await searchParams;
 
@@ -87,7 +85,6 @@ export default async function EditProfilePage({ params, searchParams }: { params
         />
         {row.profile.type === "escort" && <ProfileVerificationDocuments profileId={profileId} initialDocuments={documents} />}
         <ProfileMediaManager profileId={profileId} initialMedia={media.map((item) => ({ id: item.id, url: `/media/${item.id}`, mediaType: item.mediaType, contentType: item.contentType, moderationStatus: item.moderationStatus, visibility: item.visibility, isProfilePhoto: item.isProfilePhoto, byteSize: item.byteSize }))} initialQuota={{ bytes: usage.bytes, ...getMediaQuotaState(usage.bytes) }} />
-        <ExclusiveAccessManager profileId={profileId} initialGrants={grants} />
       </div>
     </AccountShell>
   );

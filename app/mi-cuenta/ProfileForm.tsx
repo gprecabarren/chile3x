@@ -57,6 +57,7 @@ type ProfileFormProps = {
   action: string;
   submitLabel: string;
   initial?: ProfileFormInitial;
+  allowEscort?: boolean;
 };
 
 function socialUsername(value: string) {
@@ -80,10 +81,11 @@ function metadataValue(initial: ProfileFormInitial | undefined, key: string) {
   return initial?.details.metadata?.[key] ?? "";
 }
 
-export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) {
+export function ProfileForm({ action, submitLabel, initial, allowEscort = true }: ProfileFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const storageKey = `chile3x-profile-draft:${action}`;
-  const [type, setType] = useState<ProfileType>(initial?.type ?? "escort");
+  const availableProfileTypes = useMemo(() => profileTypes.filter((item) => initial || allowEscort || item !== "escort"), [allowEscort, initial]);
+  const [type, setType] = useState<ProfileType>(initial?.type ?? (allowEscort ? "escort" : "agency"));
   const [region, setRegion] = useState(initial?.region ?? regions[0].title);
   const availableCities = useMemo(
     () => regions.find((item) => item.title === region)?.cities ?? [],
@@ -117,7 +119,7 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
     const savedCity = saved.city?.[0];
 
     const restore = window.requestAnimationFrame(() => {
-      if (!typeLocked && savedType && profileTypes.includes(savedType as ProfileType)) setType(savedType as ProfileType);
+      if (!typeLocked && savedType && availableProfileTypes.includes(savedType as ProfileType)) setType(savedType as ProfileType);
       if (savedRegion && regions.some((item) => item.title === savedRegion)) setRegion(savedRegion);
       if (savedCity) setCity(savedCity);
       setSelectedProfileTags((saved.tags ?? []).filter((tag) => profileTags.includes(tag)));
@@ -140,7 +142,7 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
       }
     });
     return () => window.cancelAnimationFrame(restore);
-  }, [storageKey, typeLocked]);
+  }, [availableProfileTypes, storageKey, typeLocked]);
 
   function saveFormBeforeSubmit(form: HTMLFormElement) {
     const saved: Record<string, string[]> = {};
@@ -184,8 +186,9 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
           <label>
             Tipo de anuncio
             {typeLocked ? <><input name="type" type="hidden" value={type} /><span className="profile-type-locked"><strong>{profileTypeLabel(type)}</strong><small>El tipo queda definido al crear el anuncio. Para otro tipo, crea una publicación nueva.</small></span></> : <select name="type" value={type} onChange={(event) => setType(event.target.value as ProfileType)}>
-              {profileTypes.map((item) => <option key={item} value={item}>{profileTypeLabel(item)}</option>)}
+              {availableProfileTypes.map((item) => <option key={item} value={item}>{profileTypeLabel(item)}</option>)}
             </select>}
+            {!typeLocked && !allowEscort && <small>Esta cuenta ya tiene un anuncio Escort. Puedes crear agencias o arriendos adicionales.</small>}
           </label>
           <label>
             Nombre visible

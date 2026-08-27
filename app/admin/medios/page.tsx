@@ -2,7 +2,7 @@ import Image from "next/image";
 import { desc, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
-import { profileMedia, profiles, users } from "@/db/schema";
+import { exclusiveContentCollections, exclusiveContentMedia, profileMedia, profiles, users } from "@/db/schema";
 import { getCurrentAdmin } from "@/lib/auth";
 import { formatMediaBytes, getMediaQuotaState, getMediaUsage } from "@/lib/media";
 import { AdminPageHeading, AdminShell } from "../_components";
@@ -25,15 +25,17 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
   if (!admin) redirect("/api/auth/github/start?return_to=/admin/medios");
 
   const db = await getDb();
-  const [rows, usage, params] = await Promise.all([
+  const [rows, exclusiveRows, usage, params] = await Promise.all([
     db.select({ media: profileMedia, profileId: profiles.id, profileName: profiles.displayName, profileSlug: profiles.slug, profileHandle: profiles.handle, profileStatus: profiles.status, ownerEmail: users.email }).from(profileMedia).innerJoin(profiles, eq(profileMedia.profileId, profiles.id)).innerJoin(users, eq(profiles.ownerId, users.id)).orderBy(desc(profileMedia.createdAt)),
+    db.select({ media: exclusiveContentMedia, collectionId: exclusiveContentCollections.id, linkedProfileId: profiles.id, linkedProfileName: profiles.displayName, ownerUsername: users.username, ownerName: users.displayName }).from(exclusiveContentMedia).innerJoin(exclusiveContentCollections, eq(exclusiveContentMedia.collectionId, exclusiveContentCollections.id)).innerJoin(users, eq(exclusiveContentCollections.ownerId, users.id)).leftJoin(profiles, eq(exclusiveContentCollections.profileId, profiles.id)).orderBy(desc(exclusiveContentMedia.createdAt)),
     getMediaUsage(),
     searchParams,
   ]);
   const selectedProfileId = (params.perfil ?? "").trim();
   const visibleRows = selectedProfileId ? rows.filter((row) => row.profileId === selectedProfileId) : rows;
+  const visibleExclusiveRows = selectedProfileId ? exclusiveRows.filter((row) => row.linkedProfileId === selectedProfileId) : exclusiveRows;
   const quota = getMediaQuotaState(usage.bytes);
-  const pending = rows.filter((row) => row.media.moderationStatus === "pending").length;
+  const pending = rows.filter((row) => row.media.moderationStatus === "pending").length + exclusiveRows.filter((row) => row.media.moderationStatus === "pending").length;
   const returnTo = selectedProfileId ? `/admin/medios?perfil=${encodeURIComponent(selectedProfileId)}` : "/admin/medios";
   const groups = new Map<string, { id: string; name: string; slug: string; handle: string | null; status: string; ownerEmail: string; items: typeof visibleRows }>();
   for (const row of visibleRows) {
@@ -46,13 +48,17 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
     <div className="admin-media-preview">{row.media.mediaType === "image" ? <Image src={`/media/${row.media.id}`} alt={`Archivo enviado por ${row.profileName}`} fill unoptimized sizes="(max-width: 720px) 100vw, 300px" /> : <video controls preload="metadata"><source src={`/media/${row.media.id}`} type={row.media.contentType} /></video>}</div>
     <div><span className={`media-status media-status-${row.media.moderationStatus}`}>{row.media.moderationStatus === "approved" ? "Publicada" : row.media.moderationStatus === "pending" ? "En revisión" : "Rechazada"}</span><p>{row.media.isProfilePhoto ? "Foto de perfil" : row.media.visibility === "exclusive" ? "Contenido exclusivo" : row.media.mediaType === "video" ? "Video de galería" : "Foto de galería"} · {formatMediaBytes(row.media.byteSize)}</p><form action={`/api/admin/media/${row.media.id}`} method="post"><input type="hidden" name="return_to" value={returnTo} />{row.media.moderationStatus === "approved" ? <button className="button button-outline" type="submit" name="action" value="unapprove">Cancelar aprobación</button> : <button className="button button-primary" type="submit" name="action" value="approve">Aprobar archivo</button>}<button className="button button-outline" type="submit" name="action" value="delete">Eliminar</button></form></div>
   </article>);
+  const exclusiveCards = (items: typeof visibleExclusiveRows) => items.map((row) => <article key={row.media.id} className={`admin-media-card is-${row.media.moderationStatus}`}>
+    <div className="admin-media-preview">{row.media.mediaType === "image" ? <Image src={`/contenido/${row.media.id}`} alt={`Contenido exclusivo de @${row.ownerUsername ?? "usuario"}`} fill unoptimized sizes="(max-width: 720px) 100vw, 300px" /> : <video controls preload="metadata"><source src={`/contenido/${row.media.id}`} type={row.media.contentType} /></video>}</div>
+    <div><span className={`media-status media-status-${row.media.moderationStatus}`}>{row.media.moderationStatus === "approved" ? "Publicada" : row.media.moderationStatus === "pending" ? "En revisión" : "Rechazada"}</span><p>Contenido exclusivo · {row.media.mediaType === "video" ? "Video" : "Foto"} · {formatMediaBytes(row.media.byteSize)}</p><form action={`/api/admin/contenido/${row.media.id}`} method="post"><input type="hidden" name="return_to" value={returnTo} />{row.media.moderationStatus === "approved" ? <button className="button button-outline" type="submit" name="action" value="unapprove">Cancelar aprobación</button> : <button className="button button-primary" type="submit" name="action" value="approve">Aprobar archivo</button>}<button className="button button-outline" type="submit" name="action" value="delete">Eliminar</button></form></div>
+  </article>);
 
   return <AdminShell user={admin}><div className="admin-content"><a className="page-back-link" href="/admin">← Volver al resumen</a>
     <AdminPageHeading eyebrow="MODERACIÓN DE MEDIOS" title={selectedProfileId ? "Medios del anuncio" : "Medios por anuncio"} description="Revisa primero el aviso y luego sus archivos. Cada grupo corresponde a una sola publicación para que fotos, videos y contenido exclusivo nunca se mezclen." />
     {params.notice && notices[params.notice] && <p className="admin-success" role="status">{notices[params.notice]}</p>}
     {selectedProfileId && <a className="button button-outline admin-media-all-link" href="/admin/medios">Ver todos los anuncios</a>}
     <section className={`admin-media-quota admin-media-quota-${quota.level}`}><div><p>ALMACENAMIENTO R2</p><h2>{formatMediaBytes(usage.bytes)} registrados</h2><span>{usage.files} archivos · margen interno configurado: 8 GB</span></div><strong>{pending} pendientes</strong><small>{quota.message}</small></section>
-    {visibleRows.length === 0 ? <section className="admin-empty"><h2>{selectedProfileId ? "Este anuncio aún no tiene medios" : "No hay archivos cargados todavía"}</h2><p>{selectedProfileId ? "Vuelve al perfil para completar foto de perfil, galería pública o contenido exclusivo." : "Cuando un anunciante suba una foto o video, aparecerá aquí agrupado bajo su anuncio."}</p></section> : <div className="admin-media-profile-list">{[...groups.values()].map((group) => {
+    {visibleRows.length === 0 && visibleExclusiveRows.length === 0 ? <section className="admin-empty"><h2>{selectedProfileId ? "Este anuncio aún no tiene medios" : "No hay archivos cargados todavía"}</h2><p>{selectedProfileId ? "Vuelve al perfil para completar foto de perfil o galería pública." : "Cuando un anunciante suba una foto o video, aparecerá aquí agrupado bajo su anuncio o cuenta."}</p></section> : <><div className="admin-media-profile-list">{[...groups.values()].map((group) => {
       const profilePhoto = group.items.filter((item) => item.media.isProfilePhoto);
       const publicGallery = group.items.filter((item) => !item.media.isProfilePhoto && item.media.visibility === "public");
       const exclusiveGallery = group.items.filter((item) => !item.media.isProfilePhoto && item.media.visibility === "exclusive");
@@ -61,6 +67,6 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
         {publicGallery.length > 0 && <section><h3>Galería pública</h3><div className="admin-media-grid">{cards(publicGallery)}</div></section>}
         {exclusiveGallery.length > 0 && <section><h3>Galería privada</h3><p className="admin-media-group-hint">Solo puede verla el anunciante, el equipo administrador y las cuentas autorizadas.</p><div className="admin-media-grid">{cards(exclusiveGallery)}</div></section>}
       </section>;
-    })}</div>}
+    })}</div>{visibleExclusiveRows.length > 0 && <section className="admin-media-profile-group exclusive-account-media-group"><header><div><p className="eyebrow">CONTENIDO EXCLUSIVO DE CUENTAS</p><h2>Bibliotecas privadas</h2><span>Los archivos siguen perteneciendo a la cuenta aunque el anuncio vinculado esté pausado o haya sido eliminado.</span></div></header>{[...new Map(visibleExclusiveRows.map((row) => [row.collectionId, row])).values()].map((row) => <section key={row.collectionId}><h3>@{row.ownerUsername ?? "usuario"}{row.linkedProfileName ? ` · vinculado a ${row.linkedProfileName}` : " · sin anuncio vinculado"}</h3><div className="admin-media-grid">{exclusiveCards(visibleExclusiveRows.filter((item) => item.collectionId === row.collectionId))}</div></section>)}</section>}</>}
   </div></AdminShell>;
 }

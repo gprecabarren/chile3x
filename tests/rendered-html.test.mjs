@@ -1,6 +1,17 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+// The production Worker has Cloudflare's Cache API. Provide the small
+// no-op equivalent needed by the rendered HTML test when it runs in Node.
+if (!globalThis.caches) {
+  globalThis.caches = {
+    default: {
+      match: async () => undefined,
+      put: async () => undefined,
+    },
+  };
+}
+
 async function render() {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
@@ -34,14 +45,14 @@ test("server-renders the Chile3X public home", async () => {
   assert.match(contentSecurityPolicy, /frame-src[^;]*www\.googletagmanager\.com/);
 
   const html = await response.text();
-  assert.match(html, /<title>Escorts en Chile \| Chile3X<\/title>/i);
+  assert.match(html, /<title>Directorio nacional de escorts \| Chile3X<\/title>/i);
   assert.match(html, /DIRECTORIO DE ESCORTS/);
   assert.match(html, /Este sitio está destinado exclusivamente a personas mayores de edad/);
   assert.match(html, /Directorio de escorts, agencias y arriendos/);
   assert.match(html, /Escorts destacadas/i);
   assert.match(html, /Todas las regiones,/);
   assert.match(html, /numberOfItems":36/);
-  assert.match(html, /ciudades y comunas iniciales/);
+  assert.match(html, /ciudades y comunas disponibles/);
   assert.match(html, /Región de Arica y Parinacota/);
   assert.match(html, /Región de Magallanes y de la Antártica Chilena/);
   assert.match(html, /wa\.me\/56933365005\?text=/);

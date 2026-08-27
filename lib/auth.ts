@@ -20,6 +20,7 @@ export type AccountRole = "visitor" | "advertiser" | "tester" | "admin";
 export type AccountUser = {
   id: string;
   email: string;
+  username: string | null;
   displayName: string | null;
   role: AccountRole;
 };
@@ -192,6 +193,7 @@ async function getSessionUser(cookieName: string): Promise<AccountUser | null> {
     .select({
       id: users.id,
       email: users.email,
+      username: users.username,
       displayName: users.displayName,
       role: users.role,
       isActive: users.isActive,

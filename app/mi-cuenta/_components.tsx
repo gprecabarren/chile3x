@@ -10,6 +10,7 @@ export function AccountShell({ user, children }: { user: AccountUser; children: 
         <Link href="/" className="account-brand"><OfficialChile3xLogo priority /><small>MI CUENTA</small></Link>
         <nav aria-label="Navegación de cuenta">
           <Link href="/mi-cuenta">Mis anuncios</Link>
+          <Link href="/mi-cuenta/contenido">Mi contenido</Link>
           <Link href="/mi-cuenta/datos-personales">Mis datos</Link>
           <Link href="/mi-cuenta/favoritos">Favoritos</Link>
           <Link href="/mi-cuenta/comentarios">Comentarios</Link>
@@ -27,7 +28,7 @@ export function AccountShell({ user, children }: { user: AccountUser; children: 
           </details>
         </nav>
         <div className="account-user">
-          <span>{user.displayName ?? user.email}</span>
+          <span>{user.displayName ?? "Cuenta Chile3X"}{user.username ? ` · @${user.username}` : ""}</span>
           <form action="/api/auth/session/logout" method="post"><button type="submit">Salir</button></form>
         </div>
       </header>

@@ -178,18 +178,18 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
       <section className="profile-form-section">
         <div className="profile-form-section-heading">
           <p>01 · TIPO DE PUBLICACIÓN</p>
-          <h2>Define tu perfil</h2>
+          <h2>Define tu anuncio</h2>
         </div>
         <div className="form-grid form-grid-three">
           <label>
-            Tipo de perfil
+            Tipo de anuncio
             {typeLocked ? <><input name="type" type="hidden" value={type} /><span className="profile-type-locked"><strong>{profileTypeLabel(type)}</strong><small>El tipo queda definido al crear el anuncio. Para otro tipo, crea una publicación nueva.</small></span></> : <select name="type" value={type} onChange={(event) => setType(event.target.value as ProfileType)}>
               {profileTypes.map((item) => <option key={item} value={item}>{profileTypeLabel(item)}</option>)}
             </select>}
           </label>
           <label>
             Nombre visible
-            <input name="display_name" required minLength={2} maxLength={80} defaultValue={initial?.displayName} placeholder={type === "agency" ? "Nombre de la agencia" : type === "rental" ? "Ej. Habitación en Providencia" : "Nombre de fantasía"} />
+            <input name="display_name" required minLength={2} maxLength={80} defaultValue={initial?.displayName} placeholder={type === "agency" ? "Ej. Agencia Luna" : type === "rental" ? "Ej. Habitación en Providencia" : "Ej. Valentina Spa"} />
           </label>
           <label>
             Usuario del anuncio (opcional)
@@ -231,7 +231,7 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
         </div>
         <label className="form-wide-label">
           Ubicación referencial (opcional)
-          <input name="reference_location" maxLength={120} defaultValue={initial?.details.referenceLocation} placeholder="No incluyas direcciones exactas" />
+          <input name="reference_location" maxLength={120} defaultValue={initial?.details.referenceLocation} placeholder="Ej. Cerca de Metro Los Leones, sin dirección exacta" />
         </label>
       </section>
 
@@ -243,7 +243,7 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
         <div className="form-grid form-grid-two">
           <label>
             Descripción breve
-            <input name="short_description" required maxLength={180} defaultValue={initial?.shortDescription} placeholder="Una frase para tu aviso" />
+            <input name="short_description" required maxLength={180} defaultValue={initial?.shortDescription} placeholder="Ej. Atención discreta, con agenda previa" />
           </label>
           {type === "escort" ? <>
             <label>
@@ -296,7 +296,7 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
         </fieldset>
         <label className="form-wide-label">
           Descripción completa
-          <textarea name="description" required maxLength={4000} rows={7} defaultValue={initial?.description} placeholder="Describe tu aviso con claridad. No publiques datos personales sensibles." />
+          <textarea name="description" required maxLength={4000} rows={7} defaultValue={initial?.description} placeholder="Ej. Cuenta tu experiencia, modalidad de atención y detalles útiles. No publiques datos personales sensibles." />
         </label>
       </section>
 
@@ -307,15 +307,15 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
             <h2>Características opcionales</h2>
           </div>
           <div className="form-grid form-grid-three">
-            <label>Nombre artista (opcional)<input name="artist_name" maxLength={80} defaultValue={metadataValue(initial, "artist_name")} /></label>
+            <label>Nombre artista (opcional)<input name="artist_name" maxLength={80} defaultValue={metadataValue(initial, "artist_name")} placeholder="Ej. Valentina" /></label>
             <label>Género (opcional)<select name="gender" defaultValue={metadataValue(initial, "gender")}><option value="">Seleccionar</option>{escortGenders.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label>Edad (opcional)<input name="age" type="number" min="18" defaultValue={metadataValue(initial, "age")} onChange={(event) => setUnderageNotice(Boolean(event.target.value && Number(event.target.value) < 18))} />{underageNotice && <small className="field-warning" role="alert">Solo se admiten publicaciones de personas mayores de 18 años.</small>}</label>
+            <label>Edad (opcional)<input name="age" type="number" min="18" defaultValue={metadataValue(initial, "age")} placeholder="Ej. 28" onChange={(event) => setUnderageNotice(Boolean(event.target.value && Number(event.target.value) < 18))} />{underageNotice && <small className="field-warning" role="alert">Solo se admiten publicaciones de personas mayores de 18 años.</small>}</label>
             <label>Nacionalidad (opcional)<select name="nationality" defaultValue={metadataValue(initial, "nationality")}><option value="">Seleccionar</option>{nationalities.map((item) => <option key={item}>{item}</option>)}</select></label>
             <label>Color de piel (opcional)<select name="skin_color" defaultValue={metadataValue(initial, "skin_color")}><option value="">Seleccionar</option>{skinColors.map((item) => <option key={item}>{item}</option>)}</select></label>
             <label className="language-selector">Idiomas (opcional)<select name="languages" multiple size={4} defaultValue={metadataValue(initial, "languages").split(", ").filter(Boolean)}>{spokenLanguages.map((language) => <option key={language} value={language}>{language}</option>)}</select><small>Selecciona uno o más idiomas.</small></label>
-            <label>Estatura (cm, opcional)<input name="height_cm" type="number" min="0" defaultValue={metadataValue(initial, "height_cm")} /></label>
-            <label>Peso (kg, opcional)<input name="weight_kg" type="number" min="0" defaultValue={metadataValue(initial, "weight_kg")} /></label>
-            <label>Medidas corporales (opcional)<input name="measurements" maxLength={50} defaultValue={metadataValue(initial, "measurements")} placeholder="Busto - cintura - cadera" /></label>
+            <label>Estatura (cm, opcional)<input name="height_cm" type="number" min="0" defaultValue={metadataValue(initial, "height_cm")} placeholder="Ej. 165" /></label>
+            <label>Peso (kg, opcional)<input name="weight_kg" type="number" min="0" defaultValue={metadataValue(initial, "weight_kg")} placeholder="Ej. 58" /></label>
+            <label>Medidas corporales (opcional)<input name="measurements" maxLength={50} defaultValue={metadataValue(initial, "measurements")} placeholder="Ej. 90-60-90" /></label>
             <label>Color de pelo (opcional)<select name="hair_color" defaultValue={metadataValue(initial, "hair_color")}><option value="">Seleccionar</option>{hairColors.map((item) => <option key={item}>{item}</option>)}</select></label>
             <label>Tipo de cuerpo (opcional)<select name="body_type" defaultValue={metadataValue(initial, "body_type")}><option value="">Seleccionar</option>{bodyTypes.map((item) => <option key={item}>{item}</option>)}</select></label>
             <label>Tamaño de busto (opcional)<select name="bust_size" defaultValue={metadataValue(initial, "bust_size")}><option value="">Seleccionar</option>{bustSizes.map((item) => <option key={item}>{item}</option>)}</select></label>
@@ -337,14 +337,14 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
             <h2>Información complementaria</h2>
           </div>
           <div className="form-grid form-grid-two">
-            <label>Años en el mercado (opcional)<input name="agency_years" type="number" min="0" max="99" defaultValue={metadataValue(initial, "agency_years")} /></label>
+            <label>Años en el mercado (opcional)<input name="agency_years" type="number" min="0" max="99" defaultValue={metadataValue(initial, "agency_years")} placeholder="Ej. 5" /></label>
             <label>Sitio web (opcional)<input name="website" type="url" maxLength={180} defaultValue={metadataValue(initial, "website")} placeholder="https://" /></label>
             <label>Facebook (opcional)<input name="facebook_url" type="url" maxLength={180} defaultValue={metadataValue(initial, "facebook_url")} placeholder="https://" /></label>
             <label>Usuario de Instagram (opcional)<input name="instagram_url" maxLength={64} defaultValue={socialUsername(metadataValue(initial, "instagram_url"))} placeholder="nombredeusuario" /></label>
             <label>Twitter/X (opcional)<input name="twitter_url" type="url" maxLength={180} defaultValue={metadataValue(initial, "twitter_url")} placeholder="https://" /></label>
             <label>Métodos preferidos (opcional)<input name="contact_methods" maxLength={120} defaultValue={metadataValue(initial, "contact_methods")} placeholder="WhatsApp, correo" /></label>
           </div>
-          <label className="form-wide-label">Descuentos o promociones (opcional)<textarea name="promotions" maxLength={500} rows={3} defaultValue={metadataValue(initial, "promotions")} /></label>
+          <label className="form-wide-label">Descuentos o promociones (opcional)<textarea name="promotions" maxLength={500} rows={3} defaultValue={metadataValue(initial, "promotions")} placeholder="Ej. Agenda semanal con cupos disponibles" /></label>
         </section>
       )}
 
@@ -359,9 +359,9 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
             <label>Amoblada (opcional)<select name="furnished" defaultValue={metadataValue(initial, "furnished")}><option value="">Seleccionar</option><option value="si">Sí</option><option value="no">No</option></select></label>
             <label>Baño privado (opcional)<select name="private_bathroom" defaultValue={metadataValue(initial, "private_bathroom")}><option value="">Seleccionar</option><option value="si">Sí</option><option value="no">No</option></select></label>
             <label>Ventana al exterior (opcional)<select name="exterior_window" defaultValue={metadataValue(initial, "exterior_window")}><option value="">Seleccionar</option><option value="si">Sí</option><option value="no">No</option></select></label>
-            <label>Tamaño (m², opcional)<input name="room_size" type="number" min="0" defaultValue={metadataValue(initial, "room_size")} /></label>
+            <label>Tamaño (m², opcional)<input name="room_size" type="number" min="0" defaultValue={metadataValue(initial, "room_size")} placeholder="Ej. 18" /></label>
             <label>Gastos comunes incluidos (opcional)<select name="common_expenses" defaultValue={metadataValue(initial, "common_expenses")}><option value="">Seleccionar</option><option value="si">Sí</option><option value="no">No</option></select></label>
-            <label>Depósito/garantía (opcional)<input name="deposit" inputMode="numeric" type="number" min="0" defaultValue={metadataValue(initial, "deposit")} /></label>
+            <label>Depósito/garantía (opcional)<input name="deposit" inputMode="numeric" type="number" min="0" defaultValue={metadataValue(initial, "deposit")} placeholder="Ej. 100000" /></label>
             <label>Duración mínima (opcional)<select name="minimum_rental" defaultValue={metadataValue(initial, "minimum_rental")}><option value="">Seleccionar</option><option value="semanas">Semanas</option><option value="meses">Meses</option></select></label>
             <label>Disponibilidad inmediata (opcional)<select name="immediate_available" defaultValue={metadataValue(initial, "immediate_available")}><option value="">Seleccionar</option><option value="si">Sí</option><option value="no">No</option></select></label>
             <label>Internet/Wi-Fi (opcional)<select name="wifi" defaultValue={metadataValue(initial, "wifi")}><option value="">Seleccionar</option><option value="si">Sí</option><option value="no">No</option></select></label>
@@ -382,9 +382,9 @@ export function ProfileForm({ action, submitLabel, initial }: ProfileFormProps) 
           <legend>Contacto directo</legend>
         <div className="form-grid form-grid-three">
           <label>WhatsApp público<input name="contact_whatsapp" required inputMode="numeric" pattern="[0-9]{8,15}" defaultValue={initial?.contactWhatsapp} placeholder="56912345678" /></label>
-            <label>Teléfono alternativo (opcional)<input name="contact_phone" inputMode="numeric" pattern="[0-9]{8,15}" defaultValue={initial?.details.contactPhone} /></label>
+            <label>Teléfono alternativo (opcional)<input name="contact_phone" inputMode="numeric" pattern="[0-9]{8,15}" defaultValue={initial?.details.contactPhone} placeholder="Ej. 56912345678" /></label>
           <label>Telegram (opcional)<input name="contact_telegram" maxLength={80} defaultValue={initial?.contactTelegram} placeholder="@usuario o t.me/usuario" /><small>Puedes ingresar usuario, @usuario o un enlace t.me.</small></label>
-          <label>Correo de contacto (opcional)<input name="contact_email" type="email" maxLength={160} defaultValue={initial?.details.contactEmail} /></label>
+          <label>Correo de contacto (opcional)<input name="contact_email" type="email" maxLength={160} defaultValue={initial?.details.contactEmail} placeholder="Ej. contacto@correo.cl" /></label>
         </div>
         </fieldset>
         <fieldset className="profile-contact-fieldset">

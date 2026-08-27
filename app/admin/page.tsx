@@ -22,7 +22,7 @@ export default async function AdminHome() {
   ]);
 
   const summary = [
-    ["Perfiles registrados", allProfiles?.total ?? 0, "Incluye borradores, avisos en revisión y publicados."],
+    ["Anuncios registrados", allProfiles?.total ?? 0, "Incluye borradores, anuncios en revisión y publicados."],
     ["Pendientes de revisión", pendingProfiles?.total ?? 0, "Revisa identidad fuera del sitio y aprueba solo material moderado."],
     ["Pausados", pausedProfiles?.total ?? 0, "Los períodos de publicación se administran manualmente por ahora."],
   ];
@@ -33,7 +33,7 @@ export default async function AdminHome() {
         <AdminPageHeading
           eyebrow="PANEL DE PROPIETARIO"
           title="Todo bajo control."
-          description="Este acceso puede ver y administrar todos los perfiles y la configuración base del portal."
+          description="Este acceso puede ver y administrar todas las cuentas, sus anuncios asociados y la configuración base del portal."
         />
         <section className="admin-stat-grid" aria-label="Resumen del sitio">
           {summary.map(([label, value, hint]) => (

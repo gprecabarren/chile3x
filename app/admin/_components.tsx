@@ -51,7 +51,7 @@ export async function AdminShell({ user, children }: { user: AdminUser; children
         <Link className="admin-brand" href="/"><OfficialChile3xLogo priority /><small>ADMIN</small></Link>
         <nav aria-label="Administración">
           <Link href="/admin">Resumen</Link>
-          <Link className={pendingCount > 0 ? "admin-nav-alert" : undefined} href="/admin/perfiles">Perfiles{pendingCount > 0 && <b>{pendingCount}</b>}</Link>
+          <Link className={pendingCount > 0 ? "admin-nav-alert" : undefined} href="/admin/perfiles">Anuncios{pendingCount > 0 && <b>{pendingCount}</b>}</Link>
           <Link href="/admin/medios">Fotos</Link>
           <Link href="/admin/resenas">Reseñas</Link>
           <Link className={pendingReports > 0 ? "admin-nav-alert" : undefined} href="/admin/reportes">Reportes{pendingReports > 0 && <b>{pendingReports}</b>}</Link>

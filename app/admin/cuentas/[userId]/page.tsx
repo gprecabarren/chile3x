@@ -33,7 +33,7 @@ function typeLabel(type: string) {
 
 export default async function AdminAccountDetailsPage({ params, searchParams }: {
   params: Promise<{ userId: string }>;
-  searchParams: Promise<{ notice?: string }>;
+  searchParams: Promise<{ notice?: string; return_to?: string }>;
 }) {
   const admin = await getCurrentAdmin();
   const [{ userId }, query, db] = await Promise.all([params, searchParams, getDb()]);
@@ -67,22 +67,24 @@ export default async function AdminAccountDetailsPage({ params, searchParams }: 
     handle: profiles.handle,
   }).from(profiles).where(eq(profiles.ownerId, account.id)).orderBy(desc(profiles.updatedAt));
 
-  const detailHref = `/admin/cuentas/${encodeURIComponent(account.id)}`;
+  const returnTo = query.return_to?.startsWith("/admin/cuentas") ? query.return_to : "/admin/cuentas";
+  const detailBaseHref = `/admin/cuentas/${encodeURIComponent(account.id)}`;
+  const detailHref = `${detailBaseHref}?return_to=${encodeURIComponent(returnTo)}`;
   const accountName = account.displayName ?? account.email;
   const isProtectedAdmin = account.role === "admin";
   const accountRoleLabel = account.role === "tester" ? "Cuenta de tester" : "Cuenta de anunciante";
   return <AdminShell user={admin}><div className="admin-content">
-    <AdminPageHeading eyebrow="FICHA DE CUENTA" title={accountName} description={`Administra los datos, contraseña y avisos de ${account.email}. Los cambios se realizan sin necesidad de conocer la contraseña actual.`} backHref="/admin/cuentas">
-      {!isProtectedAdmin && <Link className="button button-primary" href={`${detailHref}/crear-perfil`}>Crear perfil para esta cuenta</Link>}
+    <AdminPageHeading eyebrow="FICHA DE CUENTA" title={accountName} description={`Administra los datos, contraseña y anuncios de ${account.email}. Los cambios se realizan sin necesidad de conocer la contraseña actual.`} backHref={returnTo}>
+      {!isProtectedAdmin && <Link className="button button-primary" href={`${detailBaseHref}/crear-perfil?return_to=${encodeURIComponent(returnTo)}`}>Crear anuncio para esta cuenta</Link>}
     </AdminPageHeading>
     {query.notice && notices[query.notice] && <p className="admin-success" role="status">{notices[query.notice]}</p>}
-    <section className="admin-account-detail-summary"><div><span className={`account-status ${account.isActive ? "account-status-approved" : "account-status-rejected"}`}>{account.isActive ? "Activa" : "Deshabilitada"}</span><strong>{account.role === "admin" ? "Cuenta administrativa protegida" : accountRoleLabel}</strong></div><p>{ownedProfiles.length} anuncio{ownedProfiles.length === 1 ? "" : "s"} asociado{ownedProfiles.length === 1 ? "" : "s"}</p></section>
+    <section className="admin-account-detail-summary"><div className="admin-account-detail-status"><span>Estado de la cuenta</span><strong className={`account-status ${account.isActive ? "account-status-approved" : "account-status-rejected"}`}>{account.isActive ? "Activa" : "Deshabilitada"}</strong></div><dl><div><dt>Tipo de cuenta</dt><dd>{account.role === "admin" ? "Administrativa protegida" : accountRoleLabel}</dd></div><div><dt>Anuncios asociados</dt><dd>{ownedProfiles.length} anuncio{ownedProfiles.length === 1 ? "" : "s"}</dd></div></dl></section>
     {isProtectedAdmin ? <section className="admin-empty"><h2>Cuenta protegida</h2><p>Para prevenir bloqueos accidentales, desde aquí no se modifica una cuenta administrativa.</p></section> : <div className="admin-account-detail-layout">
       <form action={`/api/admin/users/${encodeURIComponent(account.id)}`} method="post" className="admin-settings-form admin-account-details-form">
         <input name="action" type="hidden" value="save_details" />
         <input name="return_to" type="hidden" value={detailHref} />
         <h2>Datos de la cuenta</h2>
-        <label>Nombre visible<input name="display_name" required minLength={2} maxLength={80} defaultValue={account.displayName ?? ""} /></label>
+        <label>Nombre visible<input name="display_name" required minLength={2} maxLength={80} defaultValue={account.displayName ?? ""} placeholder="Ej. Valentina" /></label>
         <AccountIdentityFields values={{ fullName: account.firstName, documentType: account.documentType, documentNumber: account.documentNumber, foreignCountry: account.foreignCountry, birthDate: account.birthDate, city: account.city, phone: account.phone }} />
         <label>Correo electrónico<input value={account.email} readOnly aria-readonly="true" /><small>El correo identifica la cuenta y se modifica solo con un proceso de soporte.</small></label>
         <button className="button button-primary" type="submit">Guardar datos</button>
@@ -92,6 +94,6 @@ export default async function AdminAccountDetailsPage({ params, searchParams }: 
         <form action={`/api/admin/users/${encodeURIComponent(account.id)}`} method="post"><input name="action" type="hidden" value="send_reset" /><input name="return_to" type="hidden" value={detailHref} /><button className="button button-outline" type="submit">Enviar enlace de restablecimiento</button></form>
       </section>
     </div>}
-    <section className="admin-account-owned-profiles"><div><p className="eyebrow">ANUNCIOS ASOCIADOS</p><h2>Perfiles de esta cuenta</h2></div>{ownedProfiles.length ? <div>{ownedProfiles.map((profile) => { const moderationHref = `/admin/perfiles?q=${encodeURIComponent(account.email)}&return_to=${encodeURIComponent(detailHref)}`; const previewHref = `${profilePublicPath(profile)}?return_to=${encodeURIComponent(moderationHref)}`; return <article key={profile.id}><div><span className={`account-status account-status-${profile.status}`}>{statusLabel(profile.status)}</span><h3>{profile.displayName}</h3><p>{typeLabel(profile.type)} · {profile.city}, {formatRegionName(profile.region)}</p></div><div><Link className="button button-public-preview" href={previewHref} target="_blank">Ver perfil</Link><Link className="button button-outline" href={moderationHref}>Abrir moderación</Link></div></article>; })}</div> : <p className="admin-media-empty">Esta cuenta aún no tiene anuncios asociados.</p>}</section>
+    <section className="admin-account-owned-profiles"><div><p className="eyebrow">ANUNCIOS ASOCIADOS</p><h2>Anuncios de esta cuenta</h2></div>{ownedProfiles.length ? <div>{ownedProfiles.map((profile) => { const moderationHref = `/admin/perfiles?q=${encodeURIComponent(account.email)}&return_to=${encodeURIComponent(detailHref)}`; const previewHref = `${profilePublicPath(profile)}?return_to=${encodeURIComponent(moderationHref)}`; return <article key={profile.id}><div><span className={`account-status account-status-${profile.status}`}>{statusLabel(profile.status)}</span><h3>{profile.displayName}</h3><p>{typeLabel(profile.type)} · {profile.city}, {formatRegionName(profile.region)}</p></div><div><Link className="button button-public-preview" href={previewHref} target="_blank">Ver anuncio público</Link><Link className="button button-outline" href={moderationHref}>Abrir moderación</Link></div></article>; })}</div> : <p className="admin-media-empty">Esta cuenta aún no tiene anuncios asociados.</p>}</section>
   </div></AdminShell>;
 }

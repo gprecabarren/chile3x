@@ -19,7 +19,7 @@ export default async function FavoritesPage() {
   const saved = rows.flatMap((row) => profiles.filter((profile) => profile.id === row.profileId));
 
   return <AccountShell user={user}><div className="account-content"><Link className="page-back-link" href="/mi-cuenta">← Volver a mi cuenta</Link>
-    <AccountHeading eyebrow="CUENTA" title="Tus favoritos" description="Perfiles que guardaste para encontrarlos más rápido. Solo tú puedes ver esta lista." />
-    {saved.length > 0 ? <ProfileGrid profiles={saved} /> : <section className="account-empty"><h2>Aún no tienes favoritos</h2><p>Desde un perfil público presiona “Favorito” para guardarlo aquí.</p><Link className="button button-primary" href="/escorts">Explorar perfiles</Link></section>}
+    <AccountHeading eyebrow="CUENTA" title="Tus favoritos" description="Anuncios que guardaste para encontrarlos más rápido. Solo tú puedes ver esta lista." />
+    {saved.length > 0 ? <ProfileGrid profiles={saved} /> : <section className="account-empty"><h2>Aún no tienes favoritos</h2><p>Desde un anuncio público presiona “Favorito” para guardarlo aquí.</p><Link className="button button-primary" href="/escorts">Explorar anuncios</Link></section>}
   </div></AccountShell>;
 }

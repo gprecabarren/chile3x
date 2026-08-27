@@ -9,8 +9,6 @@ import { formatRegionName, regions } from "@/app/locations";
 import { PublicMobileMenu } from "./PublicMobileMenu";
 import { GooglePreferredSourceLink } from "@/app/GooglePreferredSourceLink";
 
-export { GooglePreferredSourceLink } from "@/app/GooglePreferredSourceLink";
-
 const typeLabel = {
   escort: "Escort",
   agency: "Agencia",
@@ -48,7 +46,6 @@ export async function PublicHeader() {
             <Link href="/ingresar">Mi cuenta</Link>
           </div>
         </nav>
-        <GooglePreferredSourceLink placement="header" />
         <PortalContactLinks placement="header" />
         <PublicMobileMenu coverageHref="/#cobertura" />
         <Link className="button button-outline" href="/registro">Publicar perfil</Link>
@@ -73,8 +70,7 @@ export async function PublicFooter() {
         <div><strong>SÍGUENOS</strong><PortalContactLinks placement="footer" /></div>
         <div className="public-footer-partners"><strong>DIRECTORIOS ASOCIADOS</strong><div className="public-footer-partner-badges"><OadBadge /><AngelisNetBadge /><LaEstokadaBadge /></div></div>
       </div>
-      <div className="public-footer-bottom"><span>© {new Date().getFullYear()} Chile3X · Solo mayores de 18 años</span><span>Chile · Directorio para adultos</span></div>
-      <div className="public-footer-google-row"><GooglePreferredSourceLink placement="footer" /></div>
+      <div className="public-footer-bottom"><span>© {new Date().getFullYear()} Chile3X · Solo mayores de 18 años</span><span>Chile · Directorio para adultos</span><GooglePreferredSourceLink /></div>
     </footer>
   );
 }

@@ -24,11 +24,11 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const returnTo = safeAccountReturnTo(params.return_to ?? null);
   return <main className="auth-page"><section className="auth-card">
     <Link className="auth-brand" href="/"><OfficialChile3xLogo priority /></Link>
-    <p className="eyebrow">CUENTA DE ANUNCIANTE</p><h1>Vuelve a tu panel.</h1><p>Gestiona tus perfiles, actualiza tu aviso y consulta el estado de revisión.</p>
+    <p className="eyebrow">CUENTA DE ANUNCIANTE</p><h1>Vuelve a tu panel.</h1><p>Gestiona tus anuncios, actualiza cada publicación y consulta su estado de revisión.</p>
     {params.error && <p className="form-alert" role="alert">{messages[params.error] ?? messages.invalid}</p>}
     {params.verified === "1" && <p className="auth-success" role="status">Tu correo fue verificado. Ya puedes iniciar sesión.</p>}
     {params.reset === "1" && <p className="auth-success" role="status">Tu contraseña fue actualizada. Ya puedes iniciar sesión.</p>}
-    <form action="/api/auth/login" method="post" className="auth-form"><input name="return_to" type="hidden" value={returnTo} /><label>Correo electrónico<input name="email" type="email" required maxLength={160} autoComplete="email" /></label><label>Contraseña<input name="password" type="password" required autoComplete="current-password" /></label><AuthTurnstile action={TURNSTILE_AUTH_LOGIN_ACTION} /><button className="button button-primary" type="submit">Ingresar</button></form>
+    <form action="/api/auth/login" method="post" className="auth-form"><input name="return_to" type="hidden" value={returnTo} /><label>Correo electrónico<input name="email" type="email" required maxLength={160} autoComplete="email" placeholder="Ej. valentina@correo.cl" /></label><label>Contraseña<input name="password" type="password" required autoComplete="current-password" placeholder="Tu contraseña" /></label><AuthTurnstile action={TURNSTILE_AUTH_LOGIN_ACTION} /><button className="button button-primary" type="submit">Ingresar</button></form>
     <p className="auth-switch"><Link href="/recuperar-clave">Olvidé mi contraseña</Link></p>
     <p className="auth-switch">¿Aún no publicas? <Link href={`/registro?return_to=${encodeURIComponent(returnTo)}`}>Crear cuenta</Link></p>
   </section></main>;

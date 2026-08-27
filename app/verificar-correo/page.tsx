@@ -41,7 +41,7 @@ export default async function VerifyEmailPage({
       {(params.sent === "1" || params.resent === "1") && <p className="auth-success" role="status">Si el correo existe y está pendiente, enviamos un enlace desde <strong>chile3x.site@gmail.com</strong>. Revisa tu bandeja de entrada y Spam.</p>}
       <form action="/api/auth/reenviar-verificacion" method="post" className="auth-form">
         <input name="return_to" type="hidden" value={returnTo} />
-        <label>Correo electrónico<input name="email" type="email" required defaultValue={email} maxLength={160} autoComplete="email" /></label>
+        <label>Correo electrónico<input name="email" type="email" required defaultValue={email} maxLength={160} autoComplete="email" placeholder="Ej. valentina@correo.cl" /></label>
         <AuthTurnstile action={TURNSTILE_AUTH_EMAIL_ACTION} />
         <button className="button button-outline" type="submit">Reenviar enlace</button>
       </form>

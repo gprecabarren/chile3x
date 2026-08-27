@@ -47,7 +47,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
     {params.error && <p className="form-alert" role="alert">{messages[params.error] ?? messages.invalid}{params.error === "duplicate_rut" && <> <Link href="/recuperar-clave">Recuperar contraseña</Link></>}</p>}
     <form action="/api/auth/register" method="post" className="auth-form">
       <input name="return_to" type="hidden" value={returnTo} />
-      <label>Nombre visible<input name="display_name" required minLength={2} maxLength={80} autoComplete="nickname" defaultValue={saved?.displayName ?? ""} /></label>
+      <label>Nombre visible<input name="display_name" required minLength={2} maxLength={80} autoComplete="nickname" defaultValue={saved?.displayName ?? ""} placeholder="Ej. Valentina" /></label>
       <AccountIdentityFields values={saved ? { fullName: saved.fullName, documentType: saved.documentType, documentNumber: saved.documentNumber, foreignCountry: saved.foreignCountry, birthDate: saved.birthDate, city: saved.city, phone: saved.phone } : undefined} />
       <RegistrationEmailField defaultValue={saved?.email ?? ""} />
       <label>Contraseña<input name="password" type="password" required minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" /><small>{passwordRequirementText}</small></label>

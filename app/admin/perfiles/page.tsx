@@ -128,14 +128,14 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
       <div className="admin-content">
         <AdminPageHeading
           eyebrow="MODERACIÓN GLOBAL"
-          title="Perfiles y publicaciones"
-          description="Encuentra, filtra y revisa los avisos antes de publicarlos. Los documentos opcionales de verificación se mantienen privados y se descargan desde esta tabla o la ficha administrativa."
+          title="Anuncios y publicaciones"
+          description="Encuentra, filtra y revisa los anuncios antes de publicarlos. Los documentos opcionales de verificación se mantienen privados y se descargan desde esta tabla o la ficha administrativa."
           backHref={profileListReturnTo}
         />
         {params.notice && notices[params.notice] && <p className="admin-success" role="status">{notices[params.notice]}</p>}
-        {pendingCount > 0 && <section className="admin-review-alert" role="status"><div><p>REVISIÓN PENDIENTE</p><h2>{pendingCount} {pendingCount === 1 ? "aviso requiere" : "avisos requieren"} tu aprobación</h2><span>Actualiza sus estados directamente en esta tabla o abre la ficha si necesitas revisar el perfil completo.</span></div><Link className="button button-primary" href="/admin/perfiles?estado=pending">Revisar ahora</Link></section>}
+        {pendingCount > 0 && <section className="admin-review-alert" role="status"><div><p>REVISIÓN PENDIENTE</p><h2>{pendingCount} {pendingCount === 1 ? "anuncio requiere" : "anuncios requieren"} tu aprobación</h2><span>Actualiza sus estados directamente en esta tabla o abre la ficha si necesitas revisar el anuncio completo.</span></div><Link className="button button-primary" href="/admin/perfiles?estado=pending">Revisar ahora</Link></section>}
         <form className="admin-profile-filters" method="get" role="search">
-          <label className="admin-filter-search">Buscar por perfil, correo, ciudad o tipo<input name="q" type="search" defaultValue={q} placeholder="Ej. tomas@correo.cl o Concepción" /></label>
+          <label className="admin-filter-search">Buscar por anuncio, correo, ciudad o tipo<input name="q" type="search" defaultValue={q} placeholder="Ej. valentina@correo.cl o Concepción" /></label>
           <label>Publicación<select name="estado" defaultValue={status}><option value="">Todos los estados</option>{Object.entries(statusLabel).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
           <label>Verificación<select name="verificacion" defaultValue={verification}><option value="">Todas</option>{Object.entries(verificationLabel).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
           <label>Revisión médica<select name="salud" defaultValue={health}><option value="">Todas</option><option value="not_requested">No solicitada</option><option value="in_review">En revisión</option><option value="reviewed">Revisada</option></select></label>
@@ -143,14 +143,14 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
           <label>Ciudad<select name="ciudad" defaultValue={city}><option value="">Todas las ciudades</option>{cities.map((item) => <option value={item} key={item}>{item}</option>)}</select></label>
           <div className="admin-filter-actions"><button className="button button-primary" type="submit">Aplicar filtros</button><Link className="button button-outline" href="/admin/perfiles">Limpiar</Link></div>
         </form>
-        <p className="admin-filter-summary">Mostrando {filteredRows.length} de {rows.length} perfil{rows.length === 1 ? "" : "es"}.</p>
+        <p className="admin-filter-summary">Mostrando {filteredRows.length} de {rows.length} anuncio{rows.length === 1 ? "" : "s"}.</p>
         {rows.length === 0 ? (
           <section className="admin-empty">
-            <h2>Aún no hay perfiles reales</h2>
-            <p>Los avisos creados por anunciantes llegarán aquí como borradores o pendientes de revisión.</p>
+            <h2>Aún no hay anuncios reales</h2>
+            <p>Los anuncios creados por las cuentas de anunciante llegarán aquí como borradores o pendientes de revisión.</p>
           </section>
         ) : (
-          <section className="admin-profile-list" aria-label="Perfiles para moderar">
+          <section className="admin-profile-list" aria-label="Anuncios para moderar">
             {filteredRows.map((profile) => {
               const documents = documentsByProfile.get(profile.id) ?? [];
               const profilePreviewHref = `${profilePublicPath(profile)}?return_to=${encodeURIComponent(adminReturnTo)}`;
@@ -163,7 +163,7 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
                     <h2>{profile.displayName}</h2>
                     <p>{profile.city}, {formatRegionName(profile.region)}</p>
                   </div>
-                  <div className="admin-profile-card-links"><Link className="button button-public-preview" href={profilePreviewHref} target="_blank">Revisar perfil</Link><Link className="button button-outline" href={`/admin/medios?perfil=${encodeURIComponent(profile.id)}`}>Fotos y videos</Link>{whatsappHref && <a className="button contact-whatsapp" href={whatsappHref} target="_blank" rel="noreferrer">WhatsApp</a>}{callHref && <a className="button contact-call" href={callHref}>Llamar</a>}</div>
+                  <div className="admin-profile-card-links"><Link className="button button-public-preview" href={profilePreviewHref} target="_blank">Ver anuncio público</Link><Link className="button button-outline" href={`/admin/medios?perfil=${encodeURIComponent(profile.id)}`}>Fotos y videos</Link>{whatsappHref && <a className="button contact-whatsapp" href={whatsappHref} target="_blank" rel="noreferrer">WhatsApp</a>}{callHref && <a className="button contact-call" href={callHref}>Llamar</a>}</div>
                 </header>
                 <dl className="admin-profile-card-owner"><div><dt>Dueño</dt><dd>{profile.ownerEmail}</dd></div><div><dt>Usuario del anuncio</dt><dd>{profile.handle ? `@${profile.handle}` : "Sin usuario público"}</dd></div></dl>
                 <form className="admin-profile-card-review" action={`/api/admin/profiles/${profile.id}/status`} method="post">
@@ -176,7 +176,7 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
                 <div className="admin-profile-card-documents"><strong>Documentos privados</strong><div className="admin-profile-document-links">{documents.length > 0 ? documents.map((kind) => <a key={kind} href={`/api/perfiles/${profile.id}/documentos/${kind}`}>{kind === "identity" ? "Carnet" : "Examen médico"}</a>) : <small>Sin documentos privados adjuntos.</small>}</div></div>
               </article>;
             })}
-            {filteredRows.length === 0 && <section className="admin-no-results">No hay perfiles que coincidan con estos filtros.</section>}
+            {filteredRows.length === 0 && <section className="admin-no-results">No hay anuncios que coincidan con estos filtros.</section>}
           </section>
         )}
       </div>

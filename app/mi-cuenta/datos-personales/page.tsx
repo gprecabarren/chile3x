@@ -6,6 +6,7 @@ import { users } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { AccountHeading, AccountShell } from "../_components";
 import { eq } from "drizzle-orm";
+import { PasswordChangeForm } from "./PasswordChangeForm";
 
 export const dynamic = "force-dynamic";
 
@@ -30,11 +31,14 @@ export default async function AccountDetailsPage({ searchParams }: { searchParam
     <AccountHeading eyebrow="MI CUENTA" title="Tus datos" description="Actualiza tus datos de contacto y documento. El correo y la fecha de nacimiento se mantienen protegidos; solicita una corrección al soporte si fuera necesario." backHref="/mi-cuenta" />
     {notice === "saved" && <p className="account-success" role="status">Tus datos fueron actualizados.</p>}
     {notice === "error" && <p className="form-alert" role="alert">No se pudieron guardar los cambios. Revisa el documento y la ciudad.</p>}
+    {notice === "password_saved" && <p className="account-success" role="status">Tu contraseña fue actualizada. Las demás sesiones de esta cuenta se cerraron.</p>}
+    {notice === "password_error" && <p className="form-alert" role="alert">Revisa la nueva contraseña y su confirmación.</p>}
     <form action="/api/mi-cuenta/datos" method="post" className="account-details-form">
-      <label>Nombre visible<input name="display_name" required minLength={2} maxLength={80} defaultValue={record.displayName ?? ""} /></label>
+      <label>Nombre visible<input name="display_name" required minLength={2} maxLength={80} defaultValue={record.displayName ?? ""} placeholder="Ej. Valentina" /></label>
       <AccountIdentityFields values={{ fullName: record.firstName, documentType: record.documentType, documentNumber: record.documentNumber, foreignCountry: record.foreignCountry, birthDate: record.birthDate, city: record.city, phone: record.phone }} birthDateReadOnly />
       <label>Correo electrónico<input value={record.email} readOnly aria-readonly="true" /><small>El correo no se puede modificar desde aquí.</small></label>
       <div className="account-details-actions"><Link className="button button-outline" href="/mi-cuenta">Cancelar</Link><button className="button button-primary" type="submit">Guardar datos</button></div>
     </form>
+    <section className="account-password-panel"><div><p className="eyebrow">ACCESO</p><h2>Cambiar contraseña</h2><p>Estás dentro de tu cuenta, por lo que puedes definir una clave nueva sin ingresar la anterior ni esperar un correo.</p></div><form action="/api/mi-cuenta/datos" method="post"><input name="action" type="hidden" value="change_password" /><PasswordChangeForm /><button className="button button-primary" type="submit">Actualizar contraseña</button></form></section>
   </div></AccountShell>;
 }

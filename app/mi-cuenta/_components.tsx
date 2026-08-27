@@ -9,14 +9,14 @@ export function AccountShell({ user, children }: { user: AccountUser; children: 
       <header className="account-header">
         <Link href="/" className="account-brand"><OfficialChile3xLogo priority /><small>MI CUENTA</small></Link>
         <nav aria-label="Navegación de cuenta">
-          <Link href="/mi-cuenta">Mis perfiles</Link>
+          <Link href="/mi-cuenta">Mis anuncios</Link>
           <Link href="/mi-cuenta/datos-personales">Mis datos</Link>
           <Link href="/mi-cuenta/favoritos">Favoritos</Link>
           <Link href="/mi-cuenta/comentarios">Comentarios</Link>
           <Link href="/mi-cuenta/reportes">Mis reportes</Link>
           {user.role === "tester" && <Link href="/mi-cuenta/pruebas">Mis pruebas</Link>}
           <Link href="/mi-cuenta/bloqueados">Anuncios ocultos</Link>
-          <Link href="/mi-cuenta/nuevo-perfil">Crear perfil</Link>
+          <Link href="/mi-cuenta/nuevo-perfil">Crear anuncio</Link>
           <details className="account-legal-links">
             <summary>Información</summary>
             <div>

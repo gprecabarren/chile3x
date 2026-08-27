@@ -45,7 +45,7 @@ export function RegistrationConsentFields({ adultConfirmed = false, legalConfirm
         onInvalid={(event) => validate("legal", legalMessage, event.currentTarget.checked, event.currentTarget)}
         onChange={(event) => validate("legal", legalMessage, event.currentTarget.checked, event.currentTarget)}
       />
-      <span>Leí y acepto los <Link href="/terminos">Términos y condiciones</Link> y la <Link href="/privacidad">Política de privacidad</Link>.</span>
+      <span>Leí y acepto los <Link href="/terminos" target="_blank" rel="noreferrer">Términos y condiciones</Link> y la <Link href="/privacidad" target="_blank" rel="noreferrer">Política de privacidad</Link>.</span>
     </label>
     {errors.legal && <p className="registration-consent-error" id="legal-consent-error" role="alert">{errors.legal}</p>}
   </div>;

@@ -852,7 +852,8 @@ input[type="checkbox"] { border-radius: 4px; }
 
 @media (max-width: 620px) {
   .account-identity-optional { padding: 16px 14px; }
-  .auth-form input[type="date"] { min-width: 0; max-width: 100%; font-size: 12px; }
+  .auth-form input[type="date"] { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; font-size: 16px; }
+  .auth-form input[type="date"]::-webkit-date-and-time-value { min-width: 0; text-align: left; }
   .registration-password-entry { grid-template-columns: minmax(0, 1fr) 42px; }
   .gallery-upload-candidates article { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
   .gallery-face-blur-option, .gallery-upload-status { grid-column: 1 / -1; }
@@ -862,6 +863,11 @@ input[type="checkbox"] { border-radius: 4px; }
 
 /* Los ejemplos de los campos son una ayuda visual, no un título en negrita. */
 input::placeholder, textarea::placeholder { color: #8d98aa; font-style: normal; font-weight: 400 !important; opacity: 1; }
+
+/* Safari amplía los controles de texto menores de 16 px al enfocarlos. */
+@media (max-width: 760px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]), select, textarea { font-size: 16px !important; }
+}
 
 /* Búsqueda administrativa de cuentas: criterios combinables sin obligar a usar tablas anchas. */
 .admin-account-filters { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: end; }

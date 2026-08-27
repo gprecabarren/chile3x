@@ -8,8 +8,6 @@ import { cityTotal, regions } from "./locations";
 import { RegionJumpSelect } from "./RegionJumpSelect";
 import { getCityEscortCounts, getFeaturedProfiles } from "@/lib/directory";
 import { getActiveStories } from "@/lib/stories";
-import { getCurrentUser } from "@/lib/auth";
-import { getBlockedProfileIds } from "@/lib/profile-safety";
 import { safeJsonLd } from "@/lib/json-ld";
 import { socialCardImage, socialCardImageUrl } from "@/lib/seo";
 
@@ -79,11 +77,14 @@ const websiteSchema = {
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const viewer = await getCurrentUser();
-  const featuredProfiles = await getFeaturedProfiles(6, viewer?.id);
-  const blockedProfileIds = await getBlockedProfileIds(viewer?.id);
-  const [stories, cityEscortCounts] = await Promise.all([getActiveStories(), getCityEscortCounts()]);
-  const visibleStories = stories.filter((story) => !blockedProfileIds.has(story.profileId));
+  // The home has no account-specific information. Keeping it public lets
+  // Cloudflare cache the same safe response for visitors with or without a
+  // session instead of triggering a full SSR pass on every tab change.
+  const [featuredProfiles, stories, cityEscortCounts] = await Promise.all([
+    getFeaturedProfiles(6),
+    getActiveStories(),
+    getCityEscortCounts(),
+  ]);
   return (
     <main>
       <script
@@ -160,7 +161,7 @@ export default async function Home() {
         <div><p className="eyebrow">CHILE3X</p><h2>Un espacio adulto, <em>privado y claro.</em></h2><p>Encuentra publicaciones revisadas y contacta directamente a cada anunciante.</p><Link className="button button-outline" href="/escorts">Ver directorio nacional</Link></div>
       </section>
 
-      <StoryRail stories={visibleStories} />
+      <StoryRail stories={stories} />
 
       <section className="section directory-section" id="cobertura">
         <div className="section-heading directory-heading">

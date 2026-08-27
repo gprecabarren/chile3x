@@ -1,5 +1,6 @@
 import { and, eq, gt } from "drizzle-orm";
 import { cookies } from "next/headers";
+import { cache } from "react";
 import { getDb } from "@/db";
 import { authSessions, users } from "@/db/schema";
 
@@ -175,7 +176,11 @@ export async function deleteCurrentSession(sessionToken: string | undefined) {
   ));
 }
 
-async function getSessionUser(cookieName: string): Promise<AccountUser | null> {
+// A page can ask for the current visitor from both the root layout and its
+// route component. Cache it for that render so we only verify the session once.
+// The cache is scoped to a server request, so logout, deactivation and expiry
+// continue to take effect on the very next navigation.
+const getSessionUser = cache(async function getSessionUser(cookieName: string): Promise<AccountUser | null> {
   const sessionToken = (await cookies()).get(cookieName)?.value;
 
   if (!sessionToken) {
@@ -212,7 +217,7 @@ async function getSessionUser(cookieName: string): Promise<AccountUser | null> {
   }
 
   return record as AccountUser;
-}
+});
 
 export async function getCurrentAdmin(): Promise<AdminUser | null> {
   const user = await getSessionUser(ADMIN_SESSION_COOKIE);

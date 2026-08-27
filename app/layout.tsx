@@ -4,8 +4,6 @@ import { AgeGate } from "./AgeGate";
 import { MaintenanceScreen } from "./MaintenanceScreen";
 import { PrivacyConsent } from "./PrivacyConsent";
 import { getCurrentAdmin } from "@/lib/auth";
-import { getCurrentUser } from "@/lib/auth";
-import { BugReporter } from "./BugReporter";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { socialCardImage, socialCardImageUrl } from "@/lib/seo";
 import { GooglePreferredSourceLoader } from "./GooglePreferredSourceLoader";
@@ -65,8 +63,12 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [settings, admin, user] = await Promise.all([getSiteSettings(), getCurrentAdmin(), getCurrentUser()]);
+  const settings = await getSiteSettings();
   const maintenanceEnabled = settings.maintenance_mode === "enabled";
+  // Normal public views do not need a session lookup. Only check the admin
+  // cookie when maintenance mode is active, so the public response can stay
+  // light enough for the Workers Free CPU limit.
+  const admin = maintenanceEnabled ? await getCurrentAdmin() : null;
 
   return (
     <html lang="es">
@@ -78,7 +80,6 @@ export default async function RootLayout({
         <GooglePreferredSourceLoader />
         <AgeGate />
         <PrivacyConsent />
-        {user?.role === "tester" && <BugReporter />}
       </body>
     </html>
   );

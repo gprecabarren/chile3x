@@ -1,5 +1,6 @@
 import { getDb } from "@/db";
 import { siteSettings } from "@/db/schema";
+import { cache } from "react";
 
 export const siteSettingDefaults = {
   listing_open: "open",
@@ -26,7 +27,12 @@ export const siteSettingDefaults = {
 export type SiteSettingKey = keyof typeof siteSettingDefaults;
 export type SiteSettings = Record<SiteSettingKey, string>;
 
-export async function getSiteSettings(): Promise<SiteSettings> {
+// Settings are read by the layout, header, footer and floating contact button
+// during the same server render. Memoizing this function per request prevents
+// those components from repeating the same D1 query and keeps public pages
+// inside the Workers Free CPU budget. This is not a long-lived cache: an admin
+// change is visible on the next request.
+export const getSiteSettings = cache(async function getSiteSettings(): Promise<SiteSettings> {
   const values = { ...siteSettingDefaults } as SiteSettings;
   let rows: Array<{ key: string; value: string }>;
 
@@ -46,7 +52,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   }
 
   return values;
-}
+});
 
 export function siteBaseUrl(value: string) {
   try {

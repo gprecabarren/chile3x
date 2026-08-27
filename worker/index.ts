@@ -45,11 +45,15 @@ function hasAuthenticatedSession(request: Request) {
  * crawlers while keeping new moderation changes visible promptly.
  */
 function isCacheablePublicPage(request: Request, url: URL) {
-  if (request.method !== "GET" || hasAuthenticatedSession(request)) return false;
+  if (request.method !== "GET") return false;
   // Client navigation requests use the same public data through a `.rsc`
   // endpoint. Cache it under its own URL, never together with HTML.
   const path = url.pathname.endsWith(".rsc") ? url.pathname.slice(0, -4) || "/" : url.pathname;
-  if (path === "/" || path === "/escorts" || path === "/agencias" || path === "/arriendos") return true;
+  // The home response contains no account-specific data, so it is safe to
+  // share its short-lived cache entry even for signed-in visitors.
+  if (path === "/") return true;
+  if (hasAuthenticatedSession(request)) return false;
+  if (path === "/escorts" || path === "/agencias" || path === "/arriendos") return true;
   if (path.startsWith("/escorts/") || path.startsWith("/perfil/") || path.startsWith("/noticias/")) return true;
   return ["/quienes-somos", "/noticias", "/faq", "/contacto", "/terminos", "/privacidad", "/reglas-de-publicacion"].includes(path);
 }

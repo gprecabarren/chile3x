@@ -28,6 +28,17 @@ export type AccountUser = {
 
 export type AdminUser = AccountUser & { role: "admin" };
 
+const TESTER_AUTO_APPROVAL_EMAIL = "chefcito_burrito@outlook.com";
+
+/**
+ * A deliberately narrow moderation exception for the internal tester account.
+ * It still has to retain the tester role, so a role change immediately removes
+ * this privilege.
+ */
+export function hasTesterAutoApproval(user: AccountUser | null | undefined) {
+  return user?.role === "tester" && user.email.trim().toLowerCase() === TESTER_AUTO_APPROVAL_EMAIL;
+}
+
 function toBase64Url(bytes: Uint8Array) {
   let binary = "";
 

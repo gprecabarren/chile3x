@@ -1,8 +1,8 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { profileMedia, profiles } from "@/db/schema";
-import { assertSameOrigin, getCurrentUser } from "@/lib/auth";
+import { assertSameOrigin, getCurrentUser, hasTesterAutoApproval } from "@/lib/auth";
 import {
   detectImageType,
   detectVideoType,
@@ -34,6 +34,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const user = await getCurrentUser();
   if (!user) return error("Ingresa para subir archivos.", 401);
+  const moderationStatus = hasTesterAutoApproval(user) ? "approved" : "pending";
 
   const { profileId } = await params;
   const db = await getDb();
@@ -82,13 +83,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const r2Key = `profiles/${profileId}/${id}.${extension}`;
   await env.MEDIA.put(r2Key, data, {
     httpMetadata: { contentType, contentDisposition: "inline", cacheControl: "private, no-store" },
-    customMetadata: { profileId, uploadedBy: user.id, moderation: "pending", mediaType, uploadKind },
+    customMetadata: { profileId, uploadedBy: user.id, moderation: moderationStatus, mediaType, uploadKind },
     storageClass: "Standard",
   });
 
   const sortOrder = activeMedia.reduce((latest, media) => Math.max(latest, media.sortOrder), -1) + 1;
   try {
-    await db.insert(profileMedia).values({ id, profileId, mediaType, r2Key, byteSize: data.byteLength, contentType, moderationStatus: "pending", visibility: "public", isProfilePhoto: uploadKind === "profile_photo", sortOrder });
+    if (moderationStatus === "approved" && uploadKind === "profile_photo") {
+      await db.update(profileMedia).set({ isProfilePhoto: false }).where(and(
+        eq(profileMedia.profileId, profileId),
+        eq(profileMedia.isProfilePhoto, true),
+        eq(profileMedia.moderationStatus, "approved"),
+      ));
+    }
+    await db.insert(profileMedia).values({ id, profileId, mediaType, r2Key, byteSize: data.byteLength, contentType, moderationStatus, visibility: "public", isProfilePhoto: uploadKind === "profile_photo", sortOrder });
   } catch (cause) {
     await env.MEDIA.delete(r2Key);
     throw cause;
@@ -96,7 +104,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const totalBytes = usage.bytes + data.byteLength;
   return NextResponse.json({
-    media: { id, url: `/media/${id}`, mediaType, contentType, moderationStatus: "pending", visibility: "public", isProfilePhoto: uploadKind === "profile_photo", byteSize: data.byteLength },
+    media: { id, url: `/media/${id}`, mediaType, contentType, moderationStatus, visibility: "public", isProfilePhoto: uploadKind === "profile_photo", byteSize: data.byteLength },
     quota: { bytes: totalBytes, ...getMediaQuotaState(totalBytes) },
   }, { status: 201 });
 }

@@ -2,7 +2,7 @@ import { asc, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { exclusiveContentMedia } from "@/db/schema";
-import { assertSameOrigin, getCurrentUser } from "@/lib/auth";
+import { assertSameOrigin, getCurrentUser, hasTesterAutoApproval } from "@/lib/auth";
 import { getOrCreateExclusiveContentCollection } from "@/lib/exclusive-content";
 import {
   detectImageType,
@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
   try { assertSameOrigin(request); } catch { return error("Solicitud no válida.", 403); }
   const user = await getCurrentUser();
   if (!user) return error("Ingresa para subir contenido.", 401);
+  const moderationStatus = hasTesterAutoApproval(user) ? "approved" : "pending";
 
   const formData = await request.formData();
   const entry = formData.get("file");
@@ -57,20 +58,20 @@ export async function POST(request: NextRequest) {
   const r2Key = `content/${collection.id}/${id}.${extension}`;
   await env.MEDIA.put(r2Key, data, {
     httpMetadata: { contentType, contentDisposition: "inline", cacheControl: "private, no-store" },
-    customMetadata: { collectionId: collection.id, uploadedBy: user.id, moderation: "pending", mediaType, visibility: "exclusive" },
+    customMetadata: { collectionId: collection.id, uploadedBy: user.id, moderation: moderationStatus, mediaType, visibility: "exclusive" },
     storageClass: "Standard",
   });
 
   const sortOrder = existing.reduce((latest, media) => Math.max(latest, media.sortOrder), -1) + 1;
   try {
-    await db.insert(exclusiveContentMedia).values({ id, collectionId: collection.id, mediaType, r2Key, byteSize: data.byteLength, contentType, moderationStatus: "pending", sortOrder });
+    await db.insert(exclusiveContentMedia).values({ id, collectionId: collection.id, mediaType, r2Key, byteSize: data.byteLength, contentType, moderationStatus, sortOrder });
   } catch (cause) {
     await env.MEDIA.delete(r2Key);
     throw cause;
   }
   const total = usage.bytes + data.byteLength;
   return NextResponse.json({
-    media: { id, url: `/contenido/${id}`, mediaType, contentType, moderationStatus: "pending", byteSize: data.byteLength },
+    media: { id, url: `/contenido/${id}`, mediaType, contentType, moderationStatus, byteSize: data.byteLength },
     quota: { bytes: total, ...getMediaQuotaState(total) },
   }, { status: 201 });
 }

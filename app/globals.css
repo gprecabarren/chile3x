@@ -547,6 +547,7 @@ footer span { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid #272
   .site-header .portal-contact-links-header { display: flex; order: initial; width: auto; flex: 0 0 auto; gap: 0; }
   .site-header .portal-contact-links-header .portal-contact-link:not(.portal-contact-whatsapp):not(.portal-contact-email) { display: none; }
   .site-header .portal-contact-links-header .portal-contact-link { width: 36px; height: 36px; }
+  .site-header .portal-contact-links-header .portal-contact-email { display: inline-grid !important; visibility: visible; opacity: 1; }
   .site-header .portal-contact-links-header .portal-contact-link svg { width: 18px; height: 18px; }
 }
 @media (max-width: 420px) {
@@ -1001,10 +1002,10 @@ select:disabled { opacity: .68; }
   .public-header .public-account-summary > span { grid-row: 1 / span 2; align-self: center; padding-right: 8px; border-right: 1px solid #30394b; }
   .public-header .public-account-summary strong { font-size: 10px; }
   .public-header .public-account-summary small { font-size: 9px; }
-  .public-header .mobile-public-quick-links { order: 5; width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
-  .mobile-public-quick-links a { min-height: 37px; display: flex; align-items: center; justify-content: center; padding: 8px 10px; border: 1px solid #394156; border-radius: var(--radius-sm); color: #eef1f7; background: #111724; font-size: 10px; font-weight: 800; letter-spacing: .045em; text-align: center; text-decoration: none; text-transform: uppercase; }
-  .mobile-public-quick-links a:first-child { border-color: #6d424b; color: #fff; }
-  .mobile-public-quick-links a:hover { border-color: #e65b64; background: #191b29; }
+  .public-header .mobile-public-quick-links { order: 5; width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 12px; padding: 4px 0 1px; border-top: 1px solid #242c3d; border-bottom: 1px solid #242c3d; }
+  .mobile-public-quick-links a { min-height: 29px; display: flex; align-items: center; justify-content: center; padding: 5px 0; color: #d8ddea; font-size: 9px; font-weight: 700; letter-spacing: .015em; line-height: 1.2; text-align: center; text-decoration: none; }
+  .mobile-public-quick-links .mobile-directory-regions { grid-column: span 2; color: #fff; }
+  .mobile-public-quick-links a:hover { color: #ff7c84; }
   .public-header .public-header-actions { order: 6; flex-basis: 100%; width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .public-header .public-header-actions.is-signed-in { grid-template-columns: minmax(0, 1fr); }
   .public-header .public-header-actions .button { width: 100%; min-height: 40px; padding-inline: 8px; font-size: 9px; }

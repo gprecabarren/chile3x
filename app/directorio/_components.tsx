@@ -82,7 +82,6 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
         </div>}
         <PortalContactLinks placement="header" />
         <PublicMobileMenu
-          coverageHref={coverageHref}
           hasUserSession={hasUserSession}
           hasAdminSession={hasAdminSession}
           session={sessionUser ? {
@@ -95,7 +94,10 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
           } : null}
         />
         <nav className="mobile-public-quick-links" aria-label="Accesos rápidos">
-          <Link href="/escorts">Directorio</Link>
+          <Link className="mobile-directory-regions" href={coverageHref}>Regiones y ciudades</Link>
+          <Link href="/escorts">Escorts</Link>
+          <Link href="/agencias">Agencias</Link>
+          <Link href="/arriendos">Arriendos</Link>
           <Link href={sessionAccountHref}>{sessionAccountLabel}</Link>
         </nav>
         <div className={`public-header-actions${hasUserSession ? " is-signed-in" : ""}`} aria-label="Acciones de cuenta">

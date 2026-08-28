@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { FloatingWhatsappButton, PortalContactLinks, PublicFooter, ProfileGrid } from "./directorio/_components";
-import { PublicMobileMenu } from "./directorio/PublicMobileMenu";
+import { FloatingWhatsappButton, PublicFooter, PublicHeader, ProfileGrid } from "./directorio/_components";
 import { StoryRail } from "./historias/StoryRail";
 import { cityTotal, regions } from "./locations";
 import { RegionJumpSelect } from "./RegionJumpSelect";
@@ -93,35 +92,7 @@ export default async function Home() {
       />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteSchema) }} />
 
-      <div className="age-strip">
-        <span>+18</span>
-        Este sitio está destinado exclusivamente a personas mayores de edad.
-        <a href="/reglas-de-publicacion">Conocer reglas</a>
-      </div>
-
-      <header className="site-header">
-        <Link className="brand" href="/" aria-label="Chile3X, inicio">
-          <Image src="/chile3x-logo-primary.jpeg" alt="Chile3X" width={800} height={225} priority unoptimized />
-        </Link>
-        <nav className="public-navigation" aria-label="Navegación principal">
-          <div className="public-navigation-group public-navigation-directory" aria-label="Directorio">
-            <a href="#cobertura">Regiones y ciudades</a>
-            <Link href="/escorts">Escorts</Link>
-            <Link href="/agencias">Agencias</Link>
-            <Link href="/arriendos">Arriendos</Link>
-          </div>
-          <div className="public-navigation-group public-navigation-site" aria-label="Información y cuenta">
-            <Link href="/quienes-somos">Quiénes somos</Link>
-            <Link href="/noticias">Noticias</Link>
-            <Link href="/faq">FAQ</Link>
-            <Link href="/contacto">Contacto</Link>
-            <a href="/ingresar">Mi cuenta</a>
-          </div>
-        </nav>
-        <PortalContactLinks placement="header" />
-        <PublicMobileMenu coverageHref="#cobertura" />
-        <a className="button button-outline" href="/registro">Publicar perfil</a>
-      </header>
+      <PublicHeader coverageHref="#cobertura" />
 
       <section className="hero" id="explorar">
         <div className="hero-copy">

@@ -7,6 +7,14 @@ type PublicMobileMenuProps = {
   coverageHref: string;
   hasUserSession: boolean;
   hasAdminSession: boolean;
+  session?: {
+    label: string;
+    username: string | null;
+    email: string;
+    accountHref: string;
+    accountLabel: string;
+    isAdmin: boolean;
+  } | null;
 };
 
 const directoryLinks = [
@@ -20,10 +28,9 @@ const portalLinks = [
   ["Noticias", "/noticias"],
   ["Preguntas frecuentes", "/faq"],
   ["Contacto", "/contacto"],
-  ["Mi cuenta", "/ingresar"],
 ] as const;
 
-export function PublicMobileMenu({ coverageHref, hasUserSession, hasAdminSession }: PublicMobileMenuProps) {
+export function PublicMobileMenu({ coverageHref, hasUserSession = false, hasAdminSession = false, session = null }: PublicMobileMenuProps) {
   const [open, setOpen] = useState(false);
   const closeMenu = () => setOpen(false);
 
@@ -49,7 +56,15 @@ export function PublicMobileMenu({ coverageHref, hasUserSession, hasAdminSession
           <div>
             <p>CHILE3X</p>
             {portalLinks.map(([label, href]) => <Link href={href} onClick={closeMenu} key={href}>{label}</Link>)}
+            <Link href={session?.accountHref ?? "/ingresar"} onClick={closeMenu}>{session?.accountLabel ?? "Mi cuenta"}</Link>
           </div>
+          {session && <div className="mobile-menu-session-summary">
+            <p>{session.isAdmin ? "SESIÓN ADMINISTRATIVA" : "SESIÓN ACTIVA"}</p>
+            <Link href={session.accountHref} onClick={closeMenu}>
+              <strong>{session.label}</strong>
+              <small>{session.username ? `@${session.username} · ` : ""}{session.email}</small>
+            </Link>
+          </div>}
           {(hasUserSession || hasAdminSession) && <div className="mobile-menu-session-actions">
             <p>SESIÓN</p>
             {hasUserSession && <form action="/api/auth/session/logout" method="post"><button type="submit">Cerrar sesión</button></form>}

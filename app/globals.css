@@ -966,3 +966,51 @@ select:disabled { opacity: .68; }
   .admin-mobile-navigation nav a { border-right: 0 !important; }
   .admin-mobile-navigation nav a:nth-last-child(2) { border-bottom: 1px solid #283143; }
 }
+
+/* Acciones públicas: registrarse crea la cuenta; publicar anuncio abre el
+   flujo privado. La identidad se resuelve únicamente para sesiones existentes. */
+.public-account-summary { min-width: 0; max-width: 245px; display: grid; gap: 2px; padding: 7px 10px; border: 1px solid #374258; border-radius: var(--radius-sm); color: #f1f4f9; background: #0d121e; text-decoration: none; }
+.public-account-summary:hover { border-color: #e35b64; background: #151b2a; }
+.public-account-summary > span { color: #ff838a; font-size: 8px; font-weight: 800; letter-spacing: .1em; }
+.public-account-summary strong { min-width: 0; overflow: hidden; color: #fff; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.public-account-summary small { min-width: 0; overflow: hidden; color: #b9c2d1; font-size: 9px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+.public-header-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 7px; }
+.public-header-actions .button { min-height: 38px; padding: 9px 12px; white-space: nowrap; }
+.public-header-actions .button-primary { border-color: #e74b54; }
+.mobile-menu-session-summary { grid-column: 1 / -1; padding-top: 11px; border-top: 1px solid #2b3447; }
+.mobile-menu-session-summary a { display: grid; gap: 3px; }
+.mobile-menu-session-summary strong { min-width: 0; overflow: hidden; color: #fff; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.mobile-menu-session-summary small { min-width: 0; overflow: hidden; color: #aeb8ca; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 1440px) and (min-width: 861px) {
+  .public-header { flex-wrap: wrap; }
+  .public-header .public-navigation { order: 4; width: 100%; margin-left: 0; }
+  .public-header .public-account-summary { order: 2; flex: 1 1 210px; max-width: none; }
+  .public-header .public-session-actions { order: 3; width: auto; padding-top: 0; }
+  .public-header .portal-contact-links-header { order: 3; }
+  .public-header .public-header-actions { order: 3; }
+}
+
+@media (max-width: 860px) {
+  .site-header.public-header { flex-wrap: wrap; align-items: center; gap: 9px; }
+  .public-header .brand { order: 1; margin-right: auto; }
+  .public-header .portal-contact-links-header { order: 2; }
+  .public-header .mobile-public-menu { order: 3; margin-left: 0; }
+  .public-header .public-account-summary { order: 4; width: 100%; max-width: none; grid-template-columns: auto minmax(0, 1fr); column-gap: 8px; padding: 7px 9px; }
+  .public-header .public-account-summary > span { grid-row: 1 / span 2; align-self: center; padding-right: 8px; border-right: 1px solid #30394b; }
+  .public-header .public-account-summary strong { font-size: 10px; }
+  .public-header .public-account-summary small { font-size: 9px; }
+  .public-header .public-header-actions { order: 5; flex-basis: 100%; width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .public-header .public-header-actions.is-signed-in { grid-template-columns: minmax(0, 1fr); }
+  .public-header .public-header-actions .button { width: 100%; min-height: 40px; padding-inline: 8px; font-size: 9px; }
+  .mobile-menu-session-summary { grid-column: 1 / -1; }
+}
+
+@media (max-width: 380px) {
+  .site-header.public-header { padding-right: 12px; padding-left: 12px; gap: 6px; }
+  .public-header .brand { width: 96px; }
+  .public-header .portal-contact-links-header .portal-contact-whatsapp { width: 34px; height: 34px; }
+  .public-header .mobile-menu-toggle { width: 38px; min-height: 38px; }
+  .public-header .public-header-actions { gap: 6px; }
+  .public-header .public-header-actions .button { min-height: 38px; padding-inline: 5px; font-size: 8px; letter-spacing: .035em; }
+}

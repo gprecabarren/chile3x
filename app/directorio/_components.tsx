@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { cookies } from "next/headers";
 import type { ReactNode } from "react";
-import { getSessionCookieName, getUserSessionCookieName } from "@/lib/auth";
+import { getCurrentAdmin, getCurrentUser, getSessionCookieName, getUserSessionCookieName, type AccountUser } from "@/lib/auth";
 import { getCityPath, getProfileDisplayTags, type PublicProfile } from "@/lib/directory";
 import { profilePublicPath, readProfilePrices } from "@/lib/profile";
 import { getPortalContacts, getPortalWhatsappLink } from "@/lib/site-contacts";
@@ -26,13 +26,30 @@ function toneFor(value: string) {
   return visualTone[value.split("").reduce((total, character) => total + character.charCodeAt(0), 0) % visualTone.length];
 }
 
-export async function PublicHeader() {
-  // This only checks for the presence of an HttpOnly session cookie. It avoids
-  // database lookups on every public page; protected routes still validate the
-  // session in the database before serving account or admin data.
+type PublicHeaderProps = {
+  coverageHref?: string;
+};
+
+function publicSessionLabel(user: AccountUser) {
+  return user.displayName?.trim() || (user.username ? `@${user.username}` : user.email);
+}
+
+export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeaderProps = {}) {
   const cookieStore = await cookies();
-  const hasUserSession = Boolean(cookieStore.get(getUserSessionCookieName())?.value);
-  const hasAdminSession = Boolean(cookieStore.get(getSessionCookieName())?.value);
+  const hasPotentialUserSession = Boolean(cookieStore.get(getUserSessionCookieName())?.value);
+  const hasPotentialAdminSession = Boolean(cookieStore.get(getSessionCookieName())?.value);
+  // Las consultas solo ocurren si existe una cookie. Así la cabecera puede
+  // mostrar datos reales a la persona conectada sin añadir consultas a cada
+  // visita pública anónima.
+  const [currentUser, currentAdmin] = await Promise.all([
+    hasPotentialUserSession ? getCurrentUser() : Promise.resolve(null),
+    hasPotentialAdminSession ? getCurrentAdmin() : Promise.resolve(null),
+  ]);
+  const hasUserSession = Boolean(currentUser);
+  const hasAdminSession = Boolean(currentAdmin);
+  const sessionUser = currentUser ?? currentAdmin;
+  const sessionAccountHref = currentUser ? "/mi-cuenta" : currentAdmin ? "/admin" : "/ingresar";
+  const sessionAccountLabel = currentUser ? "Mi cuenta" : currentAdmin ? "Administración" : "Mi cuenta";
 
   return (
     <>
@@ -51,16 +68,36 @@ export async function PublicHeader() {
             <Link href="/noticias">Noticias</Link>
             <Link href="/faq">FAQ</Link>
             <Link href="/contacto">Contacto</Link>
-            <Link href="/ingresar">Mi cuenta</Link>
+            <Link href={sessionAccountHref}>{sessionAccountLabel}</Link>
           </div>
         </nav>
+        {sessionUser && <Link className="public-account-summary" href={sessionAccountHref} aria-label={`Abrir ${sessionAccountLabel.toLowerCase()}`}>
+          <span>{currentUser ? "SESIÓN ACTIVA" : "SESIÓN ADMINISTRATIVA"}</span>
+          <strong>{publicSessionLabel(sessionUser)}</strong>
+          <small>{sessionUser.username ? `@${sessionUser.username} · ` : ""}{sessionUser.email}</small>
+        </Link>}
         {(hasUserSession || hasAdminSession) && <div className="public-session-actions" aria-label="Sesiones activas">
           {hasUserSession && <form action="/api/auth/session/logout" method="post"><button type="submit">Cerrar sesión</button></form>}
           {hasAdminSession && <form action="/api/auth/logout" method="post"><button className="public-admin-logout" type="submit">Cerrar sesión de administrador</button></form>}
         </div>}
         <PortalContactLinks placement="header" />
-        <PublicMobileMenu coverageHref="/#cobertura" hasUserSession={hasUserSession} hasAdminSession={hasAdminSession} />
-        <Link className="button button-outline" href="/registro">Publicar perfil</Link>
+        <PublicMobileMenu
+          coverageHref={coverageHref}
+          hasUserSession={hasUserSession}
+          hasAdminSession={hasAdminSession}
+          session={sessionUser ? {
+            label: publicSessionLabel(sessionUser),
+            username: sessionUser.username,
+            email: sessionUser.email,
+            accountHref: sessionAccountHref,
+            accountLabel: sessionAccountLabel,
+            isAdmin: !currentUser && Boolean(currentAdmin),
+          } : null}
+        />
+        <div className={`public-header-actions${hasUserSession ? " is-signed-in" : ""}`} aria-label="Acciones de cuenta">
+          {!hasUserSession && <Link className="button button-outline" href="/registro">Registrarse</Link>}
+          <Link className="button button-primary" href="/mi-cuenta/nuevo-perfil" prefetch={false}>Publicar anuncio</Link>
+        </div>
       </header>
     </>
   );

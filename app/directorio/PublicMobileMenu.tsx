@@ -56,7 +56,6 @@ export function PublicMobileMenu({ coverageHref, hasUserSession = false, hasAdmi
           <div>
             <p>CHILE3X</p>
             {portalLinks.map(([label, href]) => <Link href={href} onClick={closeMenu} key={href}>{label}</Link>)}
-            <Link href={session?.accountHref ?? "/ingresar"} onClick={closeMenu}>{session?.accountLabel ?? "Mi cuenta"}</Link>
           </div>
           {session && <div className="mobile-menu-session-summary">
             <p>{session.isAdmin ? "SESIÓN ADMINISTRATIVA" : "SESIÓN ACTIVA"}</p>

@@ -455,6 +455,7 @@ footer span { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid #272
 
 /* Navegación y directorio en pantallas pequeñas. */
 .mobile-public-menu { display: none; }
+.mobile-public-quick-links { display: none; }
 .account-legal-links { position: relative; }
 .account-legal-links summary { display: flex; align-items: center; gap: 5px; color: #9ea6b6; cursor: pointer; font-size: 10px; list-style: none; }
 .account-legal-links summary::-webkit-details-marker { display: none; }
@@ -544,9 +545,9 @@ footer span { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid #272
 
 @media (max-width: 860px) {
   .site-header .portal-contact-links-header { display: flex; order: initial; width: auto; flex: 0 0 auto; gap: 0; }
-  .site-header .portal-contact-links-header .portal-contact-link:not(.portal-contact-whatsapp) { display: none; }
-  .site-header .portal-contact-links-header .portal-contact-whatsapp { width: 36px; height: 36px; }
-  .site-header .portal-contact-links-header .portal-contact-whatsapp svg { width: 18px; height: 18px; }
+  .site-header .portal-contact-links-header .portal-contact-link:not(.portal-contact-whatsapp):not(.portal-contact-email) { display: none; }
+  .site-header .portal-contact-links-header .portal-contact-link { width: 36px; height: 36px; }
+  .site-header .portal-contact-links-header .portal-contact-link svg { width: 18px; height: 18px; }
 }
 @media (max-width: 420px) {
   .site-header { gap: 7px; }
@@ -1000,7 +1001,11 @@ select:disabled { opacity: .68; }
   .public-header .public-account-summary > span { grid-row: 1 / span 2; align-self: center; padding-right: 8px; border-right: 1px solid #30394b; }
   .public-header .public-account-summary strong { font-size: 10px; }
   .public-header .public-account-summary small { font-size: 9px; }
-  .public-header .public-header-actions { order: 5; flex-basis: 100%; width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .public-header .mobile-public-quick-links { order: 5; width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+  .mobile-public-quick-links a { min-height: 37px; display: flex; align-items: center; justify-content: center; padding: 8px 10px; border: 1px solid #394156; border-radius: var(--radius-sm); color: #eef1f7; background: #111724; font-size: 10px; font-weight: 800; letter-spacing: .045em; text-align: center; text-decoration: none; text-transform: uppercase; }
+  .mobile-public-quick-links a:first-child { border-color: #6d424b; color: #fff; }
+  .mobile-public-quick-links a:hover { border-color: #e65b64; background: #191b29; }
+  .public-header .public-header-actions { order: 6; flex-basis: 100%; width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .public-header .public-header-actions.is-signed-in { grid-template-columns: minmax(0, 1fr); }
   .public-header .public-header-actions .button { width: 100%; min-height: 40px; padding-inline: 8px; font-size: 9px; }
   .mobile-menu-session-summary { grid-column: 1 / -1; }
@@ -1009,7 +1014,7 @@ select:disabled { opacity: .68; }
 @media (max-width: 380px) {
   .site-header.public-header { padding-right: 12px; padding-left: 12px; gap: 6px; }
   .public-header .brand { width: 96px; }
-  .public-header .portal-contact-links-header .portal-contact-whatsapp { width: 34px; height: 34px; }
+  .public-header .portal-contact-links-header .portal-contact-link { width: 34px; height: 34px; }
   .public-header .mobile-menu-toggle { width: 38px; min-height: 38px; }
   .public-header .public-header-actions { gap: 6px; }
   .public-header .public-header-actions .button { min-height: 38px; padding-inline: 5px; font-size: 8px; letter-spacing: .035em; }

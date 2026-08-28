@@ -94,6 +94,10 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
             isAdmin: !currentUser && Boolean(currentAdmin),
           } : null}
         />
+        <nav className="mobile-public-quick-links" aria-label="Accesos rápidos">
+          <Link href="/escorts">Directorio</Link>
+          <Link href={sessionAccountHref}>{sessionAccountLabel}</Link>
+        </nav>
         <div className={`public-header-actions${hasUserSession ? " is-signed-in" : ""}`} aria-label="Acciones de cuenta">
           {!hasUserSession && <Link className="button button-outline" href="/registro">Registrarse</Link>}
           <Link className="button button-primary" href="/mi-cuenta/nuevo-perfil" prefetch={false}>Publicar anuncio</Link>

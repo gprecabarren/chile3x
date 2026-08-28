@@ -29,7 +29,7 @@ export function AccountShell({ user, children }: { user: AccountUser; children: 
         </nav>
         <div className="account-user">
           <span>{user.displayName ?? "Cuenta Chile3X"}{user.username ? ` · @${user.username}` : ""}</span>
-          <form action="/api/auth/session/logout" method="post"><button type="submit">Salir</button></form>
+          <form action="/api/auth/session/logout" method="post"><button type="submit" title="Cerrar la sesión de esta cuenta">Cerrar sesión</button></form>
         </div>
       </header>
       {children}

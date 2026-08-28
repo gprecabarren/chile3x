@@ -1,6 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
+import { cookies } from "next/headers";
 import type { ReactNode } from "react";
+import { getSessionCookieName, getUserSessionCookieName } from "@/lib/auth";
 import { getCityPath, getProfileDisplayTags, type PublicProfile } from "@/lib/directory";
 import { profilePublicPath, readProfilePrices } from "@/lib/profile";
 import { getPortalContacts, getPortalWhatsappLink } from "@/lib/site-contacts";
@@ -25,6 +27,13 @@ function toneFor(value: string) {
 }
 
 export async function PublicHeader() {
+  // This only checks for the presence of an HttpOnly session cookie. It avoids
+  // database lookups on every public page; protected routes still validate the
+  // session in the database before serving account or admin data.
+  const cookieStore = await cookies();
+  const hasUserSession = Boolean(cookieStore.get(getUserSessionCookieName())?.value);
+  const hasAdminSession = Boolean(cookieStore.get(getSessionCookieName())?.value);
+
   return (
     <>
       <div className="age-strip"><span>+18</span>Este sitio está destinado exclusivamente a personas mayores de edad.</div>
@@ -45,8 +54,12 @@ export async function PublicHeader() {
             <Link href="/ingresar">Mi cuenta</Link>
           </div>
         </nav>
+        {(hasUserSession || hasAdminSession) && <div className="public-session-actions" aria-label="Sesiones activas">
+          {hasUserSession && <form action="/api/auth/session/logout" method="post"><button type="submit">Cerrar sesión</button></form>}
+          {hasAdminSession && <form action="/api/auth/logout" method="post"><button className="public-admin-logout" type="submit">Cerrar sesión de administrador</button></form>}
+        </div>}
         <PortalContactLinks placement="header" />
-        <PublicMobileMenu coverageHref="/#cobertura" />
+        <PublicMobileMenu coverageHref="/#cobertura" hasUserSession={hasUserSession} hasAdminSession={hasAdminSession} />
         <Link className="button button-outline" href="/registro">Publicar perfil</Link>
       </header>
     </>

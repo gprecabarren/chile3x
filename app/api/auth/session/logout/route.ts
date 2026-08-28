@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   }
 
   await deleteCurrentSession(request.cookies.get(getUserSessionCookieName())?.value);
-  const response = NextResponse.redirect(new URL("/", request.url), 303);
+  const response = NextResponse.redirect(new URL("/ingresar?closed=1", request.url), 303);
   response.cookies.set({ name: getUserSessionCookieName(), value: "", ...sessionCookieOptions(getUserSessionDuration()), maxAge: 0 });
   return response;
 }

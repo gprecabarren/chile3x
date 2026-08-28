@@ -5,6 +5,8 @@ import { useState } from "react";
 
 type PublicMobileMenuProps = {
   coverageHref: string;
+  hasUserSession: boolean;
+  hasAdminSession: boolean;
 };
 
 const directoryLinks = [
@@ -21,7 +23,7 @@ const portalLinks = [
   ["Mi cuenta", "/ingresar"],
 ] as const;
 
-export function PublicMobileMenu({ coverageHref }: PublicMobileMenuProps) {
+export function PublicMobileMenu({ coverageHref, hasUserSession, hasAdminSession }: PublicMobileMenuProps) {
   const [open, setOpen] = useState(false);
   const closeMenu = () => setOpen(false);
 
@@ -48,6 +50,11 @@ export function PublicMobileMenu({ coverageHref }: PublicMobileMenuProps) {
             <p>CHILE3X</p>
             {portalLinks.map(([label, href]) => <Link href={href} onClick={closeMenu} key={href}>{label}</Link>)}
           </div>
+          {(hasUserSession || hasAdminSession) && <div className="mobile-menu-session-actions">
+            <p>SESIÓN</p>
+            {hasUserSession && <form action="/api/auth/session/logout" method="post"><button type="submit">Cerrar sesión</button></form>}
+            {hasAdminSession && <form action="/api/auth/logout" method="post"><button type="submit">Cerrar sesión de administrador</button></form>}
+          </div>}
         </div>
       )}
     </div>

@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
   }
 
   await deleteCurrentSession(request.cookies.get(getSessionCookieName())?.value);
-  const response = NextResponse.redirect(new URL("/", request.url), 303);
+  const response = NextResponse.redirect(new URL("/ingresar?closed=admin", request.url), 303);
   response.cookies.set({
     name: getSessionCookieName(),
     value: "",

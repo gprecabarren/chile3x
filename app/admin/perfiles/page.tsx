@@ -99,6 +99,7 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
     verificationStatus: profiles.verificationStatus,
     healthReviewStatus: profiles.healthReviewStatus,
     ownerEmail: users.email,
+    ownerUsername: users.username,
     contactWhatsapp: profiles.contactWhatsapp,
     contactPhone: profileDetails.contactPhone,
     updatedAt: profiles.updatedAt,
@@ -191,7 +192,7 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
               <header><div><p className="eyebrow">{profileTypeLabel[profile.type] ?? profile.type}</p><h2>{profile.displayName}</h2><p>{profile.city}, {formatRegionName(profile.region)}</p></div>
                 <div className="admin-profile-card-links"><Link className="button button-public-preview" href={profilePreviewHref} target="_blank">Ver anuncio público</Link><Link className="button button-outline" href={mediaHref(profile.id, adminReturnTo)}>Fotos y videos{publicMedia.total > 0 ? " (" + publicMedia.total + ")" : ""}</Link>{exclusiveMedia && <Link className="button button-outline" href={mediaHref(profile.id, adminReturnTo, { type: "exclusive" })}>Contenido exclusivo{exclusiveMedia.total > 0 ? " (" + exclusiveMedia.total + ")" : ""}</Link>}{whatsappHref && <a className="button contact-whatsapp" href={whatsappHref} target="_blank" rel="noreferrer">WhatsApp</a>}{callHref && <a className="button contact-call" href={callHref}>Llamar</a>}</div>
               </header>
-              <dl className="admin-profile-card-owner"><div><dt>Cuenta propietaria</dt><dd><a href={"mailto:" + profile.ownerEmail}>{profile.ownerEmail}</a></dd></div><div><dt>Usuario de la cuenta</dt><dd><Link href={accountHref}>{profile.handle ? "@" + profile.handle : "Ver detalles de la cuenta"}</Link></dd></div></dl>
+              <dl className="admin-profile-card-owner"><div><dt>Cuenta propietaria</dt><dd><a href={"mailto:" + profile.ownerEmail}>{profile.ownerEmail}</a></dd></div><div><dt>Usuario de la cuenta</dt><dd><Link href={accountHref}>{profile.ownerUsername ? "@" + profile.ownerUsername : "Ver detalles de la cuenta"}</Link></dd></div></dl>
               {(publicMedia.pending > 0 || (exclusiveMedia?.pending ?? 0) > 0) && <div className="admin-profile-pending-media" aria-label="Archivos pendientes de aprobación">
                 {publicMedia.pending > 0 && <Link href={mediaHref(profile.id, adminReturnTo, { status: "pending" })}>{publicMedia.pending} archivo{publicMedia.pending === 1 ? "" : "s"} público{publicMedia.pending === 1 ? "" : "s"} pendiente{publicMedia.pending === 1 ? "" : "s"}</Link>}
                 {(exclusiveMedia?.pending ?? 0) > 0 && <Link href={mediaHref(profile.id, adminReturnTo, { status: "pending", type: "exclusive" })}>{exclusiveMedia?.pending} archivo{exclusiveMedia?.pending === 1 ? "" : "s"} de contenido exclusivo pendiente{exclusiveMedia?.pending === 1 ? "" : "s"}</Link>}

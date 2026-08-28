@@ -141,7 +141,9 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
       profileSlug: profiles.slug,
       profileHandle: profiles.handle,
       profileStatus: profiles.status,
+      ownerId: users.id,
       ownerEmail: users.email,
+      ownerUsername: users.username,
     }).from(profileMedia)
       .innerJoin(profiles, eq(profileMedia.profileId, profiles.id))
       .innerJoin(users, eq(profiles.ownerId, users.id))
@@ -173,13 +175,15 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
     slug: string;
     handle: string | null;
     status: string;
+    ownerId: string;
     ownerEmail: string;
+    ownerUsername: string | null;
     items: PublicRow[];
   }>();
   for (const row of publicRows) {
     const group = publicGroups.get(row.profileId);
     if (group) group.items.push(row);
-    else publicGroups.set(row.profileId, { id: row.profileId, name: row.profileName, slug: row.profileSlug, handle: row.profileHandle, status: row.profileStatus, ownerEmail: row.ownerEmail, items: [row] });
+    else publicGroups.set(row.profileId, { id: row.profileId, name: row.profileName, slug: row.profileSlug, handle: row.profileHandle, status: row.profileStatus, ownerId: row.ownerId, ownerEmail: row.ownerEmail, ownerUsername: row.ownerUsername, items: [row] });
   }
 
   const exclusiveGroups = new Map<string, {
@@ -253,8 +257,9 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
           const gallery = group.items.filter((item) => !item.media.isProfilePhoto);
           const pending = group.items.filter((item) => item.media.moderationStatus === "pending").length;
           const profileHref = profilePublicPath({ handle: group.handle, slug: group.slug });
+          const accountHref = `/admin/cuentas/${encodeURIComponent(group.ownerId)}?return_to=${encodeURIComponent(currentHref)}`;
           return <section className="admin-media-profile-group" key={group.id}>
-            <header><div><p className="eyebrow">ANUNCIO</p><h2>{group.name}</h2><span><a href={`mailto:${group.ownerEmail}`}>{group.ownerEmail}</a> · {listingStatusLabel(group.status)} · {group.items.length} archivo{group.items.length === 1 ? "" : "s"}{pending > 0 ? ` · ${pending} pendiente${pending === 1 ? "" : "s"}` : ""}</span></div><div><Link className="button button-public-preview" href={profileHref} target="_blank">Ver anuncio público</Link><Link className="button button-outline" href={`/admin/perfiles?q=${encodeURIComponent(group.name)}&return_to=${encodeURIComponent(currentHref)}`}>Abrir moderación</Link></div></header>
+            <header><div><p className="eyebrow">ANUNCIO</p><h2>{group.name}</h2><span><Link className="admin-media-owner-link" href={accountHref}>{group.ownerUsername ? `@${group.ownerUsername}` : "Abrir cuenta propietaria"}</Link> · <a href={`mailto:${group.ownerEmail}`}>{group.ownerEmail}</a> · {listingStatusLabel(group.status)} · {group.items.length} archivo{group.items.length === 1 ? "" : "s"}{pending > 0 ? ` · ${pending} pendiente${pending === 1 ? "" : "s"}` : ""}</span></div><div><Link className="button button-public-preview" href={profileHref} target="_blank">Ver anuncio público</Link><Link className="button button-outline" href={`/admin/perfiles?q=${encodeURIComponent(group.name)}&return_to=${encodeURIComponent(currentHref)}`}>Abrir moderación</Link></div></header>
             {profilePhoto.length > 0 && <section><h3>Foto de perfil</h3><div className="admin-media-grid">{profilePhoto.map((item) => <PublicMediaCard key={item.media.id} media={item.media} profileName={group.name} returnTo={currentHref} />)}</div></section>}
             {gallery.length > 0 && <section><h3>Galería pública</h3><div className="admin-media-grid">{gallery.map((item) => <PublicMediaCard key={item.media.id} media={item.media} profileName={group.name} returnTo={currentHref} />)}</div></section>}
           </section>;

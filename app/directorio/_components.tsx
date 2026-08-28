@@ -49,7 +49,8 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
   const hasAdminSession = Boolean(currentAdmin);
   const sessionUser = currentUser ?? currentAdmin;
   const sessionAccountHref = currentUser ? "/mi-cuenta" : currentAdmin ? "/admin" : "/ingresar";
-  const sessionAccountLabel = currentUser ? "Mi cuenta" : currentAdmin ? "Administración" : "Mi cuenta";
+  const sessionAccountLabel = currentUser ? "Mi cuenta" : currentAdmin ? "Administración" : "Iniciar sesión";
+  const hasAnySession = hasUserSession || hasAdminSession;
 
   return (
     <>
@@ -100,8 +101,8 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
           <Link href="/arriendos">Arriendos</Link>
           <Link href={sessionAccountHref}>{sessionAccountLabel}</Link>
         </nav>
-        <div className={`public-header-actions${hasUserSession ? " is-signed-in" : ""}`} aria-label="Acciones de cuenta">
-          {!hasUserSession && <Link className="button button-outline" href="/registro">Registrarse</Link>}
+        <div className={`public-header-actions${hasAnySession ? " is-signed-in" : ""}`} aria-label="Acciones de cuenta">
+          {!hasAnySession && <Link className="button button-outline" href="/registro">Registrarse</Link>}
           <Link className="button button-primary" href="/mi-cuenta/nuevo-perfil" prefetch={false}>Publicar anuncio</Link>
         </div>
       </header>

@@ -215,7 +215,7 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
     </form></div></details>
     <section className="admin-account-list"><div><p className="eyebrow">REGISTRO DE USUARIOS</p><h2>{total} de {rows.length} cuenta{rows.length === 1 ? "" : "s"}</h2></div>
       <form className="admin-account-filters" method="get" role="search">
-        <label htmlFor="account-search">Buscar en los datos de la cuenta<input id="account-search" name="q" type="search" defaultValue={params.q ?? ""} placeholder="Ej. correo, nombre, teléfono, ciudad o documento" /></label>
+        <label htmlFor="account-search">Buscar en los datos de la cuenta<input id="account-search" name="q" type="search" defaultValue={params.q ?? ""} placeholder="Correo, nombre, teléfono o documento" /><small>También puedes buscar por ciudad o nombre de usuario.</small></label>
         <div className="admin-account-filter-actions"><button className="button button-primary" type="submit">Buscar</button>{hasActiveFilters && <Link className="button button-outline" href="/admin/cuentas">Limpiar</Link>}</div>
         <details className="admin-account-advanced-filters" open={advancedFilters.length > 0}>
           <summary><span><b>Filtros avanzados</b><small>{advancedFilters.length ? `${advancedFilters.length} filtro${advancedFilters.length === 1 ? "" : "s"} avanzado${advancedFilters.length === 1 ? "" : "s"} activo${advancedFilters.length === 1 ? "" : "s"}` : "Combina estado, contacto, anuncios y fechas"}</small></span></summary>

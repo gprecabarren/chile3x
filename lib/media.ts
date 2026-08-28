@@ -107,11 +107,14 @@ export async function getMediaUsage() {
 export async function getApprovedMediaForProfiles(profileIds: string[]) {
   if (!profileIds.length) return new Map<string, ProfileMediaRecord[]>();
   const rows = await (await getDb()).select().from(profileMedia)
-    .where(inArray(profileMedia.profileId, profileIds))
+    .where(and(
+      inArray(profileMedia.profileId, profileIds),
+      eq(profileMedia.moderationStatus, "approved"),
+      eq(profileMedia.visibility, "public"),
+    ))
     .orderBy(asc(profileMedia.sortOrder), asc(profileMedia.createdAt));
   const byProfile = new Map<string, ProfileMediaRecord[]>();
   for (const row of rows as ProfileMediaRecord[]) {
-    if (row.moderationStatus !== "approved" || row.visibility !== "public") continue;
     byProfile.set(row.profileId, [...(byProfile.get(row.profileId) ?? []), row]);
   }
   return byProfile;

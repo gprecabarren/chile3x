@@ -2,7 +2,7 @@ import { and, count, desc, eq, gte, inArray, or } from "drizzle-orm";
 import { cache } from "react";
 import { cityDirectory, getCityBySlug, regions } from "@/app/locations";
 import { getDb } from "@/db";
-import { agencyMembers, profileDetails, profileServices, profileTags, profiles, profileViews } from "@/db/schema";
+import { agencyMembers, profileDetails, profileMedia, profileServices, profileTags, profiles, profileViews } from "@/db/schema";
 import { getApprovedMediaForProfiles } from "@/lib/media";
 import { getBlockedProfileIds } from "@/lib/profile-safety";
 import {
@@ -81,6 +81,15 @@ export type PublicProfile = {
   memberIds: string[];
 };
 
+/**
+ * The lightweight subset used by metadata. Keeping it separate from a full
+ * public profile avoids loading services, memberships and the entire gallery
+ * merely to render a page title or a social preview.
+ */
+export type PublicProfileSeo = Pick<PublicProfile,
+  "slug" | "handle" | "type" | "displayName" | "shortDescription" | "region" | "city" | "isDemo"
+> & { socialImageId: string | null };
+
 function values(query: DirectoryQuery, key: string) {
   const value = query[key];
   const raw = Array.isArray(value) ? value : value ? [value] : [];
@@ -151,6 +160,7 @@ type PublicProfileOptions = {
   profileIds?: string[];
   handle?: string;
   slug?: string;
+  includeAssociations?: boolean;
 };
 
 export async function getPublicProfiles(options: PublicProfileOptions = {}) {
@@ -180,7 +190,9 @@ export async function getPublicProfiles(options: PublicProfileOptions = {}) {
   const [tags, services, memberships, mediaByProfile] = await Promise.all([
     db.select().from(profileTags).where(inArray(profileTags.profileId, ids)),
     db.select().from(profileServices).where(inArray(profileServices.profileId, ids)),
-    db.select().from(agencyMembers).where(or(inArray(agencyMembers.agencyProfileId, ids), inArray(agencyMembers.memberProfileId, ids))),
+    options.includeAssociations
+      ? db.select().from(agencyMembers).where(or(inArray(agencyMembers.agencyProfileId, ids), inArray(agencyMembers.memberProfileId, ids)))
+      : Promise.resolve([]),
     getApprovedMediaForProfiles(ids),
   ]);
 
@@ -244,9 +256,9 @@ const getPublicProfileForRouteCached = cache(async function getPublicProfileForR
 ) {
   const decoded = decodeURIComponent(segment);
   if (decoded.startsWith("@")) {
-    return (await getPublicProfiles({ includeUnapproved, viewerId, handle: decoded.slice(1).toLowerCase() }))[0] ?? null;
+    return (await getPublicProfiles({ includeUnapproved, viewerId, includeAssociations: true, handle: decoded.slice(1).toLowerCase() }))[0] ?? null;
   }
-  return (await getPublicProfiles({ includeUnapproved, viewerId, slug: decoded }))[0] ?? null;
+  return (await getPublicProfiles({ includeUnapproved, viewerId, includeAssociations: true, slug: decoded }))[0] ?? null;
 });
 
 /**
@@ -256,6 +268,44 @@ const getPublicProfileForRouteCached = cache(async function getPublicProfileForR
  */
 export async function getPublicProfileForRoute(segment: string, options: Omit<PublicProfileOptions, "handle" | "slug"> = {}) {
   return getPublicProfileForRouteCached(segment, Boolean(options.includeUnapproved), options.viewerId);
+}
+
+const getPublicProfileSeoForRouteCached = cache(async function getPublicProfileSeoForRouteCached(segment: string): Promise<PublicProfileSeo | null> {
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(segment);
+  } catch {
+    return null;
+  }
+
+  const profileCondition = decoded.startsWith("@")
+    ? eq(profiles.handle, decoded.slice(1).toLowerCase())
+    : eq(profiles.slug, decoded);
+  const [row] = await (await getDb()).select({
+    slug: profiles.slug,
+    handle: profiles.handle,
+    type: profiles.type,
+    displayName: profiles.displayName,
+    shortDescription: profiles.shortDescription,
+    region: profiles.region,
+    city: profiles.city,
+    isDemo: profiles.isDemo,
+    socialImageId: profileMedia.id,
+  }).from(profiles)
+    .leftJoin(profileMedia, and(
+      eq(profileMedia.profileId, profiles.id),
+      eq(profileMedia.mediaType, "image"),
+      eq(profileMedia.moderationStatus, "approved"),
+      eq(profileMedia.isProfilePhoto, true),
+    ))
+    .where(and(eq(profiles.status, "approved"), profileCondition))
+    .limit(1);
+
+  return row ?? null;
+});
+
+export async function getPublicProfileSeoForRoute(segment: string) {
+  return getPublicProfileSeoForRouteCached(segment);
 }
 
 function readMetadata(value: string | null | undefined): Record<string, string> {

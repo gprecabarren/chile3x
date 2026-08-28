@@ -37,16 +37,30 @@ export async function getOrCreateExclusiveContentCollection(ownerId: string) {
   return collection;
 }
 
-export async function getExclusiveContentForProfile(profileId: string) {
+export async function getExclusiveContentForProfile(profileId: string, options: { viewerId?: string; isAdmin?: boolean } = {}) {
   const db = await getDb();
   const [collection] = await db.select().from(exclusiveContentCollections)
     .where(eq(exclusiveContentCollections.profileId, profileId)).limit(1);
-  if (!collection) return { collection: null, media: [] as ExclusiveContentMediaRecord[] };
-  const media = await db.select().from(exclusiveContentMedia).where(and(
+  if (!collection) return { collection: null, media: [] as ExclusiveContentMediaRecord[], hasAccess: false };
+
+  let hasAccess = Boolean(options.isAdmin) || collection.ownerId === options.viewerId;
+  if (!hasAccess && options.viewerId) {
+    const [grant] = await db.select({ id: exclusiveContentAccess.id }).from(exclusiveContentAccess).where(and(
+      eq(exclusiveContentAccess.collectionId, collection.id),
+      eq(exclusiveContentAccess.userId, options.viewerId),
+    )).limit(1);
+    hasAccess = Boolean(grant);
+  }
+
+  const mediaQuery = db.select().from(exclusiveContentMedia).where(and(
     eq(exclusiveContentMedia.collectionId, collection.id),
     eq(exclusiveContentMedia.moderationStatus, "approved"),
   )).orderBy(asc(exclusiveContentMedia.sortOrder), asc(exclusiveContentMedia.createdAt));
-  return { collection, media: media as ExclusiveContentMediaRecord[] };
+  // A locked visitor only needs enough opaque tiles to understand that the
+  // library exists. Do not hydrate a potentially large paid gallery into the
+  // public server render before their access has been checked.
+  const media = hasAccess ? await mediaQuery : await mediaQuery.limit(3);
+  return { collection, media: media as ExclusiveContentMediaRecord[], hasAccess };
 }
 
 export async function getSellerExclusiveContent(ownerId: string) {

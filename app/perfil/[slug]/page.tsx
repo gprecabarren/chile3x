@@ -8,7 +8,7 @@ import { profiles } from "@/db/schema";
 import { DirectoryShell, PortalContactIcon, ProfileCard } from "@/app/directorio/_components";
 import { ProfileStoryTrigger, StoryRail } from "@/app/historias/StoryRail";
 import { ProfileViewTracker } from "../ProfileViewTracker";
-import { getCityPath, getProfileDisplayTags, getPublicProfileForRoute, getPublicProfiles, type PublicProfile } from "@/lib/directory";
+import { getCityPath, getProfileDisplayTags, getPublicProfileForRoute, getPublicProfileSeoForRoute, getPublicProfiles, type PublicProfile, type PublicProfileSeo } from "@/lib/directory";
 import { getAvailabilityStatus, profilePublicPath, readAvailability, readProfilePrices } from "@/lib/profile";
 import { getActiveStories } from "@/lib/stories";
 import { getCurrentAdmin, getCurrentUser, safeAdminReturnTo } from "@/lib/auth";
@@ -17,7 +17,7 @@ import { ProfileEngagementActions } from "../ProfileEngagementActions";
 import { ProfileReviews } from "../ProfileReviews";
 import { getApprovedReviews } from "@/lib/profile-interactions";
 import { getVerificationDocuments } from "@/lib/verification-documents";
-import { canAccessExclusiveContent, getExclusiveContentForProfile } from "@/lib/exclusive-content";
+import { getExclusiveContentForProfile } from "@/lib/exclusive-content";
 import { ProfileSafetyActions } from "../ProfileSafetyActions";
 import { TrackedContactLink } from "../TrackedContactLink";
 import { safeJsonLd } from "@/lib/json-ld";
@@ -32,13 +32,13 @@ function profileTypeLabel(type: PublicProfile["type"]) {
   return type === "escort" ? "Escort" : type === "agency" ? "Agencia" : "Arriendo";
 }
 
-function profileSeoTitle(profile: PublicProfile) {
+function profileSeoTitle(profile: Pick<PublicProfileSeo, "type" | "displayName" | "city">) {
   if (profile.type === "escort") return `${profile.displayName}, escort en ${profile.city}`;
   if (profile.type === "agency") return `${profile.displayName}, agencia de escorts en ${profile.city}`;
   return `${profile.displayName}, arriendo para escorts en ${profile.city}`;
 }
 
-function profileSeoDescription(profile: PublicProfile) {
+function profileSeoDescription(profile: Pick<PublicProfileSeo, "type" | "displayName" | "city" | "region" | "shortDescription">) {
   const summary = profile.shortDescription.trim().replace(/\s+/g, " ");
   const type = profile.type === "escort" ? "escort" : profile.type === "agency" ? "agencia de escorts" : "arriendo para escorts";
   return `${profile.displayName}: ${type} en ${profile.city}, ${formatRegionName(profile.region)}.${summary ? ` ${summary}` : ""}`.slice(0, 160);
@@ -102,10 +102,9 @@ function metadataFacts(profile: PublicProfile) {
 
 export async function generateMetadata({ params }: ProfilePageProps): Promise<Metadata> {
   const { slug } = await params;
-  const profile = await getPublicProfileForRoute(slug);
+  const profile = await getPublicProfileSeoForRoute(slug);
   if (!profile) return {};
-  const coverImage = profile.media.find((media) => media.mediaType === "image" && media.isProfilePhoto) ?? profile.media.find((media) => media.mediaType === "image");
-  const socialImage = coverImage?.url ?? socialCardImageUrl;
+  const socialImage = profile.socialImageId ? `/media/${profile.socialImageId}` : socialCardImageUrl;
   return {
     title: profileSeoTitle(profile),
     description: profileSeoDescription(profile),
@@ -158,14 +157,14 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   }));
   const availability = readAvailability(profile.details.metadata.availability);
   const availabilityStatus = getAvailabilityStatus(availability);
-  const [stories, approvedReviews, verificationDocuments, exclusiveContent] = await Promise.all([getActiveStories({ profileId: profile.id }), getApprovedReviews(profile.id), admin && profile.type === "escort" ? getVerificationDocuments(profile.id) : Promise.resolve([]), getExclusiveContentForProfile(profile.id)]);
+  const [stories, approvedReviews, verificationDocuments, exclusiveContent] = await Promise.all([getActiveStories({ profileId: profile.id }), getApprovedReviews(profile.id), admin && profile.type === "escort" ? getVerificationDocuments(profile.id) : Promise.resolve([]), getExclusiveContentForProfile(profile.id, { viewerId: viewer?.id, isAdmin: Boolean(admin) })]);
   const viewerOwnsProfile = viewer ? (await (await getDb()).select({ ownerId: profiles.ownerId }).from(profiles).where(eq(profiles.id, profile.id)).limit(1))[0]?.ownerId === viewer.id : false;
   const coverImage = profile.media.find((media) => media.mediaType === "image" && media.isProfilePhoto) ?? profile.media.find((media) => media.mediaType === "image");
   const engagement = profile.status === "approved" && !profile.isDemo
     ? await getProfileEngagement(profile.id, viewer?.id)
     : null;
   const exclusiveMedia = exclusiveContent.media;
-  const hasExclusiveAccess = exclusiveMedia.length > 0 && exclusiveContent.collection && await canAccessExclusiveContent(exclusiveContent.collection.id, viewer?.id, Boolean(admin));
+  const hasExclusiveAccess = exclusiveMedia.length > 0 && exclusiveContent.hasAccess;
   const travel = profile.type === "escort" && profile.details.metadata.travel_city && profile.details.metadata.travel_start && profile.details.metadata.travel_end ? {
     city: profile.details.metadata.travel_city,
     start: profile.details.metadata.travel_start,

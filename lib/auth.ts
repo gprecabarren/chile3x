@@ -106,7 +106,13 @@ export async function getGitHubOAuthConfig() {
 }
 
 export function safeAdminReturnTo(value: string | null) {
-  return value && value.startsWith("/admin") && !value.startsWith("//") ? value : "/admin";
+  if (!value || value.startsWith("//") || value.includes("\\")) {
+    return "/admin";
+  }
+
+  const url = new URL(value, "https://chile3x.invalid");
+  const allowed = url.pathname === "/admin" || url.pathname.startsWith("/admin/");
+  return allowed ? `${url.pathname}${url.search}` : "/admin";
 }
 
 export function safeAccountReturnTo(value: string | null) {

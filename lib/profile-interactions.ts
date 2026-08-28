@@ -1,4 +1,4 @@
-import { and, count, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { favorites, profileLikes, profiles, reviews, users } from "@/db/schema";
 
@@ -42,7 +42,8 @@ export async function getApprovedReviews(profileId: string): Promise<PublicRevie
   }).from(reviews)
     .innerJoin(users, eq(reviews.authorId, users.id))
     .where(and(eq(reviews.profileId, profileId), eq(reviews.status, "approved")))
-    .orderBy(reviews.createdAt);
+    .orderBy(desc(reviews.createdAt))
+    .limit(10);
 
   return rows.map((review) => ({
     ...review,

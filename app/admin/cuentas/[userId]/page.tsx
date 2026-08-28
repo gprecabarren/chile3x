@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { AccountIdentityFields } from "@/app/account-identity-fields";
 import { getDb } from "@/db";
 import { profiles, users } from "@/db/schema";
-import { getCurrentAdmin } from "@/lib/auth";
+import { getCurrentAdmin, safeAdminReturnTo } from "@/lib/auth";
 import { profilePublicPath } from "@/lib/profile";
 import { AdminPageHeading, AdminShell } from "../../_components";
 import { AdminPasswordField } from "../AdminPasswordField";
@@ -67,7 +67,8 @@ export default async function AdminAccountDetailsPage({ params, searchParams }: 
     handle: profiles.handle,
   }).from(profiles).where(eq(profiles.ownerId, account.id)).orderBy(desc(profiles.updatedAt));
 
-  const returnTo = query.return_to?.startsWith("/admin/cuentas") ? query.return_to : "/admin/cuentas";
+  const requestedReturnTo = query.return_to ?? "";
+  const returnTo = requestedReturnTo.startsWith("/admin/") ? safeAdminReturnTo(requestedReturnTo) : "/admin/cuentas";
   const detailBaseHref = `/admin/cuentas/${encodeURIComponent(account.id)}`;
   const detailHref = `${detailBaseHref}?return_to=${encodeURIComponent(returnTo)}`;
   const accountName = account.displayName ?? account.email;

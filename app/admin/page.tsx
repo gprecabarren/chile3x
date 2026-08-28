@@ -1,7 +1,8 @@
 import { count, eq } from "drizzle-orm";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
-import { profiles } from "@/db/schema";
+import { exclusiveContentMedia, profileMedia, profiles } from "@/db/schema";
 import { getCurrentAdmin } from "@/lib/auth";
 import { AdminPageHeading, AdminShell } from "./_components";
 
@@ -15,15 +16,20 @@ export default async function AdminHome() {
   }
 
   const db = await getDb();
-  const [[allProfiles], [pendingProfiles], [pausedProfiles]] = await Promise.all([
+  const [[allProfiles], [pendingProfiles], [pausedProfiles], [pendingPublicMedia], [pendingExclusiveMedia]] = await Promise.all([
     db.select({ total: count() }).from(profiles),
     db.select({ total: count() }).from(profiles).where(eq(profiles.status, "pending")),
     db.select({ total: count() }).from(profiles).where(eq(profiles.status, "paused")),
+    db.select({ total: count() }).from(profileMedia).where(eq(profileMedia.moderationStatus, "pending")),
+    db.select({ total: count() }).from(exclusiveContentMedia).where(eq(exclusiveContentMedia.moderationStatus, "pending")),
   ]);
+
+  const pendingMedia = Number(pendingPublicMedia?.total ?? 0) + Number(pendingExclusiveMedia?.total ?? 0);
 
   const summary = [
     ["Anuncios registrados", allProfiles?.total ?? 0, "Incluye borradores, anuncios en revisión y publicados."],
     ["Pendientes de revisión", pendingProfiles?.total ?? 0, "Revisa identidad fuera del sitio y aprueba solo material moderado."],
+    ["Archivos pendientes", pendingMedia, "Incluye fotos, videos y contenido exclusivo que aún requieren moderación."],
     ["Pausados", pausedProfiles?.total ?? 0, "Los períodos de publicación se administran manualmente por ahora."],
   ];
 
@@ -44,6 +50,14 @@ export default async function AdminHome() {
             </article>
           ))}
         </section>
+        {pendingMedia > 0 && <section className="admin-review-alert" role="status">
+          <div>
+            <p>MEDIOS PENDIENTES</p>
+            <h2>{pendingMedia} archivo{pendingMedia === 1 ? " requiere" : "s requieren"} moderación</h2>
+            <span>Revisa las galerías públicas y el contenido exclusivo por separado antes de aprobarlos.</span>
+          </div>
+          <Link className="button button-primary" href="/admin/medios?estado=pending">Revisar medios</Link>
+        </section>}
         <section className="admin-note">
           <span>01</span>
           <div>

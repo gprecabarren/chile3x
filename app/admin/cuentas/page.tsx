@@ -9,8 +9,10 @@ import { getCurrentAdmin } from "@/lib/auth";
 import { AdminPageHeading, AdminShell } from "../_components";
 import { AdminPasswordField } from "./AdminPasswordField";
 import { adminCallHref, adminWhatsappHref } from "@/lib/admin-contact";
+import { AdminPagination, pageHref, readAdminPage } from "../pagination";
 
 export const dynamic = "force-dynamic";
+const PAGE_SIZE = 30;
 
 type AccountSearchParams = {
   notice?: string;
@@ -26,6 +28,7 @@ type AccountSearchParams = {
   listing_type?: string;
   created_from?: string;
   created_to?: string;
+  page?: string;
 };
 
 const notices: Record<string, string> = {
@@ -67,31 +70,41 @@ function readDate(value: string | undefined) {
 }
 
 function matchesText(value: string | null | undefined, query: string) {
-  return value?.toLocaleLowerCase("es-CL").includes(query) ?? false;
+  return Boolean(value?.toLocaleLowerCase("es-CL").includes(query));
 }
 
 function listingStatusMatches(user: {
-  draftProfileCount: number;
-  pendingProfileCount: number;
-  approvedProfileCount: number;
-  pausedProfileCount: number;
-  rejectedProfileCount: number;
-  expiredProfileCount: number;
+  draftProfileCount: number | null;
+  pendingProfileCount: number | null;
+  approvedProfileCount: number | null;
+  pausedProfileCount: number | null;
+  rejectedProfileCount: number | null;
+  expiredProfileCount: number | null;
 }, status: string) {
-  return status === "draft" ? Number(user.draftProfileCount) > 0
-    : status === "pending" ? Number(user.pendingProfileCount) > 0
-      : status === "approved" ? Number(user.approvedProfileCount) > 0
-        : status === "paused" ? Number(user.pausedProfileCount) > 0
-          : status === "rejected" ? Number(user.rejectedProfileCount) > 0
-            : status === "expired" ? Number(user.expiredProfileCount) > 0
-              : true;
+  if (!status) return true;
+  const countByStatus: Record<string, number | null> = {
+    draft: user.draftProfileCount,
+    pending: user.pendingProfileCount,
+    approved: user.approvedProfileCount,
+    paused: user.pausedProfileCount,
+    rejected: user.rejectedProfileCount,
+    expired: user.expiredProfileCount,
+  };
+  return Number(countByStatus[status] ?? 0) > 0;
 }
 
-function listingTypeMatches(user: { escortProfileCount: number; agencyProfileCount: number; rentalProfileCount: number }, type: string) {
-  return type === "escort" ? Number(user.escortProfileCount) > 0
-    : type === "agency" ? Number(user.agencyProfileCount) > 0
-      : type === "rental" ? Number(user.rentalProfileCount) > 0
-        : true;
+function listingTypeMatches(user: {
+  escortProfileCount: number | null;
+  agencyProfileCount: number | null;
+  rentalProfileCount: number | null;
+}, type: string) {
+  if (!type) return true;
+  const countByType: Record<string, number | null> = {
+    escort: user.escortProfileCount,
+    agency: user.agencyProfileCount,
+    rental: user.rentalProfileCount,
+  };
+  return Number(countByType[type] ?? 0) > 0;
 }
 
 export default async function AdminAccountsPage({ searchParams }: { searchParams: Promise<AccountSearchParams> }) {
@@ -128,7 +141,7 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
   if (filters.listingType) currentQuery.set("listing_type", filters.listingType);
   if (filters.createdFrom) currentQuery.set("created_from", filters.createdFrom);
   if (filters.createdTo) currentQuery.set("created_to", filters.createdTo);
-  const currentAccountsHref = `/admin/cuentas${currentQuery.size ? `?${currentQuery.toString()}` : ""}`;
+  const requestedPage = readAdminPage(params.page);
 
   const rows = await db.select({
     id: users.id,
@@ -183,6 +196,12 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
       && createdBefore;
   });
 
+  const total = filteredRows.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const page = Math.min(requestedPage, totalPages);
+  const currentAccountsHref = pageHref("/admin/cuentas", currentQuery, page);
+  const pageRows = filteredRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   return <AdminShell user={admin}><div className="admin-content">
     <AdminPageHeading eyebrow="CUENTAS DEL PORTAL" title="Cuentas y accesos" description="Busca, revisa y administra las cuentas del portal. Desde cada ficha puedes abrir sus datos, sus anuncios y los accesos de recuperación." backHref="/admin" />
     {params.notice && notices[params.notice] && <p className="admin-success" role="status">{notices[params.notice]}</p>}
@@ -194,7 +213,7 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
       <label className="admin-account-check"><input name="adult_verified" type="checkbox" value="yes" required />Confirmo que la persona fue verificada como mayor de 18 años fuera del sitio.</label>
       <AdminPasswordField label="Contraseña inicial" submitLabel="Crear cuenta" />
     </form></div></details>
-    <section className="admin-account-list"><div><p className="eyebrow">REGISTRO DE USUARIOS</p><h2>{filteredRows.length} de {rows.length} cuenta{rows.length === 1 ? "" : "s"}</h2></div>
+    <section className="admin-account-list"><div><p className="eyebrow">REGISTRO DE USUARIOS</p><h2>{total} de {rows.length} cuenta{rows.length === 1 ? "" : "s"}</h2></div>
       <form className="admin-account-filters" method="get" role="search">
         <label htmlFor="account-search">Buscar en los datos de la cuenta<input id="account-search" name="q" type="search" defaultValue={params.q ?? ""} placeholder="Ej. correo, nombre, teléfono, ciudad o documento" /></label>
         <div className="admin-account-filter-actions"><button className="button button-primary" type="submit">Buscar</button>{hasActiveFilters && <Link className="button button-outline" href="/admin/cuentas">Limpiar</Link>}</div>
@@ -216,7 +235,7 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
           <div className="admin-account-advanced-actions"><button className="button button-primary" type="submit">Aplicar filtros</button><Link className="button button-outline" href="/admin/cuentas">Restablecer</Link></div>
         </details>
       </form>
-      <section className="admin-account-cards" aria-label="Cuentas registradas">{filteredRows.map((user) => {
+      <section className="admin-account-cards" aria-label="Cuentas registradas">{pageRows.map((user) => {
         const detailsBaseHref = `/admin/cuentas/${encodeURIComponent(user.id)}`;
         const detailsHref = `${detailsBaseHref}?return_to=${encodeURIComponent(currentAccountsHref)}`;
         const formattedDate = new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeZone: "America/Santiago" }).format(new Date(`${user.createdAt}Z`.replace("ZZ", "Z")));
@@ -229,7 +248,8 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
           {pendingProfileCount > 0 && <Link className="admin-account-pending-link" href={accountProfilesHref(user.email, detailsHref, "pending")}>{pendingProfileCount} anuncio{pendingProfileCount === 1 ? "" : "s"} pendiente{pendingProfileCount === 1 ? "" : "s"} de revisión</Link>}
           <div className="admin-account-card-actions"><Link className="button button-primary" href={detailsHref}>Ver detalles</Link>{user.role !== "admin" && user.isActive && <Link className="button button-outline" href={`${detailsBaseHref}/crear-perfil?return_to=${encodeURIComponent(currentAccountsHref)}`}>Crear anuncio</Link>}{whatsappHref && <a className="button contact-whatsapp" href={whatsappHref} target="_blank" rel="noreferrer">WhatsApp</a>}{callHref && <a className="button contact-call" href={callHref}>Llamar</a>}{user.role !== "admin" && <form action={`/api/admin/users/${user.id}/estado`} method="post"><input name="next_state" type="hidden" value={user.isActive ? "disabled" : "active"} /><input name="return_to" type="hidden" value={currentAccountsHref} /><button className="button button-outline" type="submit">{user.isActive ? "Deshabilitar" : "Reactivar"}</button></form>}</div>
         </article>;
-      })}{filteredRows.length === 0 && <section className="admin-no-results">No hay cuentas que coincidan con esta combinación de filtros. Prueba quitando uno o más criterios.</section>}</section>
+      })}{total === 0 && <section className="admin-no-results">No hay cuentas que coincidan con esta combinación de filtros. Prueba quitando uno o más criterios.</section>}</section>
+      <AdminPagination pathname="/admin/cuentas" params={currentQuery} currentPage={page} totalItems={total} pageSize={PAGE_SIZE} label="Cuentas" />
     </section>
   </div></AdminShell>;
 }

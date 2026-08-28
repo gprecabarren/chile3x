@@ -4,7 +4,7 @@ import { count, eq } from "drizzle-orm";
 import type { AdminUser } from "@/lib/auth";
 import { OfficialChile3xLogo } from "@/app/OfficialChile3xLogo";
 import { getDb } from "@/db";
-import { bugReports, profileReports, profiles } from "@/db/schema";
+import { bugReports, exclusiveContentMedia, profileMedia, profileReports, profiles } from "@/db/schema";
 
 async function getPendingProfilesCount() {
   try {
@@ -42,8 +42,22 @@ async function getNewBugReportsCount() {
   }
 }
 
+async function getPendingMediaCount() {
+  try {
+    const db = await getDb();
+    const [[publicMedia], [exclusiveMedia]] = await Promise.all([
+      db.select({ total: count() }).from(profileMedia).where(eq(profileMedia.moderationStatus, "pending")),
+      db.select({ total: count() }).from(exclusiveContentMedia).where(eq(exclusiveContentMedia.moderationStatus, "pending")),
+    ]);
+    return Number(publicMedia?.total ?? 0) + Number(exclusiveMedia?.total ?? 0);
+  } catch (error) {
+    console.error("Unable to load pending media count", error);
+    return 0;
+  }
+}
+
 export async function AdminShell({ user, children }: { user: AdminUser; children: ReactNode }) {
-  const [pendingCount, pendingReports, pendingBugs] = await Promise.all([getPendingProfilesCount(), getPendingReportsCount(), getNewBugReportsCount()]);
+  const [pendingCount, pendingMedia, pendingReports, pendingBugs] = await Promise.all([getPendingProfilesCount(), getPendingMediaCount(), getPendingReportsCount(), getNewBugReportsCount()]);
 
   return (
     <main className="admin-root">
@@ -52,7 +66,7 @@ export async function AdminShell({ user, children }: { user: AdminUser; children
         <nav aria-label="Administración">
           <Link href="/admin">Resumen</Link>
           <Link className={pendingCount > 0 ? "admin-nav-alert" : undefined} href="/admin/perfiles">Anuncios{pendingCount > 0 && <b>{pendingCount}</b>}</Link>
-          <Link href="/admin/medios">Fotos</Link>
+          <Link className={pendingMedia > 0 ? "admin-nav-alert" : undefined} href="/admin/medios">Medios{pendingMedia > 0 && <b>{pendingMedia}</b>}</Link>
           <Link href="/admin/resenas">Reseñas</Link>
           <Link className={pendingReports > 0 ? "admin-nav-alert" : undefined} href="/admin/reportes">Reportes{pendingReports > 0 && <b>{pendingReports}</b>}</Link>
           <Link className={pendingBugs > 0 ? "admin-nav-alert" : undefined} href="/admin/bugs">Testers{pendingBugs > 0 && <b>{pendingBugs}</b>}</Link>

@@ -15,7 +15,7 @@ import { getCurrentAdmin, getCurrentUser, safeAdminReturnTo } from "@/lib/auth";
 import { getProfileEngagement } from "@/lib/profile-interactions";
 import { ProfileEngagementActions } from "../ProfileEngagementActions";
 import { ProfileReviews } from "../ProfileReviews";
-import { getApprovedReviews } from "@/lib/profile-interactions";
+import { getApprovedReviewsPage } from "@/lib/profile-interactions";
 import { getVerificationDocuments } from "@/lib/verification-documents";
 import { getExclusiveContentForProfile } from "@/lib/exclusive-content";
 import { ProfileSafetyActions } from "../ProfileSafetyActions";
@@ -157,7 +157,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   }));
   const availability = readAvailability(profile.details.metadata.availability);
   const availabilityStatus = getAvailabilityStatus(availability);
-  const [stories, approvedReviews, verificationDocuments, exclusiveContent] = await Promise.all([getActiveStories({ profileId: profile.id }), getApprovedReviews(profile.id), admin && profile.type === "escort" ? getVerificationDocuments(profile.id) : Promise.resolve([]), getExclusiveContentForProfile(profile.id, { viewerId: viewer?.id, isAdmin: Boolean(admin) })]);
+  const [stories, approvedReviewsPage, verificationDocuments, exclusiveContent] = await Promise.all([getActiveStories({ profileId: profile.id }), getApprovedReviewsPage(profile.id), admin && profile.type === "escort" ? getVerificationDocuments(profile.id) : Promise.resolve([]), getExclusiveContentForProfile(profile.id, { viewerId: viewer?.id, isAdmin: Boolean(admin) })]);
   const viewerOwnsProfile = viewer ? (await (await getDb()).select({ ownerId: profiles.ownerId }).from(profiles).where(eq(profiles.id, profile.id)).limit(1))[0]?.ownerId === viewer.id : false;
   const coverImage = profile.media.find((media) => media.mediaType === "image" && media.isProfilePhoto) ?? profile.media.find((media) => media.mediaType === "image");
   const engagement = profile.status === "approved" && !profile.isDemo
@@ -216,7 +216,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
       </section>
       {profile.type === "agency" && <section className="profile-association-section"><p className="eyebrow">PERFILES ASOCIADOS</p><h2>Escorts de {profile.displayName}</h2><p>Los perfiles se muestran aquí solo después de aceptar la invitación de la agencia.</p><div className="public-profile-grid">{agencyMembers.map((member) => <ProfileCard profile={member} key={member.id} />)}</div>{agencyMembers.length === 0 && <p className="association-empty">Esta agencia aún no tiene perfiles asociados aprobados.</p>}</section>}
       {profile.type === "escort" && agencyProfiles.length > 0 && <section className="profile-association-section compact"><p className="eyebrow">ASOCIACIONES ACEPTADAS</p><h2>Agencias relacionadas</h2><div className="public-profile-grid">{agencyProfiles.map((agency) => <ProfileCard profile={agency} key={agency.id} />)}</div></section>}
-      {profile.status === "approved" && !profile.isDemo && <ProfileReviews profileId={profile.id} profileSlug={profileRouteValue} signedIn={Boolean(viewer)} viewerOwnsProfile={viewerOwnsProfile} reviews={approvedReviews} />}
+      {profile.status === "approved" && !profile.isDemo && <ProfileReviews profileId={profile.id} profileSlug={profileRouteValue} signedIn={Boolean(viewer)} viewerOwnsProfile={viewerOwnsProfile} reviews={approvedReviewsPage.reviews} totalReviews={approvedReviewsPage.total} initialHasMore={approvedReviewsPage.hasMore} />}
     </DirectoryShell>
   );
 }

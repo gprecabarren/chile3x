@@ -77,8 +77,9 @@ export async function getActiveStories(scope: StoryScope = {}) {
       .where(and(...conditions))
       // Stories play in chronological order inside a profile. Their profile
       // bubbles are ordered separately by the most recent story in the UI.
-      .orderBy(asc(profileStatuses.createdAt))
-      .limit(80);
+      // Do not cap this public result: every active story must remain
+      // reachable during its 24-hour lifetime.
+      .orderBy(asc(profileStatuses.createdAt));
 
     const profileIds = [...new Set(rows.map((row) => row.profileId))];
     const mediaRows = profileIds.length ? await db.select({

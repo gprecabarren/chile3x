@@ -33,22 +33,42 @@ export async function getProfileEngagement(profileId: string, viewerId?: string)
   };
 }
 
-export async function getApprovedReviews(profileId: string): Promise<PublicReview[]> {
-  const rows = await (await getDb()).select({
+export const PUBLIC_REVIEWS_PAGE_SIZE = 10;
+
+export type ApprovedReviewsPage = {
+  reviews: PublicReview[];
+  total: number;
+  hasMore: boolean;
+};
+
+export async function getApprovedReviewsPage(profileId: string, page = 1, pageSize = PUBLIC_REVIEWS_PAGE_SIZE): Promise<ApprovedReviewsPage> {
+  const db = await getDb();
+  const safePage = Number.isFinite(page) ? Math.max(1, Math.trunc(page)) : 1;
+  const safePageSize = Number.isFinite(pageSize) ? Math.min(50, Math.max(1, Math.trunc(pageSize))) : PUBLIC_REVIEWS_PAGE_SIZE;
+  const conditions = and(eq(reviews.profileId, profileId), eq(reviews.status, "approved"));
+  const [rows, totals] = await Promise.all([
+    db.select({
     id: reviews.id,
     body: reviews.body,
     createdAt: reviews.createdAt,
     authorName: users.displayName,
   }).from(reviews)
     .innerJoin(users, eq(reviews.authorId, users.id))
-    .where(and(eq(reviews.profileId, profileId), eq(reviews.status, "approved")))
+    .where(conditions)
     .orderBy(desc(reviews.createdAt))
-    .limit(10);
+    .limit(safePageSize + 1)
+    .offset((safePage - 1) * safePageSize),
+    db.select({ total: count() }).from(reviews).where(conditions),
+  ]);
 
-  return rows.map((review) => ({
+  return {
+    reviews: rows.slice(0, safePageSize).map((review) => ({
     ...review,
     authorName: review.authorName?.trim() || "Usuario de Chile3X",
-  }));
+    })),
+    total: Number(totals[0]?.total ?? 0),
+    hasMore: rows.length > safePageSize,
+  };
 }
 
 export async function isPublicProfile(profileId: string) {

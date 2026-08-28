@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { profiles, reviews } from "@/db/schema";
 import { assertSameOrigin, getCurrentUser } from "@/lib/auth";
-import { isPublicProfile } from "@/lib/profile-interactions";
+import { getApprovedReviewsPage, isPublicProfile } from "@/lib/profile-interactions";
 import { TURNSTILE_PROFILE_REVIEW_ACTION } from "@/lib/turnstile";
 import { verifyTurnstile } from "@/lib/turnstile-server";
 
@@ -11,6 +11,17 @@ export const dynamic = "force-dynamic";
 
 function error(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
+}
+
+export async function GET(request: NextRequest, { params }: { params: Promise<{ profileId: string }> }) {
+  const { profileId } = await params;
+  if (!await isPublicProfile(profileId)) return error("El anuncio ya no está disponible.", 404);
+  const pageValue = Number.parseInt(request.nextUrl.searchParams.get("page") ?? "1", 10);
+  const page = Number.isFinite(pageValue) ? Math.max(1, Math.min(pageValue, 10_000)) : 1;
+  const reviewPage = await getApprovedReviewsPage(profileId, page);
+  return NextResponse.json(reviewPage, {
+    headers: { "cache-control": "public, max-age=60, stale-while-revalidate=300" },
+  });
 }
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ profileId: string }> }) {

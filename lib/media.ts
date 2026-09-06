@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/db";
-import { exclusiveContentMedia, newsMedia, profileMedia, profileReportEvidence, profileStatuses, profileVerificationFiles, profiles } from "@/db/schema";
+import { exclusiveContentMedia, newsMedia, profileMedia, profileReportEvidence, profileStatuses, profileVerificationFiles, profiles, users } from "@/db/schema";
 
 export const MAX_IMAGES_PER_PROFILE = 10;
 export const MAX_IMAGE_BYTES = 5_000_000;
@@ -129,8 +129,9 @@ export async function getApprovedExclusiveMedia(profileId: string) {
 }
 
 export async function findProfileMedia(mediaId: string) {
-  const [row] = await (await getDb()).select({ media: profileMedia, profile: profiles }).from(profileMedia)
+  const [row] = await (await getDb()).select({ media: profileMedia, profile: profiles, ownerIsActive: users.isActive }).from(profileMedia)
     .innerJoin(profiles, eq(profileMedia.profileId, profiles.id))
+    .innerJoin(users, eq(profiles.ownerId, users.id))
     .where(eq(profileMedia.id, mediaId))
     .limit(1);
   return row ?? null;

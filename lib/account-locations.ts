@@ -395,7 +395,7 @@ export const accountLocationRegions: readonly AccountLocationRegion[] = regions.
   id: region.id,
   title: region.title,
   displayTitle: region.displayTitle,
-  cities: accountCitiesByRegion[region.id],
+  cities: accountCitiesByRegion[region.id as keyof typeof accountCitiesByRegion],
 }));
 
 const accountCityAliases: Record<string, string> = {

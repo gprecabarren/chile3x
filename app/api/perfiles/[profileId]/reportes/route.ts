@@ -1,6 +1,7 @@
 import { and, eq, gte } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
+import { publicProfileCondition } from "@/lib/public-profile-visibility";
 import { profileReportEvidence, profileReports, profiles } from "@/db/schema";
 import { assertSameOrigin, getCurrentUser } from "@/lib/auth";
 import {
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const { profileId } = await params;
   const db = await getDb();
-  const [profile] = await db.select({ id: profiles.id, ownerId: profiles.ownerId }).from(profiles).where(and(eq(profiles.id, profileId), eq(profiles.status, "approved"))).limit(1);
+  const [profile] = await db.select({ id: profiles.id, ownerId: profiles.ownerId }).from(profiles).where(and(eq(profiles.id, profileId), publicProfileCondition)).limit(1);
   if (!profile) return error("El anuncio ya no está disponible.", 404);
   if (profile.ownerId === user.id) return error("No puedes reportar tu propio anuncio.", 403);
 

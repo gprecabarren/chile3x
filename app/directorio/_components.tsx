@@ -97,8 +97,8 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
         <nav className="mobile-public-quick-links" aria-label="Accesos rápidos">
           <Link className="mobile-directory-regions" href={coverageHref}><span className="mobile-quick-label-full">Regiones y ciudades</span><span className="mobile-quick-label-short">Regiones</span></Link>
           <Link href="/escorts">Escorts</Link>
-          <Link href="/agencias">Agencias</Link>
-          <Link href="/arriendos">Arriendos</Link>
+          <Link className="mobile-directory-secondary" href="/agencias">Agencias</Link>
+          <Link className="mobile-directory-secondary" href="/arriendos">Arriendos</Link>
           <Link href={sessionAccountHref}>{sessionAccountLabel}</Link>
         </nav>
         <div className={`public-header-actions${hasAnySession ? " is-signed-in" : ""}`} aria-label="Acciones de cuenta">

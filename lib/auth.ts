@@ -116,32 +116,7 @@ export async function getGitHubOAuthConfig() {
   };
 }
 
-export function safeAdminReturnTo(value: string | null) {
-  if (!value || value.startsWith("//") || value.includes("\\")) {
-    return "/admin";
-  }
-
-  const url = new URL(value, "https://chile3x.invalid");
-  const allowed = url.pathname === "/admin" || url.pathname.startsWith("/admin/");
-  return allowed ? `${url.pathname}${url.search}` : "/admin";
-}
-
-export function safeAccountReturnTo(value: string | null) {
-  if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("\\")) {
-    return "/mi-cuenta";
-  }
-
-  const url = new URL(value, "https://chile3x.invalid");
-  const isAllowed = url.pathname === "/mi-cuenta"
-    || url.pathname.startsWith("/mi-cuenta/")
-    || url.pathname.startsWith("/perfil/")
-    || url.pathname === "/escorts"
-    || url.pathname.startsWith("/escorts/")
-    || url.pathname === "/agencias"
-    || url.pathname === "/arriendos";
-
-  return isAllowed ? `${url.pathname}${url.search}` : "/mi-cuenta";
-}
+export { safeAdminReturnTo, safeAccountReturnTo } from "./safe-return-to";
 
 export function sessionCookieOptions(maxAge = ADMIN_SESSION_DURATION_SECONDS) {
   return {

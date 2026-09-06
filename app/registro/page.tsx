@@ -48,7 +48,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
     <p className="eyebrow">CUENTA DE ANUNCIANTE</p>
     <h1>Crea tu cuenta para empezar a publicar.</h1>
     <p>Guarda borradores, envía anuncios a revisión y gestiona sus pausas. Antes de entrar te enviaremos un correo de verificación.</p>
-    {params.error && <p className="form-alert" role="alert">{messages[params.error] ?? messages.invalid}{params.error === "duplicate_rut" && <> <Link href="/recuperar-clave">Recuperar contraseña</Link></>}</p>}
+    {params.error && <p className="form-alert" role="alert">{messages[params.error] ?? messages.server}{params.error === "duplicate_rut" && <> <Link href="/recuperar-clave">Recuperar contraseña</Link></>}</p>}
     <form action="/api/auth/register" method="post" className="auth-form">
       <input name="return_to" type="hidden" value={returnTo} />
       <label>Nombre visible<input name="display_name" required minLength={2} maxLength={80} autoComplete="nickname" defaultValue={saved?.displayName ?? ""} placeholder="Ej. Valentina" /></label>

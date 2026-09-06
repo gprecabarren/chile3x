@@ -7,6 +7,7 @@ import { cityTotal, regions } from "./locations";
 import { RegionJumpSelect } from "./RegionJumpSelect";
 import { getCityEscortCounts, getFeaturedProfiles } from "@/lib/directory";
 import { getActiveStories } from "@/lib/stories";
+import { getCurrentAdmin, getCurrentUser } from "@/lib/auth";
 import { safeJsonLd } from "@/lib/json-ld";
 import { socialCardImage, socialCardImageUrl } from "@/lib/seo";
 
@@ -76,12 +77,11 @@ const websiteSchema = {
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  // The home has no account-specific information. Keeping it public lets
-  // Cloudflare cache the same safe response for visitors with or without a
-  // session instead of triggering a full SSR pass on every tab change.
+  const [viewer, admin] = await Promise.all([getCurrentUser(), getCurrentAdmin()]);
+  const publishHref = viewer ? "/mi-cuenta/nuevo-perfil" : admin ? "/admin/perfiles" : "/registro";
   const [featuredProfiles, stories, cityEscortCounts] = await Promise.all([
-    getFeaturedProfiles(6),
-    getActiveStories(),
+    getFeaturedProfiles(6, viewer?.id),
+    getActiveStories({ viewerId: viewer?.id }),
     getCityEscortCounts(),
   ]);
   return (
@@ -103,7 +103,7 @@ export default async function Home() {
           </p>
           <div className="hero-actions">
             <Link className="button button-primary" href="/escorts">Explorar perfiles</Link>
-            <a className="text-link" href="/registro">Quiero anunciarme <span>→</span></a>
+            <a className="text-link" href={publishHref}>Quiero anunciarme <span>→</span></a>
           </div>
           <div className="trust-row">
             <span><b>✓</b> Moderación manual</span>
@@ -202,7 +202,7 @@ export default async function Home() {
           <h2>¿Quieres aparecer en Chile3X?</h2>
           <p>La apertura inicial será con revisión manual y publicaciones de cortesía para construir una comunidad segura.</p>
         </div>
-        <a className="button button-light" href="/registro">Crear cuenta</a>
+        <a className="button button-light" href={publishHref}>{viewer ? "Publicar anuncio" : admin ? "Administrar anuncios" : "Crear cuenta"}</a>
       </section>
 
       <PublicFooter />

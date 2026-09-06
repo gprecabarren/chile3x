@@ -1,6 +1,7 @@
 /** Cloudflare Worker entry point for the vinext-starter template. */
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
+import { hasPrivateSession, isCacheableDocument, preventPrivateCaching, publicCacheKey, PUBLIC_PAGE_CACHE_SECONDS } from "./public-cache";
 
 interface Env {
   ASSETS: Fetcher;
@@ -31,42 +32,10 @@ function withSecurityHeaders(response: Response) {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
-const PUBLIC_PAGE_CACHE_SECONDS = 120;
-
-function hasAuthenticatedSession(request: Request) {
-  const cookieHeader = request.headers.get("cookie") ?? "";
-  return /(?:^|;\s*)chile3x_(?:user|admin)_session=/.test(cookieHeader);
-}
-
-/**
- * Public directory views have no visitor-specific server state unless the
- * visitor has signed in. Cache only those anonymous HTML responses for a very
- * short time, which dramatically reduces repeated SSR work from browsers and
- * crawlers while keeping new moderation changes visible promptly.
- */
-function isCacheablePublicPage(request: Request, url: URL) {
-  if (request.method !== "GET") return false;
-  // Client navigation requests use the same public data through a `.rsc`
-  // endpoint. Cache it under its own URL, never together with HTML.
-  const path = url.pathname.endsWith(".rsc") ? url.pathname.slice(0, -4) || "/" : url.pathname;
-  // The home response contains no account-specific data, so it is safe to
-  // share its short-lived cache entry even for signed-in visitors.
-  if (path === "/") return true;
-  if (hasAuthenticatedSession(request)) return false;
-  if (path === "/escorts" || path === "/agencias" || path === "/arriendos") return true;
-  if (path.startsWith("/escorts/") || path.startsWith("/perfil/") || path.startsWith("/noticias/")) return true;
-  return ["/quienes-somos", "/noticias", "/faq", "/contacto", "/terminos", "/privacidad", "/reglas-de-publicacion"].includes(path);
-}
-
-function cacheableResponse(response: Response) {
-  return response.status === 200
-    && /text\/(?:html|x-component)/i.test(response.headers.get("content-type") ?? "")
-    && !response.headers.has("set-cookie");
-}
-
 function addPublicCacheHeaders(response: Response) {
   const headers = new Headers(response.headers);
-  headers.set("cache-control", `public, max-age=0, s-maxage=${PUBLIC_PAGE_CACHE_SECONDS}, stale-while-revalidate=300`);
+  // Internal edge entry only; browsers must re-request after login/logout.
+  headers.set("cache-control", `public, max-age=${PUBLIC_PAGE_CACHE_SECONDS}`);
   headers.set("x-chile3x-cache", "public");
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
@@ -125,25 +94,31 @@ const worker = {
       }, allowedWidths));
     }
 
-    const shouldUsePublicCache = isCacheablePublicPage(request, url);
-    const cache = shouldUsePublicCache ? caches.default : null;
-    const cacheKey = shouldUsePublicCache ? new Request(url.toString(), { method: "GET" }) : null;
+    const cacheKey = publicCacheKey(request);
+    const cache = cacheKey ? (caches as CacheStorage & { default: Cache }).default : null;
 
     if (cache && cacheKey) {
-      const cached = await cache.match(cacheKey);
+      // A transient cache failure must not take down the application.
+      const cached = await cache.match(cacheKey).catch(() => undefined);
       if (cached) {
         const headers = new Headers(cached.headers);
         headers.set("x-chile3x-cache", "hit");
-        return new Response(cached.body, { status: cached.status, statusText: cached.statusText, headers });
+        return preventPrivateCaching(new Response(cached.body, { status: cached.status, statusText: cached.statusText, headers }));
       }
     }
 
     const response = withSecurityHeaders(await handler.fetch(request, env, ctx));
-    if (!cache || !cacheKey || !cacheableResponse(response)) return response;
+    if (!cache || !cacheKey || !isCacheableDocument(response)) {
+      const isDocument = /text\/(?:html|x-component)/i.test(response.headers.get("content-type") ?? "");
+      return hasPrivateSession(request) || isDocument || url.pathname.startsWith("/api/auth/")
+        ? preventPrivateCaching(response) : response;
+    }
 
     const cacheResponse = addPublicCacheHeaders(response);
-    ctx.waitUntil(cache.put(cacheKey, cacheResponse.clone()));
-    return cacheResponse;
+    ctx.waitUntil(cache.put(cacheKey, cacheResponse.clone()).catch(() => {
+      console.warn("Public document cache write failed");
+    }));
+    return preventPrivateCaching(cacheResponse);
   },
 };
 

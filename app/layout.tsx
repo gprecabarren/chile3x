@@ -6,7 +6,6 @@ import { PrivacyConsent } from "./PrivacyConsent";
 import { getCurrentAdmin } from "@/lib/auth";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { socialCardImage, socialCardImageUrl } from "@/lib/seo";
-import { GooglePreferredSourceLoader } from "./GooglePreferredSourceLoader";
 
 export const dynamic = "force-dynamic";
 
@@ -77,7 +76,6 @@ export default async function RootLayout({
       </head>
       <body>
         {!maintenanceEnabled || admin ? children : <MaintenanceScreen />}
-        <GooglePreferredSourceLoader />
         <AgeGate />
         <PrivacyConsent />
       </body>

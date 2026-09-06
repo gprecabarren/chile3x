@@ -2,6 +2,8 @@ import { and, asc, desc, eq, gt, inArray, isNotNull, lt } from "drizzle-orm";
 import { getDb } from "@/db";
 import { profileMedia, profileStatuses, profiles } from "@/db/schema";
 import { type StoryType } from "@/lib/story-data";
+import { getBlockedProfileIds } from "@/lib/profile-safety";
+import { publicProfileCondition } from "@/lib/public-profile-visibility";
 
 export { MAX_STORY_IMAGE_BYTES, MAX_STORY_TEXT_LENGTH, storyExpiresAt, storyTimeLabel, type StoryType } from "@/lib/story-data";
 
@@ -22,6 +24,7 @@ export type PublicStory = {
 };
 
 type StoryScope = {
+  viewerId?: string;
   city?: string;
   profileId?: string;
   profileIds?: string[];
@@ -53,13 +56,13 @@ export async function getActiveStories(scope: StoryScope = {}) {
     if (scope.profileIds && scope.profileIds.length === 0) return [] as PublicStory[];
     const db = await getDb();
     const now = new Date().toISOString();
-    const conditions = [eq(profiles.status, "approved"), gt(profileStatuses.expiresAt, now)];
+    const conditions = [publicProfileCondition, gt(profileStatuses.expiresAt, now)];
     if (scope.city) conditions.push(eq(profiles.city, scope.city));
     if (scope.profileId) conditions.push(eq(profiles.id, scope.profileId));
     if (scope.profileIds?.length) conditions.push(inArray(profiles.id, scope.profileIds));
     if (scope.type) conditions.push(eq(profiles.type, scope.type));
 
-    const rows = await db.select({
+    const storyRows = await db.select({
       id: profileStatuses.id,
       body: profileStatuses.body,
       storyType: profileStatuses.storyType,
@@ -80,6 +83,9 @@ export async function getActiveStories(scope: StoryScope = {}) {
       // Do not cap this public result: every active story must remain
       // reachable during its 24-hour lifetime.
       .orderBy(asc(profileStatuses.createdAt));
+
+    const blockedIds = await getBlockedProfileIds(scope.viewerId);
+    const rows = storyRows.filter((story) => !blockedIds.has(story.profileId));
 
     const profileIds = [...new Set(rows.map((row) => row.profileId))];
     const mediaRows = profileIds.length ? await db.select({

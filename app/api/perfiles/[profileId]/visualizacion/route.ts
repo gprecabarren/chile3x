@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
+import { publicProfileCondition } from "@/lib/public-profile-visibility";
 import { profiles, profileViews } from "@/db/schema";
 import { assertSameOrigin, createOpaqueToken } from "@/lib/auth";
 
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const { profileId } = await params;
   const [profile] = await (await getDb()).select({ id: profiles.id })
     .from(profiles)
-    .where(and(eq(profiles.id, profileId), eq(profiles.status, "approved")))
+    .where(and(eq(profiles.id, profileId), publicProfileCondition))
     .limit(1);
 
   if (!profile) {

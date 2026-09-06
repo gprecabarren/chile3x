@@ -12,14 +12,14 @@ if (!globalThis.caches) {
   };
 }
 
-async function render() {
+async function render(path = "/", headers = {}) {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
   const { default: worker } = await import(workerUrl.href);
 
   return worker.fetch(
-    new Request("http://localhost/", {
-      headers: { accept: "text/html" },
+    new Request(`http://localhost${path}`, {
+      headers: { accept: "text/html", ...headers },
     }),
     {
       ASSETS: {
@@ -64,4 +64,38 @@ test("server-renders the Chile3X public home", async () => {
   assert.doesNotMatch(html, /GTM-NCJ3ZNH3/);
   assert.doesNotMatch(html, /www\.googletagmanager\.com\/ns\.html\?id=GTM-NCJ3ZNH3/);
   assert.doesNotMatch(html, /Your site is taking shape|Building your site|codex-preview/i);
+});
+
+test("the built Worker bypasses a shared cached document for user and admin cookies", async () => {
+  const original = globalThis.caches;
+  let reads = 0;
+  globalThis.caches = { default: {
+    match: async () => { reads++; return new Response("cached-anonymous-page", { headers: { "content-type": "text/html" } }); },
+    put: async () => { throw new Error("unexpected authenticated cache write"); },
+  } };
+  try {
+    for (const name of ["chile3x_user_session", "chile3x_admin_session"]) {
+      // Malformed/expired cookies must also bypass shared HTML. This token
+      // needs no database to reject, so it works in the Node render harness.
+      const response = await render("/", { cookie: `${name}=expired` });
+      assert.equal(response.status, 200);
+      assert.match(response.headers.get("cache-control"), /private, no-store/);
+      assert.doesNotMatch(await response.text(), /cached-anonymous-page/);
+    }
+    assert.equal(reads, 0);
+    const anonymous = await render();
+    assert.equal(await anonymous.text(), "cached-anonymous-page");
+    assert.match(anonymous.headers.get("cache-control"), /private, no-store/);
+    assert.equal(reads, 1);
+  } finally { globalThis.caches = original; }
+});
+
+test("cache outages do not prevent the built Worker from rendering", async () => {
+  const original = globalThis.caches;
+  globalThis.caches = { default: { match: async () => { throw new Error("cache unavailable"); }, put: async () => undefined } };
+  try {
+    const response = await render();
+    assert.equal(response.status, 200);
+    assert.match(await response.text(), /Directorio nacional de escorts/);
+  } finally { globalThis.caches = original; }
 });

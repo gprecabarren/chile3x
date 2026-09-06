@@ -17,7 +17,7 @@ export default async function AdminCreateProfilePage({ params, searchParams }: {
   const [{ userId }, query, db] = await Promise.all([params, searchParams, getDb()]);
   if (!admin) redirect(`/api/auth/github/start?return_to=/admin/cuentas/${encodeURIComponent(userId)}/crear-perfil`);
 
-  const [owner, escort] = await Promise.all([
+  const [[owner], [escort]] = await Promise.all([
     db.select({ id: users.id, email: users.email, displayName: users.displayName, role: users.role, isActive: users.isActive })
     .from(users)
     .where(eq(users.id, userId))

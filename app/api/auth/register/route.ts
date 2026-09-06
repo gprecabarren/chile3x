@@ -41,8 +41,10 @@ export async function POST(request: NextRequest) {
   }
 
   let stage = "form_data";
+  let formData: FormData | undefined;
+  let createdEmail: string | undefined;
   try {
-    const formData = await request.formData();
+    formData = await request.formData();
     if (!await verifyTurnstile(request, formData.get("cf-turnstile-response"), TURNSTILE_AUTH_REGISTER_ACTION)) return redirectWithError(request, "antispam", formData);
     const displayName = getFormString(formData, "display_name").trim().slice(0, 80);
     const email = getFormString(formData, "email").trim().toLowerCase().slice(0, 160);
@@ -88,6 +90,7 @@ export async function POST(request: NextRequest) {
     });
 
     stage = "send_verification";
+    createdEmail = email;
     const token = await createAccountToken(userId, "verify_email");
     const delivered = await sendAccountEmail({ email, displayName, purpose: "verify_email", token });
     const returnTo = safeAccountReturnTo(getFormString(formData, "return_to"));
@@ -101,6 +104,18 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     console.error("Account registration failed", { stage, error });
-    return redirectWithError(request, "server");
+    // If the account was saved, let the user retry sending verification rather
+    // than asking them to register again (which would report a duplicate).
+    if (createdEmail && formData) {
+      const url = new URL("/verificar-correo", request.url);
+      url.searchParams.set("email", createdEmail);
+      url.searchParams.set("return_to", safeAccountReturnTo(getFormString(formData, "return_to")));
+      url.searchParams.set("created", "1");
+      url.searchParams.set("delivery", "1");
+      const response = NextResponse.redirect(url, 303);
+      response.cookies.set(registrationStateCookie, "", { maxAge: 0, path: "/registro" });
+      return response;
+    }
+    return redirectWithError(request, "server", formData);
   }
 }

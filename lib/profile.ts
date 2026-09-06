@@ -84,7 +84,7 @@ export const tierLabels: Record<Tier, string> = {
   vip: "VIP",
 };
 
-export const citiesByRegion = new Map(regions.map((region) => [region.title, region.cities]));
+export const citiesByRegion = new Map<string, readonly string[]>(regions.map((region) => [region.title, region.cities]));
 
 export function isProfileType(value: string): value is ProfileType {
   return profileTypes.includes(value as ProfileType);

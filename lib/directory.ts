@@ -5,6 +5,7 @@ import { getDb } from "@/db";
 import { agencyMembers, profileDetails, profileMedia, profileServices, profileTags, profiles, profileViews } from "@/db/schema";
 import { getApprovedMediaForProfiles } from "@/lib/media";
 import { getBlockedProfileIds } from "@/lib/profile-safety";
+import { publicProfileCondition } from "@/lib/public-profile-visibility";
 import {
   additionalServices,
   bodyTypes,
@@ -170,7 +171,7 @@ export async function getPublicProfiles(options: PublicProfileOptions = {}) {
   if (options.profileIds && options.profileIds.length === 0) return [] as PublicProfile[];
 
   const conditions = [];
-  if (!options.includeUnapproved) conditions.push(eq(profiles.status, "approved"));
+  if (!options.includeUnapproved) conditions.push(publicProfileCondition);
   if (options.type) conditions.push(eq(profiles.type, options.type));
   if (options.city) conditions.push(eq(profiles.city, options.city));
   if (options.region) conditions.push(eq(profiles.region, options.region));
@@ -298,7 +299,7 @@ const getPublicProfileSeoForRouteCached = cache(async function getPublicProfileS
       eq(profileMedia.moderationStatus, "approved"),
       eq(profileMedia.isProfilePhoto, true),
     ))
-    .where(and(eq(profiles.status, "approved"), profileCondition))
+    .where(and(publicProfileCondition, profileCondition))
     .limit(1);
 
   return row ?? null;
@@ -369,7 +370,7 @@ export async function getCityEscortCounts() {
     const db = await getDb();
     const rows = await db.select({ city: profiles.city, total: count() })
       .from(profiles)
-      .where(and(eq(profiles.status, "approved"), eq(profiles.type, "escort")))
+      .where(and(publicProfileCondition, eq(profiles.type, "escort")))
       .groupBy(profiles.city);
 
     return new Map(rows.map((row) => [row.city, Number(row.total)]));
@@ -396,7 +397,7 @@ export async function getFeaturedProfiles(limit = 6, viewerId?: string) {
     // manually highlighted/recent listings plus the most-viewed recent ones.
     const [manualCandidates, viewedCandidates] = await Promise.all([
       db.select({ id: profiles.id }).from(profiles).where(and(
-        eq(profiles.status, "approved"),
+        publicProfileCondition,
         eq(profiles.type, "escort"),
         eq(profiles.isDemo, false),
       )).orderBy(desc(profiles.isFeatured), desc(profiles.updatedAt)).limit(candidateLimit),
@@ -404,7 +405,7 @@ export async function getFeaturedProfiles(limit = 6, viewerId?: string) {
         .innerJoin(profiles, eq(profileViews.profileId, profiles.id))
         .where(and(
           gte(profileViews.viewedOn, cutoff),
-          eq(profiles.status, "approved"),
+          publicProfileCondition,
           eq(profiles.type, "escort"),
           eq(profiles.isDemo, false),
         ))

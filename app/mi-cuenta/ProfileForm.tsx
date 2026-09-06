@@ -122,7 +122,7 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true }
       if (!typeLocked && savedType && availableProfileTypes.includes(savedType as ProfileType)) setType(savedType as ProfileType);
       if (savedRegion && regions.some((item) => item.title === savedRegion)) setRegion(savedRegion);
       if (savedCity) setCity(savedCity);
-      setSelectedProfileTags((saved.tags ?? []).filter((tag) => profileTags.includes(tag)));
+      setSelectedProfileTags((saved.tags ?? []).filter((tag) => profileTags.some((allowedTag) => allowedTag === tag)));
       setEnabledAvailabilityDays(new Set(availabilityDays.filter((day) => saved[`availability_${day.key}_enabled`]?.includes("on")).map((day) => day.key)));
       const form = formRef.current;
       if (!form) return;

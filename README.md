@@ -4,6 +4,30 @@ Chile3X es un directorio nacional para adultos en Chile. Reúne anuncios de Esco
 
 El proyecto está construido para operar en Cloudflare con Workers, D1 y R2, sin depender de WordPress ni de un hosting tradicional.
 
+## Revisión de errores — septiembre de 2026
+
+- La caché compartida guarda únicamente documentos anónimos. Las sesiones de usuario y administrador, los paneles y las respuestas de navegación no comparten caché; el navegador debe consultar otra vez después de ingresar o cerrar sesión. Las entradas antiguas quedaron fuera de uso mediante una nueva clave de caché.
+- Deshabilitar una cuenta oculta sus anuncios, historias y metadatos públicos sin alterar el estado de moderación guardado. Administración conserva el acceso para revisarlos. El contenido exclusivo autorizado sigue dependiendo de su biblioteca de cuenta, no del estado del anuncio.
+- El inicio respeta anuncios ocultos tanto en destacados como en historias. Los accesos para anunciarse llevan al formulario de anuncio cuando ya hay sesión.
+- La creación asistida de anuncios desde una cuenta vuelve a reconocer correctamente su propietario y si ya tiene un anuncio Escort.
+- Un error al ingresar conserva la página de destino. Los retornos rechazan URLs externas o malformadas y mantienen filtros y anclas. Un fallo al registrar conserva los datos no sensibles; si la cuenta ya se guardó pero falló el envío de correo, permite reenviar la verificación sin intentar crearla otra vez.
+- Las reseñas tienen un orden determinista incluso con fechas idénticas; todas continúan accesibles mediante «Ver más reseñas».
+- Los medios públicos revalidan su disponibilidad antes de reutilizarse. Las imágenes sin cambios pueden responder con `304`, evitando descargarlas nuevamente.
+- El menú móvil recupera texto legible y controles más cómodos. Hasta 480 px, Agencias y Arriendos quedan agrupados bajo «Directorio» en el menú; Regiones, Escorts e Iniciar sesión/Mi cuenta permanecen visibles. El menú tiene nombre accesible, cierre con Escape y altura limitada con desplazamiento interno.
+- Los consentimientos del registro tienen casillas de 22 px. Se retiró la carga innecesaria de la biblioteca de Google Preferred Sources, cuyo botón ya estaba desactivado.
+
+Verificación reproducible:
+
+```sh
+pnpm lint
+pnpm typecheck
+pnpm test
+```
+
+Las pruebas automáticas cubren el Worker compilado, aislamiento de caché, fallos de caché, retornos seguros y datos de reintento sin contraseñas. Con `pnpm dev` y las migraciones aplicadas **solo a la D1 local**, `node scripts/qa-local.mjs` comprueba paneles, creación asistida, cuentas deshabilitadas, anuncios ocultos, paginación de reseñas y revocación de sesión usando cuentas ficticias. Después se ejecuta `node scripts/qa-local.mjs cleanup`, que elimina únicamente esas cuentas y anuncios locales. Nunca ejecutar estas pruebas contra producción ni subir los estados temporales de `outputs/`.
+
+La caché de documentos anónimos dura hasta 120 segundos: una moderación puede tardar ese intervalo en reflejarse en una página ya cacheada. Las pruebas de tamaños móviles no sustituyen una comprobación en un iPhone físico ni una prueba de carga sostenida en Cloudflare.
+
 ## Estado funcional
 
 La plataforma se encuentra en beta controlada. Los pagos y la venta automatizada de contenido no se procesan dentro de Chile3X: cualquier acuerdo comercial ocurre directamente entre las personas involucradas.

@@ -1,5 +1,6 @@
 import { and, count, desc, eq } from "drizzle-orm";
 import { getDb } from "@/db";
+import { publicProfileCondition } from "@/lib/public-profile-visibility";
 import { favorites, profileLikes, profiles, reviews, users } from "@/db/schema";
 
 export type ProfileEngagement = {
@@ -55,7 +56,7 @@ export async function getApprovedReviewsPage(profileId: string, page = 1, pageSi
   }).from(reviews)
     .innerJoin(users, eq(reviews.authorId, users.id))
     .where(conditions)
-    .orderBy(desc(reviews.createdAt))
+    .orderBy(desc(reviews.createdAt), desc(reviews.id))
     .limit(safePageSize + 1)
     .offset((safePage - 1) * safePageSize),
     db.select({ total: count() }).from(reviews).where(conditions),
@@ -74,7 +75,7 @@ export async function getApprovedReviewsPage(profileId: string, page = 1, pageSi
 export async function isPublicProfile(profileId: string) {
   const [profile] = await (await getDb()).select({ id: profiles.id })
     .from(profiles)
-    .where(and(eq(profiles.id, profileId), eq(profiles.status, "approved")))
+    .where(and(eq(profiles.id, profileId), publicProfileCondition))
     .limit(1);
   return Boolean(profile);
 }

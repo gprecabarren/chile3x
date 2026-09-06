@@ -6,8 +6,11 @@ import { assertSameOrigin, createUserSession, getUserSessionCookieName, getUserS
 import { TURNSTILE_AUTH_LOGIN_ACTION } from "@/lib/turnstile";
 import { verifyTurnstile } from "@/lib/turnstile-server";
 
-function invalidCredentials(request: Request) {
-  return NextResponse.redirect(new URL("/ingresar?error=invalid", request.url), 303);
+function loginError(request: Request, formData: FormData, error = "invalid") {
+  const url = new URL("/ingresar", request.url);
+  url.searchParams.set("error", error);
+  url.searchParams.set("return_to", safeAccountReturnTo(getFormString(formData, "return_to")));
+  return NextResponse.redirect(url, 303);
 }
 
 function getFormString(formData: FormData, name: string) {
@@ -23,14 +26,14 @@ export async function POST(request: NextRequest) {
   }
 
   const formData = await request.formData();
-  if (!await verifyTurnstile(request, formData.get("cf-turnstile-response"), TURNSTILE_AUTH_LOGIN_ACTION)) return NextResponse.redirect(new URL("/ingresar?error=antispam", request.url), 303);
+  if (!await verifyTurnstile(request, formData.get("cf-turnstile-response"), TURNSTILE_AUTH_LOGIN_ACTION)) return loginError(request, formData, "antispam");
   const email = getFormString(formData, "email").trim().toLowerCase().slice(0, 160);
   const password = getFormString(formData, "password");
-  if (!email || !password) return invalidCredentials(request);
+  if (!email || !password) return loginError(request, formData);
 
   const [user] = await (await getDb()).select({ id: users.id, passwordHash: users.passwordHash, emailVerifiedAt: users.emailVerifiedAt, isActive: users.isActive }).from(users).where(eq(users.email, email)).limit(1);
-  if (!user || !await verifyPassword(password, user.passwordHash)) return invalidCredentials(request);
-  if (!user.isActive) return NextResponse.redirect(new URL("/ingresar?error=disabled", request.url), 303);
+  if (!user || !await verifyPassword(password, user.passwordHash)) return loginError(request, formData);
+  if (!user.isActive) return loginError(request, formData, "disabled");
   if (!user.emailVerifiedAt) {
     const verificationUrl = new URL("/verificar-correo", request.url);
     verificationUrl.searchParams.set("email", email);

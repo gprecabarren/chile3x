@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
+import { publicProfileCondition } from "@/lib/public-profile-visibility";
 import { profileContactEvents, profiles } from "@/db/schema";
 import { assertSameOrigin, createOpaqueToken } from "@/lib/auth";
 
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!payload?.kind || !kinds.has(payload.kind)) return new Response(null, { status: 400 });
   const { profileId } = await params;
   const db = await getDb();
-  const [profile] = await db.select({ id: profiles.id }).from(profiles).where(and(eq(profiles.id, profileId), eq(profiles.status, "approved"))).limit(1);
+  const [profile] = await db.select({ id: profiles.id }).from(profiles).where(and(eq(profiles.id, profileId), publicProfileCondition)).limit(1);
   if (!profile) return new Response(null, { status: 204 });
   const existing = request.cookies.get(VIEWER_COOKIE)?.value;
   const viewerKey = existing && /^[A-Za-z0-9_-]{32,96}$/.test(existing) ? existing : createOpaqueToken();

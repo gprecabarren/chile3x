@@ -5,8 +5,9 @@ import { useCallback, useState } from "react";
 import { MAX_REPORT_EVIDENCE_BYTES, MAX_REPORT_EVIDENCE_IMAGES, MAX_REPORT_EVIDENCE_TOTAL_BYTES } from "@/lib/report-evidence";
 import { TURNSTILE_PROFILE_REPORT_ACTION, TURNSTILE_PROFILE_REVIEW_SITEKEY } from "@/lib/turnstile";
 import { TurnstileWidget } from "./TurnstileWidget";
+import { ProfileShareButton } from "./ProfileShareButton";
 
-export function ProfileSafetyActions({ profileId, profileSlug, signedIn, viewerOwnsProfile }: { profileId: string; profileSlug: string; signedIn: boolean; viewerOwnsProfile: boolean }) {
+export function ProfileSafetyActions({ profileId, profileSlug, displayName, signedIn, viewerOwnsProfile }: { profileId: string; profileSlug: string; displayName: string; signedIn: boolean; viewerOwnsProfile: boolean }) {
   const [reportOpen, setReportOpen] = useState(false);
   const [reason, setReason] = useState("wrong_information");
   const [body, setBody] = useState("");
@@ -61,6 +62,7 @@ export function ProfileSafetyActions({ profileId, profileSlug, signedIn, viewerO
     {signedIn ? <button type="button" disabled={viewerOwnsProfile} title={viewerOwnsProfile ? "No puedes reportar tu propio anuncio." : undefined} onClick={() => { setReportOpen((value) => !value); setNotice(""); }}>⚑ Reportar anuncio</button> : <Link href={`/ingresar?return_to=${encodeURIComponent(`/perfil/${profileSlug}`)}`}>Inicia sesión para reportar</Link>}
     {signedIn ? <button type="button" disabled={busy || viewerOwnsProfile} title={viewerOwnsProfile ? "No puedes ocultar tu propio anuncio." : undefined} onClick={block}>Ocultar anuncio</button> : <Link href={`/ingresar?return_to=${encodeURIComponent(`/perfil/${profileSlug}`)}`}>Inicia sesión para ocultarlo</Link>}
     {signedIn && viewerOwnsProfile && <span className="profile-safety-owner-notice">Este es tu anuncio.</span>}
+    <ProfileShareButton displayName={displayName} profileSlug={profileSlug} />
     {signedIn && reportOpen && <form className="profile-report-form" onSubmit={report}>
       <div><strong>Reporte privado para Chile3X</strong><button type="button" aria-label="Cerrar" onClick={() => setReportOpen(false)}>×</button></div>
       <p className="profile-report-intro">Cuéntanos qué ocurre y, si ayuda a explicarlo, adjunta pantallazos. Solo el equipo de Chile3X y tú podrán verlos.</p>

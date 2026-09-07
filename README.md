@@ -42,7 +42,9 @@ Actualmente incluye:
 - Moderación de anuncios, foto principal, galería, documentos privados, historias, reportes, reseñas y contenido exclusivo.
 - Directorio nacional con regiones ordenadas por su número oficial, páginas de ciudad, filtros combinables, búsqueda por nombre, conteos de anuncios y orden aleatorio dentro de cada categoría.
 - Etiquetas y filtros para nivel VIP, Premium y Gold, además de categorías complementarias y servicios. Las etiquetas incompatibles se validan tanto en interfaz como en servidor.
-- Fichas públicas con contactos directos, redes sociales, tarifas por duración, disponibilidad semanal, agenda de viajes, galería, videos, historias, favoritos, likes, reseñas y reportes.
+- Fichas públicas con contactos directos, redes sociales, tarifas por duración, disponibilidad semanal, agenda de viajes, galería, videos, historias, favoritos, likes, reseñas, reportes y un botón para compartir por las opciones del dispositivo o mediante WhatsApp, Telegram, correo y copia de enlace.
+- El distintivo de verificación abre una explicación con foto, fecha de aprobación e información sobre la revisión de identidad y documento. Las cantidades de favoritos y «Me gusta» permanecen visibles junto a cada acción.
+- Una cuenta con sesión iniciada puede solicitar avisos para las ciudades que ya tienen anuncios públicos. Si el anuncio cambia a esa ciudad y administración vuelve a aprobarlo, recibe un correo único; su dirección nunca se expone al anunciante.
 - Historias públicas de texto o imagen, con visualización por país, ciudad y resultado filtrado. Las historias de imagen caducan y se eliminan automáticamente de la base de datos según su ciclo de vida.
 - Contenido exclusivo asociado a la cuenta del anunciante: puede mostrarse al final de un único anuncio Escort, pero permanece disponible para los compradores autorizados incluso si el anuncio se pausa o se elimina.
 - Biblioteca privada para compradores en `Mi cuenta > Mi contenido`, donde cada acceso se muestra con el nombre de usuario de la cuenta vendedora, sin exponer correos.
@@ -51,6 +53,7 @@ Actualmente incluye:
 - Noticias administrables con metadatos SEO, imágenes moderadas y URLs públicas.
 - Páginas de términos, privacidad, reglas de publicación, FAQ, contacto y quiénes somos editables desde configuración cuando corresponda.
 - Aviso para mayores de 18 años, consentimiento de medición, Turnstile en formularios sensibles y modo mantenimiento.
+- Transición de carga global liviana, basada solo en CSS y el logo local, con demora breve para no parpadear en navegaciones rápidas ni agregar peticiones externas.
 
 ## Modelo operativo
 
@@ -158,6 +161,14 @@ Las uniones de infraestructura están definidas en [`.openai/hosting.json`](.ope
 3. Sube archivos y espera la moderación.
 4. Autoriza compradores por usuario o correo. Después de autorizar, solo ve `@usuario` en su lista.
 5. El comprador abre `Mi cuenta > Mi contenido` para ver sus bibliotecas desbloqueadas.
+
+### Recibir un aviso de cambio de ciudad
+
+1. La persona inicia sesión y abre un anuncio Escort público que no le pertenece.
+2. Al final de la ficha elige una ciudad que ya tenga anuncios publicados y activa el aviso. Puede tener varios avisos y quitarlos desde el mismo recuadro.
+3. El anunciante modifica la ciudad de su anuncio; el cambio vuelve a revisión como cualquier edición relevante.
+4. Cuando administración aprueba nuevamente el anuncio en la ciudad solicitada, el sistema envía el correo y marca ese aviso como completado para no repetirlo.
+5. Un visitante sin sesión, la cuenta propietaria del anuncio o una ciudad inexistente son rechazados también por el servidor, no solo por la interfaz.
 
 ## Desarrollo local
 

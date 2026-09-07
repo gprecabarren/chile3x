@@ -10,6 +10,81 @@
   --muted: #a9adbc;
 }
 
+/* Ficha pública: verificación explicada, compartir y avisos de ciudad. */
+.profile-page-title { display: flex; align-items: center; gap: 10px; }
+.profile-page-title h1 { margin-bottom: 9px; }
+.verified-sticker { padding: 0; border: 0; cursor: pointer; }
+.verified-sticker:hover { transform: translateY(-1px) scale(1.05); }
+.verified-sticker:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.profile-verification-dialog { width: min(560px, calc(100vw - 28px)); max-width: none; padding: 0; border: 1px solid #347e62; border-radius: 18px; color: #f4f7f5; background: transparent; box-shadow: 0 28px 90px rgba(0,0,0,.72); }
+.profile-verification-dialog::backdrop { background: rgba(3,5,9,.82); backdrop-filter: blur(7px); }
+.profile-verification-dialog > section { position: relative; overflow: hidden; border-radius: inherit; background: #15171d; }
+.profile-verification-dialog, .profile-verification-dialog * { font-family: Arial,Helvetica,sans-serif; letter-spacing: normal; }
+.profile-verification-main { padding: 34px; background: radial-gradient(circle at 100% 0, rgba(48,145,104,.34), transparent 48%), linear-gradient(145deg,#0c684c,#18241e 62%,#241b17); }
+.profile-verification-close { position: absolute; z-index: 2; top: 14px; right: 14px; width: 38px; height: 38px; display: grid; place-items: center; padding: 0; border: 1px solid rgba(255,255,255,.34); border-radius: 50%; color: #fff; background: rgba(5,20,15,.45); font-size: 25px; line-height: 1; cursor: pointer; }
+.profile-verification-identity { display: grid; grid-template-columns: 72px minmax(0,1fr); align-items: center; gap: 16px; margin: 12px 0 23px; }
+.profile-verification-photo { position: relative; width: 72px; aspect-ratio: 1; display: grid; place-items: center; overflow: hidden; border: 2px solid #5ee5ad; border-radius: 10px; background: #153f31; }
+.profile-verification-photo img { object-fit: cover; }
+.profile-verification-photo b { font-family: Georgia,serif; font-size: 34px; font-weight: 400; }
+.profile-verification-identity h2 { margin: 0 0 4px; color: #fff; font-family: Arial,sans-serif; font-size: clamp(24px,5vw,34px); font-weight: 700; letter-spacing: -.025em; line-height: 1.05; }
+.profile-verification-identity p { margin: 0; color: #c5d8d1; font-size: 13px; line-height: 1.4; }
+.profile-verification-main ul { display: flex; flex-wrap: wrap; gap: 9px; margin: 0 0 24px; padding: 0; list-style: none; }
+.profile-verification-main li { display: inline-flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 8px; color: #f5fffb; background: rgba(57,174,127,.28); font-size: 13px; line-height: 1.35; }
+.profile-verification-main li span, .profile-verification-trust > span { width: 22px; height: 22px; display: inline-grid; place-items: center; border: 1px solid #6bdfb0; border-radius: 50%; color: #86efc4; font-size: 12px; }
+.profile-verification-trust { display: flex; align-items: center; gap: 10px; margin: 0; color: #f0f7f4; font-size: 14px; line-height: 1.4; }
+.profile-verification-note { padding: 25px 34px 28px; color: #c7cbd2; background: #17191f; font-size: 13px; line-height: 1.65; }
+
+.profile-share { position: relative; flex-basis: 100%; display: flex; align-items: center; gap: 9px; padding-top: 2px; }
+.profile-share-trigger { min-height: 36px; display: inline-flex; align-items: center; gap: 8px; padding: 8px 13px !important; border: 1px solid #485269 !important; border-radius: 999px !important; color: #edf0f6 !important; background: #151b29 !important; font-size: 10px !important; font-weight: 800 !important; text-decoration: none !important; }
+.profile-share-trigger svg { width: 16px; height: 16px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.7; }
+.profile-share-menu { position: absolute; z-index: 18; top: calc(100% + 7px); left: 0; min-width: 180px; display: grid; padding: 7px; border: 1px solid #465169; border-radius: 10px; background: #111722; box-shadow: 0 15px 42px rgba(0,0,0,.55); }
+.profile-share-menu a, .profile-share-menu button { padding: 10px; border: 0; border-radius: 6px; color: #eef1f6; background: transparent; font: inherit; font-size: 11px; text-align: left; cursor: pointer; }
+.profile-share-menu a:hover, .profile-share-menu button:hover { background: #222a3b; }
+.profile-share-notice { color: #9bd8b9; font-size: 10px; }
+
+.profile-city-alert-panel { width: min(100% - 56px, 1184px); margin: 0 auto 72px; display: grid; grid-template-columns: minmax(0,1fr) minmax(330px,.7fr); gap: 22px 38px; align-items: end; padding: 30px; border: 1px solid #3e4659; border-radius: 16px; background: radial-gradient(circle at 93% 5%,rgba(212,21,29,.18),transparent 37%),#11151e; }
+.profile-city-alert-panel h2 { margin: 5px 0 10px; color: #fff; font-size: clamp(30px,4vw,45px); line-height: 1; }
+.profile-city-alert-panel > div:first-child > p:last-child { max-width: 680px; margin: 0; color: #b9c0cd; font-size: 13px; line-height: 1.6; }
+.profile-city-alert-form { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 7px 9px; }
+.profile-city-alert-form label { grid-column: 1/-1; color: #dfe3ea; font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.profile-city-alert-form select { min-width: 0; min-height: 46px; padding: 10px 36px 10px 12px; border: 1px solid #4e586d; color: #fff; background: #090d14; color-scheme: dark; font: inherit; font-size: 13px; }
+.profile-city-alert-form .button { white-space: nowrap; }
+.profile-city-alert-active { grid-column: 1/-1; display: flex; flex-wrap: wrap; align-items: center; gap: 7px; padding-top: 6px; border-top: 1px solid #2b3241; }
+.profile-city-alert-active > strong { margin-right: 4px; color: #c9d0dc; font-size: 10px; }
+.profile-city-alert-active > span { display: inline-flex; align-items: center; gap: 7px; padding: 6px 8px; border: 1px solid #355f50; border-radius: 999px; color: #ccf2e0; background: #112a21; font-size: 10px; }
+.profile-city-alert-active button { width: 18px; height: 18px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; color: #fff; background: #2e5949; cursor: pointer; }
+.profile-city-alert-panel > small { grid-column: 1/-1; color: #8f98a8; font-size: 10px; }
+.profile-city-alert-notice, .profile-city-alert-owner { grid-column: 1/-1; margin: 0; color: #b7dcc9; font-size: 11px; }
+.profile-city-alert-login { justify-self: start; }
+
+/* Route transition: CSS-only, delayed so fast responses do not flash. */
+.route-loading { position: fixed; z-index: 9999; inset: 0; display: grid; place-items: center; color: #fff; background: rgba(7,8,13,.96); opacity: 0; animation: route-loading-reveal .18s ease .14s forwards; }
+.route-loading-mark { width: 150px; display: grid; justify-items: center; gap: 13px; }
+.route-loading-mark .official-chile3x-logo { width: 128px; height: auto; border-radius: 8px; }
+.route-loading-hearts { position: relative; width: 66px; height: 39px; display: block; }
+.route-loading-hearts i { position: absolute; color: #e22b35; font-size: 31px; font-style: normal; filter: drop-shadow(0 5px 9px rgba(212,21,29,.25)); animation: route-heart 1s ease-in-out infinite alternate; }
+.route-loading-hearts i:first-child { left: 5px; top: 0; }
+.route-loading-hearts i:last-child { right: 3px; bottom: -3px; color: #ff6d73; animation-delay: -.45s; }
+.route-loading-mark strong { color: #b9bfca; font-size: 10px; letter-spacing: .2em; text-transform: uppercase; }
+@keyframes route-loading-reveal { to { opacity: 1; } }
+@keyframes route-heart { from { transform: translateY(2px) scale(.9); } to { transform: translateY(-3px) scale(1.05); } }
+
+@media (max-width: 720px) {
+  .profile-verification-main { padding: 28px 22px; }
+  .profile-verification-note { padding: 21px 22px 24px; }
+  .profile-verification-identity { grid-template-columns: 62px minmax(0,1fr); padding-right: 26px; }
+  .profile-verification-photo { width: 62px; }
+  .profile-verification-main ul { display: grid; }
+  .profile-city-alert-panel { width: min(100% - 32px,1184px); grid-template-columns: 1fr; margin-bottom: 52px; padding: 22px; }
+  .profile-city-alert-form { grid-template-columns: 1fr; }
+  .profile-city-alert-form label { grid-column: auto; }
+  .profile-city-alert-form .button, .profile-city-alert-login { width: 100%; }
+  .profile-safety-actions { padding-left: 50px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-loading, .route-loading-hearts i { animation: none; opacity: 1; }
+}
+
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; background: var(--ink); }
 body { margin: 0; color: #f7f4f0; background: var(--ink); font-family: Arial, Helvetica, sans-serif; }

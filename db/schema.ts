@@ -82,6 +82,7 @@ export const profiles = sqliteTable("profiles", {
   contactTelegram: text("contact_telegram"),
   tier: text("tier", { enum: ["gold", "premium", "vip"] }).notNull().default("gold"),
   verificationStatus: text("verification_status", { enum: ["unreviewed", "in_review", "reviewed"] }).notNull().default("unreviewed"),
+  verifiedAt: text("verified_at"),
   healthReviewStatus: text("health_review_status", { enum: ["not_requested", "in_review", "reviewed"] }).notNull().default("not_requested"),
   isFeatured: integer("is_featured", { mode: "boolean" }).notNull().default(false),
   isDemo: integer("is_demo", { mode: "boolean" }).notNull().default(false),
@@ -238,6 +239,22 @@ export const profileLikes = sqliteTable("profile_likes", {
   profileId: text("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
   createdAt,
 }, (table) => [uniqueIndex("profile_like_unique").on(table.userId, table.profileId)]);
+
+// A signed-in visitor can ask to be notified if an announcement reaches a
+// particular city. The visitor's email remains private and is resolved only
+// when the announcement is approved in that city.
+export const profileCityAlerts = sqliteTable("profile_city_alerts", {
+  id: text("id").primaryKey(),
+  profileId: text("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  city: text("city").notNull(),
+  notifiedAt: text("notified_at"),
+  createdAt,
+}, (table) => [
+  uniqueIndex("profile_city_alert_unique").on(table.profileId, table.userId, table.city),
+  index("profile_city_alert_destination_idx").on(table.profileId, table.city, table.notifiedAt),
+  index("profile_city_alert_user_idx").on(table.userId, table.notifiedAt),
+]);
 
 export const reviews = sqliteTable("reviews", {
   id: text("id").primaryKey(),

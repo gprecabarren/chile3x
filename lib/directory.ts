@@ -61,6 +61,7 @@ export type PublicProfile = {
   contactTelegram: string | null;
   tier: Tier;
   verificationStatus: "unreviewed" | "in_review" | "reviewed";
+  verifiedAt: string | null;
   healthReviewStatus: "not_requested" | "in_review" | "reviewed";
   isFeatured: boolean;
   isDemo: boolean;
@@ -228,6 +229,7 @@ export async function getPublicProfiles(options: PublicProfileOptions = {}) {
     contactTelegram: profile.contactTelegram,
     tier: profile.tier,
     verificationStatus: profile.verificationStatus,
+    verifiedAt: profile.verifiedAt,
     healthReviewStatus: profile.healthReviewStatus,
     isFeatured: profile.isFeatured,
     isDemo: profile.isDemo,

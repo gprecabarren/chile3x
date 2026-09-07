@@ -127,6 +127,13 @@
       "when": 1787812939147,
       "tag": "0017_careless_cobalt_man",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1788815900580,
+      "tag": "0018_secret_vin_gonzales",
+      "breakpoints": true
     }
   ]
 }

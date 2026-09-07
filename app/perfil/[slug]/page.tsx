@@ -23,6 +23,9 @@ import { TrackedContactLink } from "../TrackedContactLink";
 import { safeJsonLd } from "@/lib/json-ld";
 import { socialCardImageUrl } from "@/lib/seo";
 import { formatRegionName } from "@/app/locations";
+import { ProfileVerificationBadge } from "../ProfileVerificationBadge";
+import { ProfileCityAlertPanel } from "../ProfileCityAlertPanel";
+import { getActiveProfileCityAlerts, getProfileAlertCities } from "@/lib/profile-city-alerts";
 
 export const dynamic = "force-dynamic";
 
@@ -157,7 +160,15 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   }));
   const availability = readAvailability(profile.details.metadata.availability);
   const availabilityStatus = getAvailabilityStatus(availability);
-  const [stories, approvedReviewsPage, verificationDocuments, exclusiveContent] = await Promise.all([getActiveStories({ profileId: profile.id }), getApprovedReviewsPage(profile.id), admin && profile.type === "escort" ? getVerificationDocuments(profile.id) : Promise.resolve([]), getExclusiveContentForProfile(profile.id, { viewerId: viewer?.id, isAdmin: Boolean(admin) })]);
+  const showCityAlerts = profile.status === "approved" && profile.type === "escort" && !profile.isDemo;
+  const [stories, approvedReviewsPage, verificationDocuments, exclusiveContent, cityAlertCities, activeCityAlerts] = await Promise.all([
+    getActiveStories({ profileId: profile.id }),
+    getApprovedReviewsPage(profile.id),
+    admin && profile.type === "escort" ? getVerificationDocuments(profile.id) : Promise.resolve([]),
+    getExclusiveContentForProfile(profile.id, { viewerId: viewer?.id, isAdmin: Boolean(admin) }),
+    showCityAlerts ? getProfileAlertCities() : Promise.resolve([]),
+    showCityAlerts ? getActiveProfileCityAlerts(profile.id, viewer?.id) : Promise.resolve([]),
+  ]);
   const viewerOwnsProfile = viewer ? (await (await getDb()).select({ ownerId: profiles.ownerId }).from(profiles).where(eq(profiles.id, profile.id)).limit(1))[0]?.ownerId === viewer.id : false;
   const coverImage = profile.media.find((media) => media.mediaType === "image" && media.isProfilePhoto) ?? profile.media.find((media) => media.mediaType === "image");
   const engagement = profile.status === "approved" && !profile.isDemo
@@ -182,7 +193,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
         <div className={`profile-page-visual${coverImage ? " has-image" : ""}`}>{coverImage ? <Image className="profile-page-cover" src={coverImage.url} alt={coverImage.altText ?? `Foto de ${profile.displayName}`} fill priority unoptimized sizes="(max-width: 900px) 100vw, 45vw" /> : <span>{profile.displayName.slice(0, 1)}</span>}{stories.length > 0 && <span className="profile-story-photo-marker" aria-hidden="true" />}</div>
         <div className="profile-page-summary">
           <p className="eyebrow">{profileTypeLabel(profile.type).toUpperCase()} · {profile.city.toUpperCase()}</p>
-          <h1>{profile.displayName} {profile.verificationStatus === "reviewed" && profile.type === "escort" && <span className="verified-sticker" title="Perfil verificado">✓</span>}</h1>
+          <div className="profile-page-title"><h1>{profile.displayName}</h1>{profile.verificationStatus === "reviewed" && profile.type === "escort" && <ProfileVerificationBadge displayName={profile.displayName} imageUrl={coverImage?.url ?? null} verifiedAt={profile.verifiedAt} />}</div>
           {profile.handle && <p className="profile-public-handle">@{profile.handle}</p>}
           <p className="profile-page-location"><Link href={getCityPath(profile.city)}>{location}</Link></p>
           <div className="public-tag-row">{tags.map((tag) => <span key={tag} className={`public-tag ${tag.toLowerCase().replaceAll(" ", "-")}`}>{tag}</span>)}</div>
@@ -195,7 +206,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             {socialButtons.some(([, href]) => href) && <div className="profile-contact-group"><span>Redes y plataformas</span><div className="profile-contact-actions">{socialButtons.map(([key, href, label, className]) => href && <TrackedContactLink profileId={profile.id} kind={key} key={key} className={`button ${className}`} href={href} target="_blank" rel="noreferrer" aria-label={label} title={label}><PortalContactIcon kind={key} /><span className="sr-only">{label}</span></TrackedContactLink>)}</div></div>}
           </section>}
           {engagement && <ProfileEngagementActions profileId={profile.id} profileSlug={profileRouteValue} signedIn={Boolean(viewer)} initialEngagement={engagement} />}
-          {profile.status === "approved" && !profile.isDemo && <ProfileSafetyActions profileId={profile.id} profileSlug={profileRouteValue} signedIn={Boolean(viewer)} viewerOwnsProfile={viewerOwnsProfile} />}
+          {profile.status === "approved" && !profile.isDemo && <ProfileSafetyActions profileId={profile.id} profileSlug={profileRouteValue} displayName={profile.displayName} signedIn={Boolean(viewer)} viewerOwnsProfile={viewerOwnsProfile} />}
         </div>
       </section>
       {profile.media.some((media) => media.mediaType === "image" && !media.isProfilePhoto) && <section className="profile-media-gallery" aria-label={`Fotos de ${profile.displayName}`}>
@@ -217,6 +228,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
       {profile.type === "agency" && <section className="profile-association-section"><p className="eyebrow">PERFILES ASOCIADOS</p><h2>Escorts de {profile.displayName}</h2><p>Los perfiles se muestran aquí solo después de aceptar la invitación de la agencia.</p><div className="public-profile-grid">{agencyMembers.map((member) => <ProfileCard profile={member} key={member.id} />)}</div>{agencyMembers.length === 0 && <p className="association-empty">Esta agencia aún no tiene perfiles asociados aprobados.</p>}</section>}
       {profile.type === "escort" && agencyProfiles.length > 0 && <section className="profile-association-section compact"><p className="eyebrow">ASOCIACIONES ACEPTADAS</p><h2>Agencias relacionadas</h2><div className="public-profile-grid">{agencyProfiles.map((agency) => <ProfileCard profile={agency} key={agency.id} />)}</div></section>}
       {profile.status === "approved" && !profile.isDemo && <ProfileReviews profileId={profile.id} profileSlug={profileRouteValue} signedIn={Boolean(viewer)} viewerOwnsProfile={viewerOwnsProfile} reviews={approvedReviewsPage.reviews} totalReviews={approvedReviewsPage.total} initialHasMore={approvedReviewsPage.hasMore} />}
+      {showCityAlerts && <ProfileCityAlertPanel profileId={profile.id} profileSlug={profileRouteValue} displayName={profile.displayName} currentCity={profile.city} availableCities={cityAlertCities} signedIn={Boolean(viewer)} viewerOwnsProfile={viewerOwnsProfile} initialAlerts={activeCityAlerts} />}
     </DirectoryShell>
   );
 }

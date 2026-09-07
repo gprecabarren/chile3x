@@ -6,6 +6,7 @@ import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { sendPortalEmail } from "@/lib/account-email";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { profilePublicPath } from "@/lib/profile";
+import { notifyProfileCitySubscribers } from "@/lib/profile-city-alerts";
 
 const allowedStatuses = new Set(["draft", "pending", "approved", "paused", "rejected", "expired"]);
 const allowedVerification = new Set(["unreviewed", "in_review", "reviewed"]);
@@ -48,6 +49,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const db = await getDb();
   const [existingProfile] = await db.select({
     status: profiles.status,
+    verificationStatus: profiles.verificationStatus,
     type: profiles.type,
     displayName: profiles.displayName,
     slug: profiles.slug,
@@ -57,12 +59,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }).from(profiles).innerJoin(users, eq(profiles.ownerId, users.id)).where(eq(profiles.id, profileId)).limit(1);
   if (!existingProfile) return new Response("Perfil no encontrado.", { status: 404 });
 
+  const now = new Date().toISOString();
   await db.update(profiles).set({
     status: status as typeof profiles.$inferInsert.status,
     verificationStatus: verificationStatus as typeof profiles.$inferInsert.verificationStatus,
+    verifiedAt: verificationStatus === "reviewed"
+      ? (existingProfile.verificationStatus === "reviewed" ? undefined : now)
+      : null,
     healthReviewStatus: healthReviewStatus as typeof profiles.$inferInsert.healthReviewStatus,
     ...(featuredInput === null ? {} : { isFeatured: featuredInput === "on" }),
-    updatedAt: new Date().toISOString(),
+    updatedAt: now,
   }).where(eq(profiles.id, profileId));
 
   if (status === "approved" && existingProfile.status !== "approved") {
@@ -79,6 +85,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       note: "Puedes actualizar la información, medios y actualizaciones desde Mi cuenta. Cualquier cambio relevante volverá a revisión manual.",
     });
     if (!delivered) console.error("Could not send profile approval email", { profileId });
+    const cityNotifications = await notifyProfileCitySubscribers(profileId);
+    if (cityNotifications > 0) console.info("Profile city subscribers notified", { profileId, cityNotifications });
   }
 
   return NextResponse.redirect(new URL(safeReturnTo(formData.get("return_to")) ?? "/admin/perfiles", request.url), 303);

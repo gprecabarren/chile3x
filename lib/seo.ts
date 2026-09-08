@@ -9,7 +9,7 @@ export const socialCardImage = {
   url: socialCardImageUrl,
   width: 1025,
   height: 576,
-  alt: "Chile3X, directorio nacional de escorts en Chile",
+  alt: "Chile3X, directorio nacional de escorts y damas de compañía en Chile",
 };
 
 type PublicPageMetadataOptions = {

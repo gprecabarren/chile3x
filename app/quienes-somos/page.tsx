@@ -8,7 +8,7 @@ import { publicPageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = publicPageMetadata({
   title: "Quiénes somos",
-  description: "Chile3X es un directorio nacional de escorts en Chile, con perfiles por ciudad, agencias y arriendos para adultos. Cobertura nacional, revisión manual y soporte cercano.",
+  description: "Chile3X es un directorio nacional de escorts y damas de compañía en Chile, con perfiles por ciudad, agencias y arriendos para adultos.",
   path: "/quienes-somos",
   socialTitle: "Quiénes somos | Chile3X",
 });
@@ -29,8 +29,8 @@ export default async function AboutPage() {
   const aboutSchema = {
     "@context": "https://schema.org",
     "@type": "AboutPage",
-    name: "Directorio nacional de escorts | Chile3X",
-    description: "Chile3X es un directorio nacional de escorts en Chile, con agencias y arriendos para adultos por ciudad.",
+    name: "Directorio nacional de escorts y damas de compañía | Chile3X",
+    description: "Chile3X es un directorio nacional de escorts y damas de compañía en Chile, con agencias y arriendos para adultos por ciudad.",
     url: `${siteUrl}/quienes-somos`,
     inLanguage: "es-CL",
     isPartOf: { "@type": "WebSite", name: "Chile3X", url: siteUrl },
@@ -42,7 +42,7 @@ export default async function AboutPage() {
       <div className="about-hero-copy">
         <p className="eyebrow">CHILE3X · TODO CHILE</p>
         <h1>Un directorio nacional de escorts, <em>hecho con otra mirada.</em></h1>
-        <p>Chile3X reúne escorts en Chile, agencias y arriendos para adultos en un mismo lugar: una propuesta elegante, clara y pensada para llegar más allá de las ciudades de siempre.</p>
+        <p>Chile3X reúne escorts y damas de compañía en Chile, agencias y arriendos para adultos en un mismo lugar: una propuesta elegante, clara y pensada para llegar más allá de las ciudades de siempre.</p>
         <div className="about-hero-actions">
           <Link className="button button-primary" href="/registro">Crear una cuenta</Link>
           <Link className="button button-outline" href="/escorts">Explorar escorts</Link>

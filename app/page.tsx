@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { FloatingWhatsappButton, PublicFooter, PublicHeader, ProfileGrid } from "./directorio/_components";
 import { StoryRail } from "./historias/StoryRail";
-import { cityTotal, regions } from "./locations";
+import { cityDirectory, cityTotal, regions } from "./locations";
 import { RegionJumpSelect } from "./RegionJumpSelect";
 import { getCityEscortCounts, getFeaturedProfiles } from "@/lib/directory";
 import { getActiveStories } from "@/lib/stories";
@@ -12,13 +12,13 @@ import { safeJsonLd } from "@/lib/json-ld";
 import { socialCardImage, socialCardImageUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Directorio nacional de escorts",
+  title: "Escorts y damas de compañía en Chile",
   description:
-    "Encuentra escorts en Chile por ciudad, región, categoría y servicios. Chile3X es un directorio nacional para adultos con perfiles revisados.",
+    "Encuentra escorts y damas de compañía en Chile por ciudad, región, categoría y servicios. Directorio nacional para adultos con perfiles revisados.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Escorts en Chile | Chile3X",
-    description: "Directorio nacional de escorts en Chile: explora perfiles por ciudad, categoría y servicios.",
+    title: "Escorts y damas de compañía en Chile | Chile3X",
+    description: "Directorio nacional de escorts y damas de compañía: explora perfiles revisados por ciudad, categoría y servicios.",
     url: "/",
     locale: "es_CL",
     type: "website",
@@ -27,8 +27,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Escorts en Chile | Chile3X",
-    description: "Directorio nacional de escorts por ciudad, categoría y servicios.",
+    title: "Escorts y damas de compañía en Chile | Chile3X",
+    description: "Directorio nacional de escorts y damas de compañía por ciudad, categoría y servicios.",
     images: [socialCardImageUrl],
   },
 };
@@ -42,12 +42,16 @@ const features = [
 const directorySchema = {
   "@context": "https://schema.org",
   "@type": "ItemList",
-  name: "Ciudades iniciales cubiertas por Chile3X",
+  name: "Escorts y damas de compañía por ciudad en Chile",
   numberOfItems: cityTotal,
-  itemListElement: regions.map((region, index) => ({
+  itemListElement: cityDirectory.map((city, index) => ({
     "@type": "ListItem",
     position: index + 1,
-    name: [region.displayTitle, region.cities.join(", ")].join(": "),
+    item: {
+      "@type": "WebPage",
+      "@id": `https://chile3x.cl/escorts/${city.citySlug}`,
+      name: `Escorts y damas de compañía en ${city.city}`,
+    },
   })),
 };
 
@@ -56,15 +60,19 @@ const websiteSchema = {
   "@graph": [
     {
       "@type": "Organization",
+      "@id": "https://chile3x.cl/#organization",
       name: "Chile3X",
       url: "https://chile3x.cl",
-      description: "Directorio para adultos con escorts, agencias y arriendos en Chile.",
+      logo: { "@type": "ImageObject", url: "https://chile3x.cl/favicon-512.png", width: 512, height: 512 },
+      description: "Directorio para adultos con escorts, damas de compañía, agencias y arriendos en Chile.",
     },
     {
       "@type": "WebSite",
+      "@id": "https://chile3x.cl/#website",
       name: "Chile3X",
       url: "https://chile3x.cl",
       inLanguage: "es-CL",
+      publisher: { "@id": "https://chile3x.cl/#organization" },
       potentialAction: {
         "@type": "SearchAction",
         target: "https://chile3x.cl/escorts?nombre={search_term_string}",
@@ -96,10 +104,10 @@ export default async function Home() {
 
       <section className="hero" id="explorar">
         <div className="hero-copy">
-          <p className="eyebrow">DIRECTORIO DE ESCORTS · TODO CHILE</p>
-          <h1>Escorts en Chile, <em>en un mismo lugar.</em></h1>
+          <p className="eyebrow">DIRECTORIO ADULTO · TODO CHILE</p>
+          <h1>Escorts y damas de compañía <em>en Chile.</em></h1>
           <p className="hero-text">
-            Directorio de escorts, agencias y arriendos para adultos. Explora perfiles por región, ciudad, categoría y servicios.
+            Explora perfiles de escorts y damas de compañía, además de agencias y arriendos para adultos, por región, ciudad, categoría y servicios.
           </p>
           <div className="hero-actions">
             <Link className="button button-primary" href="/escorts">Explorar perfiles</Link>
@@ -162,18 +170,18 @@ export default async function Home() {
         </div>
         <p className="directory-note">La disponibilidad de perfiles se activará progresivamente por territorio tras la revisión de cada publicación.</p>
         <form className="home-search home-search-after-coverage" action="/escorts" method="get" role="search">
-          <label htmlFor="home-profile-search">Buscar escort por nombre</label>
+          <label htmlFor="home-profile-search">Buscar escort o dama de compañía por nombre</label>
           <div><input id="home-profile-search" name="nombre" type="search" minLength={2} maxLength={80} placeholder="Ej. Valentina, Camila..." /><button type="submit">Buscar</button></div>
         </form>
       </section>
 
       <section className="section listings-section">
         <div className="listings-intro">
-          <p className="eyebrow">ESCORTS DESTACADAS</p>
+          <p className="eyebrow">ESCORTS Y DAMAS DE COMPAÑÍA DESTACADAS</p>
           <h2>Lo más visto <em>del directorio.</em></h2>
           <p>Se priorizan las escorts con más visualizaciones únicas recientes. El equipo puede destacar avisos revisados de forma manual cuando sea necesario.</p>
         </div>
-        {featuredProfiles.length ? <ProfileGrid profiles={featuredProfiles} emptyMessage="Aún no hay escorts destacadas." /> : <p className="demo-note">Las escorts destacadas aparecerán aquí cuando existan perfiles publicados y visualizaciones registradas.</p>}
+        {featuredProfiles.length ? <ProfileGrid profiles={featuredProfiles} emptyMessage="Aún no hay perfiles destacados." /> : <p className="demo-note">Los perfiles destacados aparecerán aquí cuando existan publicaciones y visualizaciones registradas.</p>}
       </section>
 
       <section className="section process-section" id="como-funciona">

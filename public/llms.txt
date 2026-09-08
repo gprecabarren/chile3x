@@ -1,13 +1,13 @@
 # Chile3X
 
-> Directorio nacional para adultos con perfiles de escorts en Chile, agencias y arriendos. Solo para mayores de 18 años.
+> Directorio nacional para adultos con perfiles de escorts y damas de compañía en Chile, agencias y arriendos. Solo para mayores de 18 años.
 
 Chile3X permite explorar publicaciones por ciudad, región, categoría y servicios. Las publicaciones pasan por revisión manual; Chile3X no participa en acuerdos privados entre visitantes y anunciantes.
 
 ## Páginas principales
 
-- [Inicio](https://chile3x.cl/): directorio nacional de escorts en Chile.
-- [Escorts](https://chile3x.cl/escorts): publicaciones de escorts de todo Chile.
+- [Inicio](https://chile3x.cl/): directorio nacional de escorts y damas de compañía en Chile.
+- [Escorts](https://chile3x.cl/escorts): publicaciones de escorts y damas de compañía de todo Chile.
 - [Agencias](https://chile3x.cl/agencias): agencias publicadas en el directorio.
 - [Arriendos](https://chile3x.cl/arriendos): arriendos para adultos publicados en el directorio.
 - [Regiones y ciudades](https://chile3x.cl/#cobertura): cobertura del directorio por región y ciudad.

@@ -21,11 +21,11 @@ export async function generateMetadata({ params }: CityPageProps): Promise<Metad
   const city = getCityInfo(citySlug);
   if (!city) return {};
   return publicPageMetadata({
-    title: `Escorts en ${city.city}`,
-    description: `Encuentra escorts en ${city.city}, ${city.regionDisplay}. Explora perfiles, agencias y arriendos para adultos con filtros por categoría, atributos y servicios.`,
+    title: `Escorts en ${city.city}: damas de compañía`,
+    description: `¿Buscas una escort en ${city.city}? Explora escorts y damas de compañía en ${city.regionDisplay}, con perfiles revisados y filtros por servicios.`,
     path: `/escorts/${city.citySlug}`,
-    socialTitle: `Escorts en ${city.city} | Chile3X`,
-    socialDescription: `Directorio de escorts en ${city.city}, Chile.`,
+    socialTitle: `Escorts y damas de compañía en ${city.city} | Chile3X`,
+    socialDescription: `Directorio de escorts y damas de compañía en ${city.city}, Chile.`,
   });
 }
 
@@ -45,7 +45,7 @@ export default async function CityPage({ params, searchParams }: CityPageProps) 
   const schema = {
     "@context": "https://schema.org",
     "@graph": [
-      { "@type": "CollectionPage", name: `Escorts en ${city.city}`, description: `Directorio de escorts en ${city.city}, ${city.regionDisplay}.`, url: pageUrl, inLanguage: "es-CL", mainEntity: { "@type": "ItemList", numberOfItems: canonicalProfiles.length, itemListElement: canonicalProfiles.map((profile, index) => ({ "@type": "ListItem", position: index + 1, url: `${siteUrl}${profilePublicPath(profile)}`, name: profile.displayName })) } },
+      { "@type": "CollectionPage", name: `Escorts y damas de compañía en ${city.city}`, description: `Directorio de escorts y damas de compañía en ${city.city}, ${city.regionDisplay}.`, url: pageUrl, inLanguage: "es-CL", mainEntity: { "@type": "ItemList", numberOfItems: canonicalProfiles.length, itemListElement: canonicalProfiles.map((profile, index) => ({ "@type": "ListItem", position: index + 1, url: `${siteUrl}${profilePublicPath(profile)}`, name: profile.displayName })) } },
       { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Chile3X", item: siteUrl }, { "@type": "ListItem", position: 2, name: "Escorts en Chile", item: `${siteUrl}/escorts` }, { "@type": "ListItem", position: 3, name: `Escorts en ${city.city}`, item: pageUrl }] },
     ],
   };
@@ -53,7 +53,7 @@ export default async function CityPage({ params, searchParams }: CityPageProps) 
   return (
     <DirectoryShell>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(schema) }} />
-      <section className="city-hero"><p className="eyebrow">DIRECTORIO DE ESCORTS · {city.regionDisplay.toUpperCase()}</p><h1>Escorts en <em>{city.city}</em></h1><p>Perfiles de escorts, agencias y arriendos disponibles en {city.city}. Navega por categoría o afina la búsqueda con filtros avanzados.</p></section>
+      <section className="city-hero"><p className="eyebrow">DIRECTORIO ADULTO · {city.regionDisplay.toUpperCase()}</p><h1>Escorts y damas de compañía en <em>{city.city}</em></h1><p>Encuentra una escort en {city.city} y revisa perfiles, agencias y arriendos disponibles. Navega por categoría o afina la búsqueda con filtros avanzados.</p></section>
       <section className="directory-content city-content">
         <DirectoryFilters action={basePath} filters={filters} pinnedCity={city.city} pinnedRegion={city.region} showType />
         {filters.invalidCombination && <p className="filter-warning" role="alert">MILF y Hombres son categorías incompatibles. Selecciona solo una para buscar.</p>}

@@ -108,9 +108,10 @@ Los archivos heredados de la antigua galería privada se migran a este modelo si
 
 ## SEO, redes e indexación
 
-- Títulos, descripciones, canonical, Open Graph, X Cards, favicon y datos estructurados por ruta.
+- Títulos y descripciones orientados de forma natural a búsquedas como «escorts», «damas de compañía» y sus variantes locales, sin repetir términos de manera artificial.
+- Canonical, Open Graph, X Cards y favicon oficial con versiones para navegador, Apple y manifiesto web.
 - Un H1 por página y jerarquía semántica de encabezados para páginas públicas.
-- URLs de ciudad orientadas a intención de búsqueda, enlazado interno, textos de cobertura y sitemap dinámico.
+- URLs de ciudad orientadas a intención de búsqueda, enlazado interno, textos de cobertura y sitemap dinámico. La portada expone cada ciudad mediante un `ItemList` con enlaces válidos a su página local.
 - `robots.txt`, `sitemap.xml`, `llms.txt`, imágenes con texto alternativo y rutas 404 propias.
 - Metadatos sociales específicos para páginas públicas y anuncios compartibles.
 - Google Tag Manager y Google Analytics se cargan únicamente tras el consentimiento de medición.

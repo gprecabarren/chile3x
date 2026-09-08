@@ -45,13 +45,14 @@ test("server-renders the Chile3X public home", async () => {
   assert.match(contentSecurityPolicy, /frame-src[^;]*www\.googletagmanager\.com/);
 
   const html = await response.text();
-  assert.match(html, /<title>Directorio nacional de escorts \| Chile3X<\/title>/i);
-  assert.match(html, /DIRECTORIO DE ESCORTS/);
+  assert.match(html, /<title>Escorts y damas de compañía en Chile \| Chile3X<\/title>/i);
+  assert.match(html, /DIRECTORIO ADULTO/);
   assert.match(html, /Este sitio está destinado exclusivamente a personas mayores de edad/);
-  assert.match(html, /Directorio de escorts, agencias y arriendos/);
-  assert.match(html, /Escorts destacadas/i);
+  assert.match(html, /damas de compañía/i);
+  assert.match(html, /ESCORTS Y DAMAS DE COMPAÑÍA DESTACADAS/i);
   assert.match(html, /Todas las regiones,/);
   assert.match(html, /numberOfItems":36/);
+  assert.match(html, /"@id":"https:\/\/chile3x\.cl\/escorts\/concepcion"/);
   assert.match(html, /ciudades y comunas disponibles/);
   assert.match(html, /Región de Arica y Parinacota/);
   assert.match(html, /Región de Magallanes y de la Antártica Chilena/);

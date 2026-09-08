@@ -33,7 +33,7 @@ export async function generateMetadata(): Promise<Metadata> {
         url: socialCardImageUrl,
         width: socialCardImage.width,
         height: socialCardImage.height,
-        alt: "Chile3X, directorio para adultos en Chile",
+        alt: "Chile3X, directorio de escorts y damas de compañía en Chile",
       },
     ],
   },
@@ -45,13 +45,13 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     icons: {
       icon: [
-        { url: "/favicon-512.png", type: "image/png", sizes: "512x512" },
-        { url: "/favicon-192.png", type: "image/png", sizes: "192x192" },
-        { url: "/favicon-48.png", type: "image/png", sizes: "48x48" },
-        { url: "/favicon.ico", sizes: "any" },
+        { url: "/favicon-512.png?v=4", type: "image/png", sizes: "512x512" },
+        { url: "/favicon-192.png?v=4", type: "image/png", sizes: "192x192" },
+        { url: "/favicon-48.png?v=4", type: "image/png", sizes: "48x48" },
+        { url: "/favicon.ico?v=4", sizes: "any" },
       ],
-      shortcut: "/favicon.ico",
-      apple: [{ url: "/apple-touch-icon.png", type: "image/png", sizes: "180x180" }],
+      shortcut: "/favicon.ico?v=4",
+      apple: [{ url: "/apple-touch-icon.png?v=4", type: "image/png", sizes: "180x180" }],
     },
     manifest: "/site.webmanifest",
   };

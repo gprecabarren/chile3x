@@ -117,7 +117,7 @@ export function DirectoryShell({ children }: { children: ReactNode }) {
 export async function PublicFooter() {
   return (
     <footer className="public-footer">
-      <div className="public-footer-brand"><Link className="public-footer-logo" href="/" aria-label="Chile3X, inicio"><Image src="/chile3x-logo-primary.jpeg" alt="Chile3X" width={800} height={225} unoptimized /></Link><p>Directorio para adultos. Los acuerdos ocurren directamente entre visitantes y anunciantes.</p></div>
+      <div className="public-footer-brand"><Link className="public-footer-logo" href="/" aria-label="Chile3X, inicio"><Image src="/chile3x-logo-primary.jpeg" alt="Chile3X" width={800} height={225} unoptimized /></Link><p>Directorio de escorts y damas de compañía para adultos. Los acuerdos ocurren directamente entre visitantes y anunciantes.</p></div>
       <div className="public-footer-navigation">
         <div><strong>DIRECTORIO</strong><Link href="/escorts">Escorts</Link><Link href="/agencias">Agencias</Link><Link href="/arriendos">Arriendos</Link></div>
         <div><strong>INFORMACIÓN</strong><Link href="/quienes-somos">Quiénes somos</Link><Link href="/noticias">Noticias</Link><Link href="/faq">Preguntas frecuentes</Link><Link href="/contacto">Contacto</Link><Link href="/terminos">Términos</Link><Link href="/privacidad">Privacidad</Link><Link href="/reglas-de-publicacion">Reglas de publicación</Link></div>
@@ -263,9 +263,9 @@ export function SeoContent({ city, region, count }: { city: string; region: stri
   return (
     <section className="seo-content">
       <p className="eyebrow">GUÍA LOCAL</p>
-      <h2>Escorts en {city}: directorio local</h2>
-      <p>Explora escorts en {city}, además de agencias y arriendos publicados para personas adultas. Cada aviso visible pasa por revisión antes de entrar al directorio de Chile3X.</p>
-      <p>{count ? `Actualmente hay ${count} perfil${count === 1 ? "" : "es"} visible${count === 1 ? "" : "s"} en ${city}; utiliza los filtros para comparar categorías, atributos y servicios.` : `La disponibilidad de escorts en ${city} se irá ampliando con nuevas publicaciones revisadas.`}</p>
+      <h2>Escorts y damas de compañía en {city}</h2>
+      <p>Si buscas una escort en {city}, explora perfiles revisados de escorts y damas de compañía, además de agencias y arriendos para personas adultas. Cada aviso visible pasa por moderación antes de entrar al directorio de Chile3X.</p>
+      <p>{count ? `Actualmente hay ${count} perfil${count === 1 ? "" : "es"} visible${count === 1 ? "" : "s"} en ${city}; utiliza los filtros para comparar categorías, atributos y servicios.` : `La disponibilidad de escorts y damas de compañía en ${city} se irá ampliando con nuevas publicaciones revisadas.`}</p>
       <nav className="seo-content-links" aria-label={`Explorar escorts cerca de ${city}`}><Link href="/escorts">Ver escorts en Chile</Link>{nearbyCities.map((nearbyCity) => <Link href={getCityPath(nearbyCity)} key={nearbyCity}>Escorts en {nearbyCity}</Link>)}</nav>
     </section>
   );

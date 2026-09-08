@@ -3,6 +3,7 @@ import { getDb } from "@/db";
 import { newsMedia } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { detectImageType, extensionForImageType, MAX_IMAGE_BYTES } from "@/lib/media";
+import { recordAdminAudit } from "@/lib/admin-audit";
 
 export async function POST(request: NextRequest) {
   try { assertSameOrigin(request); } catch { return NextResponse.json({ error: "Solicitud no válida." }, { status: 403 }); }
@@ -14,5 +15,6 @@ export async function POST(request: NextRequest) {
   const id = `news_media_${crypto.randomUUID()}`; const r2Key = `news/${id}.${extensionForImageType(contentType)}`;
   await env.MEDIA.put(r2Key, bytes, { httpMetadata: { contentType, contentDisposition: "inline", cacheControl: "public, max-age=86400" }, customMetadata: { uploadedBy: admin.id, purpose: "news" } });
   try { await (await getDb()).insert(newsMedia).values({ id, r2Key, byteSize: bytes.byteLength, contentType, uploadedBy: admin.id }); } catch (cause) { await env.MEDIA.delete(r2Key); throw cause; }
+  await recordAdminAudit(admin, { category: "news", action: "news.media_upload", summary: "Subió una imagen para la biblioteca de noticias.", entityType: "news_media", entityId: id, entityLabel: file.name || "Imagen de noticia", after: { contentType, byteSize: bytes.byteLength } });
   return NextResponse.json({ id, url: `/noticias/media/${id}` }, { status: 201 });
 }

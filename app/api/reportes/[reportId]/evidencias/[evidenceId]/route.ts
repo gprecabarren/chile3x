@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getDb } from "@/db";
 import { profileReportEvidence, profileReports } from "@/db/schema";
 import { getCurrentAdmin, getCurrentUser } from "@/lib/auth";
+import { recordAdminAudit } from "@/lib/admin-audit";
 
 // Report evidence is never public. It can only be read by its reporter or an
 // authenticated Chile3X administrator through this authorization gate.
@@ -22,6 +23,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ rep
   if (!env.MEDIA) return new Response("El almacenamiento no está disponible.", { status: 503 });
   const object = await env.MEDIA.get(record.evidence.r2Key);
   if (!object) notFound();
+  if (admin) await recordAdminAudit(admin, { category: "security", action: "private.report_evidence_view", summary: `Abrió una evidencia privada del reporte ${reportId}.`, entityType: "report_evidence", entityId: evidenceId, entityLabel: `Evidencia · ${reportId}`, metadata: { reportId } });
 
   const headers = new Headers();
   object.writeHttpMetadata(headers);

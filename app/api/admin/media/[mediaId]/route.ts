@@ -4,6 +4,7 @@ import { getDb } from "@/db";
 import { profileMedia } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { findProfileMedia } from "@/lib/media";
+import { recordAdminAudit } from "@/lib/admin-audit";
 
 export const dynamic = "force-dynamic";
 
@@ -41,11 +42,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       ));
     }
     await db.update(profileMedia).set({ moderationStatus: "approved" }).where(eq(profileMedia.id, mediaId));
+    await recordAdminAudit(admin, { category: "media", action: "media.public_approve", summary: `Aprobó ${record.media.mediaType === "video" ? "un video" : "una foto"} de la galería de ${record.profile.displayName}.`, entityType: "public_media", entityId: mediaId, entityLabel: `${record.media.mediaType === "video" ? "Video" : "Foto"} · ${record.profile.displayName}`, before: { moderationStatus: record.media.moderationStatus, isProfilePhoto: record.media.isProfilePhoto }, after: { moderationStatus: "approved", isProfilePhoto: record.media.isProfilePhoto }, metadata: { profileId: record.profile.id } });
     return NextResponse.redirect(destination(request, formData, "approved"), 303);
   }
 
   if (action === "unapprove") {
     await db.update(profileMedia).set({ moderationStatus: "pending" }).where(eq(profileMedia.id, mediaId));
+    await recordAdminAudit(admin, { category: "media", action: "media.public_unapprove", summary: `Devolvió a revisión ${record.media.mediaType === "video" ? "un video" : "una foto"} de ${record.profile.displayName}.`, entityType: "public_media", entityId: mediaId, entityLabel: `${record.media.mediaType === "video" ? "Video" : "Foto"} · ${record.profile.displayName}`, before: { moderationStatus: record.media.moderationStatus }, after: { moderationStatus: "pending" }, metadata: { profileId: record.profile.id } });
     return NextResponse.redirect(destination(request, formData, "unapproved"), 303);
   }
 
@@ -54,6 +57,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!env.MEDIA) return new Response("El almacenamiento no está disponible.", { status: 503 });
     await env.MEDIA.delete(record.media.r2Key);
     await db.delete(profileMedia).where(eq(profileMedia.id, mediaId));
+    await recordAdminAudit(admin, { category: "media", action: "media.public_delete", summary: `Eliminó ${record.media.mediaType === "video" ? "un video" : "una foto"} de la galería de ${record.profile.displayName}.`, entityType: "public_media", entityId: mediaId, entityLabel: `${record.media.mediaType === "video" ? "Video" : "Foto"} · ${record.profile.displayName}`, before: { moderationStatus: record.media.moderationStatus, mediaType: record.media.mediaType, byteSize: record.media.byteSize, isProfilePhoto: record.media.isProfilePhoto }, metadata: { profileId: record.profile.id } });
     return NextResponse.redirect(destination(request, formData, "deleted"), 303);
   }
 

@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { inArray } from "drizzle-orm";
 import { getDb } from "@/db";
 import { siteSettings } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { validateFaqEntries } from "@/lib/faq";
 import { validatePublicationRules } from "@/lib/publication-rules";
+import { recordAdminAudit } from "@/lib/admin-audit";
 
 const allowedSettings = {
   listing_open: new Set(["closed", "waitlist", "open"]),
@@ -103,12 +105,17 @@ export async function POST(request: NextRequest) {
   if (!rows.length) return new Response("No se recibieron cambios.", { status: 400 });
 
   const db = await getDb();
+  const previousRows = await db.select({ key: siteSettings.key, value: siteSettings.value })
+    .from(siteSettings)
+    .where(inArray(siteSettings.key, rows.map((row) => row.key)));
+  const before = Object.fromEntries(previousRows.map((row) => [row.key, row.value]));
   for (const row of rows) {
     await db.insert(siteSettings).values(row).onConflictDoUpdate({
       target: siteSettings.key,
       set: { value: row.value, updatedBy: admin.id, updatedAt: row.updatedAt },
     });
   }
+  await recordAdminAudit(admin, { category: "settings", action: "settings.update", summary: `Modificó ${rows.length} ${rows.length === 1 ? "ajuste" : "ajustes"} del sitio.`, entityType: "settings", entityId: configurationReturnTo(formData), entityLabel: "Configuración del sitio", before, after: Object.fromEntries(rows.map((row) => [row.key, row.value])), metadata: { changedKeys: rows.map((row) => row.key) } });
 
   const url = new URL(configurationReturnTo(formData), request.url);
   url.searchParams.set("saved", "1");

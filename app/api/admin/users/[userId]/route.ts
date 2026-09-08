@@ -6,6 +6,7 @@ import { assertSameOrigin, getCurrentAdmin, hashPassword, safeAdminReturnTo } fr
 import { MIN_PASSWORD_LENGTH } from "@/lib/password-policy";
 import { getDb } from "@/db";
 import { accountTokens, authSessions, users } from "@/db/schema";
+import { recordAdminAudit } from "@/lib/admin-audit";
 
 function redirectWithNotice(request: Request, returnTo: string, notice: string) {
   const url = new URL(returnTo, request.url);
@@ -39,6 +40,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     role: users.role,
     email: users.email,
     displayName: users.displayName,
+    firstName: users.firstName,
+    documentType: users.documentType,
+    documentNumber: users.documentNumber,
+    foreignCountry: users.foreignCountry,
+    birthDate: users.birthDate,
+    city: users.city,
+    phone: users.phone,
   }).from(users).where(eq(users.id, userId)).limit(1);
 
   if (!target) return redirectWithNotice(request, "/admin/cuentas", "account_missing");
@@ -47,6 +55,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (action === "send_reset") {
     const token = await createAccountToken(target.id, "reset_password");
     const delivered = await sendAccountEmail({ email: target.email, displayName: target.displayName, purpose: "reset_password", token });
+    await recordAdminAudit(admin, { category: "accounts", action: "account.reset_link", summary: `${delivered ? "Envió" : "Intentó enviar"} un enlace de recuperación a ${target.email}.`, entityType: "account", entityId: target.id, entityLabel: target.displayName ?? target.email, outcome: delivered ? "success" : "failure", metadata: { delivery: delivered ? "delivered" : "failed" } });
     return redirectWithNotice(request, returnTo, delivered ? "reset_link_sent" : "reset_delivery_error");
   }
 
@@ -56,6 +65,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     await db.update(users).set({ passwordHash: await hashPassword(password) }).where(eq(users.id, target.id));
     await db.delete(authSessions).where(eq(authSessions.userId, target.id));
     await db.delete(accountTokens).where(and(eq(accountTokens.userId, target.id), eq(accountTokens.purpose, "reset_password")));
+    await recordAdminAudit(admin, { category: "accounts", action: "account.password_update", summary: `Cambió la contraseña de la cuenta ${target.displayName ?? target.email} y cerró sus sesiones.`, entityType: "account", entityId: target.id, entityLabel: target.displayName ?? target.email, metadata: { sessionsRevoked: true, resetTokensRevoked: true } });
     return redirectWithNotice(request, returnTo, "password_updated");
   }
 
@@ -71,7 +81,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       )).limit(1);
       if (duplicateRut) return redirectWithNotice(request, returnTo, "duplicate_rut");
     }
-    await db.update(users).set({
+    const nextDetails = {
       displayName,
       firstName: identity.firstName || null,
       lastName: null,
@@ -81,7 +91,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       birthDate: identity.birthDate,
       city: identity.city,
       phone: identity.phone || null,
-    }).where(eq(users.id, target.id));
+    };
+    await db.update(users).set(nextDetails).where(eq(users.id, target.id));
+    await recordAdminAudit(admin, { category: "accounts", action: "account.details_update", summary: `Modificó los datos de la cuenta ${displayName}.`, entityType: "account", entityId: target.id, entityLabel: displayName, before: { displayName: target.displayName, firstName: target.firstName, documentType: target.documentType, documentNumber: target.documentNumber, foreignCountry: target.foreignCountry, birthDate: target.birthDate, city: target.city, phone: target.phone }, after: nextDetails });
     return redirectWithNotice(request, returnTo, "details_saved");
   }
 

@@ -77,6 +77,7 @@ function AdminNavigation({
       <Link className={pendingBugs > 0 ? "admin-nav-alert" : undefined} href="/admin/bugs">Testers{pendingBugs > 0 && <b>{pendingBugs}</b>}</Link>
       <Link href="/admin/cuentas">Cuentas</Link>
       <Link href="/admin/noticias">Noticias</Link>
+      <Link href="/admin/actividad">Actividad</Link>
       <Link href="/admin/configuracion">Configuración</Link>
     </nav>
   );

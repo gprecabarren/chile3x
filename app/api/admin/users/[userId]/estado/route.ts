@@ -5,6 +5,7 @@ import { authSessions, users } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin, safeAdminReturnTo } from "@/lib/auth";
 import { sendPortalEmail } from "@/lib/account-email";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
+import { recordAdminAudit } from "@/lib/admin-audit";
 
 function redirectWithNotice(request: Request, notice: string, returnTo = "/admin/cuentas") {
   const url = new URL(returnTo, request.url);
@@ -56,6 +57,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       if (!delivered) console.error("Could not send account disabled email", { userId });
     }
   }
+
+  await recordAdminAudit(admin, { category: "accounts", action: isActive ? "account.enable" : "account.disable", summary: `${isActive ? "Reactivó" : "Deshabilitó"} la cuenta ${target.displayName ?? target.email}.`, entityType: "account", entityId: target.id, entityLabel: target.displayName ?? target.email, before: { isActive: target.isActive }, after: { isActive } });
 
   return redirectWithNotice(request, "status_updated", returnTo);
 }

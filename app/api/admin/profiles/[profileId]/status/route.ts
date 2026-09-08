@@ -7,6 +7,7 @@ import { sendPortalEmail } from "@/lib/account-email";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { profilePublicPath } from "@/lib/profile";
 import { notifyProfileCitySubscribers } from "@/lib/profile-city-alerts";
+import { recordAdminAudit } from "@/lib/admin-audit";
 
 const allowedStatuses = new Set(["draft", "pending", "approved", "paused", "rejected", "expired"]);
 const allowedVerification = new Set(["unreviewed", "in_review", "reviewed"]);
@@ -31,7 +32,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return new Response("Solicitud no válida.", { status: 403 });
   }
 
-  if (!await getCurrentAdmin()) {
+  const admin = await getCurrentAdmin();
+  if (!admin) {
     return new Response("No autorizado.", { status: 401 });
   }
 
@@ -54,6 +56,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     displayName: profiles.displayName,
     slug: profiles.slug,
     handle: profiles.handle,
+    healthReviewStatus: profiles.healthReviewStatus,
+    isFeatured: profiles.isFeatured,
     ownerEmail: users.email,
     ownerName: users.displayName,
   }).from(profiles).innerJoin(users, eq(profiles.ownerId, users.id)).where(eq(profiles.id, profileId)).limit(1);
@@ -70,6 +74,23 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     ...(featuredInput === null ? {} : { isFeatured: featuredInput === "on" }),
     updatedAt: now,
   }).where(eq(profiles.id, profileId));
+
+  const nextFeatured = featuredInput === null ? existingProfile.isFeatured : featuredInput === "on";
+  await recordAdminAudit(admin, {
+    category: "profiles",
+    action: "profile.status_update",
+    entityType: "profile",
+    entityId: profileId,
+    entityLabel: existingProfile.displayName,
+    summary: `Actualizó los estados del anuncio ${existingProfile.displayName}.`,
+    before: {
+      status: existingProfile.status,
+      verificationStatus: existingProfile.verificationStatus,
+      healthReviewStatus: existingProfile.healthReviewStatus,
+      isFeatured: existingProfile.isFeatured,
+    },
+    after: { status, verificationStatus, healthReviewStatus, isFeatured: nextFeatured },
+  });
 
   if (status === "approved" && existingProfile.status !== "approved") {
     const settings = await getSiteSettings();

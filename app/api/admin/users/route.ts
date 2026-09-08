@@ -6,6 +6,7 @@ import { assertSameOrigin, getCurrentAdmin, hashPassword } from "@/lib/auth";
 import { readAccountIdentity } from "@/lib/account-data";
 import { MIN_PASSWORD_LENGTH } from "@/lib/password-policy";
 import { generateUniqueAccountUsername } from "@/lib/account-username";
+import { recordAdminAudit } from "@/lib/admin-audit";
 
 function redirectWithNotice(request: Request, notice: string) {
   const url = new URL("/admin/cuentas", request.url);
@@ -25,7 +26,8 @@ export async function POST(request: NextRequest) {
     return new Response("Solicitud no válida.", { status: 403 });
   }
 
-  if (!await getCurrentAdmin()) {
+  const admin = await getCurrentAdmin();
+  if (!admin) {
     return new Response("No autorizado.", { status: 401 });
   }
 
@@ -51,8 +53,9 @@ export async function POST(request: NextRequest) {
   }
 
   const username = await generateUniqueAccountUsername(displayName);
+  const userId = `usr_${crypto.randomUUID()}`;
   await db.insert(users).values({
-    id: `usr_${crypto.randomUUID()}`,
+    id: userId,
     email,
     username,
     displayName,
@@ -68,6 +71,7 @@ export async function POST(request: NextRequest) {
     city: identity.city,
     phone: identity.phone || null,
   });
+  await recordAdminAudit(admin, { category: "accounts", action: "account.create", summary: `Creó la cuenta ${displayName} (${email}).`, entityType: "account", entityId: userId, entityLabel: displayName, after: { email, username, displayName, role, documentType: identity.documentType, city: identity.city, isActive: true } });
 
   return redirectWithNotice(request, "created");
 }

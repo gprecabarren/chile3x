@@ -3,6 +3,7 @@ import { getDb } from "@/db";
 import { newsPosts } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { safeNewsCanonicalUrl, sanitizeNewsHtml, textFromHtml, uniqueNewsSlug } from "@/lib/news";
+import { recordAdminAudit } from "@/lib/admin-audit";
 
 export async function POST(request: NextRequest) {
   try { assertSameOrigin(request); } catch { return new Response("Solicitud no válida.", { status: 403 }); }
@@ -12,5 +13,6 @@ export async function POST(request: NextRequest) {
   const status = form.get("status") === "published" ? "published" as const : "draft" as const; const now = new Date().toISOString();
   const id = `news_${crypto.randomUUID()}`; const slug = await uniqueNewsSlug(String(form.get("slug") ?? title));
   await (await getDb()).insert(newsPosts).values({ id, authorId: admin.id, title, slug, excerpt: String(form.get("excerpt") ?? "").trim().slice(0, 280), contentHtml, coverMediaId: String(form.get("cover_media_id") ?? "").trim() || null, status, seoTitle: String(form.get("seo_title") ?? "").trim().slice(0, 70) || null, metaDescription: String(form.get("meta_description") ?? "").trim().slice(0, 170) || null, focusKeyword: String(form.get("focus_keyword") ?? "").trim().slice(0, 100) || null, canonicalUrl: safeNewsCanonicalUrl(String(form.get("canonical_url") ?? "")), ogTitle: String(form.get("og_title") ?? "").trim().slice(0, 100) || null, ogDescription: String(form.get("og_description") ?? "").trim().slice(0, 200) || null, noindex: form.get("noindex") === "on", publishedAt: status === "published" ? now : null, updatedAt: now });
+  await recordAdminAudit(admin, { category: "news", action: "news.create", summary: `Creó la noticia ${title}.`, entityType: "news", entityId: id, entityLabel: title, after: { title, slug, status, noindex: form.get("noindex") === "on" } });
   return NextResponse.redirect(new URL(`/admin/noticias?notice=created&edit=${id}`, request.url), 303);
 }

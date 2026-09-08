@@ -4,6 +4,7 @@ import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { createProfile, ProfileValidationError, readProfileSubmission } from "@/lib/profile-submission";
+import { recordAdminAudit } from "@/lib/admin-audit";
 
 function destinationFor(userId: string, email: string, request: Request) {
   const url = new URL("/admin/perfiles", request.url);
@@ -19,7 +20,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return new Response("Solicitud no válida.", { status: 403 });
   }
 
-  if (!await getCurrentAdmin()) return new Response("No autorizado.", { status: 401 });
+  const admin = await getCurrentAdmin();
+  if (!admin) return new Response("No autorizado.", { status: 401 });
 
   const [{ userId }, formData] = await Promise.all([params, request.formData()]);
   const db = await getDb();
@@ -36,7 +38,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   try {
     const submission = readProfileSubmission(formData);
-    await createProfile(owner.id, submission);
+    const profileId = await createProfile(owner.id, submission);
+    await recordAdminAudit(admin, { category: "profiles", action: "profile.create", summary: `Creó el anuncio ${submission.displayName} para ${owner.email}.`, entityType: "profile", entityId: profileId, entityLabel: submission.displayName, after: { ownerId: owner.id, type: submission.type, status: submission.intent === "submit" ? "pending" : "draft", region: submission.region, city: submission.city, handle: submission.handle } });
     const url = destinationFor(owner.id, owner.email, request);
     url.searchParams.set("notice", "profile_created");
     return NextResponse.redirect(url, 303);

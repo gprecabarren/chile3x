@@ -61,8 +61,9 @@ export default async function AdminHome() {
         <section className="admin-note">
           <span>01</span>
           <div>
-            <h2>El primer propietario está registrado</h2>
-            <p>El acceso se concede únicamente a correos marcados como administradores y verificados por GitHub. Cuando agreguemos otro dueño, se crea su registro antes de darle entrada.</p>
+            <h2>Administradores identificados y trazables</h2>
+            <p>Cada persona autorizada entra con su propio GitHub y conserva una identidad administrativa separada. Aprobaciones, cambios y accesos privados quedan registrados con fecha y hora.</p>
+            <Link className="text-link" href="/admin/actividad">Abrir historial administrativo →</Link>
           </div>
         </section>
       </div>

@@ -49,6 +49,7 @@ Actualmente incluye:
 - Contenido exclusivo asociado a la cuenta del anunciante: puede mostrarse al final de un único anuncio Escort, pero permanece disponible para los compradores autorizados incluso si el anuncio se pausa o se elimina.
 - Biblioteca privada para compradores en `Mi cuenta > Mi contenido`, donde cada acceso se muestra con el nombre de usuario de la cuenta vendedora, sin exponer correos.
 - Panel administrativo para cuentas, anuncios, medios, documentos, reportes, reseñas, SEO, contenidos, noticias, FAQ, reglas de publicación y ajustes del sitio.
+- Historial administrativo separado y paginado: identifica a cada administrador por su cuenta interna y GitHub, registra fecha/hora, resultado, objeto afectado y valores anteriores/posteriores, con filtros por administrador, área, acción, objeto, resultado y rango de fechas.
 - Gestión de cuentas desde administración: búsqueda simple y avanzada, filtros combinables, detalle de datos, anuncios asociados, estado, creación de anuncios asistida, contraseña temporal, enlace de recuperación, WhatsApp y llamada directa cuando existe teléfono.
 - Noticias administrables con metadatos SEO, imágenes moderadas y URLs públicas.
 - Páginas de términos, privacidad, reglas de publicación, FAQ, contacto y quiénes somos editables desde configuración cuando corresponda.
@@ -96,6 +97,8 @@ Los archivos heredados de la antigua galería privada se migran a este modelo si
 
 - Sesiones protegidas por cookies seguras y contraseñas derivadas con PBKDF2.
 - GitHub OAuth solo para administración del sitio.
+- Cada GitHub autorizado queda vinculado a una cuenta administrativa independiente; nunca se reutiliza la identidad de otro administrador. El historial conserva una copia del nombre, correo y usuario de GitHub usados en el momento de cada acción, incluso si más adelante cambia la cuenta.
+- Contraseñas, hashes, tokens, secretos y claves de R2 se eliminan automáticamente de las capturas del historial administrativo.
 - Autorización comprobada en servidor en todas las rutas privadas de cuentas, archivos, moderación y contenido exclusivo.
 - R2 no expone un bucket público: cada archivo se entrega mediante una ruta que comprueba propietario, administrador, estado de moderación y permiso de acceso.
 - Documentos privados, evidencias de reportes y contenido exclusivo no se incluyen en respuestas públicas ni en sitemap.
@@ -111,7 +114,7 @@ Los archivos heredados de la antigua galería privada se migran a este modelo si
 - `robots.txt`, `sitemap.xml`, `llms.txt`, imágenes con texto alternativo y rutas 404 propias.
 - Metadatos sociales específicos para páginas públicas y anuncios compartibles.
 - Google Tag Manager y Google Analytics se cargan únicamente tras el consentimiento de medición.
-- El enlace de fuente preferida de Google se ubica en el pie de página y conserva una presentación discreta para no competir con la navegación principal.
+- El antiguo enlace de fuente preferida de Google permanece desactivado y no se muestra en el encabezado ni en el pie de página.
 
 ## Infraestructura
 
@@ -146,6 +149,15 @@ Las uniones de infraestructura están definidas en [`.openai/hosting.json`](.ope
 2. Revisar los archivos agrupados por anuncio y las bibliotecas exclusivas agrupadas por cuenta.
 3. Aprobar, cancelar aprobación o eliminar. La cancelación devuelve el archivo a revisión sin borrarlo.
 4. Verificar primero el anuncio y después sus documentos y medios relacionados.
+
+### Revisar el historial administrativo
+
+1. Abrir `Administración > Actividad`.
+2. Buscar por administrador, cuenta, anuncio, correo o identificador, o combinar filtros de área, acción, objeto, resultado y fechas.
+3. Abrir el detalle de un evento para comparar los valores anteriores y posteriores. Los eventos de eliminación conservan solo metadatos seguros, nunca el archivo ni sus claves privadas.
+4. Seguir el enlace del objeto afectado para volver a la cuenta, anuncio, reporte, noticia, medio o ajuste relacionado.
+
+El registro comienza desde la migración que habilita esta función; no inventa ni reconstruye acciones históricas anteriores. Se registran inicios y cierres de sesión administrativa, cambios de cuentas y contraseñas, creación y estados de anuncios, moderación y eliminación de medios, reseñas, reportes, noticias, configuración, respuestas a testers y aperturas explícitas de documentos o evidencias privadas. Las visitas normales entre páginas del panel no generan eventos para evitar ruido y escrituras innecesarias.
 
 ### Preparar fotos de la galería pública
 

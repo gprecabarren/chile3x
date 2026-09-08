@@ -43,6 +43,23 @@ export const authSessions = sqliteTable("auth_sessions", {
   index("auth_sessions_user_expires_idx").on(table.userId, table.expiresAt),
 ]);
 
+// GitHub administrators keep an independent internal account and audit
+// identity. The allow-list authorizes a login; this mapping makes actions
+// attributable to the person who actually authenticated.
+export const adminGithubIdentities = sqliteTable("admin_github_identities", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  githubUserId: text("github_user_id").notNull(),
+  githubLogin: text("github_login").notNull(),
+  githubEmail: text("github_email"),
+  lastLoginAt: text("last_login_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  createdAt,
+}, (table) => [
+  uniqueIndex("admin_github_identity_user_unique").on(table.userId),
+  uniqueIndex("admin_github_identity_id_unique").on(table.githubUserId),
+  uniqueIndex("admin_github_identity_login_unique").on(table.githubLogin),
+]);
+
 export const accountTokens = sqliteTable("account_tokens", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -61,6 +78,31 @@ export const siteSettings = sqliteTable("site_settings", {
   updatedBy: text("updated_by").references(() => users.id, { onDelete: "set null" }),
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
+
+export const adminAuditLogs = sqliteTable("admin_audit_logs", {
+  id: text("id").primaryKey(),
+  actorUserId: text("actor_user_id").references(() => users.id, { onDelete: "set null" }),
+  actorGithubLogin: text("actor_github_login"),
+  actorEmail: text("actor_email").notNull(),
+  actorName: text("actor_name"),
+  category: text("category").notNull(),
+  action: text("action").notNull(),
+  outcome: text("outcome", { enum: ["success", "failure"] }).notNull().default("success"),
+  entityType: text("entity_type").notNull(),
+  entityId: text("entity_id"),
+  entityLabel: text("entity_label"),
+  summary: text("summary").notNull(),
+  beforeData: text("before_data"),
+  afterData: text("after_data"),
+  metadata: text("metadata"),
+  createdAt,
+}, (table) => [
+  index("admin_audit_created_idx").on(table.createdAt),
+  index("admin_audit_actor_created_idx").on(table.actorUserId, table.createdAt),
+  index("admin_audit_category_created_idx").on(table.category, table.createdAt),
+  index("admin_audit_action_created_idx").on(table.action, table.createdAt),
+  index("admin_audit_entity_created_idx").on(table.entityType, table.entityId, table.createdAt),
+]);
 
 export const profiles = sqliteTable("profiles", {
   id: text("id").primaryKey(),

@@ -32,6 +32,12 @@ function formatDate(value: string | null) {
   }).format(new Date(instant(value)));
 }
 
+function administratorName(displayName: string | null, githubLogin: string) {
+  return displayName?.trim().toLowerCase() === "propietario chile3x"
+    ? "Propietario"
+    : displayName || `@${githubLogin}`;
+}
+
 export default async function AdministratorsPage({ searchParams }: { searchParams: Promise<{ notice?: string }> }) {
   const admin = await getCurrentAdmin();
   if (!admin) redirect("/api/auth/github/start?return_to=/admin/administradores");
@@ -98,7 +104,7 @@ export default async function AdministratorsPage({ searchParams }: { searchParam
       <header><p>PERSONAS AUTORIZADAS</p><h2>{grants.length} acceso{grants.length === 1 ? "" : "s"} registrado{grants.length === 1 ? "" : "s"}</h2></header>
       <div className="admin-access-cards">{grants.map((grant) => <article className={`admin-access-card${grant.isActive ? "" : " is-revoked"}`} key={grant.id}>
         <header>
-          <div><span className="admin-access-role">{ADMIN_ACCESS_LABELS[grant.accessLevel]}</span><h3>{grant.displayName || `@${grant.githubLogin}`}</h3><Link href={`https://github.com/${encodeURIComponent(grant.githubLogin)}`} target="_blank" rel="noreferrer">@{grant.githubLogin} ↗</Link></div>
+          <div><span className="admin-access-role">{ADMIN_ACCESS_LABELS[grant.accessLevel]}</span><h3>{administratorName(grant.displayName, grant.githubLogin)}</h3><Link href={`https://github.com/${encodeURIComponent(grant.githubLogin)}`} target="_blank" rel="noreferrer">@{grant.githubLogin} ↗</Link></div>
           <span className={`admin-access-status${grant.isActive ? " is-active" : ""}`}>{grant.isActive ? (grant.userId ? "Activo" : "Invitado") : "Revocado"}</span>
         </header>
         {grant.isProtectedOwner && <p className="admin-access-protected">Identidad propietaria protegida. No puede ser removida ni modificada desde el panel.</p>}

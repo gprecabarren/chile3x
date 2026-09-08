@@ -7,8 +7,8 @@ import { safeJsonLd } from "@/lib/json-ld";
 import { publicPageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = publicPageMetadata({
-  title: "Quiénes somos",
-  description: "Chile3X es un directorio nacional de escorts y damas de compañía en Chile, con perfiles por ciudad, agencias y arriendos para adultos.",
+  title: "Quiénes somos: misión y moderación de Chile3X",
+  description: "Conoce la misión, la cobertura, el proceso de moderación y los próximos pasos de Chile3X, una plataforma chilena destinada a personas adultas.",
   path: "/quienes-somos",
   socialTitle: "Quiénes somos | Chile3X",
 });
@@ -29,8 +29,8 @@ export default async function AboutPage() {
   const aboutSchema = {
     "@context": "https://schema.org",
     "@type": "AboutPage",
-    name: "Directorio nacional de escorts y damas de compañía | Chile3X",
-    description: "Chile3X es un directorio nacional de escorts y damas de compañía en Chile, con agencias y arriendos para adultos por ciudad.",
+    name: "Quiénes somos | Chile3X",
+    description: "Misión, cobertura territorial y proceso de moderación de Chile3X.",
     url: `${siteUrl}/quienes-somos`,
     inLanguage: "es-CL",
     isPartOf: { "@type": "WebSite", name: "Chile3X", url: siteUrl },
@@ -41,8 +41,8 @@ export default async function AboutPage() {
     <section className="about-hero">
       <div className="about-hero-copy">
         <p className="eyebrow">CHILE3X · TODO CHILE</p>
-        <h1>Un directorio nacional de escorts, <em>hecho con otra mirada.</em></h1>
-        <p>Chile3X reúne escorts y damas de compañía en Chile, agencias y arriendos para adultos en un mismo lugar: una propuesta elegante, clara y pensada para llegar más allá de las ciudades de siempre.</p>
+        <h1>Un directorio para adultos, <em>hecho con otra mirada.</em></h1>
+        <p>Chile3X reúne publicaciones independientes en un mismo lugar: una propuesta clara, territorial y pensada para ofrecer información ordenada a personas mayores de edad.</p>
         <div className="about-hero-actions">
           <Link className="button button-primary" href="/registro">Crear una cuenta</Link>
           <Link className="button button-outline" href="/escorts">Explorar escorts</Link>
@@ -61,7 +61,7 @@ export default async function AboutPage() {
     <section className="about-intro">
       <p className="eyebrow">NUESTRA PROPUESTA</p>
       <div>
-        <h2>Escorts en Chile, <em>con más cobertura.</em></h2>
+        <h2>Cobertura nacional, <em>con más orden.</em></h2>
         <p>Chile3X nace para construir un espacio nacional para personas adultas que ofrecen compañía y servicios afines, sin excluir a hombres, mujeres, personas trans, agencias ni arriendos que cumplan las reglas del portal.</p>
         <p>Queremos que encontrar o publicar un perfil sea simple: ciudades visibles, filtros útiles, información ordenada, contacto directo y una plataforma que se vea tan bien como funciona.</p>
       </div>

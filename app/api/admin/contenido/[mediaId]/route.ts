@@ -5,6 +5,7 @@ import { exclusiveContentMedia } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { findExclusiveContentMedia } from "@/lib/exclusive-content";
 import { recordAdminAudit } from "@/lib/admin-audit";
+import { adminHasCapability } from "@/lib/admin-permissions";
 
 function destination(request: NextRequest, formData: FormData, notice: string) {
   const requested = String(formData.get("return_to") ?? "");
@@ -16,6 +17,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try { assertSameOrigin(request); } catch { return new Response("Solicitud no válida.", { status: 403 }); }
   const admin = await getCurrentAdmin();
   if (!admin) return NextResponse.redirect(new URL("/api/auth/github/start?return_to=/admin/medios", request.url), 303);
+  if (!adminHasCapability(admin, "media.moderate")) return new Response("No tienes permiso para moderar medios.", { status: 403 });
   const { mediaId } = await params;
   const formData = await request.formData();
   const record = await findExclusiveContentMedia(mediaId);

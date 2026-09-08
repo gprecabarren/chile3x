@@ -6,6 +6,7 @@ import { assertSameOrigin, getCurrentAdmin, safeAdminReturnTo } from "@/lib/auth
 import { sendPortalEmail } from "@/lib/account-email";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { recordAdminAudit } from "@/lib/admin-audit";
+import { adminHasCapability } from "@/lib/admin-permissions";
 
 function redirectWithNotice(request: Request, notice: string, returnTo = "/admin/cuentas") {
   const url = new URL(returnTo, request.url);
@@ -22,6 +23,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const admin = await getCurrentAdmin();
   if (!admin) return new Response("No autorizado.", { status: 401 });
+  if (!adminHasCapability(admin, "accounts.manage")) return new Response("No tienes permiso para administrar cuentas.", { status: 403 });
 
   const [{ userId }, formData] = await Promise.all([params, request.formData()]);
   const returnTo = safeAdminReturnTo(typeof formData.get("return_to") === "string" ? String(formData.get("return_to")) : null);

@@ -1,5 +1,5 @@
 const CACHE_VERSION = "anonymous-documents-v2";
-export const PUBLIC_PAGE_CACHE_SECONDS = 120;
+export const PUBLIC_PAGE_CACHE_SECONDS = 600;
 
 export function hasPrivateSession(request: Request) {
   return request.headers.has("authorization")

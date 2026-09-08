@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getCurrentAdmin } from "@/lib/auth";
+import { adminHasCapability } from "@/lib/admin-permissions";
 import { getSiteSettings } from "@/lib/site-settings";
 import { readFaqEntries } from "@/lib/faq";
 import { readPublicationRules } from "@/lib/publication-rules";
@@ -22,6 +23,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminSettingsSectionPage({ params, searchParams }: { params: Promise<{ section: string }>; searchParams: Promise<{ saved?: string }> }) {
   const [{ section }, admin, values, query] = await Promise.all([params, getCurrentAdmin(), getSiteSettings(), searchParams]);
   if (!admin) redirect(`/api/auth/github/start?return_to=/admin/configuracion/${section}`);
+  if (!adminHasCapability(admin, "settings.manage")) redirect("/admin/acceso-denegado?reason=permission");
   if (!(section in sectionDetails)) notFound();
   const name = section as SectionName;
   const details = sectionDetails[name];

@@ -4,12 +4,14 @@ import { getDb } from "@/db";
 import { profileReports } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { recordAdminAudit } from "@/lib/admin-audit";
+import { adminHasCapability } from "@/lib/admin-permissions";
 
 const statuses = new Set(["reviewed", "resolved", "dismissed"]);
 export async function POST(request: NextRequest, { params }: { params: Promise<{ reportId: string }> }) {
   try { assertSameOrigin(request); } catch { return new Response("Solicitud no válida.", { status: 403 }); }
   const admin = await getCurrentAdmin();
   if (!admin) return new Response("No autorizado.", { status: 401 });
+  if (!adminHasCapability(admin, "reports.manage")) return new Response("No tienes permiso para administrar reportes.", { status: 403 });
   const form = await request.formData();
   const status = String(form.get("status") ?? "");
   const adminNote = String(form.get("admin_note") ?? "").trim().slice(0, 1000);

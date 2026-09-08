@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentAdmin } from "@/lib/auth";
+import { adminHasCapability } from "@/lib/admin-permissions";
 import { AdminPageHeading, AdminShell } from "../_components";
 
 const sections = [
@@ -17,6 +18,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminSettingsPage({ searchParams }: { searchParams: Promise<{ saved?: string }> }) {
   const admin = await getCurrentAdmin();
   if (!admin) redirect("/api/auth/github/start?return_to=/admin/configuracion");
+  if (!adminHasCapability(admin, "settings.manage")) redirect("/admin/acceso-denegado?reason=permission");
   const params = await searchParams;
 
   return <AdminShell user={admin}><div className="admin-content">

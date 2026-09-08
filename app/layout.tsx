@@ -16,7 +16,6 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     metadataBase: new URL(siteUrl),
-    alternates: { canonical: "/" },
     title: { default: settings.site_title, template: `%s | Chile3X` },
     description: settings.site_description,
     robots: indexingEnabled ? { index: true, follow: true } : { index: false, follow: false },

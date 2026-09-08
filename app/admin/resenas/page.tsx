@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { profiles, reviews, users } from "@/db/schema";
 import { getCurrentAdmin } from "@/lib/auth";
+import { adminHasCapability } from "@/lib/admin-permissions";
 import { AdminPageHeading, AdminShell } from "../_components";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,7 @@ const noticeText: Record<string, string> = { approved: "La reseña fue publicada
 export default async function AdminReviewsPage({ searchParams }: { searchParams: Promise<{ notice?: string; estado?: string }> }) {
   const admin = await getCurrentAdmin();
   if (!admin) redirect("/api/auth/github/start?return_to=/admin/resenas");
+  if (!adminHasCapability(admin, "reviews.moderate")) redirect("/admin/acceso-denegado?reason=permission");
   const params = await searchParams;
   const selected = ["pending", "approved", "rejected"].includes(params.estado ?? "") ? params.estado! : "pending";
   const rows = await (await getDb()).select({ review: reviews, profileName: profiles.displayName, profileSlug: profiles.slug, authorName: users.displayName, authorEmail: users.email })

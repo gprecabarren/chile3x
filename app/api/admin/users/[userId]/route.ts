@@ -7,6 +7,7 @@ import { MIN_PASSWORD_LENGTH } from "@/lib/password-policy";
 import { getDb } from "@/db";
 import { accountTokens, authSessions, users } from "@/db/schema";
 import { recordAdminAudit } from "@/lib/admin-audit";
+import { adminHasCapability } from "@/lib/admin-permissions";
 
 function redirectWithNotice(request: Request, returnTo: string, notice: string) {
   const url = new URL(returnTo, request.url);
@@ -28,6 +29,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const admin = await getCurrentAdmin();
   if (!admin) return new Response("No autorizado.", { status: 401 });
+  if (!adminHasCapability(admin, "accounts.manage")) return new Response("No tienes permiso para administrar cuentas.", { status: 403 });
 
   const [{ userId }, formData] = await Promise.all([params, request.formData()]);
   const fallback = `/admin/cuentas/${encodeURIComponent(userId)}`;

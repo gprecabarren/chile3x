@@ -6,6 +6,7 @@ import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { validateFaqEntries } from "@/lib/faq";
 import { validatePublicationRules } from "@/lib/publication-rules";
 import { recordAdminAudit } from "@/lib/admin-audit";
+import { adminHasCapability } from "@/lib/admin-permissions";
 
 const allowedSettings = {
   listing_open: new Set(["closed", "waitlist", "open"]),
@@ -37,6 +38,7 @@ export async function POST(request: NextRequest) {
 
   const admin = await getCurrentAdmin();
   if (!admin) return new Response("No autorizado.", { status: 401 });
+  if (!adminHasCapability(admin, "settings.manage")) return new Response("No tienes permiso para cambiar la configuración.", { status: 403 });
 
   const formData = await request.formData();
   const updatedAt = new Date().toISOString();

@@ -5,6 +5,7 @@ import { users } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { createProfile, ProfileValidationError, readProfileSubmission } from "@/lib/profile-submission";
 import { recordAdminAudit } from "@/lib/admin-audit";
+import { adminHasCapability } from "@/lib/admin-permissions";
 
 function destinationFor(userId: string, email: string, request: Request) {
   const url = new URL("/admin/perfiles", request.url);
@@ -22,6 +23,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const admin = await getCurrentAdmin();
   if (!admin) return new Response("No autorizado.", { status: 401 });
+  if (!adminHasCapability(admin, "accounts.manage")) return new Response("No tienes permiso para administrar cuentas.", { status: 403 });
 
   const [{ userId }, formData] = await Promise.all([params, request.formData()]);
   const db = await getDb();

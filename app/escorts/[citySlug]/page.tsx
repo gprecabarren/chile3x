@@ -10,7 +10,6 @@ import { getCurrentUser } from "@/lib/auth";
 import { safeJsonLd } from "@/lib/json-ld";
 import { profilePublicPath } from "@/lib/profile";
 import { publicPageMetadata } from "@/lib/seo";
-import { formatRegionName } from "@/app/locations";
 
 export const dynamic = "force-dynamic";
 
@@ -60,7 +59,7 @@ export default async function CityPage({ params, searchParams }: CityPageProps) 
         <StoryRail stories={stories} city={city.city} withActivity />
         <div className="directory-results-heading"><div><p className="eyebrow">{city.city.toUpperCase()}</p><h2>{profiles.length} publicación{profiles.length === 1 ? "" : "es"} visible{profiles.length === 1 ? "" : "s"}</h2></div></div>
         <CityProfileSections city={city.city} profiles={profiles} />
-        <SeoContent city={city.city} region={formatRegionName(city.region)} count={profiles.length} />
+        <SeoContent city={city.city} region={city.region} count={profiles.length} />
       </section>
     </DirectoryShell>
   );

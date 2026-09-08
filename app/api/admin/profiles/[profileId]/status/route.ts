@@ -8,6 +8,7 @@ import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { profilePublicPath } from "@/lib/profile";
 import { notifyProfileCitySubscribers } from "@/lib/profile-city-alerts";
 import { recordAdminAudit } from "@/lib/admin-audit";
+import { adminHasCapability } from "@/lib/admin-permissions";
 
 const allowedStatuses = new Set(["draft", "pending", "approved", "paused", "rejected", "expired"]);
 const allowedVerification = new Set(["unreviewed", "in_review", "reviewed"]);
@@ -36,6 +37,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!admin) {
     return new Response("No autorizado.", { status: 401 });
   }
+  if (!adminHasCapability(admin, "profiles.moderate")) return new Response("No tienes permiso para moderar anuncios.", { status: 403 });
 
   const formData = await request.formData();
   const status = formData.get("status");

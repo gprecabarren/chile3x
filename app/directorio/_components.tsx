@@ -7,7 +7,7 @@ import { getCityPath, getProfileDisplayTags, type PublicProfile } from "@/lib/di
 import { profilePublicPath, readProfilePrices } from "@/lib/profile";
 import { getPortalContacts, getPortalWhatsappLink } from "@/lib/site-contacts";
 import { getSiteSettings } from "@/lib/site-settings";
-import { formatRegionName, regions } from "@/app/locations";
+import { formatRegionName, getRegionByTitle } from "@/app/locations";
 import { PublicMobileMenu } from "./PublicMobileMenu";
 
 const typeLabel = {
@@ -103,7 +103,7 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
         </nav>
         <div className={`public-header-actions${hasAnySession ? " is-signed-in" : ""}`} aria-label="Acciones de cuenta">
           {!hasAnySession && <Link className="button button-outline" href="/registro">Registrarse</Link>}
-          <Link className="button button-primary" href="/mi-cuenta/nuevo-perfil" prefetch={false}>Publicar anuncio</Link>
+          <Link className="button button-primary" href="/ingresar?return_to=/mi-cuenta/nuevo-perfil" prefetch={false}>Publicar anuncio</Link>
         </div>
       </header>
     </>
@@ -147,7 +147,7 @@ export function PortalContactIcon({ kind }: { kind: "whatsapp" | "telegram" | "i
   if (kind === "arsmate") return <>
     {/* El recurso se sirve desde Arsmate para conservar su marca oficial vigente. */}
     {/* eslint-disable-next-line @next/next/no-img-element */}
-    <img className="arsmate-brand-mark" src="https://arsmate.com/LOGO-CELESTE.png" alt="" />
+    <img className="arsmate-brand-mark" src="https://arsmate.com/LOGO-CELESTE.png" alt="" width="58" height="22" />
   </>;
   return <span className="arsmate-icon" aria-hidden="true">OF</span>;
 }
@@ -165,15 +165,15 @@ export function OadBadge() {
   return <a className="oad-badge" href="https://openadultdirectory.com/escorts/" target="_blank" rel="noreferrer" aria-label="Ver Chile3X en Open Adult Directory">
     {/* La insignia se mantiene sin optimización para no generar transformaciones ni cobros de imágenes. */}
     {/* eslint-disable-next-line @next/next/no-img-element */}
-    <img src={oadBadgeImage} alt="Listed on Open Adult Directory" />
+    <img src={oadBadgeImage} alt="Listed on Open Adult Directory" width="98" height="43" />
   </a>;
 }
 
 export function AngelisNetBadge() {
-  return <a className="angelisnet-badge" href="https://www.angelisnet.com" target="_blank" rel="noreferrer" aria-label="Visitar AngelisNET">
+  return <a className="angelisnet-badge" href="https://www.angelisnet.com/es/" target="_blank" rel="nofollow sponsored noreferrer" aria-label="Visitar AngelisNET">
     {/* El logo oficial se sirve desde AngelisNET para mantener la insignia vigente. */}
     {/* eslint-disable-next-line @next/next/no-img-element */}
-    <img src={angelisNetBadgeImage} alt="Adult Live Sex Cams - AngelisNET" />
+    <img src={angelisNetBadgeImage} alt="Adult Live Sex Cams - AngelisNET" width="118" height="31" />
   </a>;
 }
 
@@ -181,7 +181,7 @@ export function LaEstokadaBadge() {
   return <a className="laestokada-badge" href="https://www.laestokada.cl/foro/" target="_blank" rel="noreferrer" aria-label="Visitar el foro La EstoKada">
     {/* El logo oficial se sirve desde La EstoKada para conservar la insignia vigente. */}
     {/* eslint-disable-next-line @next/next/no-img-element */}
-    <img src={laEstokadaBadgeImage} alt="Foro La EstoKada" loading="lazy" />
+    <img src={laEstokadaBadgeImage} alt="Foro La EstoKada" width="128" height="31" loading="lazy" />
   </a>;
 }
 
@@ -259,14 +259,42 @@ export function CityProfileSections({ city, profiles }: CityProfileSectionsProps
 }
 
 export function SeoContent({ city, region, count }: { city: string; region: string; count: number }) {
-  const nearbyCities = regions.find((item) => item.title === region)?.cities.filter((item) => item !== city) ?? [];
+  const regionInfo = getRegionByTitle(region);
+  const nearbyCities = regionInfo?.cities.filter((item) => item !== city) ?? [];
+  const regionName = formatRegionName(region);
+  const regionalContext: Record<string, string> = {
+    tarapaca: "Esta guía conecta la búsqueda local de Iquique con la cobertura disponible en el norte de Chile.",
+    antofagasta: "La cobertura de Antofagasta y Calama permite revisar opciones dentro de una misma región sin mezclar resultados de otras zonas.",
+    atacama: "En Atacama puedes continuar la búsqueda entre Caldera, Copiapó y Vallenar desde enlaces territoriales directos.",
+    coquimbo: "La navegación de Coquimbo relaciona La Serena y Ovalle para comparar publicaciones visibles dentro de la región.",
+    valparaiso: "En Valparaíso la guía separa Los Andes, Quillota, Valparaíso y Viña del Mar para mantener una intención local clara.",
+    ohiggins: "La cobertura de O’Higgins enlaza Rancagua y San Fernando sin reemplazar la búsqueda específica de cada ciudad.",
+    maule: "En el Maule puedes pasar entre Curicó, Linares y Talca manteniendo filtros y páginas locales independientes.",
+    biobio: "La guía del Biobío conecta Concepción y Los Ángeles mediante rutas locales diferenciadas.",
+    "la-araucania": "En La Araucanía puedes comparar la disponibilidad publicada en Pucón y Temuco desde sus páginas propias.",
+    "los-lagos": "La cobertura de Los Lagos organiza Castro, Osorno y Puerto Montt como destinos locales separados.",
+    aysen: "La cobertura de Aysén se incorporará cuando existan ciudades y publicaciones habilitadas para esa región.",
+    "magallanes-y-antartica-chilena": "Punta Arenas cuenta con una ruta propia dentro de la cobertura del extremo sur de Chile.",
+    "metropolitana-de-santiago": "En la Región Metropolitana cada comuna cubierta dispone de una página independiente para evitar mezclar búsquedas locales.",
+    "los-rios": "Valdivia dispone de una guía local propia dentro de la cobertura de la Región de Los Ríos.",
+    "arica-y-parinacota": "Arica cuenta con una entrada local diferenciada para las búsquedas del extremo norte del país.",
+    nuble: "Chillán dispone de una guía específica dentro de la cobertura de la Región de Ñuble.",
+  };
   return (
     <section className="seo-content">
       <p className="eyebrow">GUÍA LOCAL</p>
       <h2>Escorts y damas de compañía en {city}</h2>
-      <p>Si buscas una escort en {city}, explora perfiles revisados de escorts y damas de compañía, además de agencias y arriendos para personas adultas. Cada aviso visible pasa por moderación antes de entrar al directorio de Chile3X.</p>
-      <p>{count ? `Actualmente hay ${count} perfil${count === 1 ? "" : "es"} visible${count === 1 ? "" : "s"} en ${city}; utiliza los filtros para comparar categorías, atributos y servicios.` : `La disponibilidad de escorts y damas de compañía en ${city} se irá ampliando con nuevas publicaciones revisadas.`}</p>
-      <nav className="seo-content-links" aria-label={`Explorar escorts cerca de ${city}`}><Link href="/escorts">Ver escorts en Chile</Link>{nearbyCities.map((nearbyCity) => <Link href={getCityPath(nearbyCity)} key={nearbyCity}>Escorts en {nearbyCity}</Link>)}</nav>
+      <p>Esta página reúne publicaciones asociadas específicamente a {city}, {regionName}. Puedes revisar fotografías, categorías y datos entregados por cada anunciante antes de usar sus canales de contacto directo. Chile3X no participa en pagos ni acuerdos privados.</p>
+      <p>{regionalContext[regionInfo?.id ?? ""] ?? `La ruta de ${city} forma parte de la cobertura territorial de Chile3X y mantiene sus resultados separados de otras ciudades.`}</p>
+      <h3>Cómo explorar publicaciones en {city}</h3>
+      <p>{count ? `Hay ${count} publicación${count === 1 ? "" : "es"} visible${count === 1 ? "" : "s"} en esta búsqueda. Usa los filtros para acotar por categoría, atributos o servicios y abre cada perfil para consultar su información aprobada.` : `Todavía no hay publicaciones visibles para esta búsqueda. La página se mantiene disponible para incorporar nuevos avisos una vez que completen la revisión correspondiente.`} Si necesitas entender la moderación, consulta las preguntas frecuentes y las reglas antes de publicar o contactar.</p>
+      <nav className="seo-content-links" aria-label={`Información y ciudades relacionadas con ${city}`}>
+        <Link href="/escorts">Directorio de escorts en Chile</Link>
+        {nearbyCities.map((nearbyCity) => <Link href={getCityPath(nearbyCity)} key={nearbyCity}>Escorts en {nearbyCity}</Link>)}
+        <Link href="/faq">Preguntas frecuentes</Link>
+        <Link href="/reglas-de-publicacion">Reglas de publicación</Link>
+        <Link href="/noticias">Noticias y guías</Link>
+      </nav>
     </section>
   );
 }

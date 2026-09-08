@@ -26,7 +26,7 @@ export default async function FaqPage() {
     <section className="static-page-hero"><p className="eyebrow">AYUDA</p><h1>Preguntas <em>frecuentes.</em></h1><p>Información clara sobre el funcionamiento inicial de Chile3X.</p></section>
     <section className="static-page-content faq-content">
       {entries.map(({ question, answer }) => <details key={question}><summary>{question}</summary><p>{answer}</p></details>)}
-      <aside><h2>¿No encuentras una respuesta?</h2><p>Revisa nuestras reglas antes de publicar o usa uno de los canales oficiales del portal.</p><div><Link className="button button-primary" href="/contacto">Ir a contacto</Link><Link className="button button-outline" href="/reglas-de-publicacion">Ver reglas</Link></div></aside>
+      <aside><h2>¿No encuentras una respuesta?</h2><p>Revisa nuestras reglas antes de publicar, usa un canal oficial o vuelve a una página territorial para explorar publicaciones visibles.</p><div><Link className="button button-primary" href="/contacto">Ir a contacto</Link><Link className="button button-outline" href="/reglas-de-publicacion">Ver reglas</Link><Link className="button button-outline" href="/escorts">Directorio nacional</Link><Link className="button button-outline" href="/noticias">Noticias y guías</Link></div></aside>
     </section>
   </DirectoryShell>;
 }

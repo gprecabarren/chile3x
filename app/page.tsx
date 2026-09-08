@@ -12,13 +12,13 @@ import { safeJsonLd } from "@/lib/json-ld";
 import { socialCardImage, socialCardImageUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Escorts y damas de compañía en Chile",
+  title: "Chile3X: directorio adulto por ciudad en Chile",
   description:
-    "Encuentra escorts y damas de compañía en Chile por ciudad, región, categoría y servicios. Directorio nacional para adultos con perfiles revisados.",
+    "Explora Chile3X, un directorio nacional para adultos con publicaciones revisadas y navegación por ciudad, región, categoría y servicios.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Escorts y damas de compañía en Chile | Chile3X",
-    description: "Directorio nacional de escorts y damas de compañía: explora perfiles revisados por ciudad, categoría y servicios.",
+    title: "Chile3X | Directorio adulto por ciudad en Chile",
+    description: "Directorio nacional para adultos con perfiles revisados y cobertura por ciudad, categoría y servicios.",
     url: "/",
     locale: "es_CL",
     type: "website",
@@ -27,8 +27,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Escorts y damas de compañía en Chile | Chile3X",
-    description: "Directorio nacional de escorts y damas de compañía por ciudad, categoría y servicios.",
+    title: "Chile3X | Directorio adulto por ciudad en Chile",
+    description: "Perfiles revisados y cobertura territorial para personas adultas en Chile.",
     images: [socialCardImageUrl],
   },
 };
@@ -47,11 +47,8 @@ const directorySchema = {
   itemListElement: cityDirectory.map((city, index) => ({
     "@type": "ListItem",
     position: index + 1,
-    item: {
-      "@type": "WebPage",
-      "@id": `https://chile3x.cl/escorts/${city.citySlug}`,
-      name: `Escorts y damas de compañía en ${city.city}`,
-    },
+    url: `https://chile3x.cl/escorts/${city.citySlug}`,
+    name: `Escorts y damas de compañía en ${city.city}`,
   })),
 };
 
@@ -105,7 +102,7 @@ export default async function Home() {
       <section className="hero" id="explorar">
         <div className="hero-copy">
           <p className="eyebrow">DIRECTORIO ADULTO · TODO CHILE</p>
-          <h1>Escorts y damas de compañía <em>en Chile.</em></h1>
+          <h1>Directorio adulto por ciudad <em>en Chile.</em></h1>
           <p className="hero-text">
             Explora perfiles de escorts y damas de compañía, además de agencias y arriendos para adultos, por región, ciudad, categoría y servicios.
           </p>

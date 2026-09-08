@@ -2,7 +2,8 @@ import { and, eq, gt } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { cache } from "react";
 import { getDb } from "@/db";
-import { authSessions, users } from "@/db/schema";
+import { adminGithubAccess, authSessions, users } from "@/db/schema";
+import type { AdminAccessLevel } from "@/lib/admin-permissions";
 
 const ADMIN_SESSION_COOKIE = "chile3x_admin_session";
 const USER_SESSION_COOKIE = "chile3x_user_session";
@@ -26,7 +27,12 @@ export type AccountUser = {
   role: AccountRole;
 };
 
-export type AdminUser = AccountUser & { role: "admin" };
+export type AdminUser = AccountUser & {
+  role: "admin";
+  accessLevel: AdminAccessLevel;
+  githubLogin: string;
+  isProtectedOwner: boolean;
+};
 
 const TESTER_AUTO_APPROVAL_EMAIL = "chefcito_burrito@outlook.com";
 
@@ -213,7 +219,27 @@ const getSessionUser = cache(async function getSessionUser(cookieName: string): 
 
 export async function getCurrentAdmin(): Promise<AdminUser | null> {
   const user = await getSessionUser(ADMIN_SESSION_COOKIE);
-  return user?.role === "admin" ? { ...user, role: "admin" } : null;
+  if (user?.role !== "admin") return null;
+
+  // The grant is checked on every administrative request. Revoking access
+  // therefore takes effect immediately, even if a browser still has a valid
+  // session cookie.
+  const [grant] = await (await getDb()).select({
+    accessLevel: adminGithubAccess.accessLevel,
+    githubLogin: adminGithubAccess.githubLogin,
+    isProtectedOwner: adminGithubAccess.isProtectedOwner,
+  }).from(adminGithubAccess).where(and(
+    eq(adminGithubAccess.userId, user.id),
+    eq(adminGithubAccess.isActive, true),
+  )).limit(1);
+
+  return grant ? {
+    ...user,
+    role: "admin",
+    accessLevel: grant.accessLevel,
+    githubLogin: grant.githubLogin,
+    isProtectedOwner: grant.isProtectedOwner,
+  } : null;
 }
 
 export async function getCurrentUser() {

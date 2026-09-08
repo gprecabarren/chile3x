@@ -4,6 +4,7 @@ import { getDb } from "@/db";
 import { bugReportMessages, bugReports } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin, getCurrentUser } from "@/lib/auth";
 import { recordAdminAudit } from "@/lib/admin-audit";
+import { adminHasCapability } from "@/lib/admin-permissions";
 
 const statuses = new Set(["new", "reviewing", "waiting_tester", "in_progress", "resolved", "closed"]);
 
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const [report] = await db.select().from(bugReports).where(eq(bugReports.id, bugId)).limit(1);
   if (!report) return new Response("Reporte no encontrado.", { status: 404 });
 
-  const isAdmin = Boolean(admin);
+  const isAdmin = adminHasCapability(admin, "bugs.manage");
   const isReporter = user?.role === "tester" && user.id === report.reporterId;
   if (!isAdmin && !isReporter) return new Response("No autorizado.", { status: 403 });
   const body = String(form.get("body") ?? "").trim().slice(0, 2000);
@@ -30,6 +31,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const status = isAdmin ? (requestedStatus || report.status) : report.status === "waiting_tester" ? "reviewing" : report.status;
   await db.update(bugReports).set({ status: status as typeof bugReports.$inferInsert.status, updatedAt: new Date().toISOString() }).where(and(eq(bugReports.id, report.id), eq(bugReports.reporterId, report.reporterId)));
-  if (admin) await recordAdminAudit(admin, { category: "quality", action: "bug.update", summary: `${body ? "Respondió y " : ""}actualizó el reporte de tester ${report.title}.`, entityType: "bug_report", entityId: report.id, entityLabel: report.title, before: { status: report.status }, after: { status }, metadata: { responseAdded: Boolean(body), reporterId: report.reporterId } });
+  if (admin && isAdmin) await recordAdminAudit(admin, { category: "quality", action: "bug.update", summary: `${body ? "Respondió y " : ""}actualizó el reporte de tester ${report.title}.`, entityType: "bug_report", entityId: report.id, entityLabel: report.title, before: { status: report.status }, after: { status }, metadata: { responseAdded: Boolean(body), reporterId: report.reporterId } });
   return redirectTo(request, isAdmin ? `/admin/bugs?estado=${status}&notice=updated` : "/mi-cuenta/pruebas?notice=updated");
 }

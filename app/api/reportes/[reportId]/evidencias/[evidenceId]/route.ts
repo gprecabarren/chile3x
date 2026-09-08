@@ -4,6 +4,7 @@ import { getDb } from "@/db";
 import { profileReportEvidence, profileReports } from "@/db/schema";
 import { getCurrentAdmin, getCurrentUser } from "@/lib/auth";
 import { recordAdminAudit } from "@/lib/admin-audit";
+import { adminHasCapability } from "@/lib/admin-permissions";
 
 // Report evidence is never public. It can only be read by its reporter or an
 // authenticated Chile3X administrator through this authorization gate.
@@ -12,18 +13,19 @@ export const dynamic = "force-dynamic";
 export async function GET(_request: Request, { params }: { params: Promise<{ reportId: string; evidenceId: string }> }) {
   const { reportId, evidenceId } = await params;
   const [user, admin] = await Promise.all([getCurrentUser(), getCurrentAdmin()]);
+  const canManageReports = adminHasCapability(admin, "reports.manage");
   const [record] = await (await getDb()).select({ evidence: profileReportEvidence, reporterId: profileReports.reporterId })
     .from(profileReportEvidence)
     .innerJoin(profileReports, eq(profileReportEvidence.reportId, profileReports.id))
     .where(and(eq(profileReportEvidence.id, evidenceId), eq(profileReportEvidence.reportId, reportId)))
     .limit(1);
-  if (!record || (!admin && record.reporterId !== user?.id)) notFound();
+  if (!record || (!canManageReports && record.reporterId !== user?.id)) notFound();
 
   const { env } = await import("cloudflare:workers");
   if (!env.MEDIA) return new Response("El almacenamiento no está disponible.", { status: 503 });
   const object = await env.MEDIA.get(record.evidence.r2Key);
   if (!object) notFound();
-  if (admin) await recordAdminAudit(admin, { category: "security", action: "private.report_evidence_view", summary: `Abrió una evidencia privada del reporte ${reportId}.`, entityType: "report_evidence", entityId: evidenceId, entityLabel: `Evidencia · ${reportId}`, metadata: { reportId } });
+  if (admin && canManageReports) await recordAdminAudit(admin, { category: "security", action: "private.report_evidence_view", summary: `Abrió una evidencia privada del reporte ${reportId}.`, entityType: "report_evidence", entityId: evidenceId, entityLabel: `Evidencia · ${reportId}`, metadata: { reportId } });
 
   const headers = new Headers();
   object.writeHttpMetadata(headers);

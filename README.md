@@ -26,7 +26,7 @@ pnpm test
 
 Las pruebas automáticas cubren el Worker compilado, aislamiento de caché, fallos de caché, retornos seguros y datos de reintento sin contraseñas. Con `pnpm dev` y las migraciones aplicadas **solo a la D1 local**, `node scripts/qa-local.mjs` comprueba paneles, creación asistida, cuentas deshabilitadas, anuncios ocultos, paginación de reseñas y revocación de sesión usando cuentas ficticias. Después se ejecuta `node scripts/qa-local.mjs cleanup`, que elimina únicamente esas cuentas y anuncios locales. Nunca ejecutar estas pruebas contra producción ni subir los estados temporales de `outputs/`.
 
-La caché de documentos anónimos dura hasta 120 segundos: una moderación puede tardar ese intervalo en reflejarse en una página ya cacheada. Las pruebas de tamaños móviles no sustituyen una comprobación en un iPhone físico ni una prueba de carga sostenida en Cloudflare.
+La caché de documentos anónimos dura hasta 600 segundos: una moderación puede tardar ese intervalo en reflejarse en una página ya cacheada. Las páginas con sesión, los paneles y las respuestas de navegación no utilizan esa caché compartida. Las pruebas de tamaños móviles no sustituyen una comprobación en un iPhone físico ni una prueba de carga sostenida en Cloudflare.
 
 ## Estado funcional
 
@@ -49,6 +49,7 @@ Actualmente incluye:
 - Contenido exclusivo asociado a la cuenta del anunciante: puede mostrarse al final de un único anuncio Escort, pero permanece disponible para los compradores autorizados incluso si el anuncio se pausa o se elimina.
 - Biblioteca privada para compradores en `Mi cuenta > Mi contenido`, donde cada acceso se muestra con el nombre de usuario de la cuenta vendedora, sin exponer correos.
 - Panel administrativo para cuentas, anuncios, medios, documentos, reportes, reseñas, SEO, contenidos, noticias, FAQ, reglas de publicación y ajustes del sitio.
+- Pestaña **Administradores** para autorizar usuarios exactos de GitHub, asignar funciones, cerrar sus sesiones y revocar o reactivar accesos sin tocar el repositorio.
 - Historial administrativo separado y paginado: identifica a cada administrador por su cuenta interna y GitHub, registra fecha/hora, resultado, objeto afectado y valores anteriores/posteriores, con filtros por administrador, área, acción, objeto, resultado y rango de fechas.
 - Gestión de cuentas desde administración: búsqueda simple y avanzada, filtros combinables, detalle de datos, anuncios asociados, estado, creación de anuncios asistida, contraseña temporal, enlace de recuperación, WhatsApp y llamada directa cuando existe teléfono.
 - Noticias administrables con metadatos SEO, imágenes moderadas y URLs públicas.
@@ -97,7 +98,9 @@ Los archivos heredados de la antigua galería privada se migran a este modelo si
 
 - Sesiones protegidas por cookies seguras y contraseñas derivadas con PBKDF2.
 - GitHub OAuth solo para administración del sitio.
+- Solo la identidad propietaria protegida —GitHub `gprecabarren` con `genaropiedra@hotmail.com` verificado por GitHub— puede abrir **Administradores**, agregar o eliminar accesos y cambiar sus niveles. Ser colaborador del repositorio no concede acceso al panel.
 - Cada GitHub autorizado queda vinculado a una cuenta administrativa independiente; nunca se reutiliza la identidad de otro administrador. El historial conserva una copia del nombre, correo y usuario de GitHub usados en el momento de cada acción, incluso si más adelante cambia la cuenta.
+- Los niveles disponibles son Administrador (todo salvo gestionar administradores), Moderación, Noticias y Soporte. La autorización se consulta en D1 en cada petición; revocar un acceso invalida sus sesiones inmediatamente. La identidad propietaria no puede revocarse, degradarse ni modificarse desde la web.
 - Contraseñas, hashes, tokens, secretos y claves de R2 se eliminan automáticamente de las capturas del historial administrativo.
 - Autorización comprobada en servidor en todas las rutas privadas de cuentas, archivos, moderación y contenido exclusivo.
 - R2 no expone un bucket público: cada archivo se entrega mediante una ruta que comprueba propietario, administrador, estado de moderación y permiso de acceso.
@@ -159,6 +162,14 @@ Las uniones de infraestructura están definidas en [`.openai/hosting.json`](.ope
 4. Seguir el enlace del objeto afectado para volver a la cuenta, anuncio, reporte, noticia, medio o ajuste relacionado.
 
 El registro comienza desde la migración que habilita esta función; no inventa ni reconstruye acciones históricas anteriores. Se registran inicios y cierres de sesión administrativa, cambios de cuentas y contraseñas, creación y estados de anuncios, moderación y eliminación de medios, reseñas, reportes, noticias, configuración, respuestas a testers y aperturas explícitas de documentos o evidencias privadas. Las visitas normales entre páginas del panel no generan eventos para evitar ruido y escrituras innecesarias.
+
+### Gestionar administradores
+
+1. La persona propietaria abre `Administración > Administradores`.
+2. Ingresa el usuario exacto de GitHub, sin `@`, y asigna Administrador, Moderación, Noticias o Soporte.
+3. En el primer ingreso con GitHub se crea una identidad administrativa independiente y queda vinculada de forma permanente al identificador numérico entregado por GitHub.
+4. Desde la misma pantalla puede cambiar el nivel, cerrar todas las sesiones, revocar o reactivar el acceso. Todos estos cambios quedan en el historial administrativo.
+5. Si GitHub cambia el nombre de usuario, el identificador numérico conserva la vinculación. La cuenta propietaria además debe demostrar en cada nuevo inicio que GitHub mantiene verificado `genaropiedra@hotmail.com`.
 
 ### Preparar fotos de la galería pública
 

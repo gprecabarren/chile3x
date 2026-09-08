@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { exclusiveContentMedia, profileMedia, profiles } from "@/db/schema";
 import { getCurrentAdmin } from "@/lib/auth";
+import { adminHasCapability } from "@/lib/admin-permissions";
 import { AdminPageHeading, AdminShell } from "./_components";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +14,13 @@ export default async function AdminHome() {
 
   if (!admin) {
     redirect("/api/auth/github/start?return_to=/admin");
+  }
+
+  if (!adminHasCapability(admin, "private.view")) {
+    if (adminHasCapability(admin, "news.manage")) redirect("/admin/noticias");
+    if (adminHasCapability(admin, "reports.manage")) redirect("/admin/reportes");
+    if (adminHasCapability(admin, "bugs.manage")) redirect("/admin/bugs");
+    redirect("/admin/acceso-denegado?reason=permission");
   }
 
   const db = await getDb();

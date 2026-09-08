@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getCurrentAdmin, getCurrentUser } from "@/lib/auth";
 import { canAccessExclusiveContent, findExclusiveContentMedia } from "@/lib/exclusive-content";
+import { adminHasCapability } from "@/lib/admin-permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -9,8 +10,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ med
   const record = await findExclusiveContentMedia(mediaId);
   if (!record) notFound();
   const [user, admin] = await Promise.all([getCurrentUser(), getCurrentAdmin()]);
-  const canManage = user?.id === record.collection.ownerId || Boolean(admin);
-  const canAccess = canManage || (record.media.moderationStatus === "approved" && await canAccessExclusiveContent(record.collection.id, user?.id, Boolean(admin)));
+  const canModerateMedia = adminHasCapability(admin, "media.moderate");
+  const canManage = user?.id === record.collection.ownerId || canModerateMedia;
+  const canAccess = canManage || (record.media.moderationStatus === "approved" && await canAccessExclusiveContent(record.collection.id, user?.id, canModerateMedia));
   if (!canAccess) notFound();
 
   const { env } = await import("cloudflare:workers");

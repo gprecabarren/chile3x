@@ -141,6 +141,20 @@
       "when": 1788835448623,
       "tag": "0019_brown_omega_sentinel",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1788848333728,
+      "tag": "0020_crazy_captain_cross",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1788848672022,
+      "tag": "0021_wide_invaders",
+      "breakpoints": true
     }
   ]
 }

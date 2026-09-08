@@ -5,6 +5,7 @@ import { profileMedia } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { findProfileMedia } from "@/lib/media";
 import { recordAdminAudit } from "@/lib/admin-audit";
+import { adminHasCapability } from "@/lib/admin-permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const admin = await getCurrentAdmin();
   if (!admin) return NextResponse.redirect(new URL("/api/auth/github/start?return_to=/admin/medios", request.url), 303);
+  if (!adminHasCapability(admin, "media.moderate")) return new Response("No tienes permiso para moderar medios.", { status: 403 });
 
   const { mediaId } = await params;
   const record = await findProfileMedia(mediaId);

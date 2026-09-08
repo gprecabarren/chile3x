@@ -1,7 +1,7 @@
 import { and, eq, or } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { adminGithubIdentities, siteSettings, users } from "@/db/schema";
+import { adminGithubAccess, adminGithubIdentities, users } from "@/db/schema";
 import {
   createAdminSession,
   getGitHubOAuthConfig,
@@ -80,82 +80,90 @@ export async function GET(request: NextRequest) {
   }
 
   const githubUser = await githubUserResponse.json() as GitHubUser;
-  let email = githubUser.email?.trim().toLowerCase();
-  if (!email) {
-    const githubEmailsResponse = await fetch("https://api.github.com/user/emails", {
-      headers: {
-        accept: "application/vnd.github+json",
-        authorization: `Bearer ${token.access_token}`,
-        "user-agent": "Chile3X-Administration",
-        "x-github-api-version": "2026-03-10",
-      },
-    });
-    if (githubEmailsResponse.ok) {
-      const githubEmails = await githubEmailsResponse.json() as GitHubEmail[];
-      const verifiedEmail = githubEmails.find((item) => item.primary && item.verified) ?? githubEmails.find((item) => item.verified);
-      email = verifiedEmail?.email.trim().toLowerCase();
-    }
-  }
+  const githubEmailsResponse = await fetch("https://api.github.com/user/emails", {
+    headers: {
+      accept: "application/vnd.github+json",
+      authorization: `Bearer ${token.access_token}`,
+      "user-agent": "Chile3X-Administration",
+      "x-github-api-version": "2026-03-10",
+    },
+  });
+  const githubEmails = githubEmailsResponse.ok ? await githubEmailsResponse.json() as GitHubEmail[] : [];
+  const verifiedEmails = githubEmails
+    .filter((item) => item.verified)
+    .map((item) => item.email.trim().toLowerCase());
+  // Only GitHub's authenticated /user/emails endpoint can satisfy the
+  // protected-owner check. A public profile email is not sufficient proof.
+  const email = (githubEmails.find((item) => item.primary && item.verified)?.email
+    ?? githubEmails.find((item) => item.verified)?.email)?.trim().toLowerCase();
   const githubLogin = githubUser.login.trim().toLowerCase();
   const githubUserId = String(githubUser.id);
   const db = await getDb();
   let admin: { id: string; email: string; username: string | null; displayName: string | null; role: "admin" } | undefined;
 
-  const [identityAdmin] = await db
-    .select({ id: users.id, email: users.email, username: users.username, displayName: users.displayName, role: users.role })
-    .from(adminGithubIdentities)
-    .innerJoin(users, eq(adminGithubIdentities.userId, users.id))
-    .where(and(
-      or(eq(adminGithubIdentities.githubUserId, githubUserId), eq(adminGithubIdentities.githubLogin, githubLogin)),
-      eq(users.role, "admin"),
-      eq(users.isActive, true),
-    ))
-    .limit(1);
-  if (identityAdmin?.role === "admin") admin = { ...identityAdmin, role: "admin" };
+  // Authentication comes from GitHub, but authorization always comes from an
+  // active Chile3X grant. Existing OAuth identities cannot bypass a revocation.
+  const [grant] = await db.select({
+    id: adminGithubAccess.id,
+    userId: adminGithubAccess.userId,
+    githubUserId: adminGithubAccess.githubUserId,
+    accessLevel: adminGithubAccess.accessLevel,
+    protectedEmail: adminGithubAccess.protectedEmail,
+    isProtectedOwner: adminGithubAccess.isProtectedOwner,
+  }).from(adminGithubAccess).where(and(
+    eq(adminGithubAccess.isActive, true),
+    or(eq(adminGithubAccess.githubUserId, githubUserId), eq(adminGithubAccess.githubLogin, githubLogin)),
+  )).limit(1);
 
-  if (!admin && email) {
-    const [emailAdmin] = await db
-      .select({ id: users.id, email: users.email, username: users.username, displayName: users.displayName, role: users.role })
+  if (
+    !grant
+    || (grant.githubUserId && grant.githubUserId !== githubUserId)
+    || (grant.isProtectedOwner && (!grant.protectedEmail || !verifiedEmails.includes(grant.protectedEmail)))
+  ) {
+    return accessDenied(request);
+  }
+
+  if (grant.userId) {
+    const [grantedAdmin] = await db.select({ id: users.id, email: users.email, username: users.username, displayName: users.displayName, role: users.role })
       .from(users)
+      .where(and(eq(users.id, grant.userId), eq(users.role, "admin"), eq(users.isActive, true)))
+      .limit(1);
+    if (grantedAdmin?.role === "admin") admin = { ...grantedAdmin, role: "admin" };
+  }
+
+  if (!admin) {
+    const [identityAdmin] = await db
+      .select({ id: users.id, email: users.email, username: users.username, displayName: users.displayName, role: users.role })
+      .from(adminGithubIdentities)
+      .innerJoin(users, eq(adminGithubIdentities.userId, users.id))
       .where(and(
-        eq(users.email, email),
+        or(eq(adminGithubIdentities.githubUserId, githubUserId), eq(adminGithubIdentities.githubLogin, githubLogin)),
         eq(users.role, "admin"),
         eq(users.isActive, true),
       ))
       .limit(1);
-    if (emailAdmin?.role === "admin") admin = { ...emailAdmin, role: "admin" };
+    if (identityAdmin?.role === "admin") admin = { ...identityAdmin, role: "admin" };
   }
 
-  if (!admin && githubLogin) {
-    const [allowedLogins] = await db
-      .select({ value: siteSettings.value })
-      .from(siteSettings)
-      .where(eq(siteSettings.key, "admin_github_logins"))
+  if (!admin && !grant.userId) {
+    const adminId = `usr_admin_${crypto.randomUUID()}`;
+    const adminEmail = `github+${githubUserId}@users.noreply.chile3x.cl`;
+    const displayName = githubUser.name?.trim().slice(0, 80) || githubUser.login;
+    await db.insert(users).values({
+      id: adminId,
+      email: adminEmail,
+      displayName,
+      role: "admin",
+      emailVerifiedAt: new Date().toISOString(),
+    }).onConflictDoNothing({ target: users.email });
+    const [createdAdmin] = await db.select({ id: users.id, email: users.email, username: users.username, displayName: users.displayName, role: users.role })
+      .from(users)
+      .where(and(eq(users.email, adminEmail), eq(users.role, "admin"), eq(users.isActive, true)))
       .limit(1);
-    const isAllowed = allowedLogins?.value.split(",").some((login) => login.trim().toLowerCase() === githubLogin);
-
-    if (isAllowed) {
-      const adminId = `usr_admin_${crypto.randomUUID()}`;
-      const adminEmail = email ?? `github+${githubLogin}@users.noreply.chile3x.cl`;
-      const displayName = githubUser.name?.trim().slice(0, 80) || githubUser.login;
-      await db.insert(users).values({
-        id: adminId,
-        email: adminEmail,
-        displayName,
-        role: "admin",
-        emailVerifiedAt: new Date().toISOString(),
-      }).onConflictDoNothing({ target: users.email });
-      const [createdAdmin] = await db.select({ id: users.id, email: users.email, username: users.username, displayName: users.displayName, role: users.role })
-        .from(users)
-        .where(and(eq(users.email, adminEmail), eq(users.role, "admin"), eq(users.isActive, true)))
-        .limit(1);
-      if (createdAdmin?.role === "admin") admin = { ...createdAdmin, role: "admin" };
-    }
+    if (createdAdmin?.role === "admin") admin = { ...createdAdmin, role: "admin" };
   }
 
-  if (!admin) {
-    return accessDenied(request);
-  }
+  if (!admin) return accessDenied(request);
 
   const now = new Date().toISOString();
   const [existingIdentity] = await db.select({ id: adminGithubIdentities.id })
@@ -184,7 +192,20 @@ export async function GET(request: NextRequest) {
       lastLoginAt: now,
     });
   }
-  await recordAdminAudit(admin, {
+  await db.update(adminGithubAccess).set({
+    userId: admin.id,
+    githubUserId,
+    githubLogin,
+    revokedAt: null,
+    revokedBy: null,
+    updatedAt: now,
+  }).where(eq(adminGithubAccess.id, grant.id));
+  await recordAdminAudit({
+    ...admin,
+    accessLevel: grant.accessLevel,
+    githubLogin,
+    isProtectedOwner: grant.isProtectedOwner,
+  }, {
     category: "access",
     action: "admin.login",
     entityType: "admin",

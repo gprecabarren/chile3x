@@ -4,6 +4,7 @@ import { getDb } from "@/db";
 import { reviews } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { recordAdminAudit } from "@/lib/admin-audit";
+import { adminHasCapability } from "@/lib/admin-permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try { assertSameOrigin(request); } catch { return new Response("Solicitud no válida.", { status: 403 }); }
   const admin = await getCurrentAdmin();
   if (!admin) return new Response("No autorizado.", { status: 401 });
+  if (!adminHasCapability(admin, "reviews.moderate")) return new Response("No tienes permiso para moderar reseñas.", { status: 403 });
   const { reviewId } = await params;
   const action = (await request.formData()).get("action");
   const db = await getDb();

@@ -6,6 +6,7 @@ import { getDb } from "@/db";
 import { exclusiveContentCollections, exclusiveContentMedia, profileDetails, profileMedia, profileVerificationFiles, profiles, users } from "@/db/schema";
 import { adminCallHref, adminWhatsappHref } from "@/lib/admin-contact";
 import { getCurrentAdmin, safeAdminReturnTo } from "@/lib/auth";
+import { adminHasCapability } from "@/lib/admin-permissions";
 import { profilePublicPath } from "@/lib/profile";
 import { AdminPageHeading, AdminShell } from "../_components";
 import { AdminPagination, pageHref, readAdminPage } from "../pagination";
@@ -48,6 +49,7 @@ function mediaHref(profileId: string, returnTo: string, options: { status?: stri
 export default async function AdminProfilesPage({ searchParams }: { searchParams: Promise<AdminProfilesSearchParams> }) {
   const admin = await getCurrentAdmin();
   if (!admin) redirect("/api/auth/github/start?return_to=/admin/perfiles");
+  if (!adminHasCapability(admin, "profiles.moderate")) redirect("/admin/acceso-denegado?reason=permission");
 
   const [params, db] = await Promise.all([searchParams, getDb()]);
   const q = (params.q ?? "").trim().slice(0, 100).toLocaleLowerCase("es-CL");

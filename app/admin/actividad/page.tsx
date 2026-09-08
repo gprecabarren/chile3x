@@ -10,6 +10,7 @@ import {
   parseAuditJson,
 } from "@/lib/admin-audit";
 import { getCurrentAdmin } from "@/lib/auth";
+import { adminHasCapability } from "@/lib/admin-permissions";
 import { AdminPageHeading, AdminShell } from "../_components";
 import { AdminPagination, readAdminPage } from "../pagination";
 
@@ -125,6 +126,7 @@ function entityHref(type: string, id: string | null, label: string | null, retur
 export default async function AdminActivityPage({ searchParams }: { searchParams: Promise<ActivitySearchParams> }) {
   const admin = await getCurrentAdmin();
   if (!admin) redirect("/api/auth/github/start?return_to=/admin/actividad");
+  if (!adminHasCapability(admin, "audit.view")) redirect("/admin/acceso-denegado?reason=permission");
   const [db, params] = await Promise.all([getDb(), searchParams]);
   const result: "" | "success" | "failure" = params.result === "success" || params.result === "failure" ? params.result : "";
   const filters = {

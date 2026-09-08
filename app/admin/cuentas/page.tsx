@@ -6,6 +6,7 @@ import { regions } from "@/app/locations";
 import { getDb } from "@/db";
 import { profiles, users } from "@/db/schema";
 import { getCurrentAdmin } from "@/lib/auth";
+import { adminHasCapability } from "@/lib/admin-permissions";
 import { AdminPageHeading, AdminShell } from "../_components";
 import { AdminPasswordField } from "./AdminPasswordField";
 import { adminCallHref, adminWhatsappHref } from "@/lib/admin-contact";
@@ -110,6 +111,7 @@ function listingTypeMatches(user: {
 export default async function AdminAccountsPage({ searchParams }: { searchParams: Promise<AccountSearchParams> }) {
   const admin = await getCurrentAdmin();
   if (!admin) redirect("/api/auth/github/start?return_to=/admin/cuentas");
+  if (!adminHasCapability(admin, "accounts.manage")) redirect("/admin/acceso-denegado?reason=permission");
 
   const [db, params] = await Promise.all([getDb(), searchParams]);
   const filters = {

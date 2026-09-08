@@ -60,6 +60,32 @@ export const adminGithubIdentities = sqliteTable("admin_github_identities", {
   uniqueIndex("admin_github_identity_login_unique").on(table.githubLogin),
 ]);
 
+// Access to the administrative panel is granted explicitly to a GitHub
+// account. Repository permissions are intentionally separate: being a GitHub
+// collaborator never grants access to private Chile3X data by itself.
+export const adminGithubAccess = sqliteTable("admin_github_access", {
+  id: text("id").primaryKey(),
+  githubLogin: text("github_login").notNull(),
+  githubUserId: text("github_user_id"),
+  userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
+  accessLevel: text("access_level", {
+    enum: ["owner", "administrator", "moderator", "editor", "support"],
+  }).notNull().default("moderator"),
+  protectedEmail: text("protected_email"),
+  isProtectedOwner: integer("is_protected_owner", { mode: "boolean" }).notNull().default(false),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  invitedBy: text("invited_by").references(() => users.id, { onDelete: "set null" }),
+  revokedBy: text("revoked_by").references(() => users.id, { onDelete: "set null" }),
+  revokedAt: text("revoked_at"),
+  createdAt,
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  uniqueIndex("admin_github_access_login_unique").on(table.githubLogin),
+  uniqueIndex("admin_github_access_id_unique").on(table.githubUserId),
+  uniqueIndex("admin_github_access_user_unique").on(table.userId),
+  index("admin_github_access_active_level_idx").on(table.isActive, table.accessLevel),
+]);
+
 export const accountTokens = sqliteTable("account_tokens", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),

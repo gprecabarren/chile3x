@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DirectoryShell } from "@/app/directorio/_components";
-import { privatePageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = privatePageMetadata({
+export const metadata: Metadata = {
   title: "Página no encontrada",
   description: "La dirección que buscas no existe o ya no está disponible en Chile3X.",
-  path: "/404",
-});
+  robots: { index: false, follow: true },
+};
 
 export default function NotFoundPage() {
   return (

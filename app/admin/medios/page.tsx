@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { exclusiveContentCollections, exclusiveContentMedia, profileMedia, profiles, users } from "@/db/schema";
 import { getCurrentAdmin, safeAdminReturnTo } from "@/lib/auth";
+import { adminHasCapability } from "@/lib/admin-permissions";
 import { formatMediaBytes, getMediaQuotaState, getMediaUsage } from "@/lib/media";
 import { profilePublicPath } from "@/lib/profile";
 import { AdminPageHeading, AdminShell } from "../_components";
@@ -101,6 +102,7 @@ function ExclusiveMediaCard({ media, ownerUsername, returnTo }: {
 export default async function AdminMediaPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const admin = await getCurrentAdmin();
   if (!admin) redirect("/api/auth/github/start?return_to=/admin/medios");
+  if (!adminHasCapability(admin, "media.moderate")) redirect("/admin/acceso-denegado?reason=permission");
 
   const [db, params, usage] = await Promise.all([getDb(), searchParams, getMediaUsage()]);
   const selectedProfileId = (params.perfil ?? "").trim().slice(0, 120);

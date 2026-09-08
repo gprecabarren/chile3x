@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { profileReportEvidence, profileReports, profiles, users } from "@/db/schema";
 import { getCurrentAdmin } from "@/lib/auth";
+import { adminHasCapability } from "@/lib/admin-permissions";
 import { AdminPageHeading, AdminShell } from "../_components";
 import { profilePublicPath } from "@/lib/profile";
 
@@ -14,6 +15,7 @@ const reasons: Record<string, string> = { impersonation: "Suplantación", inappr
 
 export default async function AdminReportsPage({ searchParams }: { searchParams: Promise<{ estado?: string; notice?: string }> }) {
   const admin = await getCurrentAdmin(); if (!admin) redirect("/api/auth/github/start?return_to=/admin/reportes");
+  if (!adminHasCapability(admin, "reports.manage")) redirect("/admin/acceso-denegado?reason=permission");
   const query = await searchParams;
   const selected = Object.hasOwn(labels, query.estado ?? "") ? query.estado! : "pending";
   const db = await getDb();

@@ -19,6 +19,11 @@ export const ADMIN_AUDIT_CATEGORIES = {
 export const ADMIN_AUDIT_ACTIONS = {
   "admin.login": "Inició sesión",
   "admin.logout": "Cerró sesión",
+  "admin.grant_create": "Autorizó un administrador",
+  "admin.grant_update": "Cambió permisos administrativos",
+  "admin.grant_revoke": "Revocó un acceso administrativo",
+  "admin.grant_reactivate": "Reactivó un acceso administrativo",
+  "admin.sessions_revoke": "Cerró sesiones administrativas",
   "account.create": "Creó una cuenta",
   "account.enable": "Reactivó una cuenta",
   "account.disable": "Deshabilitó una cuenta",

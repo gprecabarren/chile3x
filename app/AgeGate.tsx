@@ -24,7 +24,7 @@ export function AgeGate() {
       <div className="age-gate-card">
         <span className="age-gate-mark">+18</span>
         <p className="eyebrow">ACCESO PARA ADULTOS</p>
-        <h1 id="age-gate-title">Confirma tu edad</h1>
+        <h2 id="age-gate-title">Confirma tu edad</h2>
         <p>Este sitio contiene un directorio destinado exclusivamente a personas mayores de 18 años. Al continuar declaras tener la edad legal para acceder a este contenido en Chile.</p>
         <div className="age-gate-actions">
           <button className="button button-primary" type="button" onClick={confirmAge}>Soy mayor de 18 años</button>

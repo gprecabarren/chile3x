@@ -39,20 +39,20 @@ test("server-renders the Chile3X public home", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
   assert.equal(response.headers.get("x-content-type-options"), "nosniff");
   assert.equal(response.headers.get("x-frame-options"), "DENY");
-  assert.match(response.headers.get("strict-transport-security") ?? "", /max-age=31536000/);
+  assert.match(response.headers.get("strict-transport-security") ?? "", /max-age=63072000; includeSubDomains; preload/);
   const contentSecurityPolicy = response.headers.get("content-security-policy") ?? "";
   assert.match(contentSecurityPolicy, /frame-ancestors 'none'/);
   assert.match(contentSecurityPolicy, /frame-src[^;]*www\.googletagmanager\.com/);
 
   const html = await response.text();
-  assert.match(html, /<title>Escorts y damas de compañía en Chile \| Chile3X<\/title>/i);
+  assert.match(html, /<title>Chile3X: directorio adulto por ciudad en Chile \| Chile3X<\/title>/i);
   assert.match(html, /DIRECTORIO ADULTO/);
   assert.match(html, /Este sitio está destinado exclusivamente a personas mayores de edad/);
   assert.match(html, /damas de compañía/i);
   assert.match(html, /ESCORTS Y DAMAS DE COMPAÑÍA DESTACADAS/i);
   assert.match(html, /Todas las regiones,/);
   assert.match(html, /numberOfItems":36/);
-  assert.match(html, /"@id":"https:\/\/chile3x\.cl\/escorts\/concepcion"/);
+  assert.match(html, /"url":"https:\/\/chile3x\.cl\/escorts\/concepcion"/);
   assert.match(html, /ciudades y comunas disponibles/);
   assert.match(html, /Región de Arica y Parinacota/);
   assert.match(html, /Región de Magallanes y de la Antártica Chilena/);
@@ -60,7 +60,7 @@ test("server-renders the Chile3X public home", async () => {
   assert.match(html, /Registrarse/);
   assert.match(html, /Publicar anuncio/);
   assert.match(html, /href="\/registro"/);
-  assert.match(html, /href="\/mi-cuenta\/nuevo-perfil"/);
+  assert.match(html, /href="\/ingresar\?return_to=\/mi-cuenta\/nuevo-perfil"/);
   assert.doesNotMatch(html, /Publicar perfil/);
   assert.doesNotMatch(html, /GTM-NCJ3ZNH3/);
   assert.doesNotMatch(html, /www\.googletagmanager\.com\/ns\.html\?id=GTM-NCJ3ZNH3/);
@@ -97,6 +97,6 @@ test("cache outages do not prevent the built Worker from rendering", async () =>
   try {
     const response = await render();
     assert.equal(response.status, 200);
-    assert.match(await response.text(), /Directorio nacional de escorts/);
+    assert.match(await response.text(), /Directorio adulto por ciudad/);
   } finally { globalThis.caches = original; }
 });

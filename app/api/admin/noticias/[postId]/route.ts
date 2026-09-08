@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { newsPosts } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
+import { adminHasCapability } from "@/lib/admin-permissions";
 import { safeNewsCanonicalUrl, sanitizeNewsHtml, textFromHtml, uniqueNewsSlug } from "@/lib/news";
 import { recordAdminAudit } from "@/lib/admin-audit";
 
@@ -10,6 +11,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try { assertSameOrigin(request); } catch { return new Response("Solicitud no válida.", { status: 403 }); }
   const admin = await getCurrentAdmin();
   if (!admin) return new Response("No autorizado.", { status: 401 });
+  if (!adminHasCapability(admin, "news.manage")) return new Response("No tienes permiso para administrar noticias.", { status: 403 });
   const { postId } = await params; const form = await request.formData(); const db = await getDb();
   const [existing] = await db.select().from(newsPosts).where(eq(newsPosts.id, postId)).limit(1); if (!existing) return new Response("Noticia no encontrada.", { status: 404 });
   if (form.get("action") === "delete") { await db.delete(newsPosts).where(eq(newsPosts.id, postId)); await recordAdminAudit(admin, { category: "news", action: "news.delete", summary: `Eliminó la noticia ${existing.title}.`, entityType: "news", entityId: postId, entityLabel: existing.title, before: { title: existing.title, slug: existing.slug, status: existing.status, noindex: existing.noindex } }); return NextResponse.redirect(new URL("/admin/noticias?notice=deleted", request.url), 303); }

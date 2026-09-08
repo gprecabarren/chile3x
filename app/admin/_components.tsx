@@ -5,6 +5,7 @@ import type { AdminUser } from "@/lib/auth";
 import { OfficialChile3xLogo } from "@/app/OfficialChile3xLogo";
 import { getDb } from "@/db";
 import { bugReports, exclusiveContentMedia, profileMedia, profileReports, profiles } from "@/db/schema";
+import { ADMIN_ACCESS_LABELS, adminHasCapability } from "@/lib/admin-permissions";
 
 async function getPendingProfilesCount() {
   try {
@@ -57,11 +58,13 @@ async function getPendingMediaCount() {
 }
 
 function AdminNavigation({
+  user,
   pendingCount,
   pendingMedia,
   pendingReports,
   pendingBugs,
 }: {
+  user: AdminUser;
   pendingCount: number;
   pendingMedia: number;
   pendingReports: number;
@@ -70,37 +73,43 @@ function AdminNavigation({
   return (
     <nav aria-label="Administración">
       <Link href="/admin">Resumen</Link>
-      <Link className={pendingCount > 0 ? "admin-nav-alert" : undefined} href="/admin/perfiles">Anuncios{pendingCount > 0 && <b>{pendingCount}</b>}</Link>
-      <Link className={pendingMedia > 0 ? "admin-nav-alert" : undefined} href="/admin/medios">Medios{pendingMedia > 0 && <b>{pendingMedia}</b>}</Link>
-      <Link href="/admin/resenas">Reseñas</Link>
-      <Link className={pendingReports > 0 ? "admin-nav-alert" : undefined} href="/admin/reportes">Reportes{pendingReports > 0 && <b>{pendingReports}</b>}</Link>
-      <Link className={pendingBugs > 0 ? "admin-nav-alert" : undefined} href="/admin/bugs">Testers{pendingBugs > 0 && <b>{pendingBugs}</b>}</Link>
-      <Link href="/admin/cuentas">Cuentas</Link>
-      <Link href="/admin/noticias">Noticias</Link>
-      <Link href="/admin/actividad">Actividad</Link>
-      <Link href="/admin/configuracion">Configuración</Link>
+      {adminHasCapability(user, "profiles.moderate") && <Link className={pendingCount > 0 ? "admin-nav-alert" : undefined} href="/admin/perfiles">Anuncios{pendingCount > 0 && <b>{pendingCount}</b>}</Link>}
+      {adminHasCapability(user, "media.moderate") && <Link className={pendingMedia > 0 ? "admin-nav-alert" : undefined} href="/admin/medios">Medios{pendingMedia > 0 && <b>{pendingMedia}</b>}</Link>}
+      {adminHasCapability(user, "reviews.moderate") && <Link href="/admin/resenas">Reseñas</Link>}
+      {adminHasCapability(user, "reports.manage") && <Link className={pendingReports > 0 ? "admin-nav-alert" : undefined} href="/admin/reportes">Reportes{pendingReports > 0 && <b>{pendingReports}</b>}</Link>}
+      {adminHasCapability(user, "bugs.manage") && <Link className={pendingBugs > 0 ? "admin-nav-alert" : undefined} href="/admin/bugs">Testers{pendingBugs > 0 && <b>{pendingBugs}</b>}</Link>}
+      {adminHasCapability(user, "accounts.manage") && <Link href="/admin/cuentas">Cuentas</Link>}
+      {adminHasCapability(user, "news.manage") && <Link href="/admin/noticias">Noticias</Link>}
+      {adminHasCapability(user, "audit.view") && <Link href="/admin/actividad">Actividad</Link>}
+      {adminHasCapability(user, "settings.manage") && <Link href="/admin/configuracion">Configuración</Link>}
+      {adminHasCapability(user, "admins.manage") && <Link href="/admin/administradores">Administradores</Link>}
     </nav>
   );
 }
 
 export async function AdminShell({ user, children }: { user: AdminUser; children: ReactNode }) {
-  const [pendingCount, pendingMedia, pendingReports, pendingBugs] = await Promise.all([getPendingProfilesCount(), getPendingMediaCount(), getPendingReportsCount(), getNewBugReportsCount()]);
+  const [pendingCount, pendingMedia, pendingReports, pendingBugs] = await Promise.all([
+    adminHasCapability(user, "profiles.moderate") ? getPendingProfilesCount() : 0,
+    adminHasCapability(user, "media.moderate") ? getPendingMediaCount() : 0,
+    adminHasCapability(user, "reports.manage") ? getPendingReportsCount() : 0,
+    adminHasCapability(user, "bugs.manage") ? getNewBugReportsCount() : 0,
+  ]);
   const accountLabel = user.displayName?.trim().toLowerCase() === "propietario chile3x" ? "Propietario" : user.displayName ?? user.email;
 
   return (
     <main className="admin-root">
       <header className="admin-header">
         <Link className="admin-brand" href="/"><OfficialChile3xLogo priority /><small>ADMIN</small></Link>
-        <AdminNavigation pendingCount={pendingCount} pendingMedia={pendingMedia} pendingReports={pendingReports} pendingBugs={pendingBugs} />
+        <AdminNavigation user={user} pendingCount={pendingCount} pendingMedia={pendingMedia} pendingReports={pendingReports} pendingBugs={pendingBugs} />
         <div className="admin-account">
-          <span>{accountLabel}</span>
+          <span><strong>{accountLabel}</strong><small>@{user.githubLogin} · {ADMIN_ACCESS_LABELS[user.accessLevel]}</small></span>
           <form action="/api/auth/logout" method="post">
             <button type="submit" title="Cerrar la sesión administrativa">Cerrar sesión de administrador</button>
           </form>
         </div>
         <details className="admin-mobile-navigation">
           <summary>Secciones de administración</summary>
-          <AdminNavigation pendingCount={pendingCount} pendingMedia={pendingMedia} pendingReports={pendingReports} pendingBugs={pendingBugs} />
+          <AdminNavigation user={user} pendingCount={pendingCount} pendingMedia={pendingMedia} pendingReports={pendingReports} pendingBugs={pendingBugs} />
         </details>
       </header>
       {children}

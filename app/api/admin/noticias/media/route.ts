@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { newsMedia } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
+import { adminHasCapability } from "@/lib/admin-permissions";
 import { detectImageType, extensionForImageType, MAX_IMAGE_BYTES } from "@/lib/media";
 import { recordAdminAudit } from "@/lib/admin-audit";
 
 export async function POST(request: NextRequest) {
   try { assertSameOrigin(request); } catch { return NextResponse.json({ error: "Solicitud no válida." }, { status: 403 }); }
   const admin = await getCurrentAdmin(); if (!admin) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+  if (!adminHasCapability(admin, "news.manage")) return NextResponse.json({ error: "No tienes permiso para administrar noticias." }, { status: 403 });
   const form = await request.formData(); const file = form.get("file");
   if (!(file instanceof File) || file.size === 0 || file.size > MAX_IMAGE_BYTES) return NextResponse.json({ error: "Selecciona una imagen de hasta 5 MB." }, { status: 400 });
   const bytes = await file.arrayBuffer(); const contentType = detectImageType(bytes); if (!contentType) return NextResponse.json({ error: "Solo se permiten imágenes JPEG, PNG o WebP válidas." }, { status: 400 });

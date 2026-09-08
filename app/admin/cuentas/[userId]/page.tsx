@@ -5,6 +5,7 @@ import { AccountIdentityFields } from "@/app/account-identity-fields";
 import { getDb } from "@/db";
 import { profiles, users } from "@/db/schema";
 import { getCurrentAdmin, safeAdminReturnTo } from "@/lib/auth";
+import { adminHasCapability } from "@/lib/admin-permissions";
 import { profilePublicPath } from "@/lib/profile";
 import { AdminPageHeading, AdminShell } from "../../_components";
 import { AdminPasswordField } from "../AdminPasswordField";
@@ -38,6 +39,7 @@ export default async function AdminAccountDetailsPage({ params, searchParams }: 
   const admin = await getCurrentAdmin();
   const [{ userId }, query, db] = await Promise.all([params, searchParams, getDb()]);
   if (!admin) redirect(`/api/auth/github/start?return_to=/admin/cuentas/${encodeURIComponent(userId)}`);
+  if (!adminHasCapability(admin, "accounts.manage")) redirect("/admin/acceso-denegado?reason=permission");
 
   const [account] = await db.select({
     id: users.id,

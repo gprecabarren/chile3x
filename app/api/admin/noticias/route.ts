@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { newsPosts } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
+import { adminHasCapability } from "@/lib/admin-permissions";
 import { safeNewsCanonicalUrl, sanitizeNewsHtml, textFromHtml, uniqueNewsSlug } from "@/lib/news";
 import { recordAdminAudit } from "@/lib/admin-audit";
 
 export async function POST(request: NextRequest) {
   try { assertSameOrigin(request); } catch { return new Response("Solicitud no válida.", { status: 403 }); }
   const admin = await getCurrentAdmin(); if (!admin) return new Response("No autorizado.", { status: 401 });
+  if (!adminHasCapability(admin, "news.manage")) return new Response("No tienes permiso para administrar noticias.", { status: 403 });
   const form = await request.formData(); const title = String(form.get("title") ?? "").trim().slice(0, 140); const contentHtml = sanitizeNewsHtml(String(form.get("content_html") ?? ""));
   if (title.length < 5 || textFromHtml(contentHtml).length < 30) return NextResponse.redirect(new URL("/admin/noticias?error=content", request.url), 303);
   const status = form.get("status") === "published" ? "published" as const : "draft" as const; const now = new Date().toISOString();

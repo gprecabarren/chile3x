@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { bugReportMessages, bugReports, users } from "@/db/schema";
 import { getCurrentAdmin } from "@/lib/auth";
+import { adminHasCapability } from "@/lib/admin-permissions";
 import { AdminPageHeading, AdminShell } from "../_components";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +15,7 @@ const statusLabel: Record<string, string> = { new: "Nuevo", reviewing: "En revis
 export default async function AdminBugReportsPage({ searchParams }: { searchParams: Promise<{ estado?: string; notice?: string }> }) {
   const admin = await getCurrentAdmin();
   if (!admin) redirect("/api/auth/github/start?return_to=/admin/bugs");
+  if (!adminHasCapability(admin, "bugs.manage")) redirect("/admin/acceso-denegado?reason=permission");
   const query = await searchParams;
   const selected = Object.hasOwn(labels, query.estado ?? "") ? query.estado! : "new";
   const db = await getDb();

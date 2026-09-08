@@ -7,6 +7,7 @@ import { readAccountIdentity } from "@/lib/account-data";
 import { MIN_PASSWORD_LENGTH } from "@/lib/password-policy";
 import { generateUniqueAccountUsername } from "@/lib/account-username";
 import { recordAdminAudit } from "@/lib/admin-audit";
+import { adminHasCapability } from "@/lib/admin-permissions";
 
 function redirectWithNotice(request: Request, notice: string) {
   const url = new URL("/admin/cuentas", request.url);
@@ -30,6 +31,7 @@ export async function POST(request: NextRequest) {
   if (!admin) {
     return new Response("No autorizado.", { status: 401 });
   }
+  if (!adminHasCapability(admin, "accounts.manage")) return new Response("No tienes permiso para administrar cuentas.", { status: 403 });
 
   const formData = await request.formData();
   const displayName = formValue(formData, "display_name").trim().slice(0, 80);

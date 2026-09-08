@@ -5,6 +5,7 @@ import { ProfileForm } from "@/app/mi-cuenta/ProfileForm";
 import { getDb } from "@/db";
 import { profiles, users } from "@/db/schema";
 import { getCurrentAdmin } from "@/lib/auth";
+import { adminHasCapability } from "@/lib/admin-permissions";
 import { AdminPageHeading, AdminShell } from "@/app/admin/_components";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +17,7 @@ export default async function AdminCreateProfilePage({ params, searchParams }: {
   const admin = await getCurrentAdmin();
   const [{ userId }, query, db] = await Promise.all([params, searchParams, getDb()]);
   if (!admin) redirect(`/api/auth/github/start?return_to=/admin/cuentas/${encodeURIComponent(userId)}/crear-perfil`);
+  if (!adminHasCapability(admin, "accounts.manage")) redirect("/admin/acceso-denegado?reason=permission");
 
   const [[owner], [escort]] = await Promise.all([
     db.select({ id: users.id, email: users.email, displayName: users.displayName, role: users.role, isActive: users.isActive })

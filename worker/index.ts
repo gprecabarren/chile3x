@@ -23,12 +23,12 @@ interface ExecutionContext {
 
 function withSecurityHeaders(response: Response) {
   const headers = new Headers(response.headers);
-  headers.set("strict-transport-security", "max-age=31536000; includeSubDomains");
+  headers.set("strict-transport-security", "max-age=63072000; includeSubDomains; preload");
   headers.set("x-content-type-options", "nosniff");
   headers.set("x-frame-options", "DENY");
   headers.set("referrer-policy", "strict-origin-when-cross-origin");
   headers.set("permissions-policy", "camera=(self), geolocation=(self), microphone=(self)");
-  headers.set("content-security-policy", "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://www.googletagmanager.com https://news.google.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob:; font-src 'self' data:; frame-src https://challenges.cloudflare.com https://www.googletagmanager.com https://news.google.com; connect-src 'self' https://challenges.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com https://news.google.com https://cdn.jsdelivr.net https://storage.googleapis.com; upgrade-insecure-requests");
+  headers.set("content-security-policy", "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://www.googletagmanager.com https://news.google.com https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob:; font-src 'self' data:; frame-src https://challenges.cloudflare.com https://www.googletagmanager.com https://news.google.com; connect-src 'self' https://challenges.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com https://news.google.com https://cdn.jsdelivr.net https://storage.googleapis.com https://cloudflareinsights.com; upgrade-insecure-requests");
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 

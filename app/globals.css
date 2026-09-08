@@ -1127,6 +1127,20 @@ select:disabled { opacity: .68; }
 .mobile-menu-session-summary strong { min-width: 0; overflow: hidden; color: #fff; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .mobile-menu-session-summary small { min-width: 0; overflow: hidden; color: #aeb8ca; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 
+/* Una sesión administrativa agrega identidad y cierre de sesión al encabezado.
+   Se reserva una fila propia para la navegación antes de permitir que esos
+   controles se compriman o se monten entre sí. */
+@media (min-width: 861px) {
+  .public-header.has-session { flex-wrap: wrap; gap: 10px 16px; }
+  .public-header.has-session .public-navigation { order: 4; width: 100%; margin-left: 0; justify-content: space-between; }
+  .public-header.has-session .public-account-summary { order: 2; flex: 1 1 210px; min-width: 180px; max-width: none; }
+  .public-header.has-session .public-session-actions,
+  .public-header.has-session .portal-contact-links-header,
+  .public-header.has-session .public-header-actions { order: 3; }
+  .public-header.has-session .public-session-actions { width: auto; flex-wrap: nowrap; padding-top: 0; }
+  .public-header.has-session .public-session-actions button { white-space: nowrap; }
+}
+
 @media (max-width: 1440px) and (min-width: 861px) {
   .public-header { flex-wrap: wrap; }
   .public-header .public-navigation { order: 4; width: 100%; margin-left: 0; }

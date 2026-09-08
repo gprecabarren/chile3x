@@ -55,7 +55,7 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
   return (
     <>
       <div className="age-strip"><span>+18</span>Este sitio está destinado exclusivamente a personas mayores de edad.</div>
-      <header className="site-header public-header">
+      <header className={`site-header public-header${hasAnySession ? " has-session" : ""}`}>
         <Link className="brand" href="/" aria-label="Chile3X, inicio"><Image src="/chile3x-logo-primary.jpeg" alt="Chile3X" width={800} height={225} priority unoptimized /></Link>
         <nav className="public-navigation" aria-label="Navegación principal">
           <div className="public-navigation-group public-navigation-directory" aria-label="Directorio">

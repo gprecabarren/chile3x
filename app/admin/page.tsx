@@ -35,10 +35,34 @@ export default async function AdminHome() {
   const pendingMedia = Number(pendingPublicMedia?.total ?? 0) + Number(pendingExclusiveMedia?.total ?? 0);
 
   const summary = [
-    ["Anuncios registrados", allProfiles?.total ?? 0, "Incluye borradores, anuncios en revisión y publicados."],
-    ["Pendientes de revisión", pendingProfiles?.total ?? 0, "Revisa identidad fuera del sitio y aprueba solo material moderado."],
-    ["Archivos pendientes", pendingMedia, "Incluye fotos, videos y contenido exclusivo que aún requieren moderación."],
-    ["Pausados", pausedProfiles?.total ?? 0, "Los períodos de publicación se administran manualmente por ahora."],
+    {
+      label: "Anuncios registrados",
+      value: allProfiles?.total ?? 0,
+      hint: "Incluye borradores, anuncios en revisión y publicados.",
+      href: "/admin/perfiles",
+      action: "Ver todos los anuncios",
+    },
+    {
+      label: "Pendientes de revisión",
+      value: pendingProfiles?.total ?? 0,
+      hint: "Revisa identidad fuera del sitio y aprueba solo material moderado.",
+      href: "/admin/perfiles?estado=pending",
+      action: "Revisar pendientes",
+    },
+    {
+      label: "Archivos pendientes",
+      value: pendingMedia,
+      hint: "Incluye fotos, videos y contenido exclusivo que aún requieren moderación.",
+      href: "/admin/medios?estado=pending",
+      action: "Revisar archivos",
+    },
+    {
+      label: "Pausados",
+      value: pausedProfiles?.total ?? 0,
+      hint: "Los períodos de publicación se administran manualmente por ahora.",
+      href: "/admin/perfiles?estado=paused",
+      action: "Ver anuncios pausados",
+    },
   ];
 
   return (
@@ -50,12 +74,21 @@ export default async function AdminHome() {
           description="Este acceso puede ver y administrar todas las cuentas, sus anuncios asociados y la configuración base del portal."
         />
         <section className="admin-stat-grid" aria-label="Resumen del sitio">
-          {summary.map(([label, value, hint]) => (
-            <article className="admin-stat" key={label as string}>
-              <span>{label}</span>
-              <strong>{value}</strong>
-              <p>{hint}</p>
-            </article>
+          {summary.map((item) => (
+            <Link
+              className="admin-stat-link"
+              href={item.href}
+              prefetch={false}
+              key={item.label}
+              aria-label={`${item.action}: ${item.value}`}
+            >
+              <article className="admin-stat">
+                <span className="admin-stat-label">{item.label}</span>
+                <strong>{item.value}</strong>
+                <p>{item.hint}</p>
+                <span className="admin-stat-action">{item.action}<b aria-hidden="true">→</b></span>
+              </article>
+            </Link>
           ))}
         </section>
         {pendingMedia > 0 && <section className="admin-review-alert" role="status">

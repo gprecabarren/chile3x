@@ -1636,3 +1636,114 @@ input[type="submit"] { text-transform: none !important; letter-spacing: .015em; 
 @media (prefers-reduced-motion: reduce) {
   .form-progress-spinner { animation-duration: 1.5s; }
 }
+
+/* Paneles operativos: Manrope aporta personalidad sin perder legibilidad en datos densos. */
+.admin-root,
+.account-root {
+  font-family: var(--font-panel), Arial, Helvetica, sans-serif;
+  font-feature-settings: "liga" 1, "kern" 1;
+}
+.admin-root h1,
+.admin-root h2,
+.admin-root h3,
+.account-root h1,
+.account-root h2,
+.account-root h3,
+.admin-root [class*="stat"] strong,
+.account-root [class*="stat"] strong {
+  font-family: var(--font-panel), Arial, Helvetica, sans-serif;
+  letter-spacing: -.035em;
+}
+.admin-brand small,
+.account-brand small {
+  font-family: var(--font-panel), Arial, Helvetica, sans-serif;
+}
+
+/* El texto de acciones acompaña el alto táctil de los botones sin inflar iconos. */
+.admin-root .button,
+.account-root .button,
+.admin-root button:not([aria-label]),
+.account-root button:not([aria-label]) {
+  font-size: 14px !important;
+  font-weight: 750;
+  letter-spacing: .005em;
+  line-height: 1.25;
+}
+.admin-root .button,
+.account-root .button {
+  min-height: 44px;
+  padding: 11px 16px;
+}
+.admin-root button:not(.button):not([aria-label]),
+.account-root button:not(.button):not([aria-label]) {
+  font-size: 13px !important;
+}
+
+/* El resumen administrativo funciona como navegación y muestra su destino. */
+.admin-stat-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.admin-stat-link {
+  min-width: 0;
+  display: block;
+  border-radius: var(--radius-md);
+  color: inherit;
+  outline: none;
+}
+.admin-stat-link .admin-stat {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: border-color .18s ease, background .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+.admin-stat-link:hover .admin-stat,
+.admin-stat-link:focus-visible .admin-stat {
+  border-color: #e25962;
+  background: #171d2b;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .25);
+  transform: translateY(-3px);
+}
+.admin-stat-link:focus-visible .admin-stat {
+  outline: 3px solid rgba(239, 94, 103, .28);
+  outline-offset: 3px;
+}
+.admin-stat-label {
+  color: #b1bac9;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.admin-stat-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 18px;
+  color: #ff9da3;
+  font-size: 13px;
+  font-weight: 750;
+}
+.admin-stat-action b {
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1;
+  transition: transform .18s ease;
+}
+.admin-stat-link:hover .admin-stat-action b,
+.admin-stat-link:focus-visible .admin-stat-action b {
+  transform: translateX(3px);
+}
+.admin-content > .admin-stat-grid + .admin-review-alert {
+  margin-top: 24px;
+}
+
+@media (max-width: 1040px) {
+  .admin-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 720px) {
+  .admin-stat-grid { grid-template-columns: 1fr; }
+  .admin-stat-link .admin-stat { min-height: 178px; }
+  .admin-root .button,
+  .account-root .button { width: 100%; white-space: normal; text-align: center; }
+}

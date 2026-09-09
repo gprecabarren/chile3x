@@ -23,6 +23,8 @@ El proyecto está construido para operar en Cloudflare con Workers, D1 y R2, sin
 - `Administración > Medios > Medios por cuenta` reúne galerías públicas y contenido exclusivo por propietario, prioriza cuentas con archivos en revisión y permite filtrar por cuenta, estado y tipo de archivo. Cada vista obtiene de D1 solo los 12 grupos de la página actual.
 - Los formularios y filtros muestran un indicador global mientras procesan. Si la respuesta supera doce segundos, se presenta una advertencia explícita de demora sin volver a enviar la operación automáticamente.
 - En pantallas móviles, el acceso flotante a WhatsApp queda fijado abajo a la derecha para no cubrir títulos ni controles.
+- Los paneles de administración y de cuenta utilizan Manrope autohospedada como tipografía de interfaz. Los botones de acción usan texto de 13–14 px acorde con su altura táctil, manteniendo compactos los controles que solo contienen iconos.
+- Las cuatro tarjetas del resumen administrativo funcionan como accesos directos a todos los anuncios, anuncios pendientes, archivos pendientes y anuncios pausados. El aviso rojo de moderación queda separado visualmente de las métricas para mejorar la jerarquía en móvil y escritorio.
 
 Verificación reproducible:
 

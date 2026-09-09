@@ -16,6 +16,8 @@ const notices: Record<string, string> = {
   reactivated: "El acceso fue reactivado.",
   sessions_revoked: "Todas las sesiones de esa persona quedaron cerradas.",
   duplicate: "Ese usuario de GitHub ya tiene un acceso activo.",
+  email_conflict: "Ese correo ya pertenece a una cuenta de anunciante o tester. Debes resolver esa cuenta antes de reservarlo para administración.",
+  email_duplicate: "Ese correo ya está reservado para otra identidad administrativa.",
   invalid: "Revisa el usuario de GitHub y el nivel seleccionado.",
   protected: "La identidad propietaria está protegida y no puede modificarse desde el panel.",
   missing: "Ese acceso ya no existe.",
@@ -53,6 +55,7 @@ export default async function AdministratorsPage({ searchParams }: { searchParam
     createdAt: adminGithubAccess.createdAt,
     revokedAt: adminGithubAccess.revokedAt,
     userId: adminGithubAccess.userId,
+    protectedEmail: adminGithubAccess.protectedEmail,
     displayName: users.displayName,
     githubEmail: adminGithubIdentities.githubEmail,
     lastLoginAt: adminGithubIdentities.lastLoginAt,
@@ -71,7 +74,7 @@ export default async function AdministratorsPage({ searchParams }: { searchParam
       description="Autoriza identidades de GitHub, limita lo que puede hacer cada persona y revoca accesos de forma inmediata."
       backHref="/admin"
     />
-    {query.notice && notices[query.notice] && <p className={query.notice === "invalid" || query.notice === "duplicate" || query.notice === "protected" || query.notice === "missing" ? "admin-error" : "admin-success"} role="status">{notices[query.notice]}</p>}
+    {query.notice && notices[query.notice] && <p className={query.notice === "invalid" || query.notice === "duplicate" || query.notice === "email_conflict" || query.notice === "email_duplicate" || query.notice === "protected" || query.notice === "missing" ? "admin-error" : "admin-success"} role="status">{notices[query.notice]}</p>}
     <section className="admin-access-summary" aria-label="Resumen de accesos">
       <div><span>Activos</span><strong>{active}</strong></div>
       <div><span>Sin primer ingreso</span><strong>{pending}</strong></div>
@@ -82,10 +85,11 @@ export default async function AdministratorsPage({ searchParams }: { searchParam
       <div>
         <p>ACCESO EXCLUSIVO POR GITHUB</p>
         <h2>Agregar una persona</h2>
-        <span>Escribe su usuario exacto de GitHub, sin @. Los permisos del repositorio son independientes y nunca habilitan este panel por sí solos.</span>
+        <span>Escribe su usuario exacto y un correo que GitHub muestre como verificado. Ese correo quedará reservado para administración y no podrá usarse a la vez en una cuenta de anunciante o tester.</span>
       </div>
       <form action="/api/admin/administradores" method="post">
         <label>Usuario de GitHub<div className="admin-access-login-field"><span aria-hidden="true">@</span><input name="github_login" required minLength={1} maxLength={39} autoCapitalize="none" autoCorrect="off" spellCheck={false} placeholder="usuario-github" /></div></label>
+        <label>Correo verificado en GitHub<input name="protected_email" type="email" required maxLength={160} autoComplete="off" placeholder="persona@correo.com" /><small>Al ingresar, GitHub deberá confirmar exactamente este correo.</small></label>
         <label>Nivel de acceso<select name="access_level" defaultValue="moderator">
           <option value="moderator">Moderación</option>
           <option value="administrator">Administrador</option>
@@ -109,7 +113,7 @@ export default async function AdministratorsPage({ searchParams }: { searchParam
         </header>
         {grant.isProtectedOwner && <p className="admin-access-protected">Identidad propietaria protegida. No puede ser removida ni modificada desde el panel.</p>}
         <dl>
-          <div><dt>Correo confirmado por GitHub</dt><dd>{grant.githubEmail ?? (grant.userId ? "No disponible" : "Se verá tras el primer ingreso")}</dd></div>
+          <div><dt>Correo administrativo</dt><dd>{grant.githubEmail ?? grant.protectedEmail ?? "No disponible"}{!grant.githubEmail && grant.protectedEmail ? " · reservado hasta el primer ingreso" : ""}</dd></div>
           <div><dt>Último ingreso</dt><dd>{formatDate(grant.lastLoginAt)}</dd></div>
           <div><dt>Autorizado</dt><dd>{formatDate(grant.createdAt)}</dd></div>
         </dl>

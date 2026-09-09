@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `admin_github_access_email_unique` ON `admin_github_access` (`protected_email`);

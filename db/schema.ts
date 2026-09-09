@@ -86,6 +86,7 @@ export const adminGithubAccess = sqliteTable("admin_github_access", {
   uniqueIndex("admin_github_access_login_unique").on(table.githubLogin),
   uniqueIndex("admin_github_access_id_unique").on(table.githubUserId),
   uniqueIndex("admin_github_access_user_unique").on(table.userId),
+  uniqueIndex("admin_github_access_email_unique").on(table.protectedEmail),
   index("admin_github_access_active_level_idx").on(table.isActive, table.accessLevel),
 ]);
 

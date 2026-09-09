@@ -22,6 +22,7 @@ El proyecto está construido para operar en Cloudflare con Workers, D1 y R2, sin
 - `Administración > Cuentas` aplica búsqueda, estado y anuncios asociados directamente en D1 y pagina de 30 en 30. Se desactivó la precarga automática de fichas pesadas para impedir ráfagas de solicitudes RSC al abrir un listado.
 - `Administración > Medios > Medios por cuenta` reúne galerías públicas y contenido exclusivo por propietario, prioriza cuentas con archivos en revisión y permite filtrar por cuenta, estado y tipo de archivo. Cada vista obtiene de D1 solo los 12 grupos de la página actual.
 - Los formularios y filtros muestran un indicador global mientras procesan. Si la respuesta supera doce segundos, se presenta una advertencia explícita de demora sin volver a enviar la operación automáticamente.
+- En pantallas móviles, el acceso flotante a WhatsApp queda fijado abajo a la derecha para no cubrir títulos ni controles.
 
 Verificación reproducible:
 

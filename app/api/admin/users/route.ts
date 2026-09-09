@@ -8,6 +8,7 @@ import { MIN_PASSWORD_LENGTH } from "@/lib/password-policy";
 import { generateUniqueAccountUsername } from "@/lib/account-username";
 import { recordAdminAudit } from "@/lib/admin-audit";
 import { adminHasCapability } from "@/lib/admin-permissions";
+import { isReservedAdminEmail } from "@/lib/admin-email";
 
 function redirectWithNotice(request: Request, notice: string) {
   const url = new URL("/admin/cuentas", request.url);
@@ -45,6 +46,7 @@ export async function POST(request: NextRequest) {
   }
 
   const db = await getDb();
+  if (await isReservedAdminEmail(email)) return redirectWithNotice(request, "admin_email");
   const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
   if (existing) {
     return redirectWithNotice(request, "duplicate");

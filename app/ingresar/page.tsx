@@ -5,6 +5,8 @@ import { AuthTurnstile } from "@/app/AuthTurnstile";
 import { OfficialChile3xLogo } from "@/app/OfficialChile3xLogo";
 import { TURNSTILE_AUTH_LOGIN_ACTION } from "@/lib/turnstile";
 import { privatePageMetadata } from "@/lib/seo";
+import { GoogleSignInButton } from "@/app/GoogleSignInButton";
+import { getSiteSettings } from "@/lib/site-settings";
 
 export const metadata: Metadata = privatePageMetadata({
   title: "Ingresar",
@@ -22,6 +24,7 @@ const messages: Record<string, string> = {
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; return_to?: string; verified?: string; reset?: string; closed?: string }> }) {
   const params = await searchParams;
   const returnTo = safeAccountReturnTo(params.return_to ?? null);
+  const settings = await getSiteSettings();
   return <main className="auth-page"><section className="auth-card">
     <Link className="auth-brand" href="/"><OfficialChile3xLogo priority /></Link>
     <p className="eyebrow">CUENTA DE ANUNCIANTE</p><h1>Vuelve a tu panel.</h1><p>Gestiona tus anuncios, actualiza cada publicación y consulta su estado de revisión.</p>
@@ -30,6 +33,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     {params.reset === "1" && <p className="auth-success" role="status">Tu contraseña fue actualizada. Ya puedes iniciar sesión.</p>}
     {params.closed === "1" && <p className="auth-success" role="status">Tu sesión fue cerrada correctamente.</p>}
     {params.closed === "admin" && <p className="auth-success" role="status">La sesión de administrador fue cerrada correctamente.</p>}
+    {settings.google_oauth_client_id && <GoogleSignInButton clientId={settings.google_oauth_client_id} intent="login" returnTo={returnTo} />}
+    {settings.google_oauth_client_id && <div className="auth-divider"><span>o ingresa con tu contraseña</span></div>}
     <form action="/api/auth/login" method="post" className="auth-form"><input name="return_to" type="hidden" value={returnTo} /><label>Correo electrónico<input name="email" type="email" required maxLength={160} autoComplete="email" placeholder="Ej. valentina@correo.cl" /></label><label>Contraseña<input name="password" type="password" required autoComplete="current-password" placeholder="Tu contraseña" /></label><AuthTurnstile action={TURNSTILE_AUTH_LOGIN_ACTION} /><button className="button button-primary" type="submit">Ingresar</button></form>
     <p className="auth-switch"><Link href="/recuperar-clave">Olvidé mi contraseña</Link></p>
     <p className="auth-switch">¿Aún no publicas? <Link href={`/registro?return_to=${encodeURIComponent(returnTo)}`}>Crear cuenta</Link></p>

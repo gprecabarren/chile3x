@@ -149,7 +149,10 @@ export default function PrivacyPage() {
         <h2>12. Cookies, almacenamiento local y medición opcional</h2>
         <h3>12.1. Funciones necesarias</h3>
         <p>Utilizamos cookies o almacenamiento equivalente para mantener la sesión, recordar la confirmación de mayoría de edad, conservar preferencias de privacidad, proteger formularios, limitar abuso, recordar historias vistas y operar funciones solicitadas. Estas tecnologías son necesarias para que ciertas partes del sitio funcionen y no se utilizan para publicidad conductual.</p>
-        <h3>12.2. Google Tag Manager y Google Analytics</h3>
+        <h3>12.2. Inicio de sesión con Google</h3>
+        <p>Si eliges continuar con Google, recibimos el identificador estable de tu cuenta de Google, tu correo verificado y el nombre que Google comparte. Usamos el identificador y el correo exclusivamente para comprobar tu identidad, vincular o crear tu cuenta y evitar accesos duplicados; el nombre solo rellena inicialmente campos que puedes editar durante el registro.</p>
+        <p>No solicitamos acceso a Gmail, Drive, contactos, archivos ni calendario, y no almacenamos tokens de acceso de Google. El correo queda vinculado y no puede modificarse desde la cuenta. Si abandonas el registro, los datos del intento se eliminan automáticamente al vencer el plazo breve de seguridad.</p>
+        <h3>12.3. Google Tag Manager y Google Analytics</h3>
         <p>La medición es opcional y solo se carga si eliges <strong>“Aceptar medición”</strong> en el aviso de privacidad. Si aceptas, medimos visitas y acciones generales como registros, envíos de anuncios, clics de contacto, favoritos, likes y reseñas para entender el uso y mejorar Chile3X.</p>
         <p>No configuramos el envío a Google de nombres, correos, teléfonos, RUT, direcciones, archivos privados, texto libre ni identificadores internos de perfiles como parámetros de Analytics. Google puede tratar información técnica como dirección IP, navegador, dispositivo y señales de interacción conforme a sus propias condiciones y medidas disponibles.</p>
         <p>Si eliges <strong>“Solo necesarias”</strong>, el sitio seguirá funcionando sin cargar Google Tag Manager ni Google Analytics. Puedes retirar o cambiar tu elección en cualquier momento; el cambio no invalida el tratamiento anterior basado en tu consentimiento.</p>
@@ -161,7 +164,7 @@ export default function PrivacyPage() {
         <p>Para operar Chile3X utilizamos proveedores que tratan datos por cuenta del portal o prestan infraestructura bajo sus propios términos:</p>
         <ul>
           <li><strong>Cloudflare:</strong> alojamiento del sitio, base de datos, almacenamiento de archivos, red de entrega, certificados, seguridad y Turnstile para combatir bots;</li>
-          <li><strong>Google:</strong> correo transaccional y, solo con consentimiento, Google Tag Manager y Google Analytics;</li>
+          <li><strong>Google:</strong> autenticación cuando eliges “Continuar con Google”, correo transaccional y, solo con consentimiento, Google Tag Manager y Google Analytics;</li>
           <li><strong>proveedores de navegador, sistema operativo o redes externas:</strong> únicamente cuando la persona utiliza esas aplicaciones o sigue un enlace.</li>
         </ul>
         <p>Estos servicios pueden procesar o respaldar información fuera de Chile. Chile3X procura escoger proveedores reconocidos, limitar los datos enviados, configurar accesos y aplicar salvaguardas contractuales y técnicas razonables. La ubicación de la infraestructura puede cambiar sin que ello signifique una venta de datos.</p>

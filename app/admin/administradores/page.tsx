@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { adminGithubAccess, adminGithubIdentities, users } from "@/db/schema";
-import { ADMIN_ACCESS_DESCRIPTIONS, ADMIN_ACCESS_LABELS, adminHasCapability } from "@/lib/admin-permissions";
+import { ADMIN_ACCESS_CAPABILITIES, ADMIN_ACCESS_DESCRIPTIONS, ADMIN_ACCESS_LABELS, ADMIN_CAPABILITY_LABELS, adminHasCapability } from "@/lib/admin-permissions";
 import { getCurrentAdmin } from "@/lib/auth";
 import { AdminPageHeading, AdminShell } from "../_components";
 
@@ -127,6 +127,15 @@ export default async function AdministratorsPage({ searchParams }: { searchParam
           </> : <form action={`/api/admin/administradores/${encodeURIComponent(grant.id)}`} method="post"><input type="hidden" name="intent" value="reactivate" /><button className="button button-primary" type="submit">Reactivar acceso</button></form>}
         </div>}
       </article>)}</div>
+    </section>
+    <section className="admin-role-guide" aria-labelledby="admin-role-guide-title">
+      <header><p>PERMISOS POR FUNCIÓN</p><h2 id="admin-role-guide-title">Qué puede hacer cada administrador</h2><span>Los permisos se aplican en el servidor, no solo en el menú. Una opción oculta tampoco puede abrirse escribiendo su URL directamente.</span></header>
+      <div>{(["owner", "administrator", "moderator", "editor", "support"] as const).map((level) => <article key={level}>
+        <h3>{ADMIN_ACCESS_LABELS[level]}</h3>
+        <p>{ADMIN_ACCESS_DESCRIPTIONS[level]}</p>
+        <ul>{ADMIN_ACCESS_CAPABILITIES[level].map((capability) => <li key={capability}>{ADMIN_CAPABILITY_LABELS[capability]}</li>)}</ul>
+      </article>)}</div>
+      <aside><strong>Separación de identidades</strong><span>Un correo verificado solo puede pertenecer al panel administrativo o a una cuenta de anunciante/tester, nunca a ambos. El primer ingreso con GitHub confirma y reserva el correo administrativo.</span></aside>
     </section>
   </div></AdminShell>;
 }

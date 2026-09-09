@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { users } from "@/db/schema";
+import { isReservedAdminEmail } from "@/lib/admin-email";
 import { assertSameOrigin } from "@/lib/auth";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -29,8 +30,11 @@ export async function POST(request: NextRequest) {
   if (!emailPattern.test(email)) return response({ exists: false });
 
   try {
-    const [account] = await (await getDb()).select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
-    return response({ exists: Boolean(account) });
+    const [[account], reserved] = await Promise.all([
+      (await getDb()).select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1),
+      isReservedAdminEmail(email),
+    ]);
+    return response({ exists: Boolean(account) || reserved });
   } catch (error) {
     console.error("Email availability check failed", error);
     return response({ exists: false }, 503);

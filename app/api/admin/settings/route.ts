@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
   }
 
   const optionalText = [
-    ["google_site_verification", 180], ["google_analytics_id", 20], ["contact_whatsapp", 22],
+    ["google_site_verification", 180], ["google_analytics_id", 20], ["google_oauth_client_id", 180], ["contact_whatsapp", 22],
     ["contact_telegram", 180], ["contact_instagram", 180], ["contact_email", 180],
   ] as const;
   const values: Record<string, string> = {};
@@ -86,6 +86,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (values.google_analytics_id && !/^G-[A-Z0-9]{6,15}$/.test(values.google_analytics_id)) return new Response("El identificador de Analytics no tiene un formato válido.", { status: 400 });
+  if (values.google_oauth_client_id && !/^\d+-[a-z0-9-]+\.apps\.googleusercontent\.com$/i.test(values.google_oauth_client_id)) return new Response("El ID del cliente de Google no tiene un formato válido.", { status: 400 });
   if (values.contact_whatsapp && !/^\+?[\d\s()-]{8,22}$/.test(values.contact_whatsapp)) return new Response("El WhatsApp de contacto no tiene un formato válido.", { status: 400 });
   if (values.contact_telegram && !(/^@?[A-Za-z0-9_]{5,32}$/.test(values.contact_telegram) || /^https:\/\/(t\.me|www\.t\.me)\/[A-Za-z0-9_]{5,32}\/?$/i.test(values.contact_telegram))) return new Response("Telegram debe ser un usuario o enlace t.me válido.", { status: 400 });
   if (values.contact_instagram && !(/^@?[A-Za-z0-9._]{1,30}$/.test(values.contact_instagram) || /^https:\/\/(www\.)?instagram\.com\/[A-Za-z0-9._]+\/?$/i.test(values.contact_instagram))) return new Response("Instagram debe ser un usuario o enlace de Instagram válido.", { status: 400 });

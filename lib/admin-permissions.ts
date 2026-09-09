@@ -15,6 +15,20 @@ export type AdminCapability =
   | "audit.view"
   | "private.view";
 
+export const ADMIN_CAPABILITY_LABELS: Record<AdminCapability, string> = {
+  "admins.manage": "Agregar, cambiar y revocar administradores",
+  "settings.manage": "Cambiar la configuración general, SEO y contactos",
+  "accounts.manage": "Administrar cuentas de anunciantes y testers",
+  "profiles.moderate": "Revisar y cambiar el estado de anuncios",
+  "media.moderate": "Aprobar o rechazar fotos, videos y contenido exclusivo",
+  "reviews.moderate": "Moderar reseñas públicas",
+  "reports.manage": "Atender reportes sobre anuncios",
+  "bugs.manage": "Atender reportes enviados por testers",
+  "news.manage": "Crear, editar y publicar noticias",
+  "audit.view": "Consultar el historial de actividad administrativa",
+  "private.view": "Consultar documentos y datos privados necesarios para su función",
+};
+
 export const ADMIN_ACCESS_LABELS: Record<AdminAccessLevel, string> = {
   owner: "Propietario",
   administrator: "Administrador",
@@ -31,7 +45,7 @@ export const ADMIN_ACCESS_DESCRIPTIONS: Record<AdminAccessLevel, string> = {
   support: "Atiende reportes de usuarios y errores enviados por testers.",
 };
 
-const CAPABILITIES: Record<AdminAccessLevel, readonly AdminCapability[]> = {
+export const ADMIN_ACCESS_CAPABILITIES: Record<AdminAccessLevel, readonly AdminCapability[]> = {
   owner: [
     "admins.manage", "settings.manage", "accounts.manage", "profiles.moderate",
     "media.moderate", "reviews.moderate", "reports.manage", "bugs.manage",
@@ -59,5 +73,5 @@ export function adminHasCapability(
   capability: AdminCapability,
 ) {
   if (capability === "admins.manage") return Boolean(admin?.accessLevel === "owner" && admin.isProtectedOwner);
-  return Boolean(admin && CAPABILITIES[admin.accessLevel].includes(capability));
+  return Boolean(admin && ADMIN_ACCESS_CAPABILITIES[admin.accessLevel].includes(capability));
 }

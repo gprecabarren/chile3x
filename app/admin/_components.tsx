@@ -94,17 +94,15 @@ export async function AdminShell({ user, children }: { user: AdminUser; children
     adminHasCapability(user, "reports.manage") ? getPendingReportsCount() : 0,
     adminHasCapability(user, "bugs.manage") ? getNewBugReportsCount() : 0,
   ]);
-  const accountLabel = user.displayName?.trim().toLowerCase() === "propietario chile3x" ? "Propietario" : user.displayName ?? user.email;
-
   return (
     <main className="admin-root">
       <header className="admin-header">
         <Link className="admin-brand" href="/"><OfficialChile3xLogo priority /><small>ADMIN</small></Link>
         <AdminNavigation user={user} pendingCount={pendingCount} pendingMedia={pendingMedia} pendingReports={pendingReports} pendingBugs={pendingBugs} />
         <div className="admin-account">
-          <span><strong>{accountLabel}</strong><small>@{user.githubLogin} · {ADMIN_ACCESS_LABELS[user.accessLevel]}</small></span>
+          <span><strong>@{user.githubLogin} · {ADMIN_ACCESS_LABELS[user.accessLevel]}</strong></span>
           <form action="/api/auth/logout" method="post">
-            <button type="submit" title="Cerrar la sesión administrativa">Cerrar sesión de administrador</button>
+            <button type="submit" title="Cerrar la sesión administrativa">Cerrar sesión administrador</button>
           </form>
         </div>
         <details className="admin-mobile-navigation">

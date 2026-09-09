@@ -34,7 +34,7 @@ La plataforma se encuentra en beta controlada. Los pagos y la venta automatizada
 
 Actualmente incluye:
 
-- Registro, inicio de sesión, verificación de correo, recuperación de acceso y cambio de contraseña desde la cuenta.
+- Registro, inicio de sesión, verificación de correo, recuperación de acceso y cambio de contraseña desde la cuenta. Como alternativa, el botón oficial de Google permite vincular un correo verificado sin guardar tokens de acceso ni solicitar Gmail, Drive, contactos o calendario.
 - Cuenta separada de anuncio: una cuenta puede administrar anuncios, y cada anuncio conserva su propio enlace público `@usuario-del-anuncio`.
 - Nombre de usuario único por cuenta, generado al crearla y editable desde `Mi cuenta > Mis datos`. No puede coincidir con otra cuenta ni con el `@` de un anuncio.
 - Una cuenta puede tener un anuncio Escort y varios anuncios de Agencia o Arriendo. Una Agencia puede solicitar incorporar anuncios Escort existentes, que requieren aceptación de la persona dueña.
@@ -63,7 +63,7 @@ Actualmente incluye:
 
 Una cuenta identifica a una persona que visita, compra contenido, anuncia o administra el portal. Tiene correo, contraseña, nombre visible, nombre de usuario, datos personales protegidos y un estado de acceso.
 
-El correo y la fecha de nacimiento no se modifican desde la cuenta para evitar suplantaciones. Los cambios que requieran corrección se gestionan por soporte. La cuenta puede cambiar su contraseña sin conocer la anterior mientras ya esté autenticada.
+El correo y la fecha de nacimiento no se modifican desde la cuenta para evitar suplantaciones. Los cambios que requieran corrección se gestionan por soporte. Una cuenta vinculada a Google conserva permanentemente el correo verificado con el que se creó. La cuenta puede cambiar su contraseña sin conocer la anterior mientras ya esté autenticada.
 
 ### Anuncio
 
@@ -98,8 +98,10 @@ Los archivos heredados de la antigua galería privada se migran a este modelo si
 
 - Sesiones protegidas por cookies seguras y contraseñas derivadas con PBKDF2.
 - GitHub OAuth solo para administración del sitio.
+- Google Identity Services se utiliza solo para cuentas públicas. El servidor valida la firma RS256, emisor, audiencia, vigencia, nonce, correo verificado e identificador estable `sub` antes de crear una sesión; no acepta el correo enviado directamente por el navegador como prueba de identidad.
 - Solo la identidad propietaria protegida —GitHub `gprecabarren` con `genaropiedra@hotmail.com` verificado por GitHub— puede abrir **Administradores**, agregar o eliminar accesos y cambiar sus niveles. Ser colaborador del repositorio no concede acceso al panel.
 - Cada GitHub autorizado queda vinculado a una cuenta administrativa independiente; nunca se reutiliza la identidad de otro administrador. El historial conserva una copia del nombre, correo y usuario de GitHub usados en el momento de cada acción, incluso si más adelante cambia la cuenta.
+- Un correo verificado solo puede pertenecer al panel administrativo o a una cuenta pública de anunciante/tester, nunca a ambos. El conflicto se rechaza al registrar, al crear cuentas desde administración, al vincular Google y al primer ingreso administrativo con GitHub.
 - Los niveles disponibles son Administrador (todo salvo gestionar administradores), Moderación, Noticias y Soporte. La autorización se consulta en D1 en cada petición; revocar un acceso invalida sus sesiones inmediatamente. La identidad propietaria no puede revocarse, degradarse ni modificarse desde la web.
 - Contraseñas, hashes, tokens, secretos y claves de R2 se eliminan automáticamente de las capturas del historial administrativo.
 - Autorización comprobada en servidor en todas las rutas privadas de cuentas, archivos, moderación y contenido exclusivo.
@@ -114,7 +116,7 @@ Los archivos heredados de la antigua galería privada se migran a este modelo si
 - Títulos y descripciones orientados de forma natural a búsquedas como «escorts», «damas de compañía» y sus variantes locales, sin repetir términos de manera artificial.
 - Canonical, Open Graph, X Cards y favicon oficial con versiones para navegador, Apple y manifiesto web.
 - Un H1 por página y jerarquía semántica de encabezados para páginas públicas.
-- URLs de ciudad orientadas a intención de búsqueda, enlazado interno, textos de cobertura y sitemap dinámico. La portada expone cada ciudad mediante un `ItemList` con enlaces válidos a su página local.
+- URLs de ciudad orientadas a intención de búsqueda, enlazado interno, textos de cobertura y sitemap XML dinámico en `/sitemap.xml`. La portada expone cada ciudad mediante un `ItemList` con enlaces válidos a su página local; una página HTML normal nunca debe enviarse a Search Console como sitemap.
 - `robots.txt`, `sitemap.xml`, `llms.txt`, imágenes con texto alternativo y rutas 404 propias.
 - Metadatos sociales específicos para páginas públicas y anuncios compartibles.
 - Google Tag Manager y Google Analytics se cargan únicamente tras el consentimiento de medición.
@@ -127,6 +129,7 @@ Los archivos heredados de la antigua galería privada se migran a este modelo si
 - **Archivos:** Cloudflare R2, con metadatos y permisos en D1.
 - **Correo transaccional:** relay de Google Apps Script configurado como secreto de Cloudflare para verificación, restablecimiento de contraseña y avisos operativos.
 - **Analítica:** Google Tag Manager, Google Analytics y Search Console, sujetos al consentimiento correspondiente.
+- **Autenticación pública opcional:** Google Identity Services con un cliente web configurado por ID público en `Administración > Configuración > Google`; el secreto de cliente no se usa ni se almacena en Chile3X.
 
 Las uniones de infraestructura están definidas en [`.openai/hosting.json`](.openai/hosting.json): `DB` para D1 y `MEDIA` para R2. Los secretos nunca deben añadirse al repositorio.
 
@@ -167,9 +170,17 @@ El registro comienza desde la migración que habilita esta función; no inventa 
 
 1. La persona propietaria abre `Administración > Administradores`.
 2. Ingresa el usuario exacto de GitHub, sin `@`, y asigna Administrador, Moderación, Noticias o Soporte.
-3. En el primer ingreso con GitHub se crea una identidad administrativa independiente y queda vinculada de forma permanente al identificador numérico entregado por GitHub.
+3. En el primer ingreso con GitHub se exige un correo verificado, se comprueba que no pertenezca a un anunciante/tester y se crea una identidad administrativa independiente vinculada permanentemente al identificador numérico entregado por GitHub.
 4. Desde la misma pantalla puede cambiar el nivel, cerrar todas las sesiones, revocar o reactivar el acceso. Todos estos cambios quedan en el historial administrativo.
 5. Si GitHub cambia el nombre de usuario, el identificador numérico conserva la vinculación. La cuenta propietaria además debe demostrar en cada nuevo inicio que GitHub mantiene verificado `genaropiedra@hotmail.com`.
+
+### Registrarse o ingresar con Google
+
+1. En `Registro` o `Ingresar`, la persona pulsa el botón oficial de Google. Google autentica en una ventana propia y Chile3X recibe únicamente un comprobante de identidad de corta duración.
+2. Si el identificador de Google ya está vinculado, o el correo verificado coincide con una cuenta pública todavía no vinculada, Chile3X crea la sesión y abre el destino solicitado.
+3. Si no existe la cuenta, se abre el registro normal con correo bloqueado y nombres sugeridos por Google; nombre visible y nombre completo siguen siendo editables, y los demás campos y consentimientos continúan siendo obligatorios según sus reglas.
+4. Al completar el registro se crea la cuenta, se elimina el intento temporal y se inicia sesión. Si se abandona, el intento vence a los diez minutos y se elimina en la siguiente limpieza.
+5. Si el correo pertenece a una identidad administrativa, la vinculación se rechaza. Las personas administradoras continúan ingresando exclusivamente mediante GitHub.
 
 ### Preparar fotos de la galería pública
 

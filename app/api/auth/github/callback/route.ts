@@ -1,4 +1,4 @@
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, ne, or } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { adminGithubAccess, adminGithubIdentities, users } from "@/db/schema";
@@ -27,8 +27,10 @@ type GitHubEmail = {
   verified: boolean;
 };
 
-function accessDenied(request: Request) {
-  return NextResponse.redirect(new URL("/admin/acceso-denegado", request.url));
+function accessDenied(request: Request, reason?: string) {
+  const url = new URL("/admin/acceso-denegado", request.url);
+  if (reason) url.searchParams.set("reason", reason);
+  return NextResponse.redirect(url);
 }
 
 export async function GET(request: NextRequest) {
@@ -92,8 +94,8 @@ export async function GET(request: NextRequest) {
   const verifiedEmails = githubEmails
     .filter((item) => item.verified)
     .map((item) => item.email.trim().toLowerCase());
-  // Only GitHub's authenticated /user/emails endpoint can satisfy the
-  // protected-owner check. A public profile email is not sufficient proof.
+  // Only GitHub's authenticated /user/emails endpoint can reserve an email
+  // for administration. A public profile email is not sufficient proof.
   const email = (githubEmails.find((item) => item.primary && item.verified)?.email
     ?? githubEmails.find((item) => item.verified)?.email)?.trim().toLowerCase();
   const githubLogin = githubUser.login.trim().toLowerCase();
@@ -115,13 +117,22 @@ export async function GET(request: NextRequest) {
     or(eq(adminGithubAccess.githubUserId, githubUserId), eq(adminGithubAccess.githubLogin, githubLogin)),
   )).limit(1);
 
+  const administrativeEmail = grant?.protectedEmail && verifiedEmails.includes(grant.protectedEmail)
+    ? grant.protectedEmail
+    : email;
+
   if (
     !grant
     || (grant.githubUserId && grant.githubUserId !== githubUserId)
-    || (grant.isProtectedOwner && (!grant.protectedEmail || !verifiedEmails.includes(grant.protectedEmail)))
+    || !administrativeEmail
+    || (grant.protectedEmail && !verifiedEmails.includes(grant.protectedEmail))
   ) {
     return accessDenied(request);
   }
+
+  const [publicAccountConflict] = await db.select({ id: users.id }).from(users)
+    .where(and(eq(users.email, administrativeEmail), ne(users.role, "admin"))).limit(1);
+  if (publicAccountConflict) return accessDenied(request, "email_conflict");
 
   if (grant.userId) {
     const [grantedAdmin] = await db.select({ id: users.id, email: users.email, username: users.username, displayName: users.displayName, role: users.role })
@@ -179,7 +190,7 @@ export async function GET(request: NextRequest) {
       userId: admin.id,
       githubUserId,
       githubLogin,
-      githubEmail: email ?? null,
+      githubEmail: administrativeEmail,
       lastLoginAt: now,
     }).where(eq(adminGithubIdentities.id, existingIdentity.id));
   } else {
@@ -188,7 +199,7 @@ export async function GET(request: NextRequest) {
       userId: admin.id,
       githubUserId,
       githubLogin,
-      githubEmail: email ?? null,
+      githubEmail: administrativeEmail,
       lastLoginAt: now,
     });
   }
@@ -196,6 +207,7 @@ export async function GET(request: NextRequest) {
     userId: admin.id,
     githubUserId,
     githubLogin,
+    protectedEmail: administrativeEmail,
     revokedAt: null,
     revokedBy: null,
     updatedAt: now,

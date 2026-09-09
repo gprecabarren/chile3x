@@ -35,6 +35,7 @@ type AccountSearchParams = {
 const notices: Record<string, string> = {
   created: "La cuenta fue creada. Comparte la contraseña inicial por un canal seguro.",
   duplicate: "Ese correo ya tiene una cuenta registrada.",
+  admin_email: "Ese correo está reservado para una identidad administrativa y no puede usarse como anunciante o tester.",
   duplicate_rut: "Ya existe una cuenta registrada con ese RUT.",
   invalid: "Revisa los datos solicitados, incluidos documento, ciudad, fecha de nacimiento y confirmación de mayoría de edad.",
   status_updated: "El estado de la cuenta fue actualizado.",

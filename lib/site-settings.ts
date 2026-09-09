@@ -13,6 +13,7 @@ export const siteSettingDefaults = {
   site_description: "Encuentra escorts y damas de compañía en Chile por ciudad, región, categoría y servicios. Directorio para adultos con perfiles revisados.",
   google_site_verification: "",
   google_analytics_id: "",
+  google_oauth_client_id: "",
   contact_whatsapp: "56933365005",
   contact_telegram: "",
   contact_instagram: "",

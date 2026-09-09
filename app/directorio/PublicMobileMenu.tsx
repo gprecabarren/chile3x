@@ -13,6 +13,7 @@ type PublicMobileMenuProps = {
     accountHref: string;
     accountLabel: string;
     isAdmin: boolean;
+    detail: string;
   } | null;
 };
 
@@ -68,13 +69,13 @@ export function PublicMobileMenu({ hasUserSession = false, hasAdminSession = fal
             <p>{session.isAdmin ? "SESIÓN ADMINISTRATIVA" : "SESIÓN ACTIVA"}</p>
             <Link href={session.accountHref} onClick={closeMenu}>
               <strong>{session.label}</strong>
-              <small>{session.username ? `@${session.username} · ` : ""}{session.email}</small>
+              <small>{session.detail}</small>
             </Link>
           </div>}
           {(hasUserSession || hasAdminSession) && <div className="mobile-menu-session-actions">
             <p>SESIÓN</p>
             {hasUserSession && <form action="/api/auth/session/logout" method="post"><button type="submit">Cerrar sesión</button></form>}
-            {hasAdminSession && <form action="/api/auth/logout" method="post"><button type="submit">Cerrar sesión de administrador</button></form>}
+            {hasAdminSession && <form action="/api/auth/logout" method="post"><button type="submit">Cerrar sesión administrador</button></form>}
           </div>}
         </div>
       )}

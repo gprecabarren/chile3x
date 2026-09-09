@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { adminHasCapability, isAdminAccessLevel } from "../lib/admin-permissions.ts";
+import { ADMIN_ACCESS_CAPABILITIES, adminHasCapability, isAdminAccessLevel } from "../lib/admin-permissions.ts";
 
 const admin = (accessLevel, isProtectedOwner = false) => ({ accessLevel, isProtectedOwner });
 
@@ -26,4 +26,11 @@ test("unknown or missing access levels are rejected", () => {
   assert.equal(isAdminAccessLevel("superadmin"), false);
   assert.equal(isAdminAccessLevel(null), false);
   assert.equal(adminHasCapability(null, "private.view"), false);
+});
+
+test("the visible permissions guide uses the same capability map as authorization", () => {
+  assert.ok(ADMIN_ACCESS_CAPABILITIES.owner.includes("admins.manage"));
+  assert.ok(!ADMIN_ACCESS_CAPABILITIES.administrator.includes("admins.manage"));
+  assert.deepEqual(ADMIN_ACCESS_CAPABILITIES.editor, ["news.manage"]);
+  assert.deepEqual(ADMIN_ACCESS_CAPABILITIES.support, ["reports.manage", "bugs.manage"]);
 });

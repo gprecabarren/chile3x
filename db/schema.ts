@@ -58,6 +58,7 @@ export const adminGithubIdentities = sqliteTable("admin_github_identities", {
   uniqueIndex("admin_github_identity_user_unique").on(table.userId),
   uniqueIndex("admin_github_identity_id_unique").on(table.githubUserId),
   uniqueIndex("admin_github_identity_login_unique").on(table.githubLogin),
+  uniqueIndex("admin_github_identity_email_unique").on(table.githubEmail),
 ]);
 
 // Access to the administrative panel is granted explicitly to a GitHub
@@ -96,6 +97,41 @@ export const accountTokens = sqliteTable("account_tokens", {
   createdAt,
 }, (table) => [
   index("account_tokens_user_purpose_idx").on(table.userId, table.purpose, table.expiresAt),
+]);
+
+// Google accounts are linked by the immutable OpenID Connect subject, never
+// by a mutable display name. The verified email is retained to enforce the
+// rule that a person cannot simultaneously own a public and administrative
+// Chile3X identity.
+export const accountGoogleIdentities = sqliteTable("account_google_identities", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  googleSubject: text("google_subject").notNull(),
+  googleEmail: text("google_email").notNull(),
+  lastLoginAt: text("last_login_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  createdAt,
+}, (table) => [
+  uniqueIndex("account_google_identity_user_unique").on(table.userId),
+  uniqueIndex("account_google_identity_subject_unique").on(table.googleSubject),
+  uniqueIndex("account_google_identity_email_unique").on(table.googleEmail),
+]);
+
+// A first Google sign-in may need the normal registration form. Only this
+// short-lived, opaque server-side record carries the verified Google identity
+// between the identity callback and the completed form.
+export const googleRegistrationIntents = sqliteTable("google_registration_intents", {
+  id: text("id").primaryKey(),
+  tokenHash: text("token_hash").notNull(),
+  googleSubject: text("google_subject").notNull(),
+  email: text("email").notNull(),
+  displayName: text("display_name"),
+  fullName: text("full_name"),
+  expiresAt: text("expires_at").notNull(),
+  usedAt: text("used_at"),
+  createdAt,
+}, (table) => [
+  uniqueIndex("google_registration_intent_token_unique").on(table.tokenHash),
+  index("google_registration_intent_expiry_idx").on(table.expiresAt, table.usedAt),
 ]);
 
 export const siteSettings = sqliteTable("site_settings", {

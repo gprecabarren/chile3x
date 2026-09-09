@@ -43,6 +43,8 @@ test("server-renders the Chile3X public home", async () => {
   const contentSecurityPolicy = response.headers.get("content-security-policy") ?? "";
   assert.match(contentSecurityPolicy, /frame-ancestors 'none'/);
   assert.match(contentSecurityPolicy, /frame-src[^;]*www\.googletagmanager\.com/);
+  assert.match(contentSecurityPolicy, /script-src[^;]*accounts\.google\.com/);
+  assert.match(contentSecurityPolicy, /frame-src[^;]*accounts\.google\.com/);
 
   const html = await response.text();
   assert.match(html, /<title>Chile3X: directorio adulto por ciudad en Chile \| Chile3X<\/title>/i);

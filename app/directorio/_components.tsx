@@ -9,6 +9,7 @@ import { getPortalContacts, getPortalWhatsappLink } from "@/lib/site-contacts";
 import { getSiteSettings } from "@/lib/site-settings";
 import { formatRegionName, getRegionByTitle } from "@/app/locations";
 import { PublicMobileMenu } from "./PublicMobileMenu";
+import { ADMIN_ACCESS_LABELS } from "@/lib/admin-permissions";
 
 const typeLabel = {
   escort: "Escort",
@@ -51,6 +52,12 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
   const sessionAccountHref = currentUser ? "/mi-cuenta" : currentAdmin ? "/admin" : "/ingresar";
   const sessionAccountLabel = currentUser ? "Mi cuenta" : currentAdmin ? "Administración" : "Iniciar sesión";
   const hasAnySession = hasUserSession || hasAdminSession;
+  const sessionPrimary = currentAdmin
+    ? `@${currentAdmin.githubLogin} · ${ADMIN_ACCESS_LABELS[currentAdmin.accessLevel]}`
+    : sessionUser ? publicSessionLabel(sessionUser) : "";
+  const sessionSecondary = currentAdmin
+    ? "Panel administrativo"
+    : sessionUser ? `${sessionUser.username ? `@${sessionUser.username} · ` : ""}${sessionUser.email}` : "";
 
   return (
     <>
@@ -74,24 +81,25 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
         </nav>
         {sessionUser && <Link className="public-account-summary" href={sessionAccountHref} aria-label={`Abrir ${sessionAccountLabel.toLowerCase()}`}>
           <span>{currentUser ? "SESIÓN ACTIVA" : "SESIÓN ADMINISTRATIVA"}</span>
-          <strong>{publicSessionLabel(sessionUser)}</strong>
-          <small>{sessionUser.username ? `@${sessionUser.username} · ` : ""}{sessionUser.email}</small>
+          <strong>{sessionPrimary}</strong>
+          <small>{sessionSecondary}</small>
         </Link>}
         {(hasUserSession || hasAdminSession) && <div className="public-session-actions" aria-label="Sesiones activas">
           {hasUserSession && <form action="/api/auth/session/logout" method="post"><button type="submit">Cerrar sesión</button></form>}
-          {hasAdminSession && <form action="/api/auth/logout" method="post"><button className="public-admin-logout" type="submit">Cerrar sesión de administrador</button></form>}
+          {hasAdminSession && <form action="/api/auth/logout" method="post"><button className="public-admin-logout" type="submit">Cerrar sesión administrador</button></form>}
         </div>}
         <PortalContactLinks placement="header" />
         <PublicMobileMenu
           hasUserSession={hasUserSession}
           hasAdminSession={hasAdminSession}
           session={sessionUser ? {
-            label: publicSessionLabel(sessionUser),
+            label: sessionPrimary,
             username: sessionUser.username,
             email: sessionUser.email,
             accountHref: sessionAccountHref,
             accountLabel: sessionAccountLabel,
             isAdmin: !currentUser && Boolean(currentAdmin),
+            detail: sessionSecondary,
           } : null}
         />
         <nav className="mobile-public-quick-links" aria-label="Accesos rápidos">

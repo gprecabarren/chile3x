@@ -7,7 +7,7 @@ type EmailStatus = "idle" | "checking" | "exists" | "unknown";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function RegistrationEmailField({ defaultValue = "" }: { defaultValue?: string }) {
+export function RegistrationEmailField({ defaultValue = "", locked = false }: { defaultValue?: string; locked?: boolean }) {
   const [email, setEmail] = useState(defaultValue);
   const [status, setStatus] = useState<EmailStatus>("idle");
   const warningId = useId();
@@ -17,7 +17,7 @@ export function RegistrationEmailField({ defaultValue = "" }: { defaultValue?: s
   const recoveryHref = `/recuperar-clave?email=${encodeURIComponent(normalizedEmail)}`;
 
   useEffect(() => {
-    if (!validEmail) return;
+    if (locked || !validEmail) return;
 
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
@@ -41,7 +41,7 @@ export function RegistrationEmailField({ defaultValue = "" }: { defaultValue?: s
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [normalizedEmail, validEmail]);
+  }, [locked, normalizedEmail, validEmail]);
 
   return <label>Correo electrónico
     <input
@@ -51,6 +51,8 @@ export function RegistrationEmailField({ defaultValue = "" }: { defaultValue?: s
       maxLength={160}
       autoComplete="email"
       value={email}
+      readOnly={locked}
+      aria-readonly={locked}
       onChange={(event) => {
         const nextEmail = event.target.value;
         setEmail(nextEmail);
@@ -60,7 +62,8 @@ export function RegistrationEmailField({ defaultValue = "" }: { defaultValue?: s
       aria-invalid={fieldStatus === "exists" ? "true" : undefined}
       className={fieldStatus === "exists" ? "input-warning" : undefined}
     />
-    {fieldStatus === "checking" && <small className="email-checking" aria-live="polite">Comprobando correo…</small>}
+    {locked && <small className="google-email-locked">Correo verificado por Google. No se puede editar.</small>}
+    {!locked && fieldStatus === "checking" && <small className="email-checking" aria-live="polite">Comprobando correo…</small>}
     {fieldStatus === "exists" && <p id={warningId} className="email-exists-warning" role="status">Ya existe una cuenta con este correo. <Link href={recoveryHref}>Recuperar contraseña</Link> o <Link href="/ingresar">ingresar</Link>.</p>}
   </label>;
 }

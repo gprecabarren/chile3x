@@ -14,6 +14,8 @@ import { privatePageMetadata } from "@/lib/seo";
 import { passwordRequirementText } from "@/lib/password-policy";
 import { RegistrationPasswordFields } from "./RegistrationPasswordFields";
 import { RegistrationConsentFields } from "./RegistrationConsentFields";
+import { GoogleSignInButton } from "@/app/GoogleSignInButton";
+import { GOOGLE_REGISTRATION_COOKIE, readGoogleRegistrationIntent } from "@/lib/google-registration";
 
 export const metadata: Metadata = privatePageMetadata({
   title: "Crear cuenta de anunciante",
@@ -30,14 +32,17 @@ const messages: Record<string, string> = {
   password: passwordRequirementText,
   password_mismatch: "Las contraseñas no coinciden. Vuelve a escribirlas.",
   duplicate_rut: "Ya existe una cuenta con este RUT. Si es tuya, puedes recuperar la contraseña.",
+  admin_email: "Ese correo está reservado para una identidad administrativa y no puede usarse como cuenta de anunciante o tester.",
   server: "No fue posible crear la cuenta en este momento. Inténtalo nuevamente en unos minutos.",
   antispam: "No pudimos validar la protección de seguridad. Inténtalo nuevamente.",
   legal: "Debes aceptar los Términos y condiciones y la Política de privacidad.",
 };
 
-export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ error?: string; return_to?: string }> }) {
+export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ error?: string; return_to?: string; google_notice?: string }> }) {
   const params = await searchParams;
-  const saved = decodeRegistrationState((await cookies()).get(registrationStateCookie)?.value);
+  const cookieStore = await cookies();
+  const saved = decodeRegistrationState(cookieStore.get(registrationStateCookie)?.value);
+  const googleIdentity = await readGoogleRegistrationIntent(cookieStore.get(GOOGLE_REGISTRATION_COOKIE)?.value);
   const returnTo = safeAccountReturnTo(params.return_to ?? null);
   const settings = await getSiteSettings();
   const whatsappHref = getPortalWhatsappLink(settings.contact_whatsapp, "Hola, quisiera solicitar que el equipo de Chile3X me cree una cuenta de anunciante.");
@@ -47,17 +52,21 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
     <div className="auth-register-topbar"><Link className="auth-brand" href="/"><OfficialChile3xLogo priority /></Link><p className="auth-login-shortcut">¿Ya tienes cuenta? <Link href={loginHref}>Ingresar</Link></p></div>
     <p className="eyebrow">CUENTA DE ANUNCIANTE</p>
     <h1>Crea tu cuenta para empezar a publicar.</h1>
-    <p>Guarda borradores, envía anuncios a revisión y gestiona sus pausas. Antes de entrar te enviaremos un correo de verificación.</p>
+    <p>{googleIdentity ? "Tu correo ya fue verificado por Google. Completa los datos restantes para entrar a tu panel." : "Guarda borradores, envía anuncios a revisión y gestiona sus pausas. Antes de entrar te enviaremos un correo de verificación."}</p>
+    {settings.google_oauth_client_id && <GoogleSignInButton clientId={settings.google_oauth_client_id} intent="register" returnTo={returnTo} />}
+    {settings.google_oauth_client_id && <div className="auth-divider"><span>o completa el formulario</span></div>}
+    {params.google_notice === "new" && <p className="auth-google-notice" role="status">No existía una cuenta con ese correo de Google. Completa los datos restantes para crearla.</p>}
+    {googleIdentity && <p className="auth-google-connected" role="status"><strong>Google verificado</strong><span>{googleIdentity.email}</span></p>}
     {params.error && <p className="form-alert" role="alert">{messages[params.error] ?? messages.server}{params.error === "duplicate_rut" && <> <Link href="/recuperar-clave">Recuperar contraseña</Link></>}</p>}
     <form action="/api/auth/register" method="post" className="auth-form">
       <input name="return_to" type="hidden" value={returnTo} />
-      <label>Nombre visible<input name="display_name" required minLength={2} maxLength={80} autoComplete="nickname" defaultValue={saved?.displayName ?? ""} placeholder="Ej. Valentina" /></label>
-      <AccountIdentityFields values={saved ? { fullName: saved.fullName, documentType: saved.documentType, documentNumber: saved.documentNumber, foreignCountry: saved.foreignCountry, birthDate: saved.birthDate, region: saved.region, city: saved.city, phone: saved.phone } : undefined} />
-      <RegistrationEmailField defaultValue={saved?.email ?? ""} />
-      <RegistrationPasswordFields />
+      <label>Nombre visible<input name="display_name" required minLength={2} maxLength={80} autoComplete="nickname" defaultValue={saved?.displayName || googleIdentity?.displayName || ""} placeholder="Ej. Valentina" /></label>
+      <AccountIdentityFields values={saved ? { fullName: saved.fullName || googleIdentity?.fullName, documentType: saved.documentType, documentNumber: saved.documentNumber, foreignCountry: saved.foreignCountry, birthDate: saved.birthDate, region: saved.region, city: saved.city, phone: saved.phone } : googleIdentity ? { fullName: googleIdentity.fullName } : undefined} />
+      <RegistrationEmailField defaultValue={googleIdentity?.email ?? saved?.email ?? ""} locked={Boolean(googleIdentity)} />
+      {!googleIdentity && <RegistrationPasswordFields />}
       <RegistrationConsentFields adultConfirmed={saved?.adultConfirmed} legalConfirmed={saved?.legalConfirmed} />
       <AuthTurnstile action={TURNSTILE_AUTH_REGISTER_ACTION} />
-      <button className="button button-primary" type="submit">Crear cuenta y verificar correo</button>
+      <button className="button button-primary" type="submit">{googleIdentity ? "Crear cuenta con Google" : "Crear cuenta y verificar correo"}</button>
     </form>
     {whatsappHref && <a className="button button-outline auth-whatsapp-request" href={whatsappHref} target="_blank" rel="noreferrer">Solicitar creación de cuenta por WhatsApp</a>}
     <p className="auth-switch">¿Ya tienes una cuenta? <Link href={loginHref}>Ingresar</Link></p>

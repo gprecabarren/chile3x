@@ -15,6 +15,13 @@ El proyecto está construido para operar en Cloudflare con Workers, D1 y R2, sin
 - Los medios públicos revalidan su disponibilidad antes de reutilizarse. Las imágenes sin cambios pueden responder con `304`, evitando descargarlas nuevamente.
 - El menú móvil recupera texto legible y controles más cómodos. Hasta 480 px, Agencias y Arriendos quedan agrupados bajo «Directorio» en el menú; Regiones, Escorts e Iniciar sesión/Mi cuenta permanecen visibles. El menú tiene nombre accesible, cierre con Escape y altura limitada con desplazamiento interno.
 - Los consentimientos del registro tienen casillas de 22 px. Se retiró la carga innecesaria de la biblioteca de Google Preferred Sources, cuyo botón ya estaba desactivado.
+- Las cuentas públicas distinguen la deshabilitación voluntaria del bloqueo administrativo. La primera se revierte mediante una confirmación segura al volver a iniciar sesión; la segunda solo puede retirarla el equipo administrador. Si ambos estados coinciden, prevalece el bloqueo administrativo.
+- Cada persona puede ocultar y volver a mostrar sus anuncios sin borrar datos ni cambiar su aprobación. La pausa ligada a futuros períodos pagados conserva su lógica en el servidor, pero sus controles públicos permanecen deshabilitados hasta activar la facturación.
+- Los cambios que afecten únicamente teléfono, WhatsApp, correo público o redes de un anuncio aprobado se publican inmediatamente. Las modificaciones editoriales, de ubicación, categorías, servicios o precios siguen regresando a revisión.
+- Tanto la persona como administración pueden eliminar permanentemente una cuenta pública mediante confirmación reforzada. Se borran cuenta, anuncios, relaciones y registros asociados; solo queda una huella criptográfica sin correo legible para informar un registro posterior con la misma dirección.
+- `Administración > Cuentas` aplica búsqueda, estado y anuncios asociados directamente en D1 y pagina de 30 en 30. Se desactivó la precarga automática de fichas pesadas para impedir ráfagas de solicitudes RSC al abrir un listado.
+- `Administración > Medios > Medios por cuenta` reúne galerías públicas y contenido exclusivo por propietario, prioriza cuentas con archivos en revisión y permite filtrar por cuenta, estado y tipo de archivo. Cada vista obtiene de D1 solo los 12 grupos de la página actual.
+- Los formularios y filtros muestran un indicador global mientras procesan. Si la respuesta supera doce segundos, se presenta una advertencia explícita de demora sin volver a enviar la operación automáticamente.
 
 Verificación reproducible:
 
@@ -38,7 +45,7 @@ Actualmente incluye:
 - Cuenta separada de anuncio: una cuenta puede administrar anuncios, y cada anuncio conserva su propio enlace público `@usuario-del-anuncio`.
 - Nombre de usuario único por cuenta, generado al crearla y editable desde `Mi cuenta > Mis datos`. No puede coincidir con otra cuenta ni con el `@` de un anuncio.
 - Una cuenta puede tener un anuncio Escort y varios anuncios de Agencia o Arriendo. Una Agencia puede solicitar incorporar anuncios Escort existentes, que requieren aceptación de la persona dueña.
-- Formularios específicos por tipo de anuncio, borradores, envío a revisión, pausas, reapertura y periodos controlados manualmente.
+- Formularios específicos por tipo de anuncio, borradores, envío a revisión y ocultamiento reversible. La pausa y los períodos pagados están preparados pero deshabilitados en la interfaz hasta activar la facturación.
 - Moderación de anuncios, foto principal, galería, documentos privados, historias, reportes, reseñas y contenido exclusivo.
 - Directorio nacional con regiones ordenadas por su número oficial, páginas de ciudad, filtros combinables, búsqueda por nombre, conteos de anuncios y orden aleatorio dentro de cada categoría.
 - Etiquetas y filtros para nivel VIP, Premium y Gold, además de categorías complementarias y servicios. Las etiquetas incompatibles se validan tanto en interfaz como en servidor.
@@ -65,9 +72,13 @@ Una cuenta identifica a una persona que visita, compra contenido, anuncia o admi
 
 El correo y la fecha de nacimiento no se modifican desde la cuenta para evitar suplantaciones. Los cambios que requieran corrección se gestionan por soporte. Una cuenta vinculada a Google conserva permanentemente el correo verificado con el que se creó. La cuenta puede cambiar su contraseña sin conocer la anterior mientras ya esté autenticada.
 
+Desde `Mi cuenta > Mis datos`, la persona puede deshabilitar temporalmente su acceso o eliminarlo permanentemente. Una cuenta deshabilitada voluntariamente conserva sus datos y ofrece restablecimiento confirmado en el siguiente ingreso. Un bloqueo administrativo impide ese restablecimiento hasta que Chile3X lo retire. La eliminación permanente no conserva anuncios, medios, accesos ni datos personales y crea una cuenta completamente nueva si el correo vuelve a registrarse.
+
 ### Anuncio
 
 Un anuncio es la publicación visible dentro del directorio. Tiene tipo, ciudad, perfil público, galería, estado de moderación, atributos, contactos y un identificador propio `@usuario-del-anuncio`.
+
+`Mi cuenta > Mis anuncios` y la pantalla de edición permiten ocultar o volver a mostrar la publicación inmediatamente. Esto es independiente del estado de moderación y de la futura pausa de un período pagado. Actualizar solo los contactos públicos también es inmediato; cualquier otro cambio sustantivo vuelve a revisión administrativa.
 
 - **Escort:** una por cuenta. Puede tener categorías, atributos, servicios, historias, agenda de viajes y una biblioteca de contenido exclusivo vinculada.
 - **Agencia:** una cuenta puede crear varias. Puede invitar anuncios Escort existentes mediante un flujo de aceptación.
@@ -147,13 +158,13 @@ Las uniones de infraestructura están definidas en [`.openai/hosting.json`](.ope
 
 1. Abrir `Administración > Cuentas`.
 2. Buscar por nombre, correo, teléfono, ciudad, documento o usar filtros avanzados.
-3. Abrir el detalle para revisar datos protegidos, anuncios asociados, estado y recuperación de acceso.
-4. Desde la ficha se puede crear un anuncio en nombre de la cuenta, abrir sus anuncios pendientes, contactar por WhatsApp o llamada y cambiar el estado de acceso.
+3. Abrir el detalle para revisar datos protegidos, anuncios asociados, deshabilitación voluntaria, bloqueo administrativo, registros anteriores del mismo correo y recuperación de acceso.
+4. Desde la ficha se puede crear un anuncio en nombre de la cuenta, abrir sus anuncios pendientes, contactar por WhatsApp o llamada, aplicar o retirar únicamente el bloqueo administrativo y eliminar permanentemente la cuenta con confirmación.
 
 ### Moderar medios
 
 1. Abrir `Administración > Medios`.
-2. Revisar los archivos agrupados por anuncio y las bibliotecas exclusivas agrupadas por cuenta.
+2. Elegir galerías por anuncio, contenido exclusivo por cuenta o **Medios por cuenta**. Esta última vista muestra primero las cuentas con pendientes y permite buscar por correo, usuario o nombre, además de filtrar estado y fotos/videos.
 3. Aprobar, cancelar aprobación o eliminar. La cancelación devuelve el archivo a revisión sin borrarlo.
 4. Verificar primero el anuncio y después sus documentos y medios relacionados.
 

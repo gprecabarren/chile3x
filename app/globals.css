@@ -1581,3 +1581,58 @@ select:disabled { opacity: .68; }
   .admin-account span { max-width: 100%; }
   .admin-account button { max-width: 100%; }
 }
+
+/* Account lifecycle, moderation filters and responsive operation feedback. */
+.button,
+button,
+input[type="submit"] { text-transform: none !important; letter-spacing: .015em; }
+.button-danger { border-color: #d84e56; color: #fff; background: #9f1720; }
+.button-danger:hover { background: #c21a24; }
+.owner-profile-statuses, .admin-account-state-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.account-feature-note { margin: 16px 0 0; padding: 13px 15px; border-left: 3px solid #697a9c; color: #b9c2d1; background: #111725; font-size: 11px; line-height: 1.55; }
+.profile-visibility-panel, .account-danger-panel, .admin-account-control-panel, .admin-account-history { margin-top: 22px; padding: 22px; border: 1px solid #364158; border-radius: var(--radius-md); background: #111722; }
+.profile-visibility-panel { display: flex; align-items: center; justify-content: space-between; gap: 22px; }
+.profile-visibility-panel h2, .account-danger-panel h2, .admin-account-control-panel h2, .admin-account-history h2 { margin: 5px 0 8px; color: #fff; font-size: 30px; }
+.profile-visibility-panel p:last-child, .account-danger-panel > div > p:last-child, .admin-account-control-panel > div > p:last-child, .admin-account-history > div > p:last-child { max-width: 740px; margin: 0; color: #b8c1cf; font-size: 12px; line-height: 1.6; }
+.account-danger-actions, .admin-account-control-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+.account-danger-actions details, .admin-account-control-actions details { min-width: 0; border: 1px solid #414c61; background: #0b1019; }
+.account-danger-actions summary, .admin-account-control-actions summary { padding: 14px 15px; color: #f0f3f8; font-size: 12px; font-weight: 800; cursor: pointer; }
+.account-danger-actions details.is-destructive, .admin-account-control-actions details.is-destructive { border-color: #7c3d46; }
+.account-danger-actions form, .admin-account-control-actions details form { display: grid; gap: 12px; padding: 0 15px 15px; }
+.account-danger-actions p, .admin-account-control-actions p { margin: 0; color: #adb7c6; font-size: 11px; line-height: 1.55; }
+.account-danger-actions label, .admin-account-control-actions label { display: grid; gap: 7px; color: #e0e5ed; font-size: 11px; font-weight: 700; }
+.account-danger-actions input, .admin-account-control-actions input { width: 100%; min-width: 0; min-height: 42px; padding: 9px 10px; border: 1px solid #46536a; color: #fff; background: #090d15; font: inherit; }
+.admin-account-control-actions > form { align-self: start; }
+.admin-account-history ol { display: grid; gap: 9px; margin: 18px 0; padding: 0; list-style: none; }
+.admin-account-history li { display: grid; gap: 5px; padding: 12px; border-left: 3px solid #7e8baa; background: #0b1019; }
+.admin-account-history li strong { color: #f2f4f8; font-size: 12px; }
+.admin-account-history li span, .admin-account-reregistered { color: #aeb8c7; font-size: 11px; line-height: 1.5; }
+.admin-account-important-filter { flex-basis: 280px !important; min-width: min(100%, 280px) !important; padding: 10px; border: 1px solid #765b25; border-radius: var(--radius-sm); background: #211a0c; }
+.admin-account-important-filter select, .admin-media-filters select, .admin-media-filters input { width: 100%; min-width: 0; min-height: 40px; padding: 8px 10px; border: 1px solid #465168; border-radius: var(--radius-sm); color: #f4f6fa; background: #090d15; color-scheme: dark; font: inherit; font-size: 12px; }
+.admin-account-state-badges { justify-content: flex-end; }
+.admin-media-filters { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; margin: 0 0 16px; padding: 15px; border: 1px solid #303a4e; border-radius: var(--radius-md); background: #111722; }
+.admin-media-filters label { flex: 1 1 190px; display: grid; min-width: 0; gap: 7px; color: #dfe4ec; font-size: 10px; font-weight: 800; }
+.admin-media-account-group > header { border-left: 3px solid #7a62c8; }
+.account-reactivation-card .auth-check { display: flex; grid-template-columns: none; align-items: flex-start; }
+.form-progress-overlay { position: fixed; z-index: 10020; inset: 0; display: grid; place-items: center; padding: 20px; color: #fff; background: rgba(5,7,12,.88); backdrop-filter: blur(5px); }
+.form-progress-overlay > div { width: min(100%, 360px); display: grid; justify-items: center; gap: 12px; padding: 25px; border: 1px solid #3c465b; border-radius: var(--radius-lg); background: #111722; box-shadow: 0 24px 75px rgba(0,0,0,.58); text-align: center; }
+.form-progress-overlay > div.is-delayed { border-color: #9b6534; }
+.form-progress-overlay .official-chile3x-logo { width: 112px; border-radius: 8px; }
+.form-progress-spinner { width: 29px; height: 29px; border: 3px solid #414b60; border-top-color: #ef555d; border-radius: 50%; animation: form-progress-spin .75s linear infinite; }
+.form-progress-overlay strong { color: #fff; font-size: 14px; }
+.form-progress-overlay p { margin: 0; color: #aeb8c7; font-size: 11px; line-height: 1.5; }
+.form-progress-overlay .button { min-height: 40px; margin-top: 3px; }
+@keyframes form-progress-spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 720px) {
+  .profile-visibility-panel { align-items: stretch; flex-direction: column; }
+  .profile-visibility-panel .button { width: 100%; }
+  .account-danger-actions, .admin-account-control-actions { grid-template-columns: 1fr; }
+  .admin-account-state-badges { justify-content: flex-start; }
+  .admin-account-important-filter { flex-basis: 100% !important; }
+  .admin-media-filters > .button { flex: 1 1 130px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .form-progress-spinner { animation-duration: 1.5s; }
+}

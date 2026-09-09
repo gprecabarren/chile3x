@@ -104,6 +104,31 @@ function optional(value: string) {
   return value || null;
 }
 
+const immediateContactMetadata = new Set([
+  "website",
+  "facebook_url",
+  "instagram_url",
+  "twitter_url",
+  "arsmate_url",
+  "onlyfans_url",
+  "contact_methods",
+]);
+
+function normalizedMetadata(value: string, omitImmediateContacts = false) {
+  try {
+    const parsed = JSON.parse(value) as Record<string, unknown>;
+    return Object.fromEntries(Object.entries(parsed)
+      .filter(([key, entry]) => typeof entry === "string" && (!omitImmediateContacts || !immediateContactMetadata.has(key)))
+      .sort(([left], [right]) => left.localeCompare(right)));
+  } catch {
+    return {};
+  }
+}
+
+function sameValues(left: unknown, right: unknown) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
 function requiredUrl(value: string, fieldLabel: string, allowedHost?: string | string[]) {
   if (!value) return "";
   let url: URL;
@@ -424,23 +449,72 @@ export async function createProfile(ownerId: string, submission: ProfileSubmissi
 
 export async function updateProfile(profileId: string, ownerId: string, submission: ProfileSubmission) {
   const db = await getDb();
-  const [existing] = await db.select({ id: profiles.id, type: profiles.type, status: profiles.status, handle: profiles.handle }).from(profiles)
+  const [existing] = await db.select({ profile: profiles, details: profileDetails }).from(profiles)
+    .leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id))
     .where(and(eq(profiles.id, profileId), eq(profiles.ownerId, ownerId))).limit(1);
 
   if (!existing) {
-    return false;
+    return { updated: false, contactOnly: false };
   }
 
-  if (submission.type !== existing.type) {
+  if (submission.type !== existing.profile.type) {
     throw new ProfileValidationError("El tipo de anuncio queda definido al crearlo. Para publicar como escort, agencia o arriendo crea un anuncio nuevo.");
   }
 
   const updatedAt = new Date().toISOString();
-  const status = existing.status === "paused" ? "paused" : submission.intent === "submit" || existing.status === "approved" ? "pending" : existing.status;
-  const handle = submission.handle ?? existing.handle ?? await resolveProfileHandle(null, submission.displayName, profileId);
-  if (submission.handle && submission.handle !== existing.handle && !await isProfileHandleAvailable(submission.handle, profileId)) {
+  const handle = submission.handle ?? existing.profile.handle ?? await resolveProfileHandle(null, submission.displayName, profileId);
+  if (submission.handle && submission.handle !== existing.profile.handle && !await isProfileHandleAvailable(submission.handle, profileId)) {
     throw new ProfileValidationError(`@${submission.handle} ya está en uso. Elige otro usuario para este anuncio.`);
   }
+
+  const [savedTags, savedServices] = await Promise.all([
+    db.select({ tag: profileTagRows.tag }).from(profileTagRows).where(eq(profileTagRows.profileId, profileId)),
+    db.select({ service: profileServices.service, kind: profileServices.kind }).from(profileServices).where(eq(profileServices.profileId, profileId)),
+  ]);
+  const moderatedProfileValues = {
+    type: existing.profile.type,
+    tier: existing.profile.tier,
+    handle: existing.profile.handle,
+    displayName: existing.profile.displayName,
+    region: existing.profile.region,
+    city: existing.profile.city,
+    comuna: existing.profile.comuna,
+    shortDescription: existing.profile.shortDescription,
+    description: existing.profile.description,
+  };
+  const submittedProfileValues = {
+    type: submission.type,
+    tier: submission.tier,
+    handle,
+    displayName: submission.displayName,
+    region: submission.region,
+    city: submission.city,
+    comuna: submission.comuna,
+    shortDescription: submission.shortDescription,
+    description: submission.description,
+  };
+  const moderatedDetailsValues = {
+    referenceLocation: existing.details?.referenceLocation ?? null,
+    schedule: existing.details?.schedule ?? null,
+    priceAmount: existing.details?.priceAmount ?? null,
+    currency: existing.details?.currency ?? "CLP",
+    metadata: normalizedMetadata(existing.details?.metadata ?? "{}", true),
+  };
+  const submittedDetailsValues = {
+    referenceLocation: submission.details.referenceLocation,
+    schedule: submission.details.schedule,
+    priceAmount: submission.details.priceAmount,
+    currency: submission.details.currency,
+    metadata: normalizedMetadata(submission.details.metadata, true),
+  };
+  const sorted = (values: string[]) => [...values].sort((left, right) => left.localeCompare(right, "es-CL"));
+  const contactOnly = existing.profile.status === "approved"
+    && sameValues(moderatedProfileValues, submittedProfileValues)
+    && sameValues(moderatedDetailsValues, submittedDetailsValues)
+    && sameValues(sorted(savedTags.map((item) => item.tag)), sorted(submission.tags))
+    && sameValues(sorted(savedServices.filter((item) => item.kind === "included").map((item) => item.service)), sorted(submission.servicesIncluded))
+    && sameValues(sorted(savedServices.filter((item) => item.kind === "additional").map((item) => item.service)), sorted(submission.servicesAdditional));
+  const status = contactOnly ? "approved" : existing.profile.status === "paused" ? "paused" : submission.intent === "submit" || existing.profile.status === "approved" ? "pending" : existing.profile.status;
 
   await db.update(profiles).set({
     status,
@@ -454,7 +528,7 @@ export async function updateProfile(profileId: string, ownerId: string, submissi
     contactWhatsapp: submission.contactWhatsapp,
     contactTelegram: submission.contactTelegram,
     tier: submission.tier,
-    verificationStatus: status === "pending" ? "in_review" : "unreviewed",
+    verificationStatus: contactOnly ? existing.profile.verificationStatus : status === "pending" ? "in_review" : "unreviewed",
     updatedAt,
   }).where(eq(profiles.id, profileId));
 
@@ -462,6 +536,6 @@ export async function updateProfile(profileId: string, ownerId: string, submissi
     target: profileDetails.profileId,
     set: { ...submission.details, updatedAt },
   });
-  await replaceProfileCollections(profileId, submission);
-  return true;
+  if (!contactOnly) await replaceProfileCollections(profileId, submission);
+  return { updated: true, contactOnly };
 }

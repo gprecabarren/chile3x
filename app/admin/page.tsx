@@ -64,14 +64,14 @@ export default async function AdminHome() {
             <h2>{pendingMedia} archivo{pendingMedia === 1 ? " requiere" : "s requieren"} moderación</h2>
             <span>Revisa las galerías públicas y el contenido exclusivo por separado antes de aprobarlos.</span>
           </div>
-          <Link className="button button-primary" href="/admin/medios?estado=pending">Revisar medios</Link>
+          <Link prefetch={false} className="button button-primary" href="/admin/medios?estado=pending">Revisar medios</Link>
         </section>}
         <section className="admin-note">
           <span>01</span>
           <div>
             <h2>Administradores identificados y trazables</h2>
             <p>Cada persona autorizada entra con su propio GitHub y conserva una identidad administrativa separada. Aprobaciones, cambios y accesos privados quedan registrados con fecha y hora.</p>
-            <Link className="text-link" href="/admin/actividad">Abrir historial administrativo →</Link>
+            <Link prefetch={false} className="text-link" href="/admin/actividad">Abrir historial administrativo →</Link>
           </div>
         </section>
       </div>

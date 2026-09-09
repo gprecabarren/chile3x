@@ -16,7 +16,8 @@ export const metadata: Metadata = privatePageMetadata({
 
 const messages: Record<string, string> = {
   invalid: "El correo o la contraseña no coinciden.",
-  disabled: "Tu cuenta ha sido deshabilitada. Si crees que es un error, contacta al equipo de Chile3X.",
+  disabled: "Tu cuenta está deshabilitada.",
+  admin_disabled: "Tu cuenta fue deshabilitada por Chile3X. Solo la administración puede restablecerla; si necesitas una revisión, contáctanos.",
   verification: "El enlace de verificación no es válido o ya venció. Solicita uno nuevo.",
   antispam: "No pudimos validar la protección de seguridad. Inténtalo nuevamente.",
 };

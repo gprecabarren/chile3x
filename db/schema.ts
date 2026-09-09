@@ -28,6 +28,8 @@ export const users = sqliteTable("users", {
   city: text("city").notNull().default(""),
   phone: text("phone"),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  selfDisabledAt: text("self_disabled_at"),
+  adminDisabledAt: text("admin_disabled_at"),
   role: text("role", { enum: ["visitor", "advertiser", "tester", "admin"] }).notNull().default("visitor"),
   emailVerifiedAt: text("email_verified_at"),
   createdAt,
@@ -90,7 +92,7 @@ export const adminGithubAccess = sqliteTable("admin_github_access", {
 export const accountTokens = sqliteTable("account_tokens", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  purpose: text("purpose", { enum: ["verify_email", "reset_password"] }).notNull(),
+  purpose: text("purpose", { enum: ["verify_email", "reset_password", "reactivate_account"] }).notNull(),
   tokenHash: text("token_hash").notNull().unique(),
   expiresAt: text("expires_at").notNull(),
   usedAt: text("used_at"),
@@ -166,6 +168,21 @@ export const adminAuditLogs = sqliteTable("admin_audit_logs", {
   index("admin_audit_entity_created_idx").on(table.entityType, table.entityId, table.createdAt),
 ]);
 
+// Permanent deletion removes the account and all personal data. This
+// pseudonymous tombstone only preserves the minimum history needed to tell an
+// administrator that the same normalized email has registered before.
+export const accountDeletionHistory = sqliteTable("account_deletion_history", {
+  id: text("id").primaryKey(),
+  emailHash: text("email_hash").notNull(),
+  formerUserId: text("former_user_id").notNull(),
+  deletedBy: text("deleted_by", { enum: ["user", "admin"] }).notNull(),
+  deletedByAdminId: text("deleted_by_admin_id").references(() => users.id, { onDelete: "set null" }),
+  originalCreatedAt: text("original_created_at").notNull(),
+  deletedAt: text("deleted_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  index("account_deletion_history_email_idx").on(table.emailHash, table.deletedAt),
+]);
+
 export const profiles = sqliteTable("profiles", {
   id: text("id").primaryKey(),
   ownerId: text("owner_id").notNull().references(() => users.id),
@@ -190,6 +207,7 @@ export const profiles = sqliteTable("profiles", {
   healthReviewStatus: text("health_review_status", { enum: ["not_requested", "in_review", "reviewed"] }).notNull().default("not_requested"),
   isFeatured: integer("is_featured", { mode: "boolean" }).notNull().default(false),
   isDemo: integer("is_demo", { mode: "boolean" }).notNull().default(false),
+  ownerHiddenAt: text("owner_hidden_at"),
   createdAt,
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [

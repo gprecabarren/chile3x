@@ -3,8 +3,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AccountIdentityFields } from "@/app/account-identity-fields";
 import { getDb } from "@/db";
-import { profiles, users } from "@/db/schema";
-import { getCurrentAdmin, safeAdminReturnTo } from "@/lib/auth";
+import { accountDeletionHistory, profiles, users } from "@/db/schema";
+import { getCurrentAdmin, safeAdminReturnTo, sha256 } from "@/lib/auth";
 import { adminHasCapability } from "@/lib/admin-permissions";
 import { profilePublicPath } from "@/lib/profile";
 import { AdminPageHeading, AdminShell } from "../../_components";
@@ -22,6 +22,9 @@ const notices: Record<string, string> = {
   reset_link_sent: "El enlace para restablecer la contraseña fue enviado al correo de la cuenta.",
   reset_delivery_error: "No fue posible entregar el correo. Revisa la configuración de correo antes de intentarlo nuevamente.",
   account_error: "No fue posible realizar esa acción en esta cuenta.",
+  status_updated: "El bloqueo administrativo de la cuenta fue actualizado.",
+  delete_confirmation: "Para eliminar la cuenta debes escribir su correo y ELIMINAR exactamente.",
+  delete_error: "No fue posible eliminar permanentemente esa cuenta.",
 };
 
 function statusLabel(status: string) {
@@ -47,6 +50,8 @@ export default async function AdminAccountDetailsPage({ params, searchParams }: 
     email: users.email,
     role: users.role,
     isActive: users.isActive,
+    selfDisabledAt: users.selfDisabledAt,
+    adminDisabledAt: users.adminDisabledAt,
     firstName: users.firstName,
     documentType: users.documentType,
     documentNumber: users.documentNumber,
@@ -58,7 +63,7 @@ export default async function AdminAccountDetailsPage({ params, searchParams }: 
   }).from(users).where(eq(users.id, userId)).limit(1);
   if (!account) redirect("/admin/cuentas?notice=account_missing");
 
-  const ownedProfiles = await db.select({
+  const [ownedProfiles, deletionHistory] = await Promise.all([db.select({
     id: profiles.id,
     displayName: profiles.displayName,
     type: profiles.type,
@@ -67,7 +72,12 @@ export default async function AdminAccountDetailsPage({ params, searchParams }: 
     region: profiles.region,
     slug: profiles.slug,
     handle: profiles.handle,
-  }).from(profiles).where(eq(profiles.ownerId, account.id)).orderBy(desc(profiles.updatedAt));
+  }).from(profiles).where(eq(profiles.ownerId, account.id)).orderBy(desc(profiles.updatedAt)), db.select({
+    id: accountDeletionHistory.id,
+    originalCreatedAt: accountDeletionHistory.originalCreatedAt,
+    deletedAt: accountDeletionHistory.deletedAt,
+    deletedBy: accountDeletionHistory.deletedBy,
+  }).from(accountDeletionHistory).where(eq(accountDeletionHistory.emailHash, await sha256(account.email.trim().toLowerCase()))).orderBy(desc(accountDeletionHistory.deletedAt))]);
 
   const requestedReturnTo = query.return_to ?? "";
   const returnTo = requestedReturnTo.startsWith("/admin/") ? safeAdminReturnTo(requestedReturnTo) : "/admin/cuentas";
@@ -78,10 +88,10 @@ export default async function AdminAccountDetailsPage({ params, searchParams }: 
   const accountRoleLabel = account.role === "tester" ? "Cuenta de tester" : "Cuenta de anunciante";
   return <AdminShell user={admin}><div className="admin-content">
     <AdminPageHeading eyebrow="FICHA DE CUENTA" title={accountName} description={`Administra los datos, contraseña y anuncios de ${account.email}. Los cambios se realizan sin necesidad de conocer la contraseña actual.`} backHref={returnTo}>
-      {!isProtectedAdmin && <Link className="button button-primary" href={`${detailBaseHref}/crear-perfil?return_to=${encodeURIComponent(returnTo)}`}>Crear anuncio para esta cuenta</Link>}
+      {!isProtectedAdmin && <Link prefetch={false} className="button button-primary" href={`${detailBaseHref}/crear-perfil?return_to=${encodeURIComponent(returnTo)}`}>Crear anuncio para esta cuenta</Link>}
     </AdminPageHeading>
     {query.notice && notices[query.notice] && <p className="admin-success" role="status">{notices[query.notice]}</p>}
-    <section className="admin-account-detail-summary"><div className="admin-account-detail-status"><span>Estado de la cuenta</span><strong className={`account-status ${account.isActive ? "account-status-approved" : "account-status-rejected"}`}>{account.isActive ? "Activa" : "Deshabilitada"}</strong></div><dl><div><dt>Tipo de cuenta</dt><dd>{account.role === "admin" ? "Administrativa protegida" : accountRoleLabel}</dd></div><div><dt>Anuncios asociados</dt><dd>{ownedProfiles.length} anuncio{ownedProfiles.length === 1 ? "" : "s"}</dd></div></dl></section>
+    <section className="admin-account-detail-summary"><div className="admin-account-detail-status"><span>Estado efectivo</span><strong className={`account-status ${account.isActive ? "account-status-approved" : "account-status-rejected"}`}>{account.isActive ? "Activa" : "Deshabilitada"}</strong></div><dl><div><dt>Tipo de cuenta</dt><dd>{account.role === "admin" ? "Administrativa protegida" : accountRoleLabel}</dd></div><div><dt>Anuncios asociados</dt><dd>{ownedProfiles.length} anuncio{ownedProfiles.length === 1 ? "" : "s"}</dd></div><div><dt>Deshabilitada por la persona</dt><dd>{account.selfDisabledAt ? new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(account.selfDisabledAt)) : "No"}</dd></div><div><dt>Bloqueo administrativo</dt><dd>{account.adminDisabledAt ? new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(account.adminDisabledAt)) : "No"}</dd></div></dl></section>
     {isProtectedAdmin ? <section className="admin-empty"><h2>Cuenta protegida</h2><p>Para prevenir bloqueos accidentales, desde aquí no se modifica una cuenta administrativa.</p></section> : <div className="admin-account-detail-layout">
       <form action={`/api/admin/users/${encodeURIComponent(account.id)}`} method="post" className="admin-settings-form admin-account-details-form">
         <input name="action" type="hidden" value="save_details" />
@@ -97,6 +107,11 @@ export default async function AdminAccountDetailsPage({ params, searchParams }: 
         <form action={`/api/admin/users/${encodeURIComponent(account.id)}`} method="post"><input name="action" type="hidden" value="send_reset" /><input name="return_to" type="hidden" value={detailHref} /><button className="button button-outline" type="submit">Enviar enlace de restablecimiento</button></form>
       </section>
     </div>}
-    <section className="admin-account-owned-profiles"><div><p className="eyebrow">ANUNCIOS ASOCIADOS</p><h2>Anuncios de esta cuenta</h2></div>{ownedProfiles.length ? <div>{ownedProfiles.map((profile) => { const moderationHref = `/admin/perfiles?q=${encodeURIComponent(account.email)}&return_to=${encodeURIComponent(detailHref)}`; const previewHref = `${profilePublicPath(profile)}?return_to=${encodeURIComponent(moderationHref)}`; return <article key={profile.id}><div><span className={`account-status account-status-${profile.status}`}>{statusLabel(profile.status)}</span><h3>{profile.displayName}</h3><p>{typeLabel(profile.type)} · {profile.city}, {formatRegionName(profile.region)}</p></div><div><Link className="button button-public-preview" href={previewHref} target="_blank">Ver anuncio público</Link><Link className="button button-outline" href={moderationHref}>Abrir moderación</Link></div></article>; })}</div> : <p className="admin-media-empty">Esta cuenta aún no tiene anuncios asociados.</p>}</section>
+    <section className="admin-account-owned-profiles"><div><p className="eyebrow">ANUNCIOS ASOCIADOS</p><h2>Anuncios de esta cuenta</h2></div>{ownedProfiles.length ? <div>{ownedProfiles.map((profile) => { const moderationHref = `/admin/perfiles?q=${encodeURIComponent(account.email)}&return_to=${encodeURIComponent(detailHref)}`; const previewHref = `${profilePublicPath(profile)}?return_to=${encodeURIComponent(moderationHref)}`; return <article key={profile.id}><div><span className={`account-status account-status-${profile.status}`}>{statusLabel(profile.status)}</span><h3>{profile.displayName}</h3><p>{typeLabel(profile.type)} · {profile.city}, {formatRegionName(profile.region)}</p></div><div><Link prefetch={false} className="button button-public-preview" href={previewHref} target="_blank">Ver anuncio público</Link><Link prefetch={false} className="button button-outline" href={moderationHref}>Abrir moderación</Link></div></article>; })}</div> : <p className="admin-media-empty">Esta cuenta aún no tiene anuncios asociados.</p>}</section>
+    {!isProtectedAdmin && <section className="admin-account-control-panel"><div><p className="eyebrow">CONTROL DE CUENTA</p><h2>Disponibilidad y eliminación</h2><p>El bloqueo administrativo es independiente de la deshabilitación voluntaria. Quitar el bloqueo de Chile3X no reactiva una cuenta que la propia persona mantenga deshabilitada.</p></div><div className="admin-account-control-actions">
+      <form action={`/api/admin/users/${encodeURIComponent(account.id)}/estado`} method="post"><input name="return_to" type="hidden" value={detailHref} /><input name="next_state" type="hidden" value={account.adminDisabledAt ? "active" : "disabled"} /><button className="button button-outline" type="submit">{account.adminDisabledAt ? "Quitar bloqueo administrativo" : "Deshabilitar como administrador"}</button></form>
+      <details className="is-destructive"><summary>Eliminar cuenta permanentemente</summary><form action={`/api/admin/users/${encodeURIComponent(account.id)}/eliminar`} method="post"><input name="return_to" type="hidden" value="/admin/cuentas" /><p>Borra la cuenta, anuncios, medios y relaciones. No se puede deshacer. Solo quedará una huella criptográfica para detectar futuros registros con el mismo correo.</p><label>Confirma el correo<input name="email" type="email" required autoComplete="off" /></label><label>Escribe ELIMINAR<input name="confirmation" required autoComplete="off" /></label><button className="button button-danger" type="submit">Eliminar permanentemente</button></form></details>
+    </div></section>}
+    {!isProtectedAdmin && <section className="admin-account-history"><div><p className="eyebrow">HISTORIAL DE REGISTRO</p><h2>Registros anteriores del mismo correo</h2><p>La comparación usa una huella criptográfica; no conserva el correo de las cuentas eliminadas.</p></div>{deletionHistory.length ? <ol>{deletionHistory.map((entry) => <li key={entry.id}><strong>Cuenta anterior creada {new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(entry.originalCreatedAt))}</strong><span>Eliminada {new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(entry.deletedAt))} por {entry.deletedBy === "admin" ? "un administrador" : "la persona usuaria"}.</span></li>)}</ol> : <p className="admin-media-empty">No existen eliminaciones anteriores asociadas a este correo.</p>}<p className="admin-account-reregistered">Registro actual: {new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(account.createdAt))}{deletionHistory.length ? " · El correo se volvió a registrar después de una eliminación." : ""}</p></section>}
   </div></AdminShell>;
 }

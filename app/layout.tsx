@@ -6,6 +6,7 @@ import { PrivacyConsent } from "./PrivacyConsent";
 import { getCurrentAdmin } from "@/lib/auth";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { socialCardImage, socialCardImageUrl } from "@/lib/seo";
+import { FormProgress } from "./FormProgress";
 
 export const dynamic = "force-dynamic";
 
@@ -77,6 +78,7 @@ export default async function RootLayout({
         {!maintenanceEnabled || admin ? children : <MaintenanceScreen />}
         <AgeGate />
         <PrivacyConsent />
+        <FormProgress />
       </body>
     </html>
   );

@@ -35,16 +35,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     id: users.id,
     role: users.role,
     isActive: users.isActive,
+    selfDisabledAt: users.selfDisabledAt,
+    adminDisabledAt: users.adminDisabledAt,
     email: users.email,
     displayName: users.displayName,
   }).from(users).where(eq(users.id, userId)).limit(1);
   if (!target || target.role === "admin") return redirectWithNotice(request, "status_error", returnTo);
 
-  const isActive = nextState === "active";
-  await db.update(users).set({ isActive }).where(and(eq(users.id, userId), eq(users.role, target.role)));
-  if (!isActive) {
+  const now = new Date().toISOString();
+  const adminDisabledAt = nextState === "disabled" ? now : null;
+  const isActive = !adminDisabledAt && !target.selfDisabledAt;
+  await db.update(users).set({ adminDisabledAt, isActive }).where(and(eq(users.id, userId), eq(users.role, target.role)));
+  if (nextState === "disabled") {
     await db.delete(authSessions).where(eq(authSessions.userId, userId));
-    if (target.isActive) {
+    if (!target.adminDisabledAt) {
       const settings = await getSiteSettings();
       const contactUrl = new URL("/contacto", siteBaseUrl(settings.site_url)).toString();
       const delivered = await sendPortalEmail({
@@ -60,7 +64,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
   }
 
-  await recordAdminAudit(admin, { category: "accounts", action: isActive ? "account.enable" : "account.disable", summary: `${isActive ? "Reactivó" : "Deshabilitó"} la cuenta ${target.displayName ?? target.email}.`, entityType: "account", entityId: target.id, entityLabel: target.displayName ?? target.email, before: { isActive: target.isActive }, after: { isActive } });
+  const enabledByAdmin = nextState === "active";
+  await recordAdminAudit(admin, { category: "accounts", action: enabledByAdmin ? "account.enable" : "account.disable", summary: `${enabledByAdmin ? "Retiró el bloqueo administrativo de" : "Deshabilitó administrativamente"} la cuenta ${target.displayName ?? target.email}.`, entityType: "account", entityId: target.id, entityLabel: target.displayName ?? target.email, before: { isActive: target.isActive, selfDisabledAt: target.selfDisabledAt, adminDisabledAt: target.adminDisabledAt }, after: { isActive, selfDisabledAt: target.selfDisabledAt, adminDisabledAt } });
 
   return redirectWithNotice(request, "status_updated", returnTo);
 }

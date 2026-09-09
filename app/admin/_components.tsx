@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { count, eq } from "drizzle-orm";
+import { and, count, eq, or } from "drizzle-orm";
 import type { AdminUser } from "@/lib/auth";
 import { OfficialChile3xLogo } from "@/app/OfficialChile3xLogo";
 import { getDb } from "@/db";
@@ -47,7 +47,7 @@ async function getPendingMediaCount() {
   try {
     const db = await getDb();
     const [[publicMedia], [exclusiveMedia]] = await Promise.all([
-      db.select({ total: count() }).from(profileMedia).where(eq(profileMedia.moderationStatus, "pending")),
+      db.select({ total: count() }).from(profileMedia).where(and(or(eq(profileMedia.visibility, "public"), eq(profileMedia.isProfilePhoto, true)), eq(profileMedia.moderationStatus, "pending"))),
       db.select({ total: count() }).from(exclusiveContentMedia).where(eq(exclusiveContentMedia.moderationStatus, "pending")),
     ]);
     return Number(publicMedia?.total ?? 0) + Number(exclusiveMedia?.total ?? 0);
@@ -72,17 +72,17 @@ function AdminNavigation({
 }) {
   return (
     <nav aria-label="Administración">
-      <Link href="/admin">Resumen</Link>
-      {adminHasCapability(user, "profiles.moderate") && <Link className={pendingCount > 0 ? "admin-nav-alert" : undefined} href="/admin/perfiles">Anuncios{pendingCount > 0 && <b>{pendingCount}</b>}</Link>}
-      {adminHasCapability(user, "media.moderate") && <Link className={pendingMedia > 0 ? "admin-nav-alert" : undefined} href="/admin/medios">Medios{pendingMedia > 0 && <b>{pendingMedia}</b>}</Link>}
-      {adminHasCapability(user, "reviews.moderate") && <Link href="/admin/resenas">Reseñas</Link>}
-      {adminHasCapability(user, "reports.manage") && <Link className={pendingReports > 0 ? "admin-nav-alert" : undefined} href="/admin/reportes">Reportes{pendingReports > 0 && <b>{pendingReports}</b>}</Link>}
-      {adminHasCapability(user, "bugs.manage") && <Link className={pendingBugs > 0 ? "admin-nav-alert" : undefined} href="/admin/bugs">Testers{pendingBugs > 0 && <b>{pendingBugs}</b>}</Link>}
-      {adminHasCapability(user, "accounts.manage") && <Link href="/admin/cuentas">Cuentas</Link>}
-      {adminHasCapability(user, "news.manage") && <Link href="/admin/noticias">Noticias</Link>}
-      {adminHasCapability(user, "audit.view") && <Link href="/admin/actividad">Actividad</Link>}
-      {adminHasCapability(user, "settings.manage") && <Link href="/admin/configuracion">Configuración</Link>}
-      {adminHasCapability(user, "admins.manage") && <Link href="/admin/administradores">Administradores</Link>}
+      <Link href="/admin" prefetch={false}>Resumen</Link>
+      {adminHasCapability(user, "profiles.moderate") && <Link prefetch={false} className={pendingCount > 0 ? "admin-nav-alert" : undefined} href="/admin/perfiles">Anuncios{pendingCount > 0 && <b>{pendingCount}</b>}</Link>}
+      {adminHasCapability(user, "media.moderate") && <Link prefetch={false} className={pendingMedia > 0 ? "admin-nav-alert" : undefined} href="/admin/medios">Medios{pendingMedia > 0 && <b>{pendingMedia}</b>}</Link>}
+      {adminHasCapability(user, "reviews.moderate") && <Link href="/admin/resenas" prefetch={false}>Reseñas</Link>}
+      {adminHasCapability(user, "reports.manage") && <Link prefetch={false} className={pendingReports > 0 ? "admin-nav-alert" : undefined} href="/admin/reportes">Reportes{pendingReports > 0 && <b>{pendingReports}</b>}</Link>}
+      {adminHasCapability(user, "bugs.manage") && <Link prefetch={false} className={pendingBugs > 0 ? "admin-nav-alert" : undefined} href="/admin/bugs">Testers{pendingBugs > 0 && <b>{pendingBugs}</b>}</Link>}
+      {adminHasCapability(user, "accounts.manage") && <Link href="/admin/cuentas" prefetch={false}>Cuentas</Link>}
+      {adminHasCapability(user, "news.manage") && <Link href="/admin/noticias" prefetch={false}>Noticias</Link>}
+      {adminHasCapability(user, "audit.view") && <Link href="/admin/actividad" prefetch={false}>Actividad</Link>}
+      {adminHasCapability(user, "settings.manage") && <Link href="/admin/configuracion" prefetch={false}>Configuración</Link>}
+      {adminHasCapability(user, "admins.manage") && <Link href="/admin/administradores" prefetch={false}>Administradores</Link>}
     </nav>
   );
 }
@@ -125,7 +125,7 @@ export function AdminPageHeading({ eyebrow, title, description, children, backHr
   return (
     <section className="admin-heading">
       <div>
-        {backHref && <Link className="page-back-link" href={backHref}>← Volver</Link>}
+        {backHref && <Link className="page-back-link" href={backHref} prefetch={false}>← Volver</Link>}
         <p>{eyebrow}</p>
         <h1>{title}</h1>
         <span>{description}</span>

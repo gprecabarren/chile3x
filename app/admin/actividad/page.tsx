@@ -202,7 +202,7 @@ export default async function AdminActivityPage({ searchParams }: { searchParams
       <label>Desde<input type="date" name="from" defaultValue={filters.from} /></label>
       <label>Hasta<input type="date" name="to" defaultValue={filters.to} /></label>
       <label>Orden<select name="order" defaultValue={filters.order}><option value="newest">Más recientes primero</option><option value="oldest">Más antiguos primero</option></select></label>
-      <div className="admin-audit-filter-actions"><button className="button button-primary" type="submit">Aplicar filtros</button>{hasFilters && <Link className="button button-outline" href="/admin/actividad">Limpiar</Link>}</div>
+      <div className="admin-audit-filter-actions"><button className="button button-primary" type="submit">Aplicar filtros</button>{hasFilters && <Link prefetch={false} className="button button-outline" href="/admin/actividad">Limpiar</Link>}</div>
     </form>
     <p className="admin-filter-summary">Mostrando {rows.length} de {total} registros{total > PAGE_SIZE ? ` · página ${page} de ${totalPages}` : ""}.</p>
     {rows.length ? <section className="admin-audit-list" aria-label="Eventos administrativos">{rows.map((row) => {
@@ -215,7 +215,7 @@ export default async function AdminActivityPage({ searchParams }: { searchParams
           <dl>
             <div><dt>Administrador</dt><dd><strong>{row.actorName ?? row.actorEmail}</strong>{row.actorGithubLogin && <span>@{row.actorGithubLogin}</span>}<span>{row.actorEmail}</span></dd></div>
             <div><dt>Fecha y hora</dt><dd><time dateTime={activityInstant(row.createdAt)}>{activityDate(row.createdAt)}</time></dd></div>
-            <div><dt>Objeto afectado</dt><dd>{href ? <Link href={href}>{row.entityLabel ?? row.entityId ?? ADMIN_AUDIT_ENTITY_TYPES[row.entityType as keyof typeof ADMIN_AUDIT_ENTITY_TYPES] ?? row.entityType}</Link> : row.entityLabel ?? row.entityId ?? ADMIN_AUDIT_ENTITY_TYPES[row.entityType as keyof typeof ADMIN_AUDIT_ENTITY_TYPES] ?? row.entityType}{row.entityId && <span>ID: {row.entityId}</span>}</dd></div>
+            <div><dt>Objeto afectado</dt><dd>{href ? <Link prefetch={false} href={href}>{row.entityLabel ?? row.entityId ?? ADMIN_AUDIT_ENTITY_TYPES[row.entityType as keyof typeof ADMIN_AUDIT_ENTITY_TYPES] ?? row.entityType}</Link> : row.entityLabel ?? row.entityId ?? ADMIN_AUDIT_ENTITY_TYPES[row.entityType as keyof typeof ADMIN_AUDIT_ENTITY_TYPES] ?? row.entityType}{row.entityId && <span>ID: {row.entityId}</span>}</dd></div>
           </dl>
           <Changes beforeData={row.beforeData} afterData={row.afterData} metadata={row.metadata} />
         </div>

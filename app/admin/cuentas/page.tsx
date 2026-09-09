@@ -1,4 +1,4 @@
-import { count, desc, eq, sql } from "drizzle-orm";
+import { and, count, desc, eq, isNotNull, isNull, or, sql } from "drizzle-orm";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AccountIdentityFields } from "@/app/account-identity-fields";
@@ -41,6 +41,9 @@ const notices: Record<string, string> = {
   status_updated: "El estado de la cuenta fue actualizado.",
   status_error: "No fue posible modificar esa cuenta.",
   account_missing: "La cuenta ya no existe.",
+  account_deleted: "La cuenta y todos sus datos asociados fueron eliminados permanentemente.",
+  delete_confirmation: "La confirmación de eliminación no coincidió.",
+  delete_error: "No fue posible eliminar permanentemente esa cuenta.",
 };
 
 const roleValues = ["admin", "advertiser", "tester", "visitor"] as const;
@@ -71,44 +74,6 @@ function readDate(value: string | undefined) {
   return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : "";
 }
 
-function matchesText(value: string | null | undefined, query: string) {
-  return Boolean(value?.toLocaleLowerCase("es-CL").includes(query));
-}
-
-function listingStatusMatches(user: {
-  draftProfileCount: number | null;
-  pendingProfileCount: number | null;
-  approvedProfileCount: number | null;
-  pausedProfileCount: number | null;
-  rejectedProfileCount: number | null;
-  expiredProfileCount: number | null;
-}, status: string) {
-  if (!status) return true;
-  const countByStatus: Record<string, number | null> = {
-    draft: user.draftProfileCount,
-    pending: user.pendingProfileCount,
-    approved: user.approvedProfileCount,
-    paused: user.pausedProfileCount,
-    rejected: user.rejectedProfileCount,
-    expired: user.expiredProfileCount,
-  };
-  return Number(countByStatus[status] ?? 0) > 0;
-}
-
-function listingTypeMatches(user: {
-  escortProfileCount: number | null;
-  agencyProfileCount: number | null;
-  rentalProfileCount: number | null;
-}, type: string) {
-  if (!type) return true;
-  const countByType: Record<string, number | null> = {
-    escort: user.escortProfileCount,
-    agency: user.agencyProfileCount,
-    rental: user.rentalProfileCount,
-  };
-  return Number(countByType[type] ?? 0) > 0;
-}
-
 export default async function AdminAccountsPage({ searchParams }: { searchParams: Promise<AccountSearchParams> }) {
   const admin = await getCurrentAdmin();
   if (!admin) redirect("/api/auth/github/start?return_to=/admin/cuentas");
@@ -129,8 +94,8 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
     createdTo: readDate(params.created_to),
   };
   const q = (params.q ?? "").trim().toLocaleLowerCase("es-CL");
-  const advancedFilters = Object.values(filters).filter(Boolean);
-  const hasActiveFilters = Boolean(q || advancedFilters.length);
+  const advancedFilters = Object.entries(filters).filter(([key, value]) => key !== "listings" && Boolean(value));
+  const hasActiveFilters = Boolean(q || filters.listings || advancedFilters.length);
   const currentQuery = new URLSearchParams();
   if (q) currentQuery.set("q", params.q?.trim() ?? "");
   if (filters.role) currentQuery.set("role", filters.role);
@@ -146,12 +111,44 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
   if (filters.createdTo) currentQuery.set("created_to", filters.createdTo);
   const requestedPage = readAdminPage(params.page);
 
+  const searchPattern = `%${q}%`;
+  const hasAnyListing = sql<boolean>`exists (select 1 from profiles account_listing where account_listing.owner_id = ${users.id})`;
+  const hasPendingListing = sql<boolean>`exists (select 1 from profiles account_listing where account_listing.owner_id = ${users.id} and account_listing.status = 'pending')`;
+  const accountScope = and(
+    q ? or(
+      sql<boolean>`lower(coalesce(${users.displayName}, '')) like ${searchPattern}`,
+      sql<boolean>`lower(coalesce(${users.firstName}, '')) like ${searchPattern}`,
+      sql<boolean>`lower(${users.email}) like ${searchPattern}`,
+      sql<boolean>`lower(coalesce(${users.username}, '')) like ${searchPattern}`,
+      sql<boolean>`lower(coalesce(${users.city}, '')) like ${searchPattern}`,
+      sql<boolean>`lower(coalesce(${users.phone}, '')) like ${searchPattern}`,
+      sql<boolean>`lower(coalesce(${users.documentNumber}, '')) like ${searchPattern}`,
+      sql<boolean>`lower(coalesce(${users.foreignCountry}, '')) like ${searchPattern}`,
+    ) : undefined,
+    filters.role ? eq(users.role, filters.role as "admin" | "advertiser" | "tester" | "visitor") : undefined,
+    filters.accountStatus ? eq(users.isActive, filters.accountStatus === "active") : undefined,
+    filters.city ? eq(users.city, filters.city) : undefined,
+    filters.phone === "with_phone" ? sql<boolean>`trim(coalesce(${users.phone}, '')) <> ''` : filters.phone === "without_phone" ? sql<boolean>`trim(coalesce(${users.phone}, '')) = ''` : undefined,
+    filters.emailStatus === "verified" ? isNotNull(users.emailVerifiedAt) : filters.emailStatus === "unverified" ? isNull(users.emailVerifiedAt) : undefined,
+    filters.document === "none" ? sql<boolean>`trim(coalesce(${users.documentNumber}, '')) = ''` : filters.document === "rut" ? and(eq(users.documentType, "rut"), sql<boolean>`trim(coalesce(${users.documentNumber}, '')) <> ''`) : filters.document === "foreign" ? and(eq(users.documentType, "foreign"), sql<boolean>`trim(coalesce(${users.documentNumber}, '')) <> ''`) : undefined,
+    filters.listings === "with_listings" ? hasAnyListing : filters.listings === "without_listings" ? sql<boolean>`not (${hasAnyListing})` : filters.listings === "pending" ? hasPendingListing : undefined,
+    filters.listingStatus ? sql<boolean>`exists (select 1 from profiles account_listing where account_listing.owner_id = ${users.id} and account_listing.status = ${filters.listingStatus})` : undefined,
+    filters.listingType ? sql<boolean>`exists (select 1 from profiles account_listing where account_listing.owner_id = ${users.id} and account_listing.type = ${filters.listingType})` : undefined,
+    filters.createdFrom ? sql<boolean>`substr(${users.createdAt}, 1, 10) >= ${filters.createdFrom}` : undefined,
+    filters.createdTo ? sql<boolean>`substr(${users.createdAt}, 1, 10) <= ${filters.createdTo}` : undefined,
+  );
+  const [totalRow] = await db.select({ total: count() }).from(users).where(accountScope);
+  const total = Number(totalRow?.total ?? 0);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const page = Math.min(requestedPage, totalPages);
   const rows = await db.select({
     id: users.id,
     displayName: users.displayName,
     email: users.email,
     role: users.role,
     isActive: users.isActive,
+    selfDisabledAt: users.selfDisabledAt,
+    adminDisabledAt: users.adminDisabledAt,
     firstName: users.firstName,
     city: users.city,
     phone: users.phone,
@@ -172,38 +169,12 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
     rentalProfileCount: sql<number>`coalesce(sum(case when ${profiles.type} = 'rental' then 1 else 0 end), 0)`,
   }).from(users)
     .leftJoin(profiles, eq(profiles.ownerId, users.id))
+    .where(accountScope)
     .groupBy(users.id)
-    .orderBy(desc(users.createdAt));
-  const filteredRows = rows.filter((user) => {
-    const profileCount = Number(user.profileCount ?? 0);
-    const createdOn = user.createdAt.slice(0, 10);
-    const textMatches = !q || [user.displayName, user.firstName, user.email, user.city, user.phone, user.documentNumber, user.foreignCountry].some((value) => matchesText(value, q));
-    const accountMatches = !filters.accountStatus || (filters.accountStatus === "active" ? user.isActive : !user.isActive);
-    const phoneMatches = !filters.phone || (filters.phone === "with_phone" ? Boolean(user.phone?.trim()) : !user.phone?.trim());
-    const emailMatches = !filters.emailStatus || (filters.emailStatus === "verified" ? Boolean(user.emailVerifiedAt) : !user.emailVerifiedAt);
-    const documentMatches = !filters.document || (filters.document === "none" ? !user.documentNumber : filters.document === "rut" ? user.documentType === "rut" && Boolean(user.documentNumber) : user.documentType === "foreign" && Boolean(user.documentNumber));
-    const listingMatches = !filters.listings || (filters.listings === "with_listings" ? profileCount > 0 : filters.listings === "without_listings" ? profileCount === 0 : Number(user.pendingProfileCount) > 0);
-    const createdAfter = !filters.createdFrom || createdOn >= filters.createdFrom;
-    const createdBefore = !filters.createdTo || createdOn <= filters.createdTo;
-    return textMatches
-      && (!filters.role || user.role === filters.role)
-      && accountMatches
-      && (!filters.city || user.city === filters.city)
-      && phoneMatches
-      && emailMatches
-      && documentMatches
-      && listingMatches
-      && listingStatusMatches(user, filters.listingStatus)
-      && listingTypeMatches(user, filters.listingType)
-      && createdAfter
-      && createdBefore;
-  });
-
-  const total = filteredRows.length;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const page = Math.min(requestedPage, totalPages);
+    .orderBy(desc(users.createdAt))
+    .limit(PAGE_SIZE)
+    .offset((page - 1) * PAGE_SIZE);
   const currentAccountsHref = pageHref("/admin/cuentas", currentQuery, page);
-  const pageRows = filteredRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return <AdminShell user={admin}><div className="admin-content">
     <AdminPageHeading eyebrow="CUENTAS DEL PORTAL" title="Cuentas y accesos" description="Busca, revisa y administra las cuentas del portal. Desde cada ficha puedes abrir sus datos, sus anuncios y los accesos de recuperación." backHref="/admin" />
@@ -216,10 +187,11 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
       <label className="admin-account-check"><input name="adult_verified" type="checkbox" value="yes" required />Confirmo que la persona fue verificada como mayor de 18 años fuera del sitio.</label>
       <AdminPasswordField label="Contraseña inicial" submitLabel="Crear cuenta" />
     </form></div></details>
-    <section className="admin-account-list"><div><p className="eyebrow">REGISTRO DE USUARIOS</p><h2>{total} de {rows.length} cuenta{rows.length === 1 ? "" : "s"}</h2></div>
+    <section className="admin-account-list"><div><p className="eyebrow">REGISTRO DE USUARIOS</p><h2>{total} cuenta{total === 1 ? "" : "s"}</h2></div>
       <form className="admin-account-filters" method="get" role="search">
         <label htmlFor="account-search">Buscar en los datos de la cuenta<input id="account-search" name="q" type="search" defaultValue={params.q ?? ""} placeholder="Correo, nombre, teléfono o documento" /><small>También puedes buscar por ciudad o nombre de usuario.</small></label>
-        <div className="admin-account-filter-actions"><button className="button button-primary" type="submit">Buscar</button>{hasActiveFilters && <Link className="button button-outline" href="/admin/cuentas">Limpiar</Link>}</div>
+        <label className="admin-account-important-filter">Anuncios asociados<select name="listings" defaultValue={filters.listings}><option value="">Cualquier cuenta</option><option value="pending">Con anuncios pendientes</option><option value="with_listings">Con anuncios</option><option value="without_listings">Sin anuncios</option></select><small>Filtro prioritario para encontrar rápidamente cuentas con publicaciones pendientes.</small></label>
+        <div className="admin-account-filter-actions"><button className="button button-primary" type="submit">Buscar</button>{hasActiveFilters && <Link prefetch={false} className="button button-outline" href="/admin/cuentas">Limpiar</Link>}</div>
         <details className="admin-account-advanced-filters" open={advancedFilters.length > 0}>
           <summary><span><b>Filtros avanzados</b><small>{advancedFilters.length ? `${advancedFilters.length} filtro${advancedFilters.length === 1 ? "" : "s"} avanzado${advancedFilters.length === 1 ? "" : "s"} activo${advancedFilters.length === 1 ? "" : "s"}` : "Combina estado, contacto, anuncios y fechas"}</small></span></summary>
           <div className="admin-account-advanced-filter-grid">
@@ -229,16 +201,15 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
             <label>Teléfono<select name="phone" defaultValue={filters.phone}><option value="">Cualquiera</option><option value="with_phone">Con teléfono</option><option value="without_phone">Sin teléfono</option></select></label>
             <label>Correo electrónico<select name="email_status" defaultValue={filters.emailStatus}><option value="">Todos</option><option value="verified">Correo verificado</option><option value="unverified">Correo pendiente de verificar</option></select></label>
             <label>Documento<select name="document" defaultValue={filters.document}><option value="">Cualquiera</option><option value="rut">Con RUT chileno</option><option value="foreign">Con documento extranjero</option><option value="none">Sin documento informado</option></select></label>
-            <label>Anuncios asociados<select name="listings" defaultValue={filters.listings}><option value="">Cualquiera</option><option value="with_listings">Con anuncios</option><option value="without_listings">Sin anuncios</option><option value="pending">Con anuncios pendientes</option></select></label>
             <label>Estado del anuncio<select name="listing_status" defaultValue={filters.listingStatus}><option value="">Cualquiera</option><option value="draft">Borrador</option><option value="pending">En revisión</option><option value="approved">Publicado</option><option value="paused">Pausado</option><option value="rejected">Requiere cambios</option><option value="expired">Vencido</option></select></label>
             <label>Tipo de anuncio<select name="listing_type" defaultValue={filters.listingType}><option value="">Cualquiera</option><option value="escort">Escort</option><option value="agency">Agencia</option><option value="rental">Arriendo</option></select></label>
             <label>Creada desde<input name="created_from" type="date" defaultValue={filters.createdFrom} /></label>
             <label>Creada hasta<input name="created_to" type="date" defaultValue={filters.createdTo} /></label>
           </div>
-          <div className="admin-account-advanced-actions"><button className="button button-primary" type="submit">Aplicar filtros</button><Link className="button button-outline" href="/admin/cuentas">Restablecer</Link></div>
+          <div className="admin-account-advanced-actions"><button className="button button-primary" type="submit">Aplicar filtros</button><Link prefetch={false} className="button button-outline" href="/admin/cuentas">Restablecer</Link></div>
         </details>
       </form>
-      <section className="admin-account-cards" aria-label="Cuentas registradas">{pageRows.map((user) => {
+      <section className="admin-account-cards" aria-label="Cuentas registradas">{rows.map((user) => {
         const detailsBaseHref = `/admin/cuentas/${encodeURIComponent(user.id)}`;
         const detailsHref = `${detailsBaseHref}?return_to=${encodeURIComponent(currentAccountsHref)}`;
         const formattedDate = new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeZone: "America/Santiago" }).format(new Date(`${user.createdAt}Z`.replace("ZZ", "Z")));
@@ -246,10 +217,10 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
         const whatsappHref = adminWhatsappHref(user.phone, user.displayName ?? "");
         const callHref = adminCallHref(user.phone);
         return <article className="admin-account-card" key={user.id}>
-          <header><div><p className="eyebrow">{roleLabel(user.role)}</p><h3>{user.displayName ?? "Sin nombre"}</h3><a href={`mailto:${user.email}`}>{user.email}</a></div><span className={`account-status ${user.isActive ? "account-status-approved" : "account-status-rejected"}`}>{user.isActive ? "Activa" : "Deshabilitada"}</span></header>
-          <dl><div><dt>Ciudad</dt><dd>{user.city || "Sin ciudad"}</dd></div><div><dt>Creación</dt><dd>{formattedDate}</dd></div><div><dt>Anuncios asociados</dt><dd>{user.profileCount > 0 ? <Link className="admin-profile-count-link" href={accountProfilesHref(user.email, detailsHref)}>Ver {user.profileCount} anuncio{user.profileCount === 1 ? "" : "s"}</Link> : "Sin anuncios"}</dd></div></dl>
-          {pendingProfileCount > 0 && <Link className="admin-account-pending-link" href={accountProfilesHref(user.email, detailsHref, "pending")}>{pendingProfileCount} anuncio{pendingProfileCount === 1 ? "" : "s"} pendiente{pendingProfileCount === 1 ? "" : "s"} de revisión</Link>}
-          <div className="admin-account-card-actions"><Link className="button button-primary" href={detailsHref}>Ver detalles</Link>{user.role !== "admin" && user.isActive && <Link className="button button-outline" href={`${detailsBaseHref}/crear-perfil?return_to=${encodeURIComponent(currentAccountsHref)}`}>Crear anuncio</Link>}{whatsappHref && <a className="button contact-whatsapp" href={whatsappHref} target="_blank" rel="noreferrer">WhatsApp</a>}{callHref && <a className="button contact-call" href={callHref}>Llamar</a>}{user.role !== "admin" && <form action={`/api/admin/users/${user.id}/estado`} method="post"><input name="next_state" type="hidden" value={user.isActive ? "disabled" : "active"} /><input name="return_to" type="hidden" value={currentAccountsHref} /><button className="button button-outline" type="submit">{user.isActive ? "Deshabilitar" : "Reactivar"}</button></form>}</div>
+          <header><div><p className="eyebrow">{roleLabel(user.role)}</p><h3>{user.displayName ?? "Sin nombre"}</h3><a href={`mailto:${user.email}`}>{user.email}</a></div><div className="admin-account-state-badges"><span className={`account-status ${user.isActive ? "account-status-approved" : "account-status-rejected"}`}>{user.isActive ? "Activa" : "Deshabilitada"}</span>{user.selfDisabledAt && <span className="account-status account-status-paused">Por la persona</span>}{user.adminDisabledAt && <span className="account-status account-status-rejected">Por administración</span>}</div></header>
+          <dl><div><dt>Ciudad</dt><dd>{user.city || "Sin ciudad"}</dd></div><div><dt>Creación</dt><dd>{formattedDate}</dd></div><div><dt>Anuncios asociados</dt><dd>{user.profileCount > 0 ? <Link prefetch={false} className="admin-profile-count-link" href={accountProfilesHref(user.email, detailsHref)}>Ver {user.profileCount} anuncio{user.profileCount === 1 ? "" : "s"}</Link> : "Sin anuncios"}</dd></div></dl>
+          {pendingProfileCount > 0 && <Link prefetch={false} className="admin-account-pending-link" href={accountProfilesHref(user.email, detailsHref, "pending")}>{pendingProfileCount} anuncio{pendingProfileCount === 1 ? "" : "s"} pendiente{pendingProfileCount === 1 ? "" : "s"} de revisión</Link>}
+          <div className="admin-account-card-actions"><Link prefetch={false} className="button button-primary" href={detailsHref}>Ver detalles</Link>{user.role !== "admin" && user.isActive && <Link prefetch={false} className="button button-outline" href={`${detailsBaseHref}/crear-perfil?return_to=${encodeURIComponent(currentAccountsHref)}`}>Crear anuncio</Link>}{whatsappHref && <a className="button contact-whatsapp" href={whatsappHref} target="_blank" rel="noreferrer">WhatsApp</a>}{callHref && <a className="button contact-call" href={callHref}>Llamar</a>}{user.role !== "admin" && <form action={`/api/admin/users/${user.id}/estado`} method="post"><input name="next_state" type="hidden" value={user.adminDisabledAt ? "active" : "disabled"} /><input name="return_to" type="hidden" value={currentAccountsHref} /><button className="button button-outline" type="submit">{user.adminDisabledAt ? "Quitar bloqueo administrativo" : "Deshabilitar como administrador"}</button></form>}</div>
         </article>;
       })}{total === 0 && <section className="admin-no-results">No hay cuentas que coincidan con esta combinación de filtros. Prueba quitando uno o más criterios.</section>}</section>
       <AdminPagination pathname="/admin/cuentas" params={currentQuery} currentPage={page} totalItems={total} pageSize={PAGE_SIZE} label="Cuentas" />

@@ -9,8 +9,8 @@ export default async function AccessDeniedPage({ searchParams }: { searchParams:
       <h1>Este acceso no est&#225; autorizado.</h1>
       <span>{emailConflict ? "El correo verificado de esta identidad de GitHub ya pertenece a una cuenta de anunciante o tester. Por seguridad, un mismo correo no puede usarse en ambos paneles." : "Tu identidad de GitHub no tiene acceso a esta sección o su autorización fue revocada. Si formas parte del equipo, solicita el permiso correspondiente a la persona propietaria."}</span>
       <div className="admin-denied-actions">
-        <Link className="button button-primary" href="/admin">Volver al panel</Link>
-        <Link className="button button-outline" href="/">Ir al sitio</Link>
+        <Link prefetch={false} className="button button-primary" href="/admin">Volver al panel</Link>
+        <Link prefetch={false} className="button button-outline" href="/">Ir al sitio</Link>
       </div>
     </main>
   );

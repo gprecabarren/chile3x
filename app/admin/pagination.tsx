@@ -41,14 +41,14 @@ export function AdminPagination({
   return <nav className="admin-pagination" aria-label={`Paginación de ${label.toLocaleLowerCase("es-CL")}`}>
     <span>{label}: página {currentPage} de {totalPages}</span>
     <div>
-      {currentPage > 1 && <Link className="button button-outline" href={pageHref(pathname, params, currentPage - 1)}>Anterior</Link>}
+      {currentPage > 1 && <Link prefetch={false} className="button button-outline" href={pageHref(pathname, params, currentPage - 1)}>Anterior</Link>}
       {pages.map((page, index) => <span className="admin-pagination-number" key={page}>
         {index > 0 && pages[index - 1] !== page - 1 && <i aria-hidden="true">…</i>}
         {page === currentPage
           ? <b aria-current="page">{page}</b>
-          : <Link href={pageHref(pathname, params, page)}>{page}</Link>}
+          : <Link prefetch={false} href={pageHref(pathname, params, page)}>{page}</Link>}
       </span>)}
-      {currentPage < totalPages && <Link className="button button-outline" href={pageHref(pathname, params, currentPage + 1)}>Siguiente</Link>}
+      {currentPage < totalPages && <Link prefetch={false} className="button button-outline" href={pageHref(pathname, params, currentPage + 1)}>Siguiente</Link>}
     </div>
   </nav>;
 }

@@ -38,7 +38,7 @@ const messages: Record<string, string> = {
   legal: "Debes aceptar los Términos y condiciones y la Política de privacidad.",
 };
 
-export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ error?: string; return_to?: string; google_notice?: string }> }) {
+export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ error?: string; return_to?: string; google_notice?: string; notice?: string }> }) {
   const params = await searchParams;
   const cookieStore = await cookies();
   const saved = decodeRegistrationState(cookieStore.get(registrationStateCookie)?.value);
@@ -52,7 +52,8 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
     <div className="auth-register-topbar"><Link className="auth-brand" href="/"><OfficialChile3xLogo priority /></Link><p className="auth-login-shortcut">¿Ya tienes cuenta? <Link href={loginHref}>Ingresar</Link></p></div>
     <p className="eyebrow">CUENTA DE ANUNCIANTE</p>
     <h1>Crea tu cuenta para empezar a publicar.</h1>
-    <p>{googleIdentity ? "Tu correo ya fue verificado por Google. Completa los datos restantes para entrar a tu panel." : "Guarda borradores, envía anuncios a revisión y gestiona sus pausas. Antes de entrar te enviaremos un correo de verificación."}</p>
+    <p>{googleIdentity ? "Tu correo ya fue verificado por Google. Completa los datos restantes para entrar a tu panel." : "Guarda borradores, envía anuncios a revisión y controla su visibilidad. Antes de entrar te enviaremos un correo de verificación."}</p>
+    {params.notice === "account_deleted" && <p className="auth-success" role="status">Tu cuenta y sus datos fueron eliminados. Si quieres volver, puedes crear una cuenta completamente nueva.</p>}
     {settings.google_oauth_client_id && <GoogleSignInButton clientId={settings.google_oauth_client_id} intent="register" returnTo={returnTo} />}
     {settings.google_oauth_client_id && <div className="auth-divider"><span>o completa el formulario</span></div>}
     {params.google_notice === "new" && <p className="auth-google-notice" role="status">No existía una cuenta con ese correo de Google. Completa los datos restantes para crearla.</p>}

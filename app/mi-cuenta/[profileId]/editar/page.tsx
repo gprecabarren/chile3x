@@ -55,6 +55,10 @@ export default async function EditProfilePage({ params, searchParams }: { params
       <div className="account-content"><a className="page-back-link" href="/mi-cuenta">← Volver a mi cuenta</a>
         <AccountHeading eyebrow="EDITAR PUBLICACIÓN" title={row.profile.displayName} description="Si el aviso estaba publicado, cualquier actualización vuelve a revisión manual para proteger la calidad del directorio." />
         {query.error && <p className="form-alert" role="alert">{query.message ?? "No se pudieron guardar los cambios. Revisa los campos obligatorios."}</p>}
+        {query.notice === "hidden" && <p className="account-success" role="status">El anuncio quedó oculto del sitio público.</p>}
+        {query.notice === "shown" && <p className="account-success" role="status">El anuncio volvió a mostrarse según su estado de moderación.</p>}
+        {query.notice === "contacts_saved" && <p className="account-success" role="status">WhatsApp, teléfono, correo y redes fueron actualizados inmediatamente. El anuncio conserva su aprobación.</p>}
+        <section className="profile-visibility-panel"><div><p className="eyebrow">VISIBILIDAD</p><h2>{row.profile.ownerHiddenAt ? "Tu anuncio está oculto" : "Ocultar este anuncio"}</h2><p>Ocultarlo lo retira del directorio sin borrar sus datos, medios ni estado de revisión. Puedes volver a mostrarlo cuando quieras.</p></div><form action={`/api/perfiles/${profileId}/visibilidad`} method="post"><input name="return_to" type="hidden" value={`/mi-cuenta/${profileId}/editar`} /><input name="action" type="hidden" value={row.profile.ownerHiddenAt ? "show" : "hide"} /><button className="button button-outline" type="submit">{row.profile.ownerHiddenAt ? "Volver a mostrar" : "Ocultar anuncio"}</button></form></section>
         {query.notice === "submitted" && <ProfileSubmissionConfirmation profileId={profileId} profileType={row.profile.type} />}
         <ProfileForm
           action={`/api/perfiles/${profileId}`}

@@ -7,6 +7,7 @@ import { assertSameOrigin, createUserSession, getUserSessionCookieName, getUserS
 import { GOOGLE_NONCE_COOKIE, verifyGoogleCredential } from "@/lib/google-auth";
 import { createGoogleRegistrationIntent, GOOGLE_REGISTRATION_COOKIE } from "@/lib/google-registration";
 import { getSiteSettings } from "@/lib/site-settings";
+import { ACCOUNT_REACTIVATION_COOKIE, ACCOUNT_REACTIVATION_DURATION_SECONDS, createAccountReactivationIntent } from "@/lib/account-reactivation";
 
 function jsonError(error: string, status = 400) {
   return NextResponse.json({ error }, { status, headers: { "cache-control": "no-store" } });
@@ -51,13 +52,15 @@ export async function POST(request: NextRequest) {
       email: users.email,
       role: users.role,
       isActive: users.isActive,
+      selfDisabledAt: users.selfDisabledAt,
+      adminDisabledAt: users.adminDisabledAt,
     }).from(accountGoogleIdentities)
       .innerJoin(users, eq(accountGoogleIdentities.userId, users.id))
       .where(eq(accountGoogleIdentities.googleSubject, identity.subject)).limit(1);
 
     let account = linked;
     if (!account) {
-      const [byEmail] = await db.select({ id: users.id, email: users.email, role: users.role, isActive: users.isActive })
+      const [byEmail] = await db.select({ id: users.id, email: users.email, role: users.role, isActive: users.isActive, selfDisabledAt: users.selfDisabledAt, adminDisabledAt: users.adminDisabledAt })
         .from(users).where(eq(users.email, identity.email)).limit(1);
       if (byEmail?.role === "admin") return jsonError("Ese correo pertenece al panel administrativo y no puede iniciar una sesión pública.", 409);
       if (byEmail) {
@@ -71,13 +74,22 @@ export async function POST(request: NextRequest) {
           googleSubject: identity.subject,
           googleEmail: identity.email,
         });
-        account = { identityId, userId: byEmail.id, email: byEmail.email, role: byEmail.role, isActive: byEmail.isActive };
+        account = { identityId, userId: byEmail.id, email: byEmail.email, role: byEmail.role, isActive: byEmail.isActive, selfDisabledAt: byEmail.selfDisabledAt, adminDisabledAt: byEmail.adminDisabledAt };
       }
     }
 
     if (account) {
       if (account.role === "admin") return jsonError("Las identidades administrativas solo ingresan mediante GitHub.", 409);
-      if (!account.isActive) return jsonError("Tu cuenta está deshabilitada. Contacta al soporte de Chile3X.", 403);
+      if (account.adminDisabledAt) return jsonError("Tu cuenta fue deshabilitada por Chile3X. Solo la administración puede restablecerla; contáctanos desde la sección Contacto.", 403);
+      if (account.selfDisabledAt) {
+        const destination = new URL("/reactivar-cuenta", request.url);
+        destination.searchParams.set("return_to", returnTo);
+        const response = NextResponse.json({ redirectTo: destination.pathname + destination.search }, { headers: { "cache-control": "no-store" } });
+        response.cookies.set({ name: ACCOUNT_REACTIVATION_COOKIE, value: await createAccountReactivationIntent(account.userId), ...sessionCookieOptions(ACCOUNT_REACTIVATION_DURATION_SECONDS) });
+        response.cookies.delete({ name: GOOGLE_NONCE_COOKIE, path: "/api/auth/google" });
+        return response;
+      }
+      if (!account.isActive) return jsonError("Tu cuenta fue deshabilitada por Chile3X. Contáctanos desde la sección Contacto.", 403);
       const now = new Date().toISOString();
       await db.update(accountGoogleIdentities).set({ googleEmail: identity.email, lastLoginAt: now })
         .where(eq(accountGoogleIdentities.id, account.identityId));

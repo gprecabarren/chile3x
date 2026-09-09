@@ -27,6 +27,7 @@ export const ADMIN_AUDIT_ACTIONS = {
   "account.create": "Creó una cuenta",
   "account.enable": "Reactivó una cuenta",
   "account.disable": "Deshabilitó una cuenta",
+  "account.delete_permanently": "Eliminó permanentemente una cuenta",
   "account.details_update": "Modificó datos de una cuenta",
   "account.password_update": "Cambió la contraseña de una cuenta",
   "account.reset_link": "Envió un enlace de recuperación",
@@ -59,6 +60,7 @@ export const ADMIN_AUDIT_ACTIONS = {
 export const ADMIN_AUDIT_ENTITY_TYPES = {
   admin: "Administrador",
   account: "Cuenta",
+  account_deletion: "Eliminación de cuenta",
   profile: "Anuncio",
   public_media: "Archivo público",
   exclusive_media: "Contenido exclusivo",

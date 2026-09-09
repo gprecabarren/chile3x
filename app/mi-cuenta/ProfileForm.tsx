@@ -380,7 +380,7 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true }
           <p>05 · CONTACTO, REDES Y SERVICIOS</p>
           <h2>Cómo te pueden encontrar</h2>
         </div>
-        <p className="profile-form-help">Completa solo los medios que deseas mostrar. Debes dejar al menos un método de contacto o red social pública.</p>
+        <p className="profile-form-help">Completa solo los medios que deseas mostrar. Debes dejar al menos un método de contacto o red social pública. Si un anuncio ya está publicado y cambias únicamente WhatsApp, teléfono, correo o redes, el cambio se aplica de inmediato. Cualquier modificación en los demás datos vuelve a revisión.</p>
         <fieldset className="profile-contact-fieldset">
           <legend>Contacto directo</legend>
         <div className="form-grid form-grid-three">

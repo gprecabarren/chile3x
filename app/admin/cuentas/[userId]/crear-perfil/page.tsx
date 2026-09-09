@@ -35,6 +35,6 @@ export default async function AdminCreateProfilePage({ params, searchParams }: {
     {query.error && <p className="form-alert" role="alert">{query.message ?? "Revisa la información del formulario antes de crear el aviso."}</p>}
     {owner.isActive && <ProfileForm action={`/api/admin/cuentas/${encodeURIComponent(owner.id)}/perfiles`} submitLabel="Crear y enviar a revisión" allowEscort={!escort} />}
     <p className="admin-create-profile-note">Al guardar, podrás abrir el aviso desde moderación para revisar sus datos, documentos y material antes de aprobarlo.</p>
-    <Link className="button button-outline" href={detailHref}>Volver a los datos de la cuenta</Link>
+    <Link prefetch={false} className="button button-outline" href={detailHref}>Volver a los datos de la cuenta</Link>
   </div></AdminShell>;
 }

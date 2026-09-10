@@ -12,6 +12,7 @@ import { MIN_PASSWORD_LENGTH } from "@/lib/password-policy";
 import { generateUniqueAccountUsername } from "@/lib/account-username";
 import { isReservedAdminEmail } from "@/lib/admin-email";
 import { consumeGoogleRegistrationIntent, GOOGLE_REGISTRATION_COOKIE, readGoogleRegistrationIntent } from "@/lib/google-registration";
+import { recordOperationalEvent } from "@/lib/operations";
 
 function redirectWithError(request: Request, error: string, formData?: FormData) {
   const url = new URL("/registro", request.url);
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest) {
       });
       await consumeGoogleRegistrationIntent(googleRegistration.id);
       const response = NextResponse.redirect(new URL(safeAccountReturnTo(getFormString(formData, "return_to")), request.url), 303);
-      response.cookies.set({ name: getUserSessionCookieName(), value: await createUserSession(userId), ...sessionCookieOptions(getUserSessionDuration()) });
+      response.cookies.set({ name: getUserSessionCookieName(), value: await createUserSession(userId, request, "google"), ...sessionCookieOptions(getUserSessionDuration()) });
       response.cookies.delete({ name: GOOGLE_REGISTRATION_COOKIE, path: "/" });
       response.cookies.set(registrationStateCookie, "", { maxAge: 0, path: "/registro" });
       return response;
@@ -125,6 +126,7 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     console.error("Account registration failed", { stage, error });
+    await recordOperationalEvent({ category: "application", eventName: "account.registration", outcome: "failure", detail: "El registro de cuenta no pudo completar una etapa interna.", metadata: { stage } });
     // If the account was saved, let the user retry sending verification rather
     // than asking them to register again (which would report a duplicate).
     if (createdEmail && formData && !googleRegistration) {

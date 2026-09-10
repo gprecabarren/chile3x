@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { adminAuditLogs, adminGithubIdentities } from "@/db/schema";
 import type { AdminUser } from "@/lib/auth";
+import { recordOperationalEvent } from "@/lib/operations";
 
 export const ADMIN_AUDIT_CATEGORIES = {
   access: "Acceso administrativo",
@@ -24,6 +25,7 @@ export const ADMIN_AUDIT_ACTIONS = {
   "admin.grant_revoke": "Revocó un acceso administrativo",
   "admin.grant_reactivate": "Reactivó un acceso administrativo",
   "admin.sessions_revoke": "Cerró sesiones administrativas",
+  "operations.storage_scan": "Actualizó la revisión de almacenamiento",
   "account.create": "Creó una cuenta",
   "account.enable": "Reactivó una cuenta",
   "account.disable": "Deshabilitó una cuenta",
@@ -151,6 +153,7 @@ export async function recordAdminAudit(actor: AdminUser, input: AdminAuditInput)
       entityId: input.entityId,
       error,
     });
+    await recordOperationalEvent({ category: "audit", eventName: "admin.audit", outcome: "failure", detail: "No se pudo guardar un evento del historial administrativo." });
     return false;
   }
 }

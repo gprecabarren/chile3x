@@ -2,6 +2,7 @@ import { and, eq, gt, isNull } from "drizzle-orm";
 import { getDb } from "@/db";
 import { accountTokens, authSessions, users } from "@/db/schema";
 import { createOpaqueToken, sha256 } from "@/lib/auth";
+import { recordOperationalEvent } from "@/lib/operations";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 
 export type AccountTokenPurpose = "verify_email" | "reset_password";
@@ -56,6 +57,7 @@ export type PortalEmailNotification = {
     href: string;
   };
   note?: string;
+  kind?: "account_verification" | "password_reset" | "profile_approved" | "account_disabled" | "city_alert" | "portal_notification";
 };
 
 async function sendWithAppsScript(message: AccountEmailMessage, relayUrl?: string, relaySecret?: string) {
@@ -91,8 +93,20 @@ async function sendWithAppsScript(message: AccountEmailMessage, relayUrl?: strin
   }
 }
 
-export async function sendPortalEmail({ email, displayName, subject, heading, message, action, note }: PortalEmailNotification) {
-  if (!isEmail(email)) return false;
+export async function sendPortalEmail({ email, displayName, subject, heading, message, action, note, kind = "portal_notification" }: PortalEmailNotification) {
+  const startedAt = performance.now();
+  const finish = async (delivered: boolean, provider: string | null, detail: string) => {
+    await recordOperationalEvent({
+      category: "email",
+      eventName: "portal.email",
+      outcome: delivered ? "success" : "failure",
+      durationMs: performance.now() - startedAt,
+      detail,
+      metadata: { provider, kind },
+    });
+    return delivered;
+  };
+  if (!isEmail(email)) return finish(false, null, "El destinatario no tenía un formato válido.");
 
   const { env } = await import("cloudflare:workers");
   const settings = await getSiteSettings();
@@ -112,9 +126,11 @@ export async function sendPortalEmail({ email, displayName, subject, heading, me
   // The Google relay is deliberately first: Cloudflare's free Email Service
   // can accept a call without being able to deliver to arbitrary recipients.
   // For the beta, a successful Gmail relay is the definitive delivery path.
-  if (await sendWithAppsScript(emailMessage, env.GOOGLE_APPS_SCRIPT_URL, env.GOOGLE_APPS_SCRIPT_SECRET)) return true;
+  if (await sendWithAppsScript(emailMessage, env.GOOGLE_APPS_SCRIPT_URL, env.GOOGLE_APPS_SCRIPT_SECRET)) {
+    return finish(true, "google_relay", "Correo entregado mediante el relay principal.");
+  }
 
-  if (!env.EMAIL) return false;
+  if (!env.EMAIL) return finish(false, null, "No había una alternativa de entrega disponible.");
   try {
     await env.EMAIL.send({
       to: email,
@@ -123,10 +139,10 @@ export async function sendPortalEmail({ email, displayName, subject, heading, me
       html,
       text,
     });
-    return true;
+    return finish(true, "cloudflare_email", "Correo entregado mediante el servicio alternativo.");
   } catch (error) {
     console.error("Cloudflare portal email delivery failed", { subject, error });
-    return false;
+    return finish(false, "cloudflare_email", "Las alternativas de entrega no pudieron completar el envío.");
   }
 }
 
@@ -142,6 +158,7 @@ export async function sendAccountEmail({ email, displayName, purpose, token }: {
     message: isVerification ? "Confirma tu correo para activar tu cuenta y proteger tus publicaciones." : "Recibimos una solicitud para restablecer tu contraseña.",
     action: { label: isVerification ? "Verificar correo" : "Restablecer contraseña", href: link },
     note: isVerification ? "El enlace vence en 24 horas." : "El enlace vence en 1 hora. Si no solicitaste este cambio, puedes ignorar este correo.",
+    kind: isVerification ? "account_verification" : "password_reset",
   });
 }
 

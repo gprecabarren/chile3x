@@ -3,7 +3,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { profileStatuses, profiles } from "@/db/schema";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getUserSessionCookieName } from "@/lib/auth";
+import { getAccountSessions } from "@/lib/session-management";
+import { SessionManager } from "@/app/SessionManager";
 import { AccountHeading, AccountShell } from "./_components";
 import { AgencyMemberships } from "./AgencyMemberships";
 import { profilePublicPath } from "@/lib/profile";
@@ -30,16 +32,19 @@ const messages: Record<string, string> = {
   error: "No fue posible completar esa acción. Revisa el estado del anuncio.",
 };
 
-export default async function AccountHome({ searchParams }: { searchParams: Promise<{ notice?: string }> }) {
+export default async function AccountHome({ searchParams }: { searchParams: Promise<{ notice?: string; session_notice?: string }> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/ingresar?return_to=/mi-cuenta");
   const db = await getDb();
-  const rows = await db.select({ id: profiles.id, slug: profiles.slug, handle: profiles.handle, displayName: profiles.displayName, type: profiles.type, status: profiles.status, city: profiles.city, region: profiles.region, updatedAt: profiles.updatedAt, ownerHiddenAt: profiles.ownerHiddenAt }).from(profiles)
-    .where(eq(profiles.ownerId, user.id)).orderBy(desc(profiles.updatedAt));
+  const [rows, sessions, params] = await Promise.all([
+    db.select({ id: profiles.id, slug: profiles.slug, handle: profiles.handle, displayName: profiles.displayName, type: profiles.type, status: profiles.status, city: profiles.city, region: profiles.region, updatedAt: profiles.updatedAt, ownerHiddenAt: profiles.ownerHiddenAt }).from(profiles)
+      .where(eq(profiles.ownerId, user.id)).orderBy(desc(profiles.updatedAt)),
+    getAccountSessions(user.id, getUserSessionCookieName()),
+    searchParams,
+  ]);
   const ids = rows.map((profile) => profile.id);
   const activeStoryCounts = ids.length ? await db.select({ profileId: profileStatuses.profileId, total: count() }).from(profileStatuses).where(and(inArray(profileStatuses.profileId, ids), gt(profileStatuses.expiresAt, new Date().toISOString()))).groupBy(profileStatuses.profileId) : [];
   const storyCounts = new Map(activeStoryCounts.map((row) => [row.profileId, Number(row.total)]));
-  const params = await searchParams;
 
   return <AccountShell user={user}><div className="account-content">
     <AccountHeading eyebrow="PANEL DE ANUNCIANTE" title="Tus anuncios" description="Guarda borradores, actualiza la información y envía cada anuncio a revisión manual antes de publicarlo."><Link className="button button-primary" href="/mi-cuenta/nuevo-perfil">Crear anuncio</Link></AccountHeading>
@@ -47,5 +52,14 @@ export default async function AccountHome({ searchParams }: { searchParams: Prom
     {rows.length === 0 ? <section className="account-empty"><h2>Aún no tienes anuncios</h2><p>Puedes crear un anuncio de tipo escort, agencia o arriendo. Primero quedará como borrador y tú decides cuándo enviarlo a revisión.</p><Link className="button button-primary" href="/mi-cuenta/nuevo-perfil">Crear mi primer anuncio</Link></section> : <div className="owner-profile-list">{rows.map((profile) => <article className="owner-profile-card" key={profile.id}><div><div className="owner-profile-statuses"><span className={`account-status account-status-${profile.status}`}>{statusLabel[profile.status]}</span>{profile.ownerHiddenAt && <span className="account-status account-status-rejected">Oculto por ti</span>}</div><h2>{profile.displayName}</h2><p>{profile.handle && <>@{profile.handle} · </>}{profile.type} · {profile.city}, {formatRegionName(profile.region)}</p></div><div className="owner-profile-actions">{profile.status === "approved" && !profile.ownerHiddenAt && <Link className="button button-public-preview" href={profilePublicPath(profile)} target="_blank">Ver anuncio público</Link>}<Link className="button button-outline" href={`/mi-cuenta/${profile.id}/estadisticas`}>Estadísticas</Link><Link className="button button-outline" href={`/mi-cuenta/${profile.id}/editar`}>Editar anuncio</Link>{profile.status === "approved" && <Link className="button button-outline" href={`/mi-cuenta/${profile.id}/historias`}>Historias ({storyCounts.get(profile.id) ?? 0})</Link>}{(profile.status === "draft" || profile.status === "rejected") && <form action={`/api/perfiles/${profile.id}/enviar-revision`} method="post"><button className="button button-primary" type="submit">Enviar a revisión</button></form>}<form action={`/api/perfiles/${profile.id}/visibilidad`} method="post"><input type="hidden" name="return_to" value="/mi-cuenta" /><input type="hidden" name="action" value={profile.ownerHiddenAt ? "show" : "hide"} /><button className="button button-outline" type="submit">{profile.ownerHiddenAt ? "Volver a mostrar" : "Ocultar anuncio"}</button></form></div></article>)}</div>}
     <p className="account-feature-note">La pausa por período de publicación está preparada para los futuros planes pagados, pero sus controles permanecerán deshabilitados hasta activar la facturación. Ocultar un anuncio sí está disponible y no consume pausas.</p>
     <AgencyMemberships ownerId={user.id} />
+    <SessionManager
+      sessions={sessions}
+      action="/api/mi-cuenta/sesiones"
+      currentLogoutAction="/api/auth/session/logout"
+      eyebrow="SEGURIDAD DE ACCESO"
+      title="Sesiones y dispositivos"
+      description="Comprueba dónde está abierta tu cuenta y cierra cualquier dispositivo que no reconozcas."
+      notice={params.session_notice === "closed" ? <p className="account-success" role="status">La sesión seleccionada fue cerrada.</p> : undefined}
+    />
   </div></AccountShell>;
 }

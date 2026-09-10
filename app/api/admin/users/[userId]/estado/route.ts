@@ -59,6 +59,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         message: "El acceso a tu cuenta fue deshabilitado por la administración. Tus anuncios dejaron de estar disponibles mientras revisamos esta medida.",
         action: { label: "Contactar a Chile3X", href: contactUrl },
         note: "Si crees que se trata de un error o necesitas aclarar algo, contáctanos desde el enlace anterior.",
+        kind: "account_disabled",
       });
       if (!delivered) console.error("Could not send account disabled email", { userId });
     }

@@ -1,9 +1,10 @@
-import { and, eq, gt } from "drizzle-orm";
-import { cookies } from "next/headers";
+import { and, eq, gt, lte } from "drizzle-orm";
+import { cookies, headers } from "next/headers";
 import { cache } from "react";
 import { getDb } from "@/db";
 import { adminGithubAccess, authSessions, users } from "@/db/schema";
 import type { AdminAccessLevel } from "@/lib/admin-permissions";
+import { sessionContextFromHeaders, sessionContextFromRequest, type SessionAuthMethod } from "@/lib/session-context";
 
 const ADMIN_SESSION_COOKIE = "chile3x_admin_session";
 const USER_SESSION_COOKIE = "chile3x_user_session";
@@ -134,27 +135,40 @@ export function sessionCookieOptions(maxAge = ADMIN_SESSION_DURATION_SECONDS) {
   };
 }
 
-async function createSession(userId: string, durationSeconds: number) {
+async function createSession(userId: string, durationSeconds: number, request: Request, authMethod: SessionAuthMethod) {
   const secret = createOpaqueToken();
   const id = crypto.randomUUID();
+  const now = new Date().toISOString();
   const expiresAt = new Date(Date.now() + durationSeconds * 1000).toISOString();
+  const context = sessionContextFromRequest(request);
+  const db = await getDb();
 
-  await (await getDb()).insert(authSessions).values({
+  await db.delete(authSessions).where(and(eq(authSessions.userId, userId), lte(authSessions.expiresAt, now)));
+  await db.insert(authSessions).values({
     id,
     userId,
     tokenHash: await sha256(secret),
+    authMethod,
+    ...context,
+    lastSeenAt: now,
     expiresAt,
   });
 
   return `${id}.${secret}`;
 }
 
-export async function createAdminSession(userId: string) {
-  return createSession(userId, ADMIN_SESSION_DURATION_SECONDS);
+export async function createAdminSession(userId: string, request: Request) {
+  return createSession(userId, ADMIN_SESSION_DURATION_SECONDS, request, "github");
 }
 
-export async function createUserSession(userId: string) {
-  return createSession(userId, USER_SESSION_DURATION_SECONDS);
+export async function createUserSession(userId: string, request: Request, authMethod: Exclude<SessionAuthMethod, "github"> = "password") {
+  return createSession(userId, USER_SESSION_DURATION_SECONDS, request, authMethod);
+}
+
+export function sessionIdFromToken(sessionToken: string | undefined) {
+  if (!sessionToken) return null;
+  const [id, secret] = sessionToken.split(".");
+  return id && secret ? id : null;
 }
 
 export async function deleteCurrentSession(sessionToken: string | undefined) {
@@ -200,6 +214,11 @@ const getSessionUser = cache(async function getSessionUser(cookieName: string): 
       displayName: users.displayName,
       role: users.role,
       isActive: users.isActive,
+      sessionId: authSessions.id,
+      sessionIpAddress: authSessions.ipAddress,
+      sessionUserAgent: authSessions.userAgent,
+      sessionCountryCode: authSessions.countryCode,
+      sessionLastSeenAt: authSessions.lastSeenAt,
     })
     .from(authSessions)
     .innerJoin(users, eq(authSessions.userId, users.id))
@@ -214,7 +233,25 @@ const getSessionUser = cache(async function getSessionUser(cookieName: string): 
     return null;
   }
 
-  return record as AccountUser;
+  const now = new Date();
+  const lastSeen = new Date(record.sessionLastSeenAt.replace(" ", "T") + (record.sessionLastSeenAt.includes("T") ? "" : "Z"));
+  if (!Number.isFinite(lastSeen.getTime()) || now.getTime() - lastSeen.getTime() >= 15 * 60 * 1000) {
+    const context = sessionContextFromHeaders(await headers());
+    await db.update(authSessions).set({
+      lastSeenAt: now.toISOString(),
+      ipAddress: context.ipAddress ?? record.sessionIpAddress,
+      userAgent: context.userAgent ?? record.sessionUserAgent,
+      countryCode: context.countryCode ?? record.sessionCountryCode,
+    }).where(eq(authSessions.id, record.sessionId));
+  }
+
+  return {
+    id: record.id,
+    email: record.email,
+    username: record.username,
+    displayName: record.displayName,
+    role: record.role,
+  } as AccountUser;
 });
 
 export async function getCurrentAdmin(): Promise<AdminUser | null> {

@@ -18,6 +18,7 @@ if (process.argv[2] === "cleanup") {
   assert.ok([...users, ...profileIds].every((id) => id.startsWith("qa_audit_")));
   db.exec("BEGIN");
   for (const id of profileIds) db.prepare("DELETE FROM profiles WHERE id = ?").run(id);
+  db.prepare("DELETE FROM admin_github_access WHERE user_id IN (SELECT value FROM json_each(?))").run(JSON.stringify(users));
   for (const id of users) db.prepare("DELETE FROM users WHERE id = ?").run(id);
   db.exec("COMMIT");
   console.log("Only local QA fixtures removed.");
@@ -34,14 +35,16 @@ for (const [name, id] of Object.entries(ids)) {
     .run(id, `${id}@example.invalid`, `qa-${name}-${suffix}`, `Cuenta QA ${name}`, name === "admin" ? "admin" : name === "tester" ? "tester" : "advertiser", name === "disabled" ? 0 : 1, new Date().toISOString(), "Valdivia");
   const secret = randomBytes(24).toString("hex");
   const sessionId = `${prefix}_${name}_session`;
-  db.prepare("INSERT INTO auth_sessions (id,user_id,token_hash,expires_at) VALUES (?,?,?,?)")
-    .run(sessionId, id, createHash("sha256").update(secret).digest("hex"), expiration);
+  db.prepare("INSERT INTO auth_sessions (id,user_id,token_hash,auth_method,ip_address,user_agent,country_code,region,city,timezone,last_seen_at,expires_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")
+    .run(sessionId, id, createHash("sha256").update(secret).digest("hex"), name === "admin" ? "github" : "password", "203.0.113.42", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/140.0 Safari/537.36", "CL", "Los Ríos", "Valdivia", "America/Santiago", new Date().toISOString(), expiration);
   const cookieName = name === "admin" ? "chile3x_admin_session" : "chile3x_user_session";
   cookies[name] = `${cookieName}=${sessionId}.${secret}`;
   if (["admin", "tester", "owner"].includes(name)) {
     writeFileSync(`outputs/qa-${name}-state.json`, JSON.stringify({ cookies: [{ name: cookieName, value: `${sessionId}.${secret}`, domain: "localhost", path: "/", httpOnly: true, secure: false, sameSite: "Lax", expires: Math.floor(Date.now() / 1000) + 3600 }], origins: [] }));
   }
 }
+db.prepare("INSERT INTO admin_github_access (id,github_login,github_user_id,user_id,access_level,protected_email,is_active) VALUES (?,?,?,?,?,?,1)")
+  .run(`${prefix}_admin_grant`, `qa-admin-${suffix}`, `${Date.now()}`, ids.admin, "administrator", `${ids.admin}@example.invalid`);
 
 const profileId = `${prefix}_profile`;
 const disabledProfileId = `${prefix}_disabled_profile`;
@@ -74,13 +77,21 @@ const existingOwnerForm = await checkPage(`/admin/cuentas/${ids.owner}/crear-per
 assert.ok(!existingOwnerForm.includes('<option value="escort"'), "A second escort must not be offered");
 const missing = await get(`/admin/cuentas/${prefix}_missing/crear-perfil`, "admin");
 assert.ok([302, 303, 307].includes(missing.status));
-for (const path of ["/admin", "/admin/cuentas?page=2", "/admin/perfiles?page=2", "/admin/medios", "/admin/configuracion"]) await checkPage(path, "admin");
+const adminSummary = await checkPage("/admin", "admin", "Panel operativo");
+assert.ok(adminSummary.includes("Sesiones y dispositivos"));
+assert.ok(adminSummary.includes("203.0.113.42"));
+for (const path of ["/admin/cuentas?page=2", "/admin/perfiles?page=2", "/admin/medios", "/admin/configuracion"]) await checkPage(path, "admin");
 for (const name of ["owner", "tester"]) {
-  for (const path of ["/mi-cuenta", "/mi-cuenta/datos-personales", "/mi-cuenta/contenido", "/mi-cuenta/nuevo-perfil"]) await checkPage(path, name);
+  const accountSummary = await checkPage("/mi-cuenta", name, "Sesiones y dispositivos");
+  assert.ok(accountSummary.includes("203.0.113.42"));
+  for (const path of ["/mi-cuenta/datos-personales", "/mi-cuenta/contenido", "/mi-cuenta/nuevo-perfil"]) await checkPage(path, name);
 }
 const home = await checkPage("/", "tester", `qa-tester-${suffix}`);
+assert.ok(home.includes("Se priorizan las escorts con más visualizaciones únicas recientes"), "signed-in users should see the featured-profile explanation");
 assert.ok(!home.includes('href="/registro"'), "signed-in home must hide registration");
 const anonymous = await checkPage("/");
+assert.ok(!anonymous.includes("Se priorizan las escorts con más visualizaciones únicas recientes"), "anonymous visitors must not see the internal ranking explanation");
+assert.ok(!anonymous.includes("Los perfiles destacados aparecerán aquí"), "anonymous visitors must not see the internal empty-state explanation");
 assert.ok(!anonymous.includes(ids.tester), "session identity must never leak to anonymous home");
 assert.ok(!anonymous.includes(`qa-deshabilitado-${suffix}`), "disabled accounts must not be promoted");
 assert.equal((await get(`/perfil/qa-deshabilitado-${suffix}`)).status, 404);
@@ -102,10 +113,16 @@ const failedLogin = await get("/api/auth/login", null, { method: "POST", headers
 assert.equal(new URL(failedLogin.headers.get("location")).searchParams.get("return_to"), "/mi-cuenta/nuevo-perfil");
 const csrf = await get("/api/auth/session/logout", "owner", { method: "POST", headers: { origin: "https://other.invalid" } });
 assert.equal(csrf.status, 403);
+const otherSessionId = `${prefix}_owner_other_session`;
+db.prepare("INSERT INTO auth_sessions (id,user_id,token_hash,auth_method,ip_address,expires_at) VALUES (?,?,?,?,?,?)")
+  .run(otherSessionId, ids.owner, createHash("sha256").update(randomBytes(24).toString("hex")).digest("hex"), "google", "198.51.100.25", expiration);
+const revokeOther = await get("/api/mi-cuenta/sesiones", "owner", { method: "POST", headers: { origin: base, "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ action: "revoke_one", session_id: otherSessionId }) });
+assert.equal(revokeOther.status, 303);
+assert.equal(db.prepare("SELECT count(*) as n FROM auth_sessions WHERE id=?").get(otherSessionId).n, 0);
 const logout = await get("/api/auth/session/logout", "owner", { method: "POST", headers: { origin: base } });
 assert.equal(logout.status, 303);
 assert.match(logout.headers.get("set-cookie"), /Max-Age=0/i);
 assert.equal(db.prepare("SELECT count(*) as n FROM auth_sessions WHERE user_id=?").get(ids.owner).n, 0);
 assert.ok(!((await (await get("/", "owner")).text()).includes(ids.owner)), "old session cannot authenticate after logout");
-console.log("PASS invalid login destination, cross-origin protection, logout revocation");
+console.log("PASS session summaries, ownership-scoped revocation, cross-origin protection and logout");
 console.log("QA fixtures remain local for visual checks; run node scripts/qa-local.mjs cleanup afterwards.");

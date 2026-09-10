@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
   await db.update(users).set({ selfDisabledAt: null, isActive: true }).where(and(eq(users.id, intent.userId), isNull(users.adminDisabledAt)));
   await db.update(accountTokens).set({ usedAt: now }).where(eq(accountTokens.id, intent.tokenId));
   const response = NextResponse.redirect(new URL(`${returnTo}${returnTo.includes("?") ? "&" : "?"}notice=reactivated`, request.url), 303);
-  response.cookies.set({ name: getUserSessionCookieName(), value: await createUserSession(intent.userId), ...sessionCookieOptions(getUserSessionDuration()) });
+  response.cookies.set({ name: getUserSessionCookieName(), value: await createUserSession(intent.userId, request, "reactivation"), ...sessionCookieOptions(getUserSessionDuration()) });
   response.cookies.set({ name: ACCOUNT_REACTIVATION_COOKIE, value: "", ...sessionCookieOptions(0), maxAge: 0 });
   return response;
 }

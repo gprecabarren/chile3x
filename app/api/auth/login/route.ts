@@ -53,6 +53,6 @@ export async function POST(request: NextRequest) {
 
   const returnTo = safeAccountReturnTo(getFormString(formData, "return_to"));
   const response = NextResponse.redirect(new URL(returnTo, request.url), 303);
-  response.cookies.set({ name: getUserSessionCookieName(), value: await createUserSession(user.id), ...sessionCookieOptions(getUserSessionDuration()) });
+  response.cookies.set({ name: getUserSessionCookieName(), value: await createUserSession(user.id, request, "password"), ...sessionCookieOptions(getUserSessionDuration()) });
   return response;
 }

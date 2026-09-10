@@ -25,6 +25,11 @@ El proyecto está construido para operar en Cloudflare con Workers, D1 y R2, sin
 - En pantallas móviles, el acceso flotante a WhatsApp queda fijado abajo a la derecha para no cubrir títulos ni controles.
 - Los paneles de administración y de cuenta utilizan Manrope autohospedada como tipografía de interfaz. Los botones de acción usan texto de 13–14 px acorde con su altura táctil, manteniendo compactos los controles que solo contienen iconos.
 - Las cuatro tarjetas del resumen administrativo funcionan como accesos directos a todos los anuncios, anuncios pendientes, archivos pendientes y anuncios pausados. El aviso rojo de moderación queda separado visualmente de las métricas para mejorar la jerarquía en móvil y escritorio.
+- Cada cuenta pública y cada identidad administrativa puede revisar sus sesiones activas desde su resumen. Se muestran dispositivo, navegador, método de ingreso, IP, ubicación aproximada, inicio, última actividad y vencimiento; la sesión actual queda identificada y las demás se pueden cerrar por separado o en conjunto.
+- Todos los niveles administrativos pueden abrir su resumen para gestionar sus propios dispositivos. Las estadísticas privadas siguen apareciendo solo a los roles autorizados y el panel operativo global queda restringido a Propietario y Administrador.
+- El resumen administrativo incorpora errores registrados, correos fallidos, duración de operaciones y una revisión agregada de D1/R2. La comparación de almacenamiento es manual, tiene un límite seguro de 20.000 objetos, no elimina archivos y conserva solo cantidades y tamaños, nunca claves privadas de R2.
+- La explicación interna sobre cómo se priorizan o destacan anuncios en el inicio solo aparece cuando existe una sesión pública o administrativa; los visitantes anónimos continúan viendo los anuncios destacados, pero no ese criterio operativo ni su estado vacío.
+- En pantallas móviles, seleccionar cualquier enlace de «Secciones de administración» o «Secciones de mi cuenta» repliega el menú en el acto para que la página elegida quede visible y el cambio de sección sea evidente.
 
 Verificación reproducible:
 
@@ -59,6 +64,8 @@ Actualmente incluye:
 - Contenido exclusivo asociado a la cuenta del anunciante: puede mostrarse al final de un único anuncio Escort, pero permanece disponible para los compradores autorizados incluso si el anuncio se pausa o se elimina.
 - Biblioteca privada para compradores en `Mi cuenta > Mi contenido`, donde cada acceso se muestra con el nombre de usuario de la cuenta vendedora, sin exponer correos.
 - Panel administrativo para cuentas, anuncios, medios, documentos, reportes, reseñas, SEO, contenidos, noticias, FAQ, reglas de publicación y ajustes del sitio.
+- Administración de sesiones y dispositivos dentro de los resúmenes existentes, disponible para cuentas visitantes, anunciantes, testers y todos los niveles administrativos, sin crear una sección adicional.
+- Panel operativo desplegable en el resumen administrativo, con filtros por período, área y resultado, historial de eventos, entrega de correos y auditorías agregadas de D1/R2.
 - Pestaña **Administradores** para autorizar usuarios exactos de GitHub, asignar funciones, cerrar sus sesiones y revocar o reactivar accesos sin tocar el repositorio.
 - Cada invitación administrativa reserva desde el inicio un correo verificado de GitHub. Ese correo no puede coexistir con una cuenta de anunciante o tester, y GitHub debe confirmarlo durante el primer acceso.
 - Historial administrativo separado y paginado: identifica a cada administrador por su cuenta interna y GitHub, registra fecha/hora, resultado, objeto afectado y valores anteriores/posteriores, con filtros por administrador, área, acción, objeto, resultado y rango de fechas.
@@ -112,6 +119,8 @@ Los archivos heredados de la antigua galería privada se migran a este modelo si
 ## Seguridad y privacidad
 
 - Sesiones protegidas por cookies seguras y contraseñas derivadas con PBKDF2.
+- Cada inicio guarda únicamente los datos necesarios para reconocer la sesión: método, agente del navegador, IP y ubicación aproximada entregada por Cloudflare. No se guardan coordenadas, GPS ni una ubicación precisa; los registros se eliminan al cerrar o invalidar la sesión y dejan de ser válidos al vencer.
+- Cerrar dispositivos exige una sesión autenticada, origen válido y coincidencia de propietario en el servidor. Una cuenta nunca puede cerrar ni consultar sesiones ajenas desde la interfaz pública.
 - GitHub OAuth solo para administración del sitio.
 - Google Identity Services se utiliza solo para cuentas públicas. El servidor valida la firma RS256, emisor, audiencia, vigencia, nonce, correo verificado e identificador estable `sub` antes de crear una sesión; no acepta el correo enviado directamente por el navegador como prueba de identidad.
 - Solo la identidad propietaria protegida —GitHub `gprecabarren` con `genaropiedra@hotmail.com` verificado por GitHub— puede abrir **Administradores**, agregar o eliminar accesos y cambiar sus niveles. Ser colaborador del repositorio no concede acceso al panel.
@@ -144,6 +153,7 @@ Los archivos heredados de la antigua galería privada se migran a este modelo si
 - **Archivos:** Cloudflare R2, con metadatos y permisos en D1.
 - **Correo transaccional:** relay de Google Apps Script configurado como secreto de Cloudflare para verificación, restablecimiento de contraseña y avisos operativos.
 - **Analítica:** Google Tag Manager, Google Analytics y Search Console, sujetos al consentimiento correspondiente.
+- **Observabilidad interna:** eventos operativos agregados en D1 para entregas de correo, autenticación, errores controlados y revisiones de almacenamiento. No se guardan destinatarios, tokens, IP de visitantes ni claves de objetos en este historial.
 - **Autenticación pública opcional:** Google Identity Services con un cliente web configurado por ID público en `Administración > Configuración > Google`; el secreto de cliente no se usa ni se almacena en Chile3X.
 
 Las uniones de infraestructura están definidas en [`.openai/hosting.json`](.openai/hosting.json): `DB` para D1 y `MEDIA` para R2. Los secretos nunca deben añadirse al repositorio.
@@ -178,6 +188,20 @@ Las uniones de infraestructura están definidas en [`.openai/hosting.json`](.ope
 2. Buscar por administrador, cuenta, anuncio, correo o identificador, o combinar filtros de área, acción, objeto, resultado y fechas.
 3. Abrir el detalle de un evento para comparar los valores anteriores y posteriores. Los eventos de eliminación conservan solo metadatos seguros, nunca el archivo ni sus claves privadas.
 4. Seguir el enlace del objeto afectado para volver a la cuenta, anuncio, reporte, noticia, medio o ajuste relacionado.
+
+### Administrar sesiones y dispositivos
+
+1. Una cuenta abre `Mi cuenta > Mis anuncios`; una identidad administrativa abre el resumen de `Administración`.
+2. En **Sesiones y dispositivos**, comprueba la sesión actual, IP y ubicación aproximada.
+3. Abre **Ver otros dispositivos** para revisar accesos adicionales.
+4. Cierra una sesión concreta o todas las demás. La sesión actual también puede cerrarse con el control habitual del encabezado.
+
+### Revisar la salud operativa
+
+1. Propietario o Administrador abre el resumen de `Administración`.
+2. Consulta errores, correos fallidos, duración interna y la última fotografía de D1/R2.
+3. Abre **Ver más** para filtrar eventos por período, área y resultado.
+4. Usa **Actualizar revisión D1/R2** para comparar objetos reales con referencias de la base. La revisión es de solo lectura: informa archivos huérfanos o faltantes, pero nunca los elimina automáticamente.
 
 El registro comienza desde la migración que habilita esta función; no inventa ni reconstruye acciones históricas anteriores. Se registran inicios y cierres de sesión administrativa, cambios de cuentas y contraseñas, creación y estados de anuncios, moderación y eliminación de medios, reseñas, reportes, noticias, configuración, respuestas a testers y aperturas explícitas de documentos o evidencias privadas. Las visitas normales entre páginas del panel no generan eventos para evitar ruido y escrituras innecesarias.
 

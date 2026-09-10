@@ -8,6 +8,7 @@ import { GOOGLE_NONCE_COOKIE, verifyGoogleCredential } from "@/lib/google-auth";
 import { createGoogleRegistrationIntent, GOOGLE_REGISTRATION_COOKIE } from "@/lib/google-registration";
 import { getSiteSettings } from "@/lib/site-settings";
 import { ACCOUNT_REACTIVATION_COOKIE, ACCOUNT_REACTIVATION_DURATION_SECONDS, createAccountReactivationIntent } from "@/lib/account-reactivation";
+import { recordOperationalEvent } from "@/lib/operations";
 
 function jsonError(error: string, status = 400) {
   return NextResponse.json({ error }, { status, headers: { "cache-control": "no-store" } });
@@ -36,6 +37,7 @@ export async function POST(request: NextRequest) {
     identity = await verifyGoogleCredential(body.credential, clientId, nonce);
   } catch (error) {
     console.error("Google credential verification is temporarily unavailable", { error });
+    await recordOperationalEvent({ category: "authentication", eventName: "google.sign_in", outcome: "failure", detail: "No fue posible verificar temporalmente la credencial de Google." });
     return jsonError("Google no está disponible temporalmente. Inténtalo nuevamente en unos minutos.", 503);
   }
   if (!identity) return jsonError("No pudimos validar de forma segura esa cuenta de Google.", 401);
@@ -95,7 +97,7 @@ export async function POST(request: NextRequest) {
         .where(eq(accountGoogleIdentities.id, account.identityId));
       await db.update(users).set({ emailVerifiedAt: now }).where(and(eq(users.id, account.userId), eq(users.email, identity.email)));
       const response = NextResponse.json({ redirectTo: returnTo }, { headers: { "cache-control": "no-store" } });
-      response.cookies.set({ name: getUserSessionCookieName(), value: await createUserSession(account.userId), ...sessionCookieOptions(getUserSessionDuration()) });
+      response.cookies.set({ name: getUserSessionCookieName(), value: await createUserSession(account.userId, request, "google"), ...sessionCookieOptions(getUserSessionDuration()) });
       response.cookies.delete({ name: GOOGLE_NONCE_COOKIE, path: "/api/auth/google" });
       return response;
     }
@@ -116,6 +118,7 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     console.error("Google sign-in failed", { error });
+    await recordOperationalEvent({ category: "authentication", eventName: "google.sign_in", outcome: "failure", detail: "El proveedor de acceso con Google no pudo completar la operación." });
     return jsonError("No pudimos completar el acceso con Google. Inténtalo nuevamente.", 503);
   }
 }

@@ -63,6 +63,8 @@ test("server-renders the Chile3X public home", async () => {
   assert.match(html, /Publicar anuncio/);
   assert.match(html, /href="\/registro"/);
   assert.match(html, /href="\/ingresar\?return_to=\/mi-cuenta\/nuevo-perfil"/);
+  assert.doesNotMatch(html, /Se priorizan las escorts con más visualizaciones únicas recientes/);
+  assert.doesNotMatch(html, /Los perfiles destacados aparecerán aquí/);
   assert.doesNotMatch(html, /Publicar perfil/);
   assert.doesNotMatch(html, /GTM-NCJ3ZNH3/);
   assert.doesNotMatch(html, /www\.googletagmanager\.com\/ns\.html\?id=GTM-NCJ3ZNH3/);

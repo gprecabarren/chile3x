@@ -31,6 +31,11 @@ interface R2Bucket {
     storageClass?: "Standard" | "InfrequentAccess";
   }): Promise<R2Object | null>;
   delete(keys: string | string[]): Promise<void>;
+  list(options?: { limit?: number; cursor?: string; include?: ("httpMetadata" | "customMetadata")[] }): Promise<{
+    objects: R2Object[];
+    truncated: boolean;
+    cursor?: string;
+  }>;
 }
 
 interface SendEmail {

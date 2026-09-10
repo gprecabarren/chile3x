@@ -233,7 +233,7 @@ export async function GET(request: NextRequest) {
   response.cookies.delete({ name: OAUTH_RETURN_TO_COOKIE, path: "/api/auth/github" });
   response.cookies.set({
     name: getSessionCookieName(),
-    value: await createAdminSession(admin.id),
+    value: await createAdminSession(admin.id, request),
     ...sessionCookieOptions(),
   });
   return response;

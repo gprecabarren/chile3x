@@ -72,6 +72,7 @@ export async function notifyProfileCitySubscribers(profileId: string) {
         message: `${profile.displayName} cambió su anuncio a ${profile.city}, la ciudad para la que pediste un aviso.`,
         action: { label: "Ver anuncio", href },
         note: "Este aviso se envía una sola vez. Tu correo nunca se muestra a la persona anunciante.",
+        kind: "city_alert",
       });
       if (delivered) {
         await db.update(profileCityAlerts).set({ notifiedAt }).where(eq(profileCityAlerts.id, subscriber.alertId));

@@ -6,6 +6,7 @@ import { OfficialChile3xLogo } from "@/app/OfficialChile3xLogo";
 import { getDb } from "@/db";
 import { bugReports, exclusiveContentMedia, profileMedia, profileReports, profiles } from "@/db/schema";
 import { ADMIN_ACCESS_LABELS, adminHasCapability } from "@/lib/admin-permissions";
+import { AdminMobileNavigation } from "./AdminMobileNavigation";
 
 async function getPendingProfilesCount() {
   try {
@@ -105,10 +106,9 @@ export async function AdminShell({ user, children }: { user: AdminUser; children
             <button type="submit" title="Cerrar la sesión administrativa">Cerrar sesión administrador</button>
           </form>
         </div>
-        <details className="admin-mobile-navigation">
-          <summary>Secciones de administración</summary>
+        <AdminMobileNavigation>
           <AdminNavigation user={user} pendingCount={pendingCount} pendingMedia={pendingMedia} pendingReports={pendingReports} pendingBugs={pendingBugs} />
-        </details>
+        </AdminMobileNavigation>
       </header>
       {children}
     </main>

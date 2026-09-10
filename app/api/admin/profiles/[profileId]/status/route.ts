@@ -106,6 +106,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       message: `Revisamos ${existingProfile.displayName}, tu ${typeLabel}, y ahora está visible para el público en Chile3X.`,
       action: { label: "Ver publicación", href: profileUrl },
       note: "Puedes actualizar la información, medios y actualizaciones desde Mi cuenta. Cualquier cambio relevante volverá a revisión manual.",
+      kind: "profile_approved",
     });
     if (!delivered) console.error("Could not send profile approval email", { profileId });
     const cityNotifications = await notifyProfileCitySubscribers(profileId);

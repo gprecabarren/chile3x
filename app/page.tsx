@@ -176,9 +176,9 @@ export default async function Home() {
         <div className="listings-intro">
           <p className="eyebrow">ESCORTS Y DAMAS DE COMPAÑÍA DESTACADAS</p>
           <h2>Lo más visto <em>del directorio.</em></h2>
-          <p>Se priorizan las escorts con más visualizaciones únicas recientes. El equipo puede destacar avisos revisados de forma manual cuando sea necesario.</p>
+          {(viewer || admin) && <p>Se priorizan las escorts con más visualizaciones únicas recientes. El equipo puede destacar avisos revisados de forma manual cuando sea necesario.</p>}
         </div>
-        {featuredProfiles.length ? <ProfileGrid profiles={featuredProfiles} emptyMessage="Aún no hay perfiles destacados." /> : <p className="demo-note">Los perfiles destacados aparecerán aquí cuando existan publicaciones y visualizaciones registradas.</p>}
+        {featuredProfiles.length ? <ProfileGrid profiles={featuredProfiles} emptyMessage="Aún no hay perfiles destacados." /> : (viewer || admin) ? <p className="demo-note">Los perfiles destacados aparecerán aquí cuando existan publicaciones y visualizaciones registradas.</p> : null}
       </section>
 
       <section className="section process-section" id="como-funciona">

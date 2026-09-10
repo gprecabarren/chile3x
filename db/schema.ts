@@ -39,10 +39,19 @@ export const authSessions = sqliteTable("auth_sessions", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   tokenHash: text("token_hash").notNull().unique(),
+  authMethod: text("auth_method", { enum: ["password", "google", "github", "reactivation", "unknown"] }).notNull().default("unknown"),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  countryCode: text("country_code"),
+  region: text("region"),
+  city: text("city"),
+  timezone: text("timezone"),
+  lastSeenAt: text("last_seen_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   expiresAt: text("expires_at").notNull(),
   createdAt,
 }, (table) => [
   index("auth_sessions_user_expires_idx").on(table.userId, table.expiresAt),
+  index("auth_sessions_user_last_seen_idx").on(table.userId, table.lastSeenAt),
 ]);
 
 // GitHub administrators keep an independent internal account and audit
@@ -167,6 +176,45 @@ export const adminAuditLogs = sqliteTable("admin_audit_logs", {
   index("admin_audit_category_created_idx").on(table.category, table.createdAt),
   index("admin_audit_action_created_idx").on(table.action, table.createdAt),
   index("admin_audit_entity_created_idx").on(table.entityType, table.entityId, table.createdAt),
+]);
+
+// Operational events intentionally contain no recipient addresses, tokens,
+// request bodies or R2 object keys. They provide enough signal to diagnose
+// delivery and runtime failures without becoming a second source of personal data.
+export const operationalEvents = sqliteTable("operational_events", {
+  id: text("id").primaryKey(),
+  category: text("category", { enum: ["email", "authentication", "application", "storage", "audit"] }).notNull(),
+  eventName: text("event_name").notNull(),
+  outcome: text("outcome", { enum: ["success", "failure"] }).notNull(),
+  durationMs: integer("duration_ms"),
+  detail: text("detail"),
+  metadata: text("metadata"),
+  createdAt,
+}, (table) => [
+  index("operational_events_created_idx").on(table.createdAt),
+  index("operational_events_category_created_idx").on(table.category, table.createdAt),
+  index("operational_events_outcome_created_idx").on(table.outcome, table.createdAt),
+]);
+
+// R2 enumeration is deliberately opt-in from the administrative summary.
+// Snapshots retain aggregate counts only; private object keys are never copied
+// into D1 or exposed by the dashboard.
+export const operationalStorageSnapshots = sqliteTable("operational_storage_snapshots", {
+  id: text("id").primaryKey(),
+  status: text("status", { enum: ["complete", "partial", "failure"] }).notNull(),
+  d1UsedBytes: integer("d1_used_bytes"),
+  d1AllocatedBytes: integer("d1_allocated_bytes"),
+  r2ObjectCount: integer("r2_object_count"),
+  r2Bytes: integer("r2_bytes"),
+  referencedObjectCount: integer("referenced_object_count"),
+  orphanObjectCount: integer("orphan_object_count"),
+  orphanBytes: integer("orphan_bytes"),
+  missingObjectCount: integer("missing_object_count"),
+  scanDurationMs: integer("scan_duration_ms"),
+  scannedBy: text("scanned_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt,
+}, (table) => [
+  index("operational_storage_created_idx").on(table.createdAt),
 ]);
 
 // Permanent deletion removes the account and all personal data. This

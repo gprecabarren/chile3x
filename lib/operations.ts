@@ -8,6 +8,7 @@ export const OPERATIONAL_CATEGORIES = {
   application: "Aplicación",
   storage: "Almacenamiento",
   audit: "Auditoría",
+  telegram: "Telegram",
 } as const;
 
 export type OperationalCategory = keyof typeof OPERATIONAL_CATEGORIES;

@@ -38,6 +38,28 @@ const localBindingConfig = {
       name: "EMAIL",
     },
   ],
+  queues: {
+    producers: [
+      {
+        binding: "TELEGRAM_QUEUE",
+        queue: "chile3x-telegram",
+      },
+    ],
+    consumers: [
+      {
+        queue: "chile3x-telegram",
+        max_batch_size: 5,
+        max_batch_timeout: 5,
+        max_retries: 5,
+        dead_letter_queue: "chile3x-telegram-dlq",
+        max_concurrency: 2,
+        retry_delay: 30,
+      },
+    ],
+  },
+  triggers: {
+    crons: ["*/5 * * * *"],
+  },
 };
 
 export default defineConfig(async () => {

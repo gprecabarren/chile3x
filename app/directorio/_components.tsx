@@ -74,6 +74,7 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
           <div className="public-navigation-group public-navigation-site" aria-label="Información y cuenta">
             <Link href="/quienes-somos">Quiénes somos</Link>
             <Link href="/noticias">Noticias</Link>
+            <Link href="/novedades">Novedades</Link>
             <Link href="/faq">FAQ</Link>
             <Link href="/contacto">Contacto</Link>
             <Link href={sessionAccountHref}>{sessionAccountLabel}</Link>
@@ -128,7 +129,7 @@ export async function PublicFooter() {
       <div className="public-footer-brand"><Link className="public-footer-logo" href="/" aria-label="Chile3X, inicio"><Image src="/chile3x-logo-primary.jpeg" alt="Chile3X" width={800} height={225} unoptimized /></Link><p>Directorio de escorts y damas de compañía para adultos. Los acuerdos ocurren directamente entre visitantes y anunciantes.</p></div>
       <div className="public-footer-navigation">
         <div><strong>DIRECTORIO</strong><Link href="/escorts">Escorts</Link><Link href="/agencias">Agencias</Link><Link href="/arriendos">Arriendos</Link></div>
-        <div><strong>INFORMACIÓN</strong><Link href="/quienes-somos">Quiénes somos</Link><Link href="/noticias">Noticias</Link><Link href="/faq">Preguntas frecuentes</Link><Link href="/contacto">Contacto</Link><Link href="/terminos">Términos</Link><Link href="/privacidad">Privacidad</Link><Link href="/reglas-de-publicacion">Reglas de publicación</Link></div>
+        <div><strong>INFORMACIÓN</strong><Link href="/quienes-somos">Quiénes somos</Link><Link href="/noticias">Noticias</Link><Link href="/novedades">Novedades</Link><Link href="/faq">Preguntas frecuentes</Link><Link href="/contacto">Contacto</Link><Link href="/terminos">Términos</Link><Link href="/privacidad">Privacidad</Link><Link href="/reglas-de-publicacion">Reglas de publicación</Link></div>
       </div>
       <div className="public-footer-extras">
         <div><strong>SÍGUENOS</strong><PortalContactLinks placement="footer" /></div>

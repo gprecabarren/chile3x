@@ -2,9 +2,51 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "chile3x",
   "main": "dist/server/index.js",
-  "compatibility_date": "2026-05-15",
+  "compatibility_date": "2026-09-11",
+  "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "directory": "dist/client"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "chile3x-db",
+      "database_id": "ee8796f0-2217-4fdb-9fee-1561c52e3ae3",
+      "migrations_dir": "drizzle"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "chile3x-media"
+    }
+  ],
+  "send_email": [
+    {
+      "name": "EMAIL"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "TELEGRAM_QUEUE",
+        "queue": "chile3x-telegram"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "chile3x-telegram",
+        "max_batch_size": 5,
+        "max_batch_timeout": 5,
+        "max_retries": 5,
+        "dead_letter_queue": "chile3x-telegram-dlq",
+        "max_concurrency": 2,
+        "retry_delay": 30
+      }
+    ]
+  },
+  "triggers": {
+    "crons": ["*/5 * * * *"]
   },
   "observability": {
     "enabled": true

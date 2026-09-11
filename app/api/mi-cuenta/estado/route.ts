@@ -1,8 +1,9 @@
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { authSessions, users } from "@/db/schema";
+import { authSessions, telegramAccountLinks, telegramOutboxJobs, users } from "@/db/schema";
 import { assertSameOrigin, getCurrentUser, getUserSessionCookieName, getUserSessionDuration, sessionCookieOptions } from "@/lib/auth";
+import { createTelegramOutboxValues, dispatchTelegramJob } from "@/lib/telegram";
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,8 +20,22 @@ export async function POST(request: NextRequest) {
 
   const now = new Date().toISOString();
   const db = await getDb();
-  await db.update(users).set({ selfDisabledAt: now, isActive: false }).where(eq(users.id, user.id));
-  await db.delete(authSessions).where(eq(authSessions.userId, user.id));
+  const [telegramLink] = await db.select({ id: telegramAccountLinks.id, telegramUserId: telegramAccountLinks.telegramUserId }).from(telegramAccountLinks).where(eq(telegramAccountLinks.userId, user.id)).limit(1);
+  const telegramJob = telegramLink ? createTelegramOutboxValues({ kind: "revoke_member", userId: user.id, entityId: telegramLink.id, payload: { userId: user.id, telegramUserId: telegramLink.telegramUserId, reason: "Cuenta deshabilitada por la persona." } }) : null;
+  if (telegramLink && telegramJob) {
+    await db.batch([
+      db.update(users).set({ selfDisabledAt: now, isActive: false }).where(eq(users.id, user.id)),
+      db.delete(authSessions).where(eq(authSessions.userId, user.id)),
+      db.update(telegramAccountLinks).set({ status: "revoked", revokedAt: now, revokeReason: "Cuenta deshabilitada por la persona.", updatedAt: now }).where(eq(telegramAccountLinks.id, telegramLink.id)),
+      db.insert(telegramOutboxJobs).values(telegramJob),
+    ]);
+    await dispatchTelegramJob(telegramJob.id);
+  } else {
+    await db.batch([
+      db.update(users).set({ selfDisabledAt: now, isActive: false }).where(eq(users.id, user.id)),
+      db.delete(authSessions).where(eq(authSessions.userId, user.id)),
+    ]);
+  }
   const response = NextResponse.redirect(new URL("/ingresar?closed=disabled", request.url), 303);
   response.cookies.set({ name: getUserSessionCookieName(), value: "", ...sessionCookieOptions(getUserSessionDuration()), maxAge: 0 });
   return response;

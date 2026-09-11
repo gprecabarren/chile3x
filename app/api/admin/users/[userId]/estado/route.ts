@@ -1,12 +1,13 @@
 import { and, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { authSessions, users } from "@/db/schema";
+import { authSessions, telegramAccountLinks, telegramOutboxJobs, users } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin, safeAdminReturnTo } from "@/lib/auth";
 import { sendPortalEmail } from "@/lib/account-email";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { recordAdminAudit } from "@/lib/admin-audit";
 import { adminHasCapability } from "@/lib/admin-permissions";
+import { createTelegramOutboxValues, dispatchTelegramJob } from "@/lib/telegram";
 
 function redirectWithNotice(request: Request, notice: string, returnTo = "/admin/cuentas") {
   const url = new URL(returnTo, request.url);
@@ -45,7 +46,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const now = new Date().toISOString();
   const adminDisabledAt = nextState === "disabled" ? now : null;
   const isActive = !adminDisabledAt && !target.selfDisabledAt;
-  await db.update(users).set({ adminDisabledAt, isActive }).where(and(eq(users.id, userId), eq(users.role, target.role)));
+  const [telegramLink] = nextState === "disabled" ? await db.select({ id: telegramAccountLinks.id, telegramUserId: telegramAccountLinks.telegramUserId }).from(telegramAccountLinks).where(eq(telegramAccountLinks.userId, userId)).limit(1) : [];
+  const telegramJob = telegramLink ? createTelegramOutboxValues({ kind: "revoke_member", userId, entityId: telegramLink.id, payload: { userId, telegramUserId: telegramLink.telegramUserId, reason: "Cuenta deshabilitada por la administración." } }) : null;
+  if (telegramLink && telegramJob) {
+    await db.batch([
+      db.update(users).set({ adminDisabledAt, isActive }).where(and(eq(users.id, userId), eq(users.role, target.role))),
+      db.update(telegramAccountLinks).set({ status: "revoked", revokedAt: now, revokeReason: "Cuenta deshabilitada por la administración.", updatedAt: now }).where(eq(telegramAccountLinks.id, telegramLink.id)),
+      db.insert(telegramOutboxJobs).values(telegramJob),
+    ]);
+    await dispatchTelegramJob(telegramJob.id);
+  } else {
+    await db.update(users).set({ adminDisabledAt, isActive }).where(and(eq(users.id, userId), eq(users.role, target.role)));
+  }
   if (nextState === "disabled") {
     await db.delete(authSessions).where(eq(authSessions.userId, userId));
     if (!target.adminDisabledAt) {

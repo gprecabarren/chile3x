@@ -31,6 +31,9 @@ test("unknown or missing access levels are rejected", () => {
 test("the visible permissions guide uses the same capability map as authorization", () => {
   assert.ok(ADMIN_ACCESS_CAPABILITIES.owner.includes("admins.manage"));
   assert.ok(!ADMIN_ACCESS_CAPABILITIES.administrator.includes("admins.manage"));
-  assert.deepEqual(ADMIN_ACCESS_CAPABILITIES.editor, ["news.manage"]);
-  assert.deepEqual(ADMIN_ACCESS_CAPABILITIES.support, ["reports.manage", "bugs.manage"]);
+  assert.deepEqual(ADMIN_ACCESS_CAPABILITIES.editor, ["news.manage", "telegram.view", "telegram.publish"]);
+  assert.deepEqual(ADMIN_ACCESS_CAPABILITIES.support, ["reports.manage", "bugs.manage", "telegram.view"]);
+  assert.equal(adminHasCapability(admin("moderator"), "telegram.moderate"), true);
+  assert.equal(adminHasCapability(admin("editor"), "telegram.moderate"), false);
+  assert.equal(adminHasCapability(admin("support"), "telegram.publish"), false);
 });

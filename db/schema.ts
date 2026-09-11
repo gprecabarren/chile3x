@@ -183,7 +183,7 @@ export const adminAuditLogs = sqliteTable("admin_audit_logs", {
 // delivery and runtime failures without becoming a second source of personal data.
 export const operationalEvents = sqliteTable("operational_events", {
   id: text("id").primaryKey(),
-  category: text("category", { enum: ["email", "authentication", "application", "storage", "audit"] }).notNull(),
+  category: text("category", { enum: ["email", "authentication", "application", "storage", "audit", "telegram"] }).notNull(),
   eventName: text("event_name").notNull(),
   outcome: text("outcome", { enum: ["success", "failure"] }).notNull(),
   durationMs: integer("duration_ms"),
@@ -579,4 +579,247 @@ export const newsPosts = sqliteTable("news_posts", {
   createdAt,
 }, (table) => [
   index("news_posts_public_idx").on(table.status, table.publishedAt, table.createdAt),
+]);
+
+// Telegram is an optional extension of a normal Chile3X account. D1 remains
+// authoritative: Telegram identifiers never grant access on their own and a
+// disabled or deleted account is removed from the private Members space.
+export const telegramAccountLinks = sqliteTable("telegram_account_links", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  telegramUserId: text("telegram_user_id").notNull(),
+  username: text("username"),
+  firstName: text("first_name"),
+  status: text("status", { enum: ["linked", "revoked", "banned"] }).notNull().default("linked"),
+  linkedAt: text("linked_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  revokedAt: text("revoked_at"),
+  revokeReason: text("revoke_reason"),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  uniqueIndex("telegram_account_links_user_unique").on(table.userId),
+  uniqueIndex("telegram_account_links_telegram_unique").on(table.telegramUserId),
+  index("telegram_account_links_status_idx").on(table.status, table.updatedAt),
+]);
+
+// Administrative Telegram identities are kept separate from public account
+// links, just like the GitHub-only administrative sign-in on the website.
+export const telegramAdminIdentities = sqliteTable("telegram_admin_identities", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  telegramUserId: text("telegram_user_id").notNull(),
+  username: text("username"),
+  firstName: text("first_name"),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  linkedAt: text("linked_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  uniqueIndex("telegram_admin_identities_user_unique").on(table.userId),
+  uniqueIndex("telegram_admin_identities_telegram_unique").on(table.telegramUserId),
+]);
+
+// One-time web-to-bot handshakes. Only the SHA-256 digest of the deep-link
+// secret is stored; the candidate Telegram identity still needs confirmation
+// in the originating authenticated web session.
+export const telegramLinkAttempts = sqliteTable("telegram_link_attempts", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  subjectType: text("subject_type", { enum: ["account", "admin"] }).notNull(),
+  tokenHash: text("token_hash").notNull(),
+  status: text("status", { enum: ["pending", "candidate", "confirmed", "cancelled", "expired"] }).notNull().default("pending"),
+  candidateTelegramUserId: text("candidate_telegram_user_id"),
+  candidateUsername: text("candidate_username"),
+  candidateFirstName: text("candidate_first_name"),
+  expiresAt: text("expires_at").notNull(),
+  candidateAt: text("candidate_at"),
+  confirmedAt: text("confirmed_at"),
+  createdAt,
+}, (table) => [
+  uniqueIndex("telegram_link_attempts_token_unique").on(table.tokenHash),
+  index("telegram_link_attempts_user_status_idx").on(table.userId, table.status, table.expiresAt),
+]);
+
+// Chats are discovered from Telegram updates and assigned an explicit role by
+// Chile3X. The Members chat is never exposed in public HTML or public APIs.
+export const telegramChats = sqliteTable("telegram_chats", {
+  id: text("id").primaryKey(),
+  telegramChatId: text("telegram_chat_id").notNull(),
+  role: text("role", { enum: ["unassigned", "public", "members", "alerts"] }).notNull().default("unassigned"),
+  title: text("title").notNull().default(""),
+  username: text("username"),
+  chatType: text("chat_type").notNull().default("supergroup"),
+  isForum: integer("is_forum", { mode: "boolean" }).notNull().default(false),
+  updatesThreadId: text("updates_thread_id"),
+  botIsAdministrator: integer("bot_is_administrator", { mode: "boolean" }).notNull().default(false),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  lastSeenAt: text("last_seen_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  createdAt,
+}, (table) => [
+  uniqueIndex("telegram_chats_telegram_unique").on(table.telegramChatId),
+  index("telegram_chats_role_active_idx").on(table.role, table.isActive),
+]);
+
+export const telegramMemberships = sqliteTable("telegram_memberships", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  linkId: text("link_id").notNull().references(() => telegramAccountLinks.id, { onDelete: "cascade" }),
+  telegramUserId: text("telegram_user_id").notNull(),
+  telegramChatId: text("telegram_chat_id").notNull(),
+  status: text("status", { enum: ["pending", "active", "left", "revoked", "banned"] }).notNull().default("pending"),
+  joinedAt: text("joined_at"),
+  leftAt: text("left_at"),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  createdAt,
+}, (table) => [
+  uniqueIndex("telegram_memberships_user_chat_unique").on(table.userId, table.telegramChatId),
+  uniqueIndex("telegram_memberships_telegram_chat_unique").on(table.telegramUserId, table.telegramChatId),
+  index("telegram_memberships_status_idx").on(table.status, table.updatedAt),
+]);
+
+export const telegramConfiguration = sqliteTable("telegram_configuration", {
+  id: text("id").primaryKey(),
+  botUsername: text("bot_username").notNull().default(""),
+  publicCommunityUrl: text("public_community_url").notNull().default(""),
+  rulesText: text("rules_text").notNull().default(""),
+  prohibitedTerms: text("prohibited_terms").notNull().default(""),
+  moderationEnabled: integer("moderation_enabled", { mode: "boolean" }).notNull().default(true),
+  autoBanEnabled: integer("auto_ban_enabled", { mode: "boolean" }).notNull().default(true),
+  floodMaxMessages: integer("flood_max_messages").notNull().default(8),
+  floodWindowSeconds: integer("flood_window_seconds").notNull().default(20),
+  duplicateWindowSeconds: integer("duplicate_window_seconds").notNull().default(90),
+  maxLinksPerMessage: integer("max_links_per_message").notNull().default(2),
+  strikeBanThreshold: integer("strike_ban_threshold").notNull().default(3),
+  temporaryRestrictionMinutes: integer("temporary_restriction_minutes").notNull().default(1440),
+  updatedBy: text("updated_by").references(() => users.id, { onDelete: "set null" }),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+// Short, operational site updates. They intentionally remain separate from
+// the editorial news/blog model and can be synchronized in both directions.
+export const telegramBulletins = sqliteTable("telegram_bulletins", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  source: text("source", { enum: ["web", "telegram"] }).notNull(),
+  status: text("status", { enum: ["draft", "published", "archived"] }).notNull().default("draft"),
+  authorUserId: text("author_user_id").references(() => users.id, { onDelete: "set null" }),
+  sourceTelegramChatId: text("source_telegram_chat_id"),
+  sourceTelegramMessageId: text("source_telegram_message_id"),
+  publishedAt: text("published_at"),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  createdAt,
+}, (table) => [
+  index("telegram_bulletins_public_idx").on(table.status, table.publishedAt, table.createdAt),
+  uniqueIndex("telegram_bulletins_source_message_unique").on(table.sourceTelegramChatId, table.sourceTelegramMessageId),
+]);
+
+export const telegramPublications = sqliteTable("telegram_publications", {
+  id: text("id").primaryKey(),
+  bulletinId: text("bulletin_id").notNull().references(() => telegramBulletins.id, { onDelete: "cascade" }),
+  telegramChatId: text("telegram_chat_id").notNull(),
+  telegramThreadId: text("telegram_thread_id"),
+  telegramMessageId: text("telegram_message_id"),
+  status: text("status", { enum: ["pending", "published", "failed", "deleted"] }).notNull().default("pending"),
+  lastError: text("last_error"),
+  publishedAt: text("published_at"),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  createdAt,
+}, (table) => [
+  uniqueIndex("telegram_publications_bulletin_chat_unique").on(table.bulletinId, table.telegramChatId),
+  uniqueIndex("telegram_publications_message_unique").on(table.telegramChatId, table.telegramMessageId),
+  index("telegram_publications_status_idx").on(table.status, table.updatedAt),
+]);
+
+// Webhook payloads are retained only briefly for at-least-once processing and
+// deduplication. A scheduled cleanup removes old payloads automatically.
+export const telegramWebhookUpdates = sqliteTable("telegram_webhook_updates", {
+  updateId: text("update_id").primaryKey(),
+  updateType: text("update_type").notNull(),
+  payload: text("payload").notNull(),
+  status: text("status", { enum: ["pending", "processing", "processed", "failed"] }).notNull().default("pending"),
+  attempts: integer("attempts").notNull().default(0),
+  lastError: text("last_error"),
+  processedAt: text("processed_at"),
+  receivedAt: text("received_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  index("telegram_webhook_updates_status_idx").on(table.status, table.receivedAt),
+]);
+
+// Minimal recent-message fingerprints support flood and duplicate detection.
+// Raw message bodies are not retained here.
+export const telegramMessageEvents = sqliteTable("telegram_message_events", {
+  id: text("id").primaryKey(),
+  telegramChatId: text("telegram_chat_id").notNull(),
+  telegramMessageId: text("telegram_message_id").notNull(),
+  telegramUserId: text("telegram_user_id").notNull(),
+  bodyHash: text("body_hash").notNull(),
+  linkCount: integer("link_count").notNull().default(0),
+  createdAt,
+}, (table) => [
+  uniqueIndex("telegram_message_events_message_unique").on(table.telegramChatId, table.telegramMessageId),
+  index("telegram_message_events_user_created_idx").on(table.telegramChatId, table.telegramUserId, table.createdAt),
+  index("telegram_message_events_hash_created_idx").on(table.telegramChatId, table.telegramUserId, table.bodyHash, table.createdAt),
+]);
+
+export const telegramModerationCases = sqliteTable("telegram_moderation_cases", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
+  telegramUserId: text("telegram_user_id").notNull(),
+  telegramUsername: text("telegram_username"),
+  telegramChatId: text("telegram_chat_id").notNull(),
+  telegramMessageId: text("telegram_message_id"),
+  ruleCode: text("rule_code").notNull(),
+  reason: text("reason").notNull(),
+  evidenceSnippet: text("evidence_snippet"),
+  severity: text("severity", { enum: ["low", "medium", "high", "critical"] }).notNull(),
+  action: text("action", { enum: ["observed", "warn", "delete", "restrict", "ban", "unban"] }).notNull(),
+  status: text("status", { enum: ["open", "resolved", "dismissed"] }).notNull().default("open"),
+  automated: integer("automated", { mode: "boolean" }).notNull().default(false),
+  actorUserId: text("actor_user_id").references(() => users.id, { onDelete: "set null" }),
+  actorTelegramUserId: text("actor_telegram_user_id"),
+  restrictionEndsAt: text("restriction_ends_at"),
+  resolvedAt: text("resolved_at"),
+  createdAt,
+}, (table) => [
+  index("telegram_moderation_cases_status_created_idx").on(table.status, table.createdAt),
+  index("telegram_moderation_cases_user_created_idx").on(table.telegramUserId, table.createdAt),
+  index("telegram_moderation_cases_chat_created_idx").on(table.telegramChatId, table.createdAt),
+]);
+
+// D1 outbox rows survive account deletion and make Telegram side effects
+// retryable. Queue messages contain only this opaque job id.
+export const telegramOutboxJobs = sqliteTable("telegram_outbox_jobs", {
+  id: text("id").primaryKey(),
+  kind: text("kind", { enum: ["publish_bulletin", "edit_bulletin", "delete_bulletin", "send_member_invite", "revoke_member", "ban_member", "unban_member", "notify_admin"] }).notNull(),
+  userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
+  entityId: text("entity_id"),
+  payload: text("payload").notNull(),
+  status: text("status", { enum: ["pending", "processing", "succeeded", "failed"] }).notNull().default("pending"),
+  attempts: integer("attempts").notNull().default(0),
+  availableAt: text("available_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  lastError: text("last_error"),
+  completedAt: text("completed_at"),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  createdAt,
+}, (table) => [
+  index("telegram_outbox_jobs_status_available_idx").on(table.status, table.availableAt),
+  index("telegram_outbox_jobs_user_idx").on(table.userId, table.createdAt),
+]);
+
+export const telegramAuditEvents = sqliteTable("telegram_audit_events", {
+  id: text("id").primaryKey(),
+  actorType: text("actor_type", { enum: ["admin", "telegram_admin", "account", "bot", "system"] }).notNull(),
+  actorUserId: text("actor_user_id").references(() => users.id, { onDelete: "set null" }),
+  actorTelegramUserId: text("actor_telegram_user_id"),
+  action: text("action").notNull(),
+  outcome: text("outcome", { enum: ["success", "failure"] }).notNull().default("success"),
+  entityType: text("entity_type").notNull(),
+  entityId: text("entity_id"),
+  summary: text("summary").notNull(),
+  metadata: text("metadata"),
+  createdAt,
+}, (table) => [
+  index("telegram_audit_events_created_idx").on(table.createdAt),
+  index("telegram_audit_events_action_created_idx").on(table.action, table.createdAt),
+  index("telegram_audit_events_actor_created_idx").on(table.actorUserId, table.createdAt),
 ]);

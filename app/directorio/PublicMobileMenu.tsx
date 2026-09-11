@@ -20,6 +20,7 @@ type PublicMobileMenuProps = {
 const portalLinks = [
   ["Quiénes somos", "/quienes-somos"],
   ["Noticias", "/noticias"],
+  ["Novedades", "/novedades"],
   ["Preguntas frecuentes", "/faq"],
   ["Contacto", "/contacto"],
 ] as const;

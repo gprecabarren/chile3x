@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AccountIdentityFields } from "@/app/account-identity-fields";
 import { getDb } from "@/db";
-import { accountDeletionHistory, profiles, users } from "@/db/schema";
+import { accountDeletionHistory, profiles, telegramAccountLinks, telegramMemberships, users } from "@/db/schema";
 import { getCurrentAdmin, safeAdminReturnTo, sha256 } from "@/lib/auth";
 import { adminHasCapability } from "@/lib/admin-permissions";
 import { profilePublicPath } from "@/lib/profile";
@@ -25,6 +25,9 @@ const notices: Record<string, string> = {
   status_updated: "El bloqueo administrativo de la cuenta fue actualizado.",
   delete_confirmation: "Para eliminar la cuenta debes escribir su correo y ELIMINAR exactamente.",
   delete_error: "No fue posible eliminar permanentemente esa cuenta.",
+  telegram_banned: "La identidad fue vetada de la comunidad pública y del espacio de Miembros.",
+  telegram_unbanned: "El veto fue retirado. La persona deberá solicitar nuevamente su ingreso a Miembros.",
+  telegram_error: "No fue posible actualizar el acceso de Telegram de esta cuenta.",
 };
 
 function statusLabel(status: string) {
@@ -33,6 +36,14 @@ function statusLabel(status: string) {
 
 function typeLabel(type: string) {
   return ({ escort: "Escort", agency: "Agencia", rental: "Arriendo" } as Record<string, string>)[type] ?? type;
+}
+
+function telegramLinkStatus(status: string) {
+  return ({ linked: "Vinculada", revoked: "Revocada", banned: "Vetada" } as Record<string, string>)[status] ?? status;
+}
+
+function telegramMembershipStatus(status: string) {
+  return ({ pending: "Invitación pendiente", active: "Dentro de Miembros", left: "Salió de Miembros", revoked: "Acceso revocado", banned: "Vetada" } as Record<string, string>)[status] ?? status;
 }
 
 export default async function AdminAccountDetailsPage({ params, searchParams }: {
@@ -63,7 +74,7 @@ export default async function AdminAccountDetailsPage({ params, searchParams }: 
   }).from(users).where(eq(users.id, userId)).limit(1);
   if (!account) redirect("/admin/cuentas?notice=account_missing");
 
-  const [ownedProfiles, deletionHistory] = await Promise.all([db.select({
+  const [ownedProfiles, deletionHistory, telegramLinks, telegramMembershipRows] = await Promise.all([db.select({
     id: profiles.id,
     displayName: profiles.displayName,
     type: profiles.type,
@@ -77,7 +88,18 @@ export default async function AdminAccountDetailsPage({ params, searchParams }: 
     originalCreatedAt: accountDeletionHistory.originalCreatedAt,
     deletedAt: accountDeletionHistory.deletedAt,
     deletedBy: accountDeletionHistory.deletedBy,
-  }).from(accountDeletionHistory).where(eq(accountDeletionHistory.emailHash, await sha256(account.email.trim().toLowerCase()))).orderBy(desc(accountDeletionHistory.deletedAt))]);
+  }).from(accountDeletionHistory).where(eq(accountDeletionHistory.emailHash, await sha256(account.email.trim().toLowerCase()))).orderBy(desc(accountDeletionHistory.deletedAt)), db.select({
+    id: telegramAccountLinks.id,
+    telegramUserId: telegramAccountLinks.telegramUserId,
+    username: telegramAccountLinks.username,
+    firstName: telegramAccountLinks.firstName,
+    status: telegramAccountLinks.status,
+    linkedAt: telegramAccountLinks.linkedAt,
+    revokeReason: telegramAccountLinks.revokeReason,
+  }).from(telegramAccountLinks).where(eq(telegramAccountLinks.userId, account.id)).limit(1), db.select({
+    status: telegramMemberships.status,
+    updatedAt: telegramMemberships.updatedAt,
+  }).from(telegramMemberships).where(eq(telegramMemberships.userId, account.id)).orderBy(desc(telegramMemberships.updatedAt)).limit(1)]);
 
   const requestedReturnTo = query.return_to ?? "";
   const returnTo = requestedReturnTo.startsWith("/admin/") ? safeAdminReturnTo(requestedReturnTo) : "/admin/cuentas";
@@ -86,6 +108,8 @@ export default async function AdminAccountDetailsPage({ params, searchParams }: 
   const accountName = account.displayName ?? account.email;
   const isProtectedAdmin = account.role === "admin";
   const accountRoleLabel = account.role === "tester" ? "Cuenta de tester" : "Cuenta de anunciante";
+  const telegramLink = telegramLinks[0] ?? null;
+  const telegramMembership = telegramMembershipRows[0] ?? null;
   return <AdminShell user={admin}><div className="admin-content">
     <AdminPageHeading eyebrow="FICHA DE CUENTA" title={accountName} description={`Administra los datos, contraseña y anuncios de ${account.email}. Los cambios se realizan sin necesidad de conocer la contraseña actual.`} backHref={returnTo}>
       {!isProtectedAdmin && <Link prefetch={false} className="button button-primary" href={`${detailBaseHref}/crear-perfil?return_to=${encodeURIComponent(returnTo)}`}>Crear anuncio para esta cuenta</Link>}
@@ -107,6 +131,7 @@ export default async function AdminAccountDetailsPage({ params, searchParams }: 
         <form action={`/api/admin/users/${encodeURIComponent(account.id)}`} method="post"><input name="action" type="hidden" value="send_reset" /><input name="return_to" type="hidden" value={detailHref} /><button className="button button-outline" type="submit">Enviar enlace de restablecimiento</button></form>
       </section>
     </div>}
+    {!isProtectedAdmin && <section className="admin-account-telegram"><div><p className="eyebrow">COMUNIDAD TELEGRAM</p><h2>Identidad y acceso</h2><p>El vínculo comprueba qué cuenta del sitio corresponde a la identidad de Telegram. El veto se aplica a la comunidad pública y a Miembros, sin afectar el inicio de sesión en Chile3X.</p></div>{telegramLink ? <div className="admin-account-telegram-body"><dl><div><dt>Identidad</dt><dd>{telegramLink.username ? `@${telegramLink.username}` : telegramLink.firstName || "Identidad sin nombre público"}</dd></div><div><dt>Vínculo</dt><dd>{telegramLinkStatus(telegramLink.status)}</dd></div><div><dt>Miembros</dt><dd>{telegramMembership ? telegramMembershipStatus(telegramMembership.status) : "Sin ingreso registrado"}</dd></div><div><dt>Vinculada</dt><dd>{new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(telegramLink.linkedAt))}</dd></div></dl>{telegramLink.revokeReason && <p className="admin-account-telegram-reason">Último motivo: {telegramLink.revokeReason}</p>}<div className="admin-account-telegram-actions">{telegramLink.status === "banned" ? <form action={`/api/admin/users/${encodeURIComponent(account.id)}/telegram`} method="post"><input name="return_to" type="hidden" value={detailHref} /><input name="intent" type="hidden" value="unban" /><button className="button button-outline" type="submit">Retirar veto de Telegram</button></form> : telegramLink.status === "linked" ? <details className="is-destructive"><summary>Vetar de Telegram</summary><form action={`/api/admin/users/${encodeURIComponent(account.id)}/telegram`} method="post"><input name="return_to" type="hidden" value={detailHref} /><input name="intent" type="hidden" value="ban" /><p>La identidad será expulsada y vetada de la comunidad pública y del espacio privado de Miembros.</p><label>Motivo<input name="reason" required minLength={5} maxLength={220} /></label><label>Escribe VETAR<input name="confirmation" required autoComplete="off" /></label><button className="button button-danger" type="submit">Confirmar veto</button></form></details> : <p>La persona puede generar un vínculo nuevo desde Mi cuenta cuando su cuenta esté activa.</p>}</div></div> : <p className="admin-media-empty">Esta cuenta todavía no tiene una identidad de Telegram vinculada.</p>}</section>}
     <section className="admin-account-owned-profiles"><div><p className="eyebrow">ANUNCIOS ASOCIADOS</p><h2>Anuncios de esta cuenta</h2></div>{ownedProfiles.length ? <div>{ownedProfiles.map((profile) => { const moderationHref = `/admin/perfiles?q=${encodeURIComponent(account.email)}&return_to=${encodeURIComponent(detailHref)}`; const previewHref = `${profilePublicPath(profile)}?return_to=${encodeURIComponent(moderationHref)}`; return <article key={profile.id}><div><span className={`account-status account-status-${profile.status}`}>{statusLabel(profile.status)}</span><h3>{profile.displayName}</h3><p>{typeLabel(profile.type)} · {profile.city}, {formatRegionName(profile.region)}</p></div><div><Link prefetch={false} className="button button-public-preview" href={previewHref} target="_blank">Ver anuncio público</Link><Link prefetch={false} className="button button-outline" href={moderationHref}>Abrir moderación</Link></div></article>; })}</div> : <p className="admin-media-empty">Esta cuenta aún no tiene anuncios asociados.</p>}</section>
     {!isProtectedAdmin && <section className="admin-account-control-panel"><div><p className="eyebrow">CONTROL DE CUENTA</p><h2>Disponibilidad y eliminación</h2><p>El bloqueo administrativo es independiente de la deshabilitación voluntaria. Quitar el bloqueo de Chile3X no reactiva una cuenta que la propia persona mantenga deshabilitada.</p></div><div className="admin-account-control-actions">
       <form action={`/api/admin/users/${encodeURIComponent(account.id)}/estado`} method="post"><input name="return_to" type="hidden" value={detailHref} /><input name="next_state" type="hidden" value={account.adminDisabledAt ? "active" : "disabled"} /><button className="button button-outline" type="submit">{account.adminDisabledAt ? "Quitar bloqueo administrativo" : "Deshabilitar como administrador"}</button></form>

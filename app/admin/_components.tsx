@@ -4,7 +4,7 @@ import { and, count, eq, or } from "drizzle-orm";
 import type { AdminUser } from "@/lib/auth";
 import { OfficialChile3xLogo } from "@/app/OfficialChile3xLogo";
 import { getDb } from "@/db";
-import { bugReports, exclusiveContentMedia, profileMedia, profileReports, profiles } from "@/db/schema";
+import { bugReports, exclusiveContentMedia, profileMedia, profileReports, profiles, telegramModerationCases } from "@/db/schema";
 import { ADMIN_ACCESS_LABELS, adminHasCapability } from "@/lib/admin-permissions";
 import { AdminMobileNavigation } from "./AdminMobileNavigation";
 
@@ -58,18 +58,30 @@ async function getPendingMediaCount() {
   }
 }
 
+async function getOpenTelegramCasesCount() {
+  try {
+    const [pending] = await (await getDb()).select({ total: count() }).from(telegramModerationCases).where(eq(telegramModerationCases.status, "open"));
+    return Number(pending?.total ?? 0);
+  } catch (error) {
+    console.error("Unable to load Telegram moderation count", error);
+    return 0;
+  }
+}
+
 function AdminNavigation({
   user,
   pendingCount,
   pendingMedia,
   pendingReports,
   pendingBugs,
+  pendingTelegram,
 }: {
   user: AdminUser;
   pendingCount: number;
   pendingMedia: number;
   pendingReports: number;
   pendingBugs: number;
+  pendingTelegram: number;
 }) {
   return (
     <nav aria-label="Administración">
@@ -81,6 +93,7 @@ function AdminNavigation({
       {adminHasCapability(user, "bugs.manage") && <Link prefetch={false} className={pendingBugs > 0 ? "admin-nav-alert" : undefined} href="/admin/bugs">Testers{pendingBugs > 0 && <b>{pendingBugs}</b>}</Link>}
       {adminHasCapability(user, "accounts.manage") && <Link href="/admin/cuentas" prefetch={false}>Cuentas</Link>}
       {adminHasCapability(user, "news.manage") && <Link href="/admin/noticias" prefetch={false}>Noticias</Link>}
+      {adminHasCapability(user, "telegram.view") && <Link prefetch={false} className={pendingTelegram > 0 ? "admin-nav-alert" : undefined} href="/admin/telegram">Telegram{pendingTelegram > 0 && <b>{pendingTelegram}</b>}</Link>}
       {adminHasCapability(user, "audit.view") && <Link href="/admin/actividad" prefetch={false}>Actividad</Link>}
       {adminHasCapability(user, "settings.manage") && <Link href="/admin/configuracion" prefetch={false}>Configuración</Link>}
       {adminHasCapability(user, "admins.manage") && <Link href="/admin/administradores" prefetch={false}>Administradores</Link>}
@@ -89,17 +102,18 @@ function AdminNavigation({
 }
 
 export async function AdminShell({ user, children }: { user: AdminUser; children: ReactNode }) {
-  const [pendingCount, pendingMedia, pendingReports, pendingBugs] = await Promise.all([
+  const [pendingCount, pendingMedia, pendingReports, pendingBugs, pendingTelegram] = await Promise.all([
     adminHasCapability(user, "profiles.moderate") ? getPendingProfilesCount() : 0,
     adminHasCapability(user, "media.moderate") ? getPendingMediaCount() : 0,
     adminHasCapability(user, "reports.manage") ? getPendingReportsCount() : 0,
     adminHasCapability(user, "bugs.manage") ? getNewBugReportsCount() : 0,
+    adminHasCapability(user, "telegram.view") ? getOpenTelegramCasesCount() : 0,
   ]);
   return (
     <main className="admin-root">
       <header className="admin-header">
         <Link className="admin-brand" href="/"><OfficialChile3xLogo priority /><small>ADMIN</small></Link>
-        <AdminNavigation user={user} pendingCount={pendingCount} pendingMedia={pendingMedia} pendingReports={pendingReports} pendingBugs={pendingBugs} />
+        <AdminNavigation user={user} pendingCount={pendingCount} pendingMedia={pendingMedia} pendingReports={pendingReports} pendingBugs={pendingBugs} pendingTelegram={pendingTelegram} />
         <div className="admin-account">
           <span><strong>@{user.githubLogin} · {ADMIN_ACCESS_LABELS[user.accessLevel]}</strong></span>
           <form action="/api/auth/logout" method="post">
@@ -107,7 +121,7 @@ export async function AdminShell({ user, children }: { user: AdminUser; children
           </form>
         </div>
         <AdminMobileNavigation>
-          <AdminNavigation user={user} pendingCount={pendingCount} pendingMedia={pendingMedia} pendingReports={pendingReports} pendingBugs={pendingBugs} />
+          <AdminNavigation user={user} pendingCount={pendingCount} pendingMedia={pendingMedia} pendingReports={pendingReports} pendingBugs={pendingBugs} pendingTelegram={pendingTelegram} />
         </AdminMobileNavigation>
       </header>
       {children}

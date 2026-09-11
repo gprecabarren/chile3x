@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { inArray } from "drizzle-orm";
 import { getDb } from "@/db";
-import { siteSettings } from "@/db/schema";
+import { siteSettings, telegramConfiguration } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { validateFaqEntries } from "@/lib/faq";
 import { validatePublicationRules } from "@/lib/publication-rules";
 import { recordAdminAudit } from "@/lib/admin-audit";
 import { adminHasCapability } from "@/lib/admin-permissions";
+import { normalizeTelegramCommunityUrl, TELEGRAM_CONFIG_ID } from "@/lib/telegram";
 
 const allowedSettings = {
   listing_open: new Set(["closed", "waitlist", "open"]),
@@ -88,7 +89,13 @@ export async function POST(request: NextRequest) {
   if (values.google_analytics_id && !/^G-[A-Z0-9]{6,15}$/.test(values.google_analytics_id)) return new Response("El identificador de Analytics no tiene un formato válido.", { status: 400 });
   if (values.google_oauth_client_id && !/^\d+-[a-z0-9-]+\.apps\.googleusercontent\.com$/i.test(values.google_oauth_client_id)) return new Response("El ID del cliente de Google no tiene un formato válido.", { status: 400 });
   if (values.contact_whatsapp && !/^\+?[\d\s()-]{8,22}$/.test(values.contact_whatsapp)) return new Response("El WhatsApp de contacto no tiene un formato válido.", { status: 400 });
-  if (values.contact_telegram && !(/^@?[A-Za-z0-9_]{5,32}$/.test(values.contact_telegram) || /^https:\/\/(t\.me|www\.t\.me)\/[A-Za-z0-9_]{5,32}\/?$/i.test(values.contact_telegram))) return new Response("Telegram debe ser un usuario o enlace t.me válido.", { status: 400 });
+  if (Object.hasOwn(values, "contact_telegram")) {
+    const normalizedTelegram = normalizeTelegramCommunityUrl(values.contact_telegram);
+    if (normalizedTelegram === null) return new Response("Telegram debe ser un usuario, comunidad o invitación t.me válida.", { status: 400 });
+    values.contact_telegram = normalizedTelegram;
+    const telegramRow = rows.find((row) => row.key === "contact_telegram");
+    if (telegramRow) telegramRow.value = normalizedTelegram;
+  }
   if (values.contact_instagram && !(/^@?[A-Za-z0-9._]{1,30}$/.test(values.contact_instagram) || /^https:\/\/(www\.)?instagram\.com\/[A-Za-z0-9._]+\/?$/i.test(values.contact_instagram))) return new Response("Instagram debe ser un usuario o enlace de Instagram válido.", { status: 400 });
   if (values.contact_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.contact_email)) return new Response("El correo de contacto no tiene un formato válido.", { status: 400 });
 
@@ -117,6 +124,9 @@ export async function POST(request: NextRequest) {
       target: siteSettings.key,
       set: { value: row.value, updatedBy: admin.id, updatedAt: row.updatedAt },
     });
+  }
+  if (Object.hasOwn(values, "contact_telegram")) {
+    await db.insert(telegramConfiguration).values({ id: TELEGRAM_CONFIG_ID, publicCommunityUrl: values.contact_telegram, updatedBy: admin.id, updatedAt }).onConflictDoUpdate({ target: telegramConfiguration.id, set: { publicCommunityUrl: values.contact_telegram, updatedBy: admin.id, updatedAt } });
   }
   await recordAdminAudit(admin, { category: "settings", action: "settings.update", summary: `Modificó ${rows.length} ${rows.length === 1 ? "ajuste" : "ajustes"} del sitio.`, entityType: "settings", entityId: configurationReturnTo(formData), entityLabel: "Configuración del sitio", before, after: Object.fromEntries(rows.map((row) => [row.key, row.value])), metadata: { changedKeys: rows.map((row) => row.key) } });
 

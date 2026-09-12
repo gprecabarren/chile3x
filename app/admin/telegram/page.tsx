@@ -44,7 +44,6 @@ function date(value: string | null) {
 function chatRoleLabel(role: string) {
   if (role === "public") return "Comunidad pública";
   if (role === "members") return "Miembros privado";
-  if (role === "alerts") return "Alertas administrativas";
   return "Sin asignar";
 }
 
@@ -61,7 +60,7 @@ export default async function AdminTelegramPage({ searchParams }: { searchParams
     getTelegramConfiguration(),
     db.select().from(telegramAdminIdentities).where(eq(telegramAdminIdentities.userId, admin.id)).limit(1),
     latestTelegramLinkAttempt(admin.id, "admin"),
-    db.select().from(telegramChats).orderBy(desc(telegramChats.lastSeenAt)).limit(20),
+    db.select().from(telegramChats).where(eq(telegramChats.isActive, true)).orderBy(desc(telegramChats.lastSeenAt)).limit(20),
     db.select().from(telegramBulletins).orderBy(desc(telegramBulletins.updatedAt)).limit(20),
     db.select().from(telegramModerationCases).orderBy(desc(telegramModerationCases.createdAt)).limit(30),
     db.select().from(telegramAuditEvents).orderBy(desc(telegramAuditEvents.createdAt)).limit(20),
@@ -79,7 +78,6 @@ export default async function AdminTelegramPage({ searchParams }: { searchParams
   }
   const publicChat = chats.find((chat) => chat.role === "public");
   const membersChat = chats.find((chat) => chat.role === "members");
-  const alertChat = chats.find((chat) => chat.role === "alerts");
   const openCases = cases.filter((item) => item.status === "open").length;
 
   return <AdminShell user={admin}><div className="admin-content telegram-admin-page">
@@ -92,7 +90,7 @@ export default async function AdminTelegramPage({ searchParams }: { searchParams
       <article><span>Bot y webhook</span><strong>{secretStatus.bot && secretStatus.webhook && configuration.botUsername ? "Listos" : "Pendientes"}</strong><small>{configuration.botUsername ? `@${configuration.botUsername}` : "Sin bot identificado"}</small></article>
       <article><span>Comunidad pública</span><strong>{publicChat ? "Asignada" : "Pendiente"}</strong><small>{publicChat?.title ?? "El bot debe descubrir el chat"}</small></article>
       <article><span>Miembros activos</span><strong>{Number(members?.total ?? 0)}</strong><small>{membersChat?.title ?? "Espacio privado sin asignar"}</small></article>
-      <article className={openCases ? "has-warning" : undefined}><span>Casos abiertos</span><strong>{openCases}</strong><small>{alertChat ? "Alertas conectadas" : "Sin chat de alertas"}</small></article>
+      <article className={openCases ? "has-warning" : undefined}><span>Casos abiertos</span><strong>{openCases}</strong><small>Revisables en este panel</small></article>
       <article><span>Acciones pendientes</span><strong>{Number(pendingJobs?.total ?? 0)}</strong><small>La cola y el cron reintentan errores transitorios.</small></article>
     </section>
 
@@ -110,18 +108,18 @@ export default async function AdminTelegramPage({ searchParams }: { searchParams
     </section>}
 
     {canManage && <section className="telegram-admin-section">
-      <header><div><p className="eyebrow">ESTRUCTURA</p><h2>Chats descubiertos</h2><p>Añade el bot a cada grupo. Aparecerá aquí automáticamente y podrás asignar exactamente una función a cada chat.</p></div></header>
+      <header><div><p className="eyebrow">ESTRUCTURA</p><h2>Espacios descubiertos</h2><p>La Comunidad reúne un espacio público y otro privado para Miembros. Añade el bot a ambos y asigna aquí su función.</p></div></header>
       {chats.length ? <div className="telegram-chat-grid">{chats.map((chat) => <article key={chat.id}>
         <header><div><span>{chatRoleLabel(chat.role)}</span><h3>{chat.title}</h3></div><b className={chat.botIsAdministrator ? "is-ready" : "is-pending"}>{chat.botIsAdministrator ? "Bot administrador" : "Revisar permisos"}</b></header>
         <dl><div><dt>ID interno de Telegram</dt><dd>{chat.telegramChatId}</dd></div><div><dt>Foro</dt><dd>{chat.isForum ? "Sí" : "No"}</dd></div><div><dt>Última señal</dt><dd>{date(chat.lastSeenAt)}</dd></div></dl>
-        <form action={`/api/admin/telegram/chats/${encodeURIComponent(chat.id)}`} method="post"><label>Función<select name="role" defaultValue={chat.role}><option value="unassigned">Sin asignar</option><option value="public">Comunidad pública</option><option value="members">Miembros privado</option><option value="alerts">Alertas administrativas</option></select></label><label>ID del tema “Novedades”<input name="updates_thread_id" inputMode="numeric" defaultValue={chat.updatesThreadId ?? ""} placeholder="Solo para el chat público" /></label><button className="button button-outline" type="submit">Guardar asignación</button></form>
-      </article>)}</div> : <p className="telegram-empty">Todavía no hay chats descubiertos. Añade el bot como administrador y envía un mensaje en cada grupo.</p>}
+        <form action={`/api/admin/telegram/chats/${encodeURIComponent(chat.id)}`} method="post"><label>Función<select name="role" defaultValue={chat.role === "public" || chat.role === "members" ? chat.role : "unassigned"}><option value="unassigned">Sin asignar</option><option value="public">Comunidad pública</option><option value="members">Miembros privado</option></select></label><label>ID del tema “Novedades”<input name="updates_thread_id" inputMode="numeric" defaultValue={chat.updatesThreadId ?? ""} placeholder="Solo para el chat público" /></label><button className="button button-outline" type="submit">Guardar asignación</button></form>
+      </article>)}</div> : <p className="telegram-empty">Todavía no hay espacios descubiertos. Añade el bot como administrador y envía un mensaje en Comunidad y Miembros.</p>}
     </section>}
 
     {canManage && <section className="telegram-admin-section">
       <header><div><p className="eyebrow">CONFIGURACIÓN</p><h2>Comunidad y reglas automáticas</h2><p>El enlace público se reutiliza en el header y footer. El chat privado nunca se expone en HTML público.</p></div></header>
       <form className="telegram-settings-form" action="/api/admin/telegram/configuracion" method="post">
-        <label>Usuario del bot<input name="bot_username" defaultValue={configuration.botUsername} placeholder="Chile3XBot" /></label>
+        <label>Usuario del bot<span className="telegram-readonly-field">{configuration.botUsername ? `@${configuration.botUsername}` : "Se detecta al instalar el webhook"}</span><input name="telegram_bot_username" type="hidden" value={configuration.botUsername} /></label>
         <label>Enlace de la comunidad pública<input name="public_community_url" defaultValue={configuration.publicCommunityUrl} placeholder="https://t.me/Chile3XComunidad" /></label>
         <label className="telegram-field-full">Normas<textarea name="rules_text" rows={10} defaultValue={configuration.rulesText} /></label>
         <label className="telegram-field-full">Términos bloqueados, uno por línea<textarea name="prohibited_terms" rows={4} defaultValue={configuration.prohibitedTerms} placeholder="Déjalo vacío hasta contar con criterios revisados." /></label>

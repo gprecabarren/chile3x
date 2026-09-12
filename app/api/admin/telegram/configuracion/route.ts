@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   if (!admin) return new Response("No autorizado.", { status: 401 });
   if (!adminHasCapability(admin, "telegram.manage")) return new Response("No tienes permiso para configurar Telegram.", { status: 403 });
   const formData = await request.formData();
-  const botUsernameInput = text(formData, "bot_username", 64);
+  const botUsernameInput = text(formData, "telegram_bot_username", 64);
   const communityInput = text(formData, "public_community_url", 180);
   const rulesText = text(formData, "rules_text", 6_000);
   const prohibitedTerms = text(formData, "prohibited_terms", 2_000);

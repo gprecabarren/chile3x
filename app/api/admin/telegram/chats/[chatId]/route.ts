@@ -6,7 +6,7 @@ import { recordAdminAudit } from "@/lib/admin-audit";
 import { adminHasCapability } from "@/lib/admin-permissions";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 
-const roles = new Set(["unassigned", "public", "members", "alerts"] as const);
+const roles = new Set(["unassigned", "public", "members"] as const);
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ chatId: string }> }) {
   try { assertSameOrigin(request); } catch { return new Response("Solicitud no válida.", { status: 403 }); }
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const [chat] = await db.select().from(telegramChats).where(eq(telegramChats.id, chatId)).limit(1);
   if (!chat) return new Response("Chat no encontrado.", { status: 404 });
   const now = new Date().toISOString();
-  const nextRole = role as "unassigned" | "public" | "members" | "alerts";
+  const nextRole = role as "unassigned" | "public" | "members";
   if (nextRole === "unassigned") {
     await db.update(telegramChats).set({ role: nextRole, updatesThreadId: null, updatedAt: now }).where(eq(telegramChats.id, chatId));
   } else {

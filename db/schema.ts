@@ -643,7 +643,7 @@ export const telegramLinkAttempts = sqliteTable("telegram_link_attempts", {
 export const telegramChats = sqliteTable("telegram_chats", {
   id: text("id").primaryKey(),
   telegramChatId: text("telegram_chat_id").notNull(),
-  role: text("role", { enum: ["unassigned", "public", "members", "alerts"] }).notNull().default("unassigned"),
+  role: text("role", { enum: ["unassigned", "public", "members"] }).notNull().default("unassigned"),
   title: text("title").notNull().default(""),
   username: text("username"),
   chatType: text("chat_type").notNull().default("supergroup"),

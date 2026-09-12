@@ -65,7 +65,7 @@ type TelegramConfigurationRow = {
 type TelegramChatRow = {
   id: string;
   telegram_chat_id: string;
-  role: "unassigned" | "public" | "members" | "alerts";
+  role: "unassigned" | "public" | "members";
   title: string;
   updates_thread_id: string | null;
   bot_is_administrator: number;
@@ -387,7 +387,13 @@ function telegramStatusIsMember(status: string) {
 async function processMembershipUpdate(env: Env, update: TelegramChatMemberUpdated, isBot: boolean) {
   const chatId = telegramId(update.chat.id);
   await discoverChat(env, update.chat, isBot ? telegramStatusIsMember(update.new_chat_member.status) : undefined);
-  if (isBot) return;
+  if (isBot) {
+    if (!telegramStatusIsMember(update.new_chat_member.status)) {
+      await env.DB.prepare("UPDATE telegram_chats SET role = 'unassigned', updates_thread_id = NULL, is_active = 0, updated_at = ? WHERE telegram_chat_id = ?")
+        .bind(new Date().toISOString(), chatId).run();
+    }
+    return;
+  }
   const telegramUserId = telegramId(update.new_chat_member.user.id);
   const chat = await chatConfiguration(env, chatId);
   if (!chat || chat.role !== "members") return;
@@ -486,9 +492,21 @@ async function openModerationCase(env: Env, message: TelegramMessage, decision: 
   return { id, linkedUserId: linked?.user_id ?? null, restrictionEndsAt };
 }
 
-async function notifyModerationAlerts(env: Env, text: string) {
-  const { results } = await env.DB.prepare("SELECT telegram_chat_id FROM telegram_chats WHERE role = 'alerts' AND is_active = 1").all<{ telegram_chat_id: string }>();
-  await Promise.all(results.map((chat) => sendTelegramMessage(env, chat.telegram_chat_id, text).catch(() => undefined)));
+async function notifyModerationAdmins(env: Env, text: string) {
+  const { results } = await env.DB.prepare(`
+    SELECT tai.telegram_user_id, aga.access_level
+    FROM telegram_admin_identities tai
+    INNER JOIN users u ON u.id = tai.user_id
+    INNER JOIN admin_github_access aga ON aga.user_id = tai.user_id
+    WHERE tai.is_active = 1 AND u.is_active = 1 AND u.role = 'admin' AND aga.is_active = 1
+  `).all<{ telegram_user_id: string; access_level: string }>();
+  const recipients = results.filter((admin) =>
+    isAdminAccessLevel(admin.access_level)
+    && adminHasCapability({ accessLevel: admin.access_level }, "telegram.moderate")
+  );
+  await Promise.all(recipients.map((admin) =>
+    sendTelegramMessage(env, admin.telegram_user_id, text).catch(() => undefined)
+  ));
 }
 
 async function applyModerationDecision(env: Env, message: TelegramMessage, decision: TelegramModerationDecision, automated: boolean, actor?: { userId?: string; telegramUserId?: string }, restrictionMinutes = 1_440) {
@@ -516,7 +534,7 @@ async function applyModerationDecision(env: Env, message: TelegramMessage, decis
   }
   const label = message.from?.username ? `@${message.from.username}` : `usuario ${userId}`;
   await sendTelegramMessage(env, chatId, `${label}: ${decision.action === "warn" ? "advertencia registrada" : "el mensaje fue moderado"}. Motivo: ${decision.reason}`).catch(() => undefined);
-  await notifyModerationAlerts(env, `<b>Alerta de moderación</b>\n${label}\n${decision.reason}\nAcción: ${decision.action}\nCaso: ${caseRecord.id}`);
+  await notifyModerationAdmins(env, `<b>Alerta de moderación</b>\n${label}\n${decision.reason}\nAcción: ${decision.action}\nCaso: ${caseRecord.id}`);
   await recordTelegramAudit(env, {
     actorType: automated ? "bot" : "telegram_admin",
     actorUserId: actor?.userId ?? null,
@@ -805,7 +823,7 @@ async function processOutboxJob(env: Env, jobId: string) {
     for (const chat of results) await telegramApi(env, "unbanChatMember", { chat_id: chat.telegram_chat_id, user_id: telegramUserId, only_if_banned: true });
   } else if (job.kind === "notify_admin") {
     const text = typeof payload.text === "string" ? payload.text : "Nueva alerta de Telegram.";
-    await notifyModerationAlerts(env, text);
+    await notifyModerationAdmins(env, text);
   } else {
     throw new Error("Tipo de acción de Telegram desconocido.");
   }

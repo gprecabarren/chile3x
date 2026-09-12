@@ -529,6 +529,7 @@ footer span { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid #272
 .telegram-bulletin-list form input,
 .telegram-bulletin-list form textarea { width: 100%; min-width: 0; min-height: 44px; padding: 10px 11px; border: 1px solid #435269; border-radius: var(--radius-sm); color: #f4f7fa; background: #080d15; color-scheme: dark; font: inherit; font-size: 14px; }
 .telegram-settings-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.telegram-readonly-field { display: flex; align-items: center; width: 100%; min-height: 44px; padding: 10px 11px; border: 1px solid #354257; border-radius: var(--radius-sm); color: #cbd5e1; background: #111823; font-size: 14px; font-weight: 650; }
 .telegram-field-full,
 .telegram-settings-form > .button { grid-column: 1 / -1; }
 .telegram-check { display: flex !important; align-items: flex-start; grid-template-columns: auto 1fr; color: #cbd5e1 !important; line-height: 1.45; }

@@ -125,3 +125,28 @@ test("the public Telegram link is shared by admin configuration, header and foot
   assert.match(contacts, /contact_telegram/);
   assert.match(contacts, /label: "Telegram"/);
 });
+
+test("the Telegram Community uses two spaces and sends operational alerts privately", async () => {
+  const [schema, worker, adminPage, chatRoute] = await Promise.all([
+    source("db/schema.ts"), source("worker/telegram.ts"), source("app/admin/telegram/page.tsx"), source("app/api/admin/telegram/chats/[chatId]/route.ts"),
+  ]);
+  assert.match(schema, /enum: \["unassigned", "public", "members"\]/);
+  assert.doesNotMatch(schema, /enum: \["unassigned", "public", "members", "alerts"\]/);
+  assert.doesNotMatch(chatRoute, /"alerts"/);
+  assert.doesNotMatch(adminPage, /Alertas administrativas|Sin chat de alertas/);
+  assert.match(worker, /async function notifyModerationAdmins/);
+  assert.match(worker, /telegram_admin_identities/);
+  assert.match(worker, /"telegram\.moderate"/);
+  assert.doesNotMatch(worker, /role = 'alerts'/);
+  assert.match(worker, /SET role = 'unassigned', updates_thread_id = NULL, is_active = 0/);
+  assert.match(adminPage, /telegramChats\.isActive, true/);
+});
+
+test("the bot username is displayed without exposing it to browser login autofill", async () => {
+  const [adminPage, settingsRoute] = await Promise.all([
+    source("app/admin/telegram/page.tsx"), source("app/api/admin/telegram/configuracion/route.ts"),
+  ]);
+  assert.match(adminPage, /className="telegram-readonly-field"/);
+  assert.match(adminPage, /name="telegram_bot_username" type="hidden"/);
+  assert.match(settingsRoute, /text\(formData, "telegram_bot_username", 64\)/);
+});

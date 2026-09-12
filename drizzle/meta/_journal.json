@@ -197,6 +197,13 @@
       "when": 1789133309488,
       "tag": "0027_messy_robbie_robertson",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "6",
+      "when": 1789187644125,
+      "tag": "0028_telegram_two_space_architecture",
+      "breakpoints": true
     }
   ]
 }

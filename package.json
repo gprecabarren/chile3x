@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vinext dev",
     "build": "vinext build",
+    "deploy": "vinext build && wrangler deploy --config wrangler.json --keep-vars",
     "start": "vinext start",
     "test": "vinext build && node --experimental-strip-types --test tests/*.test.mjs",
     "typecheck": "tsc --noEmit",

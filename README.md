@@ -37,7 +37,7 @@ El proyecto está construido para operar en Cloudflare con Workers, D1 y R2, sin
 - Los permisos de Telegram respetan las mismas funciones granulares del panel: `telegram.view`, `telegram.publish`, `telegram.moderate` y `telegram.manage`. Ser administrador de un chat no permite usar al bot para exceder la función asignada en Chile3X.
 - El webhook valida un secreto con comparación segura, mide el cuerpo real en bytes, deduplica por `update_id`, procesa mediante Cloudflare Queues y borra el contenido del evento después de completarlo. Las tomas de trabajos de webhook y outbox son atómicas para soportar entregas repetidas.
 - El enlace público de Telegram se configura una sola vez desde administración y alimenta el encabezado, pie de página y paneles. La ruta pública `/novedades` se incluye en el sitemap.
-- El encabezado muestra Telegram como un botón azul rotulado —también en móvil— y no como un icono ambiguo. `Mi cuenta` ofrece un acceso destacado y una guía visual de tres pasos para vincularse y entrar a Miembros.
+- El encabezado muestra Telegram como un acceso compacto junto a WhatsApp y correo, reutilizando el mismo icono del footer. Después de iniciar sesión, `Mi cuenta` ofrece el botón largo destacado y una guía visual de tres pasos para vincularse y entrar a Miembros.
 - El panel de Telegram consulta la salud real del webhook, muestra actualizaciones pendientes y el último error informado por Telegram, documenta el recorrido completo y permite filtrar moderación por texto, estado, medida y gravedad.
 - El perfil del bot, su ayuda privada y los menús de comandos se administran mediante la Bot API: `/start` y `/help` explican el acceso, `/rules` queda disponible para toda la comunidad y los comandos sensibles siguen limitados a administradores vinculados y autorizados.
 
@@ -327,7 +327,7 @@ Cuando el despliegue incluye Telegram, comprobar además que D1 no tenga migraci
 - `ab3077c` — estructura Telegram corregida a Comunidad + Miembros, avisos administrativos privados y migración de retiro del chat de Alertas.
 - `6b0b875` — guía operativa y verificación de la estructura nativa de Telegram.
 - `890eeaa` — identidades de Telegram visibles y vinculables en la administración de accesos.
-- `f3bf6e6` — botón Telegram visible, recorrido de Miembros, perfil y ayuda del bot, salud del webhook y filtros de moderación.
+- `f3bf6e6` — recorrido de Miembros, perfil y ayuda del bot, salud del webhook y filtros de moderación.
 
 ## Límites y decisiones pendientes
 

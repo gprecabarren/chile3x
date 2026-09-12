@@ -869,9 +869,10 @@ footer span { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid #272
 
 @media (max-width: 860px) {
   .site-header .portal-contact-links-header { display: flex; order: initial; width: auto; flex: 0 0 auto; gap: 0; }
-  .site-header .portal-contact-links-header .portal-contact-link:not(.portal-contact-whatsapp):not(.portal-contact-email) { display: none; }
+  .site-header .portal-contact-links-header .portal-contact-link:not(.portal-contact-whatsapp):not(.portal-contact-telegram):not(.portal-contact-email) { display: none; }
   .site-header .portal-contact-links-header .portal-contact-link { width: 36px; height: 36px; }
   .site-header .portal-contact-links-header .portal-contact-email { display: inline-grid !important; visibility: visible; opacity: 1; }
+  .site-header .portal-contact-links-header .portal-contact-telegram { display: inline-grid !important; visibility: visible; opacity: 1; }
   .site-header .portal-contact-links-header .portal-contact-link svg { width: 18px; height: 18px; }
 }
 @media (max-width: 420px) {
@@ -1389,9 +1390,6 @@ select:disabled { opacity: .68; }
 .public-header-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 7px; }
 .public-header-actions .button { min-height: 38px; padding: 9px 12px; white-space: nowrap; }
 .public-header-actions .button-primary { border-color: #e74b54; }
-.telegram-community-header-button { gap: 8px; border-color: #348ec0; color: #f4fbff; background: #167eae; }
-.telegram-community-header-button:hover { border-color: #72c9f2; color: #fff; background: #2094c9; }
-.telegram-community-header-button svg { width: 18px; height: 18px; flex: 0 0 auto; }
 .mobile-menu-session-summary { grid-column: 1 / -1; padding-top: 11px; border-top: 1px solid #2b3447; }
 .mobile-menu-session-summary a { display: grid; gap: 3px; }
 .mobile-menu-session-summary strong { min-width: 0; overflow: hidden; color: #fff; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
@@ -1443,7 +1441,6 @@ select:disabled { opacity: .68; }
   .mobile-public-quick-links a:hover { color: #ff7c84; }
   .mobile-quick-label-short { display: none; }
   .public-header .public-header-actions .button { width: 100%; min-height: 40px; padding: 7px 6px; font-size: 11px; }
-  .public-header .public-header-actions .telegram-community-header-button { grid-column: 1 / -1; }
   .mobile-menu-panel > .mobile-menu-directory-extra { display: none; }
   .mobile-menu-panel { max-height: min(70dvh, 560px); overflow-y: auto; overscroll-behavior: contain; }
   .mobile-menu-session-summary { grid-column: 1 / -1; }

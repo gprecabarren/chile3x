@@ -137,19 +137,21 @@ test("admins can ban linked identities from account details with explicit confir
 });
 
 test("the public Telegram link is shared by admin configuration, header and footer", async () => {
-  const [settingsRoute, telegramRoute, directory, contacts, accountHome, accountTelegram] = await Promise.all([
-    source("app/api/admin/settings/route.ts"), source("app/api/admin/telegram/configuracion/route.ts"), source("app/directorio/_components.tsx"), source("lib/site-contacts.ts"), source("app/mi-cuenta/page.tsx"), source("app/mi-cuenta/telegram/page.tsx"),
+  const [settingsRoute, telegramRoute, directory, contacts, accountHome, accountTelegram, styles] = await Promise.all([
+    source("app/api/admin/settings/route.ts"), source("app/api/admin/telegram/configuracion/route.ts"), source("app/directorio/_components.tsx"), source("lib/site-contacts.ts"), source("app/mi-cuenta/page.tsx"), source("app/mi-cuenta/telegram/page.tsx"), source("app/globals.css"),
   ]);
   assert.match(settingsRoute, /telegramConfiguration/);
   assert.match(telegramRoute, /contact_telegram/);
   assert.match(directory, /PortalContactLinks placement="header"/);
   assert.match(directory, /PortalContactLinks placement="footer"/);
-  assert.match(directory, /PortalTelegramHeaderButton/);
-  assert.match(directory, /Comunidad Telegram/);
+  assert.doesNotMatch(directory, /PortalTelegramHeaderButton/);
+  assert.doesNotMatch(directory, /contact\.key !== "telegram"/);
   assert.match(contacts, /contact_telegram/);
   assert.match(contacts, /label: "Telegram"/);
   assert.match(accountHome, /Abrir Telegram y Miembros/);
   assert.match(accountTelegram, /telegram-user-flow/);
+  assert.match(styles, /portal-contact-link:not\(\.portal-contact-whatsapp\):not\(\.portal-contact-telegram\):not\(\.portal-contact-email\)/);
+  assert.match(styles, /\.portal-contact-telegram \{ display: inline-grid !important/);
 });
 
 test("the administrative Telegram panel reports webhook health and supports moderation filters", async () => {

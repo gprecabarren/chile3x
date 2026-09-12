@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { getCurrentAdmin, getCurrentUser, getSessionCookieName, getUserSessionCookieName, type AccountUser } from "@/lib/auth";
 import { getCityPath, getProfileDisplayTags, type PublicProfile } from "@/lib/directory";
 import { profilePublicPath, readProfilePrices } from "@/lib/profile";
-import { getPortalContacts, getPortalTelegramLink, getPortalWhatsappLink } from "@/lib/site-contacts";
+import { getPortalContacts, getPortalWhatsappLink } from "@/lib/site-contacts";
 import { getSiteSettings } from "@/lib/site-settings";
 import { formatRegionName, getRegionByTitle } from "@/app/locations";
 import { PublicMobileMenu } from "./PublicMobileMenu";
@@ -111,7 +111,6 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
           <Link href={sessionAccountHref}>{sessionAccountLabel}</Link>
         </nav>
         <div className={`public-header-actions${hasAnySession ? " is-signed-in" : ""}`} aria-label="Acciones de cuenta">
-          <PortalTelegramHeaderButton />
           {!hasAnySession && <Link className="button button-outline" href="/registro">Registrarse</Link>}
           <Link className="button button-primary" href="/ingresar?return_to=/mi-cuenta/nuevo-perfil" prefetch={false}>Publicar anuncio</Link>
         </div>
@@ -142,21 +141,9 @@ export async function PublicFooter() {
 }
 
 export async function PortalContactLinks({ placement }: { placement: "header" | "footer" }) {
-  const allContacts = getPortalContacts(await getSiteSettings());
-  // Telegram has a labelled call to action in the header so it remains
-  // recognisable on phones. The compact icon remains in the footer.
-  const contacts = placement === "header" ? allContacts.filter((contact) => contact.key !== "telegram") : allContacts;
+  const contacts = getPortalContacts(await getSiteSettings());
   if (contacts.length === 0) return null;
   return <div className={`portal-contact-links portal-contact-links-${placement}`} aria-label="Canales oficiales de Chile3X">{contacts.map((contact) => <a key={contact.key} className={`portal-contact-link portal-contact-${contact.key}`} href={contact.href} target={contact.external ? "_blank" : undefined} rel={contact.external ? "noreferrer" : undefined} aria-label={contact.label} title={contact.label}><PortalContactIcon kind={contact.key} /><span className="sr-only">{contact.label}</span></a>)}</div>;
-}
-
-export async function PortalTelegramHeaderButton() {
-  const href = getPortalTelegramLink((await getSiteSettings()).contact_telegram);
-  if (!href) return null;
-  return <a className="button telegram-community-header-button" href={href} target="_blank" rel="noreferrer" aria-label="Abrir la comunidad de Chile3X en Telegram">
-    <PortalContactIcon kind="telegram" />
-    <span>Comunidad Telegram</span>
-  </a>;
 }
 
 export function PortalContactIcon({ kind }: { kind: "whatsapp" | "telegram" | "instagram" | "email" | "call" | "arsmate" | "onlyfans" | "videocall" }) {

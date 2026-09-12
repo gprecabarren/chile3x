@@ -37,6 +37,9 @@ El proyecto está construido para operar en Cloudflare con Workers, D1 y R2, sin
 - Los permisos de Telegram respetan las mismas funciones granulares del panel: `telegram.view`, `telegram.publish`, `telegram.moderate` y `telegram.manage`. Ser administrador de un chat no permite usar al bot para exceder la función asignada en Chile3X.
 - El webhook valida un secreto con comparación segura, mide el cuerpo real en bytes, deduplica por `update_id`, procesa mediante Cloudflare Queues y borra el contenido del evento después de completarlo. Las tomas de trabajos de webhook y outbox son atómicas para soportar entregas repetidas.
 - El enlace público de Telegram se configura una sola vez desde administración y alimenta el encabezado, pie de página y paneles. La ruta pública `/novedades` se incluye en el sitemap.
+- El encabezado muestra Telegram como un botón azul rotulado —también en móvil— y no como un icono ambiguo. `Mi cuenta` ofrece un acceso destacado y una guía visual de tres pasos para vincularse y entrar a Miembros.
+- El panel de Telegram consulta la salud real del webhook, muestra actualizaciones pendientes y el último error informado por Telegram, documenta el recorrido completo y permite filtrar moderación por texto, estado, medida y gravedad.
+- El perfil del bot, su ayuda privada y los menús de comandos se administran mediante la Bot API: `/start` y `/help` explican el acceso, `/rules` queda disponible para toda la comunidad y los comandos sensibles siguen limitados a administradores vinculados y autorizados.
 
 Verificación reproducible:
 
@@ -235,17 +238,19 @@ El registro comienza desde la migración que habilita esta función; no inventa 
 
 ### Operar la comunidad de Telegram
 
-1. El propietario configura el bot, la URL pública, las normas y los límites de moderación en `Administración > Telegram`.
+1. El propietario configura el bot, la URL pública, las normas y los límites de moderación en `Administración > Telegram`. El mismo panel informa la URL efectiva del webhook, su cola pendiente y el último error comunicado por Telegram.
 2. El bot descubre los espacios donde participa. Desde el panel se asigna exactamente uno como Comunidad pública y uno como Miembros privado; ambos se reúnen en la Comunidad nativa de Telegram. El identificador de Miembros nunca se incluye en páginas públicas.
 3. Una cuenta activa y verificada inicia la vinculación desde `Mi cuenta > Telegram`, abre el enlace temporal del bot y confirma en la misma sesión web la identidad que Telegram devolvió. La invitación a Miembros es individual, expira y no se reutiliza.
 4. Las Novedades pueden publicarse desde el panel o mediante `/novedad` —o el tema configurado— por una identidad administrativa con `telegram.publish`. Las ediciones se sincronizan usando la identidad persistida de la publicación.
 5. La moderación automática elimina spam claro, restringe temporalmente señales de estafa y veta únicamente reglas graves o acumulación configurada. Cada acción crea un caso revisable en el panel y el bot intenta avisar por mensaje privado a administradores vinculados con permiso de moderación.
-6. Los comandos `/rules`, `/status`, `/warn`, `/mute 30m|24h|7d`, `/unmute`, `/ban` y `/unban` se usan respondiendo al mensaje de la persona. El bot vuelve a comprobar la función administrativa del sitio antes de actuar.
+6. `/start` y `/help` explican en privado cómo vincularse; `/rules` puede usarlo cualquier integrante. Los comandos `/status`, `/warn`, `/mute 30m|24h|7d`, `/unmute`, `/ban` y `/unban` se usan respondiendo al mensaje de la persona. El bot vuelve a comprobar la función administrativa del sitio antes de actuar.
 7. Deshabilitar, eliminar o desvincular una cuenta la retira de Miembros. Reactivar la cuenta no la reincorpora; la persona debe solicitar una invitación nueva con «Volver a entrar».
 
 La Comunidad nativa de producción se llama `Chile3X` y agrupa `Chile3X | Comunidad` como chat visible, `Chile3X | Miembros` como chat oculto y `@Chile3XBot` como acceso visible. Se muestra como un solo chat y solo sus administradores pueden añadir espacios. `@prgec` y `@chile3xsoporte` administran la Comunidad nativa; el vínculo con el perfil administrativo del sitio se confirma individualmente desde la sesión GitHub de cada persona y su estado aparece en `Administración > Administradores`.
 
 La estructura temática mantiene `Novedades` para publicaciones sincronizadas. El espacio público usa iconos para General, Novedades, Ayuda, Sugerencias, Seguridad, Regiones y Mejoras y próximas funciones. Miembros los usa para General, Novedades, Mi cuenta, Publicaciones, Soporte, Seguridad, Sugerencias y Alertas y estado del sitio. Este último se destina únicamente a fallos graves que afecten a la plataforma. Las alertas internas de infraestructura o moderación no crean un tercer grupo.
+
+Telegram no ofrece un campo de descripción individual para cada tema y ordena los temas de un foro según su actividad reciente. Por eso las orientaciones se mantienen en la descripción del espacio, las normas de General y mensajes introductorios; el orden visual puede cambiar cuando alguien publica y no significa que la estructura esté dañada.
 
 ### Preparar fotos de la galería pública
 
@@ -321,6 +326,8 @@ Cuando el despliegue incluye Telegram, comprobar además que D1 no tenga migraci
 - `b542633` — comunidad Telegram, Novedades bidireccionales, moderación, D1, Queues y paneles.
 - `ab3077c` — estructura Telegram corregida a Comunidad + Miembros, avisos administrativos privados y migración de retiro del chat de Alertas.
 - `6b0b875` — guía operativa y verificación de la estructura nativa de Telegram.
+- `890eeaa` — identidades de Telegram visibles y vinculables en la administración de accesos.
+- `f3bf6e6` — botón Telegram visible, recorrido de Miembros, perfil y ayuda del bot, salud del webhook y filtros de moderación.
 
 ## Límites y decisiones pendientes
 
@@ -328,3 +335,4 @@ Cuando el despliegue incluye Telegram, comprobar además que D1 no tenga migraci
 - La verificación de identidad y salud es manual. Los archivos son privados, pero la decisión final corresponde al equipo administrador.
 - El orden de anuncios se aleatoriza dentro de la misma categoría para distribuir exposición; los niveles VIP, Premium y Gold mantienen su prioridad.
 - Antes de abrir masivamente el registro, conviene revisar el flujo completo en móvil y escritorio con cuentas de prueba y definir tiempos operativos de aprobación.
+- «Iniciar con Apple» no se incorporó: la autenticación web requiere una membresía pagada del Apple Developer Program. Se mantiene fuera del código mientras el requisito sea no asumir ningún costo.

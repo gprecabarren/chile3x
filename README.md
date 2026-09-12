@@ -30,6 +30,13 @@ El proyecto está construido para operar en Cloudflare con Workers, D1 y R2, sin
 - El resumen administrativo incorpora errores registrados, correos fallidos, duración de operaciones y una revisión agregada de D1/R2. La comparación de almacenamiento es manual, tiene un límite seguro de 20.000 objetos, no elimina archivos y conserva solo cantidades y tamaños, nunca claves privadas de R2.
 - La explicación interna sobre cómo se priorizan o destacan anuncios en el inicio solo aparece cuando existe una sesión pública o administrativa; los visitantes anónimos continúan viendo los anuncios destacados, pero no ese criterio operativo ni su estado vacío.
 - En pantallas móviles, seleccionar cualquier enlace de «Secciones de administración» o «Secciones de mi cuenta» repliega el menú en el acto para que la página elegida quede visible y el cambio de sección sea evidente.
+- Se incorporó el ecosistema de Telegram de Chile3X: una sola Comunidad con un espacio público y otro privado para Miembros, vinculación segura de identidades, invitaciones temporales, moderación automática conservadora y auditoría administrativa.
+- `Novedades` es un canal separado del blog editorial. Una publicación creada en `Administración > Telegram` se envía mediante un outbox durable al tema configurado, y una publicación enviada por un administrador autorizado desde Telegram aparece en `/novedades` sin duplicarse.
+- El acceso a Miembros exige una cuenta activa con correo verificado y una identidad Telegram vinculada. No requiere un anuncio aprobado y nunca se restablece automáticamente después de deshabilitar, reactivar o desvincular una cuenta: la persona debe usar «Volver a entrar».
+- Deshabilitar o eliminar una cuenta revoca su acceso a Telegram. Administración puede vetar o retirar el veto desde la ficha de la cuenta; `/unban` solo modifica vínculos que estén realmente vetados y no puede revertir una desvinculación voluntaria.
+- Los permisos de Telegram respetan las mismas funciones granulares del panel: `telegram.view`, `telegram.publish`, `telegram.moderate` y `telegram.manage`. Ser administrador de un chat no permite usar al bot para exceder la función asignada en Chile3X.
+- El webhook valida un secreto con comparación segura, mide el cuerpo real en bytes, deduplica por `update_id`, procesa mediante Cloudflare Queues y borra el contenido del evento después de completarlo. Las tomas de trabajos de webhook y outbox son atómicas para soportar entregas repetidas.
+- El enlace público de Telegram se configura una sola vez desde administración y alimenta el encabezado, pie de página y paneles. La ruta pública `/novedades` se incluye en el sitemap.
 
 Verificación reproducible:
 
@@ -66,6 +73,8 @@ Actualmente incluye:
 - Panel administrativo para cuentas, anuncios, medios, documentos, reportes, reseñas, SEO, contenidos, noticias, FAQ, reglas de publicación y ajustes del sitio.
 - Administración de sesiones y dispositivos dentro de los resúmenes existentes, disponible para cuentas visitantes, anunciantes, testers y todos los niveles administrativos, sin crear una sección adicional.
 - Panel operativo desplegable en el resumen administrativo, con filtros por período, área y resultado, historial de eventos, entrega de correos y auditorías agregadas de D1/R2.
+- Comunidad Telegram administrable desde `Administración > Telegram`, con chats descubiertos, asignación de roles, normas, límites anti-spam, vinculación administrativa, casos de moderación, auditoría y Novedades bidireccionales.
+- Integración de cuenta en `Mi cuenta > Telegram`, con vínculo de doble confirmación, acceso manual a Miembros, revocación y mensajes claros para cuentas vetadas o deshabilitadas.
 - Pestaña **Administradores** para autorizar usuarios exactos de GitHub, asignar funciones, cerrar sus sesiones y revocar o reactivar accesos sin tocar el repositorio.
 - Cada invitación administrativa reserva desde el inicio un correo verificado de GitHub. Ese correo no puede coexistir con una cuenta de anunciante o tester, y GitHub debe confirmarlo durante el primer acceso.
 - Historial administrativo separado y paginado: identifica a cada administrador por su cuenta interna y GitHub, registra fecha/hora, resultado, objeto afectado y valores anteriores/posteriores, con filtros por administrador, área, acción, objeto, resultado y rango de fechas.
@@ -133,6 +142,8 @@ Los archivos heredados de la antigua galería privada se migran a este modelo si
 - Documentos privados, evidencias de reportes y contenido exclusivo no se incluyen en respuestas públicas ni en sitemap.
 - Turnstile protege registro, acceso y flujos sensibles contra automatización.
 - Las claves y servicios externos se guardan como secretos de Cloudflare, nunca en el navegador, D1 ni Git.
+- Telegram valida cada webhook con `TELEGRAM_WEBHOOK_SECRET`; `TELEGRAM_BOT_TOKEN` se usa solo en solicitudes HTTPS salientes a la Bot API. Ninguno se guarda en D1, respuestas, HTML o registros del repositorio.
+- Las identidades públicas de Telegram y las identidades administrativas permanecen en tablas separadas. Una acción administrativa iniciada en Telegram exige un acceso GitHub vigente, una vinculación activa, la capacidad granular del sitio y permisos reales de administrador en el chat.
 - Se controla una cuota interna de medios antes del margen gratuito de R2 para evitar exceder almacenamiento de forma accidental.
 
 ## SEO, redes e indexación
@@ -155,6 +166,7 @@ Los archivos heredados de la antigua galería privada se migran a este modelo si
 - **Analítica:** Google Tag Manager, Google Analytics y Search Console, sujetos al consentimiento correspondiente.
 - **Observabilidad interna:** eventos operativos agregados en D1 para entregas de correo, autenticación, errores controlados y revisiones de almacenamiento. No se guardan destinatarios, tokens, IP de visitantes ni claves de objetos en este historial.
 - **Autenticación pública opcional:** Google Identity Services con un cliente web configurado por ID público en `Administración > Configuración > Google`; el secreto de cliente no se usa ni se almacena en Chile3X.
+- **Telegram:** webhook y Bot API ejecutados por el mismo Worker, tablas D1 versionadas, cola principal `chile3x-telegram`, cola de mensajes no procesables `chile3x-telegram-dlq` y cron cada cinco minutos para recuperar trabajos interrumpidos y limpiar datos temporales.
 
 Las uniones de infraestructura están definidas en [`.openai/hosting.json`](.openai/hosting.json): `DB` para D1 y `MEDIA` para R2. Los secretos nunca deben añadirse al repositorio.
 
@@ -221,6 +233,18 @@ El registro comienza desde la migración que habilita esta función; no inventa 
 4. Al completar el registro se crea la cuenta, se elimina el intento temporal y se inicia sesión. Si se abandona, el intento vence a los diez minutos y se elimina en la siguiente limpieza.
 5. Si el correo pertenece a una identidad administrativa, la vinculación se rechaza. Las personas administradoras continúan ingresando exclusivamente mediante GitHub.
 
+### Operar la comunidad de Telegram
+
+1. El propietario configura el bot, la URL pública, las normas y los límites de moderación en `Administración > Telegram`.
+2. El bot descubre los espacios donde participa. Desde el panel se asigna exactamente uno como Comunidad pública y uno como Miembros privado; ambos se reúnen en la Comunidad nativa de Telegram. El identificador de Miembros nunca se incluye en páginas públicas.
+3. Una cuenta activa y verificada inicia la vinculación desde `Mi cuenta > Telegram`, abre el enlace temporal del bot y confirma en la misma sesión web la identidad que Telegram devolvió. La invitación a Miembros es individual, expira y no se reutiliza.
+4. Las Novedades pueden publicarse desde el panel o mediante `/novedad` —o el tema configurado— por una identidad administrativa con `telegram.publish`. Las ediciones se sincronizan usando la identidad persistida de la publicación.
+5. La moderación automática elimina spam claro, restringe temporalmente señales de estafa y veta únicamente reglas graves o acumulación configurada. Cada acción crea un caso revisable en el panel y el bot intenta avisar por mensaje privado a administradores vinculados con permiso de moderación.
+6. Los comandos `/rules`, `/status`, `/warn`, `/mute 30m|24h|7d`, `/unmute`, `/ban` y `/unban` se usan respondiendo al mensaje de la persona. El bot vuelve a comprobar la función administrativa del sitio antes de actuar.
+7. Deshabilitar, eliminar o desvincular una cuenta la retira de Miembros. Reactivar la cuenta no la reincorpora; la persona debe solicitar una invitación nueva con «Volver a entrar».
+
+La estructura temática mantiene `Novedades` para publicaciones sincronizadas. En el espacio público se incluye además un tema para mejoras y funciones futuras; en Miembros existe un tema de alertas y estado del sitio destinado únicamente a fallos graves que afecten a la plataforma. Las alertas internas de infraestructura o moderación no crean un tercer grupo.
+
 ### Preparar fotos de la galería pública
 
 1. La persona abre su anuncio y elige archivos en **Galería pública**.
@@ -258,15 +282,42 @@ pnpm build
 
 Al cambiar [`db/schema.ts`](db/schema.ts), generar la migración, revisar el SQL y mantenerla dentro de `drizzle/` antes de publicar. Las migraciones de datos deben preservar registros y archivos existentes.
 
+Para Telegram, los secretos se cargan directamente en Cloudflare y nunca en archivos locales versionados:
+
+```bash
+pnpm exec wrangler secret put TELEGRAM_BOT_TOKEN
+pnpm exec wrangler secret put TELEGRAM_WEBHOOK_SECRET
+```
+
+Las migraciones `0026_slim_white_tiger.sql` y `0027_messy_robbie_robertson.sql` crean la configuración, identidades, espacios, Novedades, moderación, auditoría, webhook, outbox y membresías. `0028_telegram_two_space_architecture.sql` retira el rol heredado de Alertas para conservar únicamente Comunidad y Miembros. Antes de desplegar, deben existir las colas declaradas en `wrangler.json` y la instalación del webhook debe terminarse desde `Administración > Telegram`.
+
 ## Publicación
 
 La rama principal se publica en el Worker configurado para Chile3X. Antes de cada despliegue se debe comprobar como mínimo:
+
+```bash
+pnpm deploy
+```
+
+Este script fuerza el uso del `wrangler.json` del repositorio y conserva las variables configuradas en Cloudflare. No reutilizar configuraciones ni recursos del proyecto JurisConecta.
 
 1. `pnpm lint` sin errores.
 2. `pnpm build` sin errores.
 3. Migración de D1 generada e inspeccionada si hubo cambios de esquema.
 4. Prueba manual de registro, sesión, creación de anuncio, moderación, permisos de contenido exclusivo y una vista móvil.
 5. Revisión de `https://chile3x.cl/sitemap.xml`, `https://chile3x.cl/robots.txt` y una URL pública representativa.
+
+Cuando el despliegue incluye Telegram, comprobar además que D1 no tenga migraciones pendientes, que ambas colas existan, que los dos secretos estén configurados, que el bot sea administrador de los chats asignados y que `getWebhookInfo` no informe errores de entrega.
+
+## Historial de implementación — septiembre de 2026
+
+- `b44e42b` — controles de ciclo de vida de cuentas y anuncios.
+- `099212a` — posición móvil segura del acceso flotante a WhatsApp.
+- `e17679a` — reserva de correos para identidades administrativas.
+- `48c3826` — tipografía Manrope, tamaños de acciones y navegación del resumen.
+- `89f23c2` — sesiones, dispositivos y panel operativo.
+- `b542633` — comunidad Telegram, Novedades bidireccionales, moderación, D1, Queues y paneles.
+- `ab3077c` — estructura Telegram corregida a Comunidad + Miembros, avisos administrativos privados y migración de retiro del chat de Alertas.
 
 ## Límites y decisiones pendientes
 

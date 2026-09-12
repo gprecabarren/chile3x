@@ -2,9 +2,10 @@ import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
-import { adminGithubAccess, adminGithubIdentities, users } from "@/db/schema";
+import { adminGithubAccess, adminGithubIdentities, telegramAdminIdentities, users } from "@/db/schema";
 import { ADMIN_ACCESS_CAPABILITIES, ADMIN_ACCESS_DESCRIPTIONS, ADMIN_ACCESS_LABELS, ADMIN_CAPABILITY_LABELS, adminHasCapability } from "@/lib/admin-permissions";
 import { getCurrentAdmin } from "@/lib/auth";
+import { telegramIdentityLabel } from "@/lib/telegram";
 import { AdminPageHeading, AdminShell } from "../_components";
 
 export const dynamic = "force-dynamic";
@@ -59,9 +60,14 @@ export default async function AdministratorsPage({ searchParams }: { searchParam
     displayName: users.displayName,
     githubEmail: adminGithubIdentities.githubEmail,
     lastLoginAt: adminGithubIdentities.lastLoginAt,
+    telegramUserId: telegramAdminIdentities.telegramUserId,
+    telegramUsername: telegramAdminIdentities.username,
+    telegramFirstName: telegramAdminIdentities.firstName,
+    telegramIsActive: telegramAdminIdentities.isActive,
   }).from(adminGithubAccess)
     .leftJoin(users, eq(adminGithubAccess.userId, users.id))
     .leftJoin(adminGithubIdentities, eq(adminGithubIdentities.userId, adminGithubAccess.userId))
+    .leftJoin(telegramAdminIdentities, eq(telegramAdminIdentities.userId, adminGithubAccess.userId))
     .orderBy(desc(adminGithubAccess.isProtectedOwner), desc(adminGithubAccess.isActive), desc(adminGithubAccess.createdAt));
   const active = grants.filter((grant) => grant.isActive).length;
   const pending = grants.filter((grant) => grant.isActive && !grant.userId).length;
@@ -116,6 +122,11 @@ export default async function AdministratorsPage({ searchParams }: { searchParam
           <div><dt>Correo administrativo</dt><dd>{grant.githubEmail ?? grant.protectedEmail ?? "No disponible"}{!grant.githubEmail && grant.protectedEmail ? " · reservado hasta el primer ingreso" : ""}</dd></div>
           <div><dt>Último ingreso</dt><dd>{formatDate(grant.lastLoginAt)}</dd></div>
           <div><dt>Autorizado</dt><dd>{formatDate(grant.createdAt)}</dd></div>
+          <div><dt>Telegram administrativo</dt><dd>{grant.telegramIsActive && grant.telegramUserId
+            ? telegramIdentityLabel(grant.telegramFirstName, grant.telegramUsername, grant.telegramUserId)
+            : grant.userId
+              ? "Pendiente · debe vincularlo desde su propia sesión"
+              : "Disponible después del primer ingreso"}</dd></div>
         </dl>
         {!grant.isProtectedOwner && <div className="admin-access-actions">
           <form action={`/api/admin/administradores/${encodeURIComponent(grant.id)}`} method="post">

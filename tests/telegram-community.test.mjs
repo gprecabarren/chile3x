@@ -51,13 +51,15 @@ test("queue claims and unban transitions are atomic and preserve explicit revoca
 });
 
 test("public and administrative Telegram identities remain separate", async () => {
-  const [schema, linking, worker] = await Promise.all([source("db/schema.ts"), source("lib/telegram-linking.ts"), source("worker/telegram.ts")]);
+  const [schema, linking, worker, administratorsPage] = await Promise.all([source("db/schema.ts"), source("lib/telegram-linking.ts"), source("worker/telegram.ts"), source("app/admin/administradores/page.tsx")]);
   assert.match(schema, /telegramAccountLinks = sqliteTable\("telegram_account_links"/);
   assert.match(schema, /telegramAdminIdentities = sqliteTable\("telegram_admin_identities"/);
   assert.match(linking, /telegramAdminIdentities\.telegramUserId/);
   assert.match(linking, /telegramAccountLinks\.telegramUserId/);
   assert.match(worker, /admin_github_access/);
   assert.match(worker, /member\.status !== "administrator"/);
+  assert.match(administratorsPage, /leftJoin\(telegramAdminIdentities/);
+  assert.match(administratorsPage, /debe vincularlo desde su propia sesión/);
 });
 
 test("Members access requires an active verified account but no approved advertisement", async () => {

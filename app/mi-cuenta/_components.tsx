@@ -12,7 +12,7 @@ function AccountNavigation({ user }: { user: AccountUser }) {
     <Link href="/mi-cuenta/favoritos">Favoritos</Link>
     <Link href="/mi-cuenta/comentarios">Comentarios</Link>
     <Link href="/mi-cuenta/reportes">Mis reportes</Link>
-    <Link href="/mi-cuenta/telegram">Comunidad Telegram</Link>
+    <Link href="/mi-cuenta/telegram">Telegram y Miembros</Link>
     {user.role === "tester" && <Link href="/mi-cuenta/pruebas">Mis pruebas</Link>}
     <Link href="/mi-cuenta/bloqueados">Anuncios ocultos</Link>
     <Link href="/mi-cuenta/nuevo-perfil">Crear anuncio</Link>

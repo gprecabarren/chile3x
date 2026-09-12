@@ -161,6 +161,10 @@ async function sendTelegramMessage(env: Env, chatId: string, text: string, optio
   });
 }
 
+function escapeTelegramHtml(value: string) {
+  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+}
+
 async function getConfiguration(env: Env): Promise<TelegramConfigurationRow> {
   const value = await env.DB.prepare(`
     SELECT bot_username, public_community_url, rules_text, prohibited_terms,
@@ -343,6 +347,27 @@ async function processLinkStart(env: Env, message: TelegramMessage) {
     entityId: attempt.id,
     summary: "Telegram recibió una identidad candidata pendiente de confirmación web.",
   });
+  return true;
+}
+
+async function processBotHelp(env: Env, message: TelegramMessage) {
+  const text = message.text?.trim() ?? "";
+  if (message.chat.type !== "private" || !message.from || message.from.is_bot
+    || !/^\/(?:start|help)(?:@[A-Za-z0-9_]+)?(?:\s.*)?$/i.test(text)) return false;
+  const config = await getConfiguration(env);
+  const buttons: Array<Array<{ text: string; url: string }>> = [
+    [{ text: "Vincular mi cuenta", url: "https://chile3x.cl/mi-cuenta/telegram" }],
+  ];
+  if (config.public_community_url) buttons.push([{ text: "Abrir comunidad pública", url: config.public_community_url }]);
+  await sendTelegramMessage(env, telegramId(message.from.id), [
+    "<b>Chile3X | Acceso y soporte</b>",
+    "",
+    "Soy el bot oficial de la Comunidad Chile3X para mayores de 18 años.",
+    "",
+    "Para entrar al espacio privado de Miembros, abre tu panel de Chile3X, entra en <b>Telegram y Miembros</b> y comienza la vinculación desde allí. La confirmación siempre termina en la misma sesión web.",
+    "",
+    "La comunidad pública no exige una cuenta vinculada. Nunca compartas contraseñas, códigos, documentos ni datos bancarios por Telegram.",
+  ].join("\n"), { reply_markup: { inline_keyboard: buttons } });
   return true;
 }
 
@@ -563,15 +588,14 @@ async function processAdminCommand(env: Env, message: TelegramMessage) {
   if (!["/warn", "/mute", "/unmute", "/ban", "/unban", "/rules", "/status"].includes(command)) return false;
   const chatId = telegramId(message.chat.id);
   const actorTelegramUserId = telegramId(message.from.id);
-  const requiredCapability = command === "/rules" ? "telegram.view" : "telegram.moderate";
-  const admin = await authorizedTelegramAdmin(env, chatId, actorTelegramUserId, requiredCapability);
-  if (!admin) {
-    await sendTelegramMessage(env, chatId, "Este comando requiere una identidad administrativa de Chile3X vinculada, la función correspondiente y permisos de administración en este chat.", { reply_parameters: { message_id: message.message_id } }).catch(() => undefined);
-    return true;
-  }
   if (command === "/rules") {
     const config = await getConfiguration(env);
-    await sendTelegramMessage(env, chatId, `<b>Normas de Chile3X</b>\n\n${config.rules_text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")}`);
+    await sendTelegramMessage(env, chatId, `<b>Normas de Chile3X</b>\n\n${escapeTelegramHtml(config.rules_text)}`);
+    return true;
+  }
+  const admin = await authorizedTelegramAdmin(env, chatId, actorTelegramUserId, "telegram.moderate");
+  if (!admin) {
+    await sendTelegramMessage(env, chatId, "Este comando requiere una identidad administrativa de Chile3X vinculada, la función correspondiente y permisos de administración en este chat.", { reply_parameters: { message_id: message.message_id } }).catch(() => undefined);
     return true;
   }
   const targetMessage = message.reply_to_message;
@@ -692,6 +716,8 @@ async function processTelegramUpdate(env: Env, updateId: string) {
     await discoverChat(env, message.chat);
     if (!update.edited_message && await processLinkStart(env, message)) {
       // The private start command has no further moderation or sync behavior.
+    } else if (!update.edited_message && await processBotHelp(env, message)) {
+      // Private onboarding and help never enter moderation.
     } else if (!update.edited_message && await processAdminCommand(env, message)) {
       // Administrative commands are already audited by their action.
     } else if (await syncTelegramBulletin(env, message, Boolean(update.edited_message))) {

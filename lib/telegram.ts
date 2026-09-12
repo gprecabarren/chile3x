@@ -5,6 +5,15 @@ import { recordOperationalEvent } from "@/lib/operations";
 
 export const TELEGRAM_CONFIG_ID = "default";
 export const TELEGRAM_LINK_TTL_MINUTES = 15;
+export const TELEGRAM_BOT_NAME = "Chile3X | Acceso y soporte";
+export const TELEGRAM_BOT_SHORT_DESCRIPTION = "Bot oficial de Chile3X para vincular cuentas, acceder a Miembros, consultar normas y recibir soporte.";
+export const TELEGRAM_BOT_DESCRIPTION = [
+  "Bot oficial de la Comunidad Chile3X para mayores de 18 años.",
+  "",
+  "Vincula de forma segura tu cuenta del sitio con Telegram y recibe una invitación individual al espacio privado de Miembros. También puedes consultar las normas y acceder a la comunidad pública.",
+  "",
+  "Nunca te pediremos contraseñas, códigos de verificación, documentos ni datos bancarios por Telegram.",
+].join("\n");
 
 export const DEFAULT_TELEGRAM_RULES = [
   "Comunidad exclusiva para personas mayores de 18 años.",

@@ -5,7 +5,7 @@ import { telegramConfiguration } from "@/db/schema";
 import { recordAdminAudit } from "@/lib/admin-audit";
 import { adminHasCapability } from "@/lib/admin-permissions";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
-import { TELEGRAM_CONFIG_ID } from "@/lib/telegram";
+import { TELEGRAM_BOT_DESCRIPTION, TELEGRAM_BOT_NAME, TELEGRAM_BOT_SHORT_DESCRIPTION, TELEGRAM_CONFIG_ID } from "@/lib/telegram";
 
 type TelegramEnvelope = { ok?: boolean; result?: { username?: string }; description?: string };
 
@@ -38,25 +38,44 @@ export async function POST(request: NextRequest) {
     const me = await call(env.TELEGRAM_BOT_TOKEN, "getMe", {});
     const username = me?.username?.trim() ?? "";
     if (!username) throw new Error("El bot no devolvió su usuario.");
+    await call(env.TELEGRAM_BOT_TOKEN, "setMyName", { name: TELEGRAM_BOT_NAME });
+    await call(env.TELEGRAM_BOT_TOKEN, "setMyDescription", { description: TELEGRAM_BOT_DESCRIPTION });
+    await call(env.TELEGRAM_BOT_TOKEN, "setMyShortDescription", { short_description: TELEGRAM_BOT_SHORT_DESCRIPTION });
     await call(env.TELEGRAM_BOT_TOKEN, "setWebhook", {
       url: "https://chile3x.cl/api/telegram/webhook",
       secret_token: env.TELEGRAM_WEBHOOK_SECRET,
       allowed_updates: ["message", "edited_message", "chat_join_request", "chat_member", "my_chat_member"],
       drop_pending_updates: false,
     });
+    await call(env.TELEGRAM_BOT_TOKEN, "deleteMyCommands", {});
     await call(env.TELEGRAM_BOT_TOKEN, "setMyCommands", {
+      scope: { type: "all_private_chats" },
+      commands: [
+        { command: "start", description: "Ver accesos y cómo vincular la cuenta" },
+        { command: "help", description: "Mostrar la ayuda del bot" },
+        { command: "rules", description: "Consultar las normas de la comunidad" },
+      ],
+    });
+    await call(env.TELEGRAM_BOT_TOKEN, "setMyCommands", {
+      scope: { type: "all_group_chats" },
+      commands: [{ command: "rules", description: "Ver las normas de la comunidad" }],
+    });
+    await call(env.TELEGRAM_BOT_TOKEN, "setMyCommands", {
+      scope: { type: "all_chat_administrators" },
       commands: [
         { command: "rules", description: "Ver las normas de la comunidad" },
         { command: "status", description: "Consultar estado al responder a una persona" },
         { command: "warn", description: "Advertir al responder a un mensaje" },
         { command: "mute", description: "Restringir al responder a un mensaje" },
+        { command: "unmute", description: "Retirar una restricción al responder" },
         { command: "ban", description: "Vetar al responder a un mensaje" },
         { command: "unban", description: "Retirar un veto al responder" },
+        { command: "novedad", description: "Publicar una novedad web y Telegram" },
       ],
     });
     const now = new Date().toISOString();
     await (await getDb()).update(telegramConfiguration).set({ botUsername: username, updatedBy: admin.id, updatedAt: now }).where(eq(telegramConfiguration.id, TELEGRAM_CONFIG_ID));
-    await recordAdminAudit(admin, { category: "telegram", action: "telegram.settings_update", summary: "Instaló o renovó el webhook y los comandos del bot.", entityType: "telegram_settings", entityId: TELEGRAM_CONFIG_ID, entityLabel: `@${username}` });
+    await recordAdminAudit(admin, { category: "telegram", action: "telegram.settings_update", summary: "Instaló o renovó el perfil, webhook y comandos del bot.", entityType: "telegram_settings", entityId: TELEGRAM_CONFIG_ID, entityLabel: `@${username}` });
     return NextResponse.redirect(new URL("/admin/telegram?notice=webhook_ready", request.url), 303);
   } catch (error) {
     console.error("Telegram webhook setup failed", { error: error instanceof Error ? error.message : "unknown" });

@@ -54,6 +54,12 @@ export default async function AccountTelegramPage({ searchParams }: { searchPara
       <a className="button button-outline" href={configuration.publicCommunityUrl} target="_blank" rel="noreferrer">Abrir comunidad pública</a>
     </section>}
 
+    <ol className="telegram-user-flow" aria-label="Pasos para acceder a Miembros">
+      <li><span>1</span><div><strong>Inicia el vínculo</strong><p>Presiona el botón de esta página mientras mantienes tu sesión Chile3X abierta.</p></div></li>
+      <li><span>2</span><div><strong>Habla con el bot</strong><p>Telegram abrirá @Chile3XBot con una clave temporal y segura.</p></div></li>
+      <li><span>3</span><div><strong>Confirma y entra</strong><p>Regresa al sitio, confirma la identidad y recibe la invitación privada en el bot.</p></div></li>
+    </ol>
+
     <section className="telegram-link-card">
       <header><div><p className="eyebrow">IDENTIDAD VINCULADA</p><h2>{link ? telegramIdentityLabel(link.firstName, link.username, link.telegramUserId) : "Aún no vinculada"}</h2></div><span className={`telegram-status is-${link?.status ?? "unlinked"}`}>{link?.status === "linked" ? "Vinculada" : link?.status === "banned" ? "Vetada" : "Sin acceso"}</span></header>
       {!link || link.status === "revoked" ? <>

@@ -39,7 +39,27 @@ test("Telegram-originated admin actions enforce the site's granular capabilities
   const worker = await source("worker/telegram.ts");
   assert.match(worker, /adminHasCapability/);
   assert.match(worker, /authorizedTelegramAdmin\(env, chatId, senderId, "telegram\.publish"\)/);
-  assert.match(worker, /command === "\/rules" \? "telegram\.view" : "telegram\.moderate"/);
+  assert.match(worker, /if \(command === "\/rules"\)/);
+  assert.match(worker, /authorizedTelegramAdmin\(env, chatId, actorTelegramUserId, "telegram\.moderate"\)/);
+  assert.ok(worker.indexOf('if (command === "/rules")') < worker.indexOf('authorizedTelegramAdmin(env, chatId, actorTelegramUserId, "telegram.moderate")'));
+});
+
+test("the bot explains account linking and installs a scoped public and administrative command menu", async () => {
+  const [worker, setup, telegram] = await Promise.all([
+    source("worker/telegram.ts"), source("app/api/admin/telegram/setup/route.ts"), source("lib/telegram.ts"),
+  ]);
+  assert.match(worker, /async function processBotHelp/);
+  assert.match(worker, /\/mi-cuenta\/telegram/);
+  assert.match(worker, /processBotHelp\(env, message\)/);
+  assert.match(setup, /setMyName/);
+  assert.match(setup, /setMyDescription/);
+  assert.match(setup, /setMyShortDescription/);
+  assert.match(setup, /all_private_chats/);
+  assert.match(setup, /all_group_chats/);
+  assert.match(setup, /all_chat_administrators/);
+  assert.match(setup, /command: "unmute"/);
+  assert.match(setup, /command: "novedad"/);
+  assert.match(telegram, /Chile3X \| Acceso y soporte/);
 });
 
 test("queue claims and unban transitions are atomic and preserve explicit revocations", async () => {
@@ -117,15 +137,31 @@ test("admins can ban linked identities from account details with explicit confir
 });
 
 test("the public Telegram link is shared by admin configuration, header and footer", async () => {
-  const [settingsRoute, telegramRoute, directory, contacts] = await Promise.all([
-    source("app/api/admin/settings/route.ts"), source("app/api/admin/telegram/configuracion/route.ts"), source("app/directorio/_components.tsx"), source("lib/site-contacts.ts"),
+  const [settingsRoute, telegramRoute, directory, contacts, accountHome, accountTelegram] = await Promise.all([
+    source("app/api/admin/settings/route.ts"), source("app/api/admin/telegram/configuracion/route.ts"), source("app/directorio/_components.tsx"), source("lib/site-contacts.ts"), source("app/mi-cuenta/page.tsx"), source("app/mi-cuenta/telegram/page.tsx"),
   ]);
   assert.match(settingsRoute, /telegramConfiguration/);
   assert.match(telegramRoute, /contact_telegram/);
   assert.match(directory, /PortalContactLinks placement="header"/);
   assert.match(directory, /PortalContactLinks placement="footer"/);
+  assert.match(directory, /PortalTelegramHeaderButton/);
+  assert.match(directory, /Comunidad Telegram/);
   assert.match(contacts, /contact_telegram/);
   assert.match(contacts, /label: "Telegram"/);
+  assert.match(accountHome, /Abrir Telegram y Miembros/);
+  assert.match(accountTelegram, /telegram-user-flow/);
+});
+
+test("the administrative Telegram panel reports webhook health and supports moderation filters", async () => {
+  const adminPage = await source("app/admin/telegram/page.tsx");
+  assert.match(adminPage, /getWebhookInfo/);
+  assert.match(adminPage, /pendingUpdateCount/);
+  assert.match(adminPage, /telegram-admin-guide/);
+  assert.match(adminPage, /telegram-case-filters/);
+  assert.match(adminPage, /name="case_status"/);
+  assert.match(adminPage, /name="case_action"/);
+  assert.match(adminPage, /name="case_severity"/);
+  assert.match(adminPage, /name="case_q"/);
 });
 
 test("the Telegram Community uses two spaces and sends operational alerts privately", async () => {

@@ -23,7 +23,7 @@ function instagramUrl(value: string) {
   }
 }
 
-function telegramUrl(value: string) {
+export function getPortalTelegramLink(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return null;
   const username = trimmed.replace(/^@/, "");
@@ -48,7 +48,7 @@ export function getPortalWhatsappLink(value: string, message = "Hola, quiero com
 
 export function getPortalContacts(settings: SiteSettings): PortalContact[] {
   const whatsapp = getPortalWhatsappLink(settings.contact_whatsapp);
-  const telegram = telegramUrl(settings.contact_telegram);
+  const telegram = getPortalTelegramLink(settings.contact_telegram);
   const instagram = instagramUrl(settings.contact_instagram);
   const email = mailto(settings.contact_email);
   return [

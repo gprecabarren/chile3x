@@ -331,7 +331,7 @@ pnpm deploy
 
 Este script fuerza el uso del `wrangler.json` del repositorio y conserva las variables configuradas en Cloudflare. No reutilizar configuraciones ni recursos del proyecto JurisConecta.
 
-El despliegue verificado el 13 de septiembre de 2026 corresponde a la versión del Worker `f08c5997-af16-497c-b176-b6027994322c`. La unión `CF_VERSION_METADATA` se usa únicamente para aislar la caché pública de cada despliegue.
+El despliegue verificado el 13 de septiembre de 2026 corresponde a la versión del Worker `77089d87-ea68-4bf7-b570-e1e88ffa2fc5`. La unión `CF_VERSION_METADATA` se usa únicamente para aislar la caché pública de cada despliegue.
 
 1. `pnpm lint` sin errores.
 2. `pnpm build` sin errores.
@@ -358,6 +358,7 @@ Cuando se active Apple, comprobar además que el Services ID, dominio, retorno y
 - `13faa29` — acceso compacto a Telegram en el encabezado y llamado amplio dentro de la cuenta.
 - `a02ebc1` — documentación operativa de Telegram y estado de los vínculos administrativos.
 - `84779a9` — Apple preparado y deshabilitado, migración 0029, documentos legales/FAQ, SEO de Quiénes somos y caché pública aislada por versión.
+- `09e97e2` — guía de activación futura de Apple y requisitos de dominio, retorno, retransmisión de correo y secretos.
 
 ## Límites y decisiones pendientes
 

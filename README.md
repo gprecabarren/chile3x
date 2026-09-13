@@ -6,7 +6,7 @@ El proyecto está construido para operar en Cloudflare con Workers, D1 y R2, sin
 
 ## Revisión de errores — septiembre de 2026
 
-- La caché compartida guarda únicamente documentos anónimos. Las sesiones de usuario y administrador, los paneles y las respuestas de navegación no comparten caché; el navegador debe consultar otra vez después de ingresar o cerrar sesión. Las entradas antiguas quedaron fuera de uso mediante una nueva clave de caché.
+- La caché compartida guarda únicamente documentos anónimos. Las sesiones de usuario y administrador, los paneles y las respuestas de navegación no comparten caché; el navegador debe consultar otra vez después de ingresar o cerrar sesión. Cada despliegue usa el identificador de versión del Worker en su clave, por lo que una versión nueva nunca vuelve a entregar HTML de una versión anterior.
 - Deshabilitar una cuenta oculta sus anuncios, historias y metadatos públicos sin alterar el estado de moderación guardado. Administración conserva el acceso para revisarlos. El contenido exclusivo autorizado sigue dependiendo de su biblioteca de cuenta, no del estado del anuncio.
 - El inicio respeta anuncios ocultos tanto en destacados como en historias. Los accesos para anunciarse llevan al formulario de anuncio cuando ya hay sesión.
 - La creación asistida de anuncios desde una cuenta vuelve a reconocer correctamente su propietario y si ya tiene un anuncio Escort.
@@ -40,6 +40,8 @@ El proyecto está construido para operar en Cloudflare con Workers, D1 y R2, sin
 - El encabezado muestra Telegram como un acceso compacto junto a WhatsApp y correo, reutilizando el mismo icono del footer. Después de iniciar sesión, `Mi cuenta` ofrece el botón largo destacado y una guía visual de tres pasos para vincularse y entrar a Miembros.
 - El panel de Telegram consulta la salud real del webhook, muestra actualizaciones pendientes y el último error informado por Telegram, documenta el recorrido completo y permite filtrar moderación por texto, estado, medida y gravedad.
 - El perfil del bot, su ayuda privada y los menús de comandos se administran mediante la Bot API: `/start` y `/help` explican el acceso, `/rules` queda disponible para toda la comunidad y los comandos sensibles siguen limitados a administradores vinculados y autorizados.
+- «Iniciar con Apple» quedó implementado de extremo a extremo y visible, pero deliberadamente deshabilitado hasta contar con Apple Developer. El panel permite guardar los identificadores sin publicar el acceso, comprueba por separado los secretos de Cloudflare y no permite activar una configuración incompleta.
+- El flujo Apple valida firma, emisor, audiencia, vigencia, nonce, correo verificado e identificador estable; impide reutilizar correos de Google o administración, conserva el correo bloqueado, precarga nombres editables y cifra la autorización necesaria para revocarla al eliminar la cuenta.
 
 Verificación reproducible:
 
@@ -49,9 +51,9 @@ pnpm typecheck
 pnpm test
 ```
 
-Las pruebas automáticas cubren el Worker compilado, aislamiento de caché, fallos de caché, retornos seguros y datos de reintento sin contraseñas. Con `pnpm dev` y las migraciones aplicadas **solo a la D1 local**, `node scripts/qa-local.mjs` comprueba paneles, creación asistida, cuentas deshabilitadas, anuncios ocultos, paginación de reseñas y revocación de sesión usando cuentas ficticias. Después se ejecuta `node scripts/qa-local.mjs cleanup`, que elimina únicamente esas cuentas y anuncios locales. Nunca ejecutar estas pruebas contra producción ni subir los estados temporales de `outputs/`.
+Las 51 pruebas automáticas cubren el Worker compilado, aislamiento de caché por versión, fallos de caché, retornos seguros, datos de reintento sin contraseñas y la criptografía y los estados de Apple. Con `pnpm dev` y las migraciones aplicadas **solo a la D1 local**, `node scripts/qa-local.mjs` comprueba paneles, creación asistida, cuentas deshabilitadas, anuncios ocultos, paginación de reseñas y revocación de sesión usando cuentas ficticias. Después se ejecuta `node scripts/qa-local.mjs cleanup`, que elimina únicamente esas cuentas y anuncios locales. Nunca ejecutar estas pruebas contra producción ni subir los estados temporales de `outputs/`.
 
-La caché de documentos anónimos dura hasta 600 segundos: una moderación puede tardar ese intervalo en reflejarse en una página ya cacheada. Las páginas con sesión, los paneles y las respuestas de navegación no utilizan esa caché compartida. Las pruebas de tamaños móviles no sustituyen una comprobación en un iPhone físico ni una prueba de carga sostenida en Cloudflare.
+La caché de documentos anónimos dura hasta 600 segundos dentro de una misma versión: una moderación puede tardar ese intervalo en reflejarse en una página ya cacheada, pero un despliegue invalida de inmediato el contenido anterior. Las páginas con sesión, los paneles y las respuestas de navegación no utilizan esa caché compartida. Las pruebas de tamaños móviles no sustituyen una comprobación en un iPhone físico ni una prueba de carga sostenida en Cloudflare.
 
 ## Estado funcional
 
@@ -59,7 +61,7 @@ La plataforma se encuentra en beta controlada. Los pagos y la venta automatizada
 
 Actualmente incluye:
 
-- Registro, inicio de sesión, verificación de correo, recuperación de acceso y cambio de contraseña desde la cuenta. Como alternativa, el botón oficial de Google permite vincular un correo verificado sin guardar tokens de acceso ni solicitar Gmail, Drive, contactos o calendario.
+- Registro, inicio de sesión, verificación de correo, recuperación de acceso y cambio de contraseña desde la cuenta. Como alternativa, el botón oficial de Google permite vincular un correo verificado sin guardar tokens de acceso ni solicitar Gmail, Drive, contactos o calendario. El acceso con Apple está preparado con la misma lógica y se muestra deshabilitado hasta completar su configuración externa.
 - Cuenta separada de anuncio: una cuenta puede administrar anuncios, y cada anuncio conserva su propio enlace público `@usuario-del-anuncio`.
 - Nombre de usuario único por cuenta, generado al crearla y editable desde `Mi cuenta > Mis datos`. No puede coincidir con otra cuenta ni con el `@` de un anuncio.
 - Una cuenta puede tener un anuncio Escort y varios anuncios de Agencia o Arriendo. Una Agencia puede solicitar incorporar anuncios Escort existentes, que requieren aceptación de la persona dueña.
@@ -93,7 +95,7 @@ Actualmente incluye:
 
 Una cuenta identifica a una persona que visita, compra contenido, anuncia o administra el portal. Tiene correo, contraseña, nombre visible, nombre de usuario, datos personales protegidos y un estado de acceso.
 
-El correo y la fecha de nacimiento no se modifican desde la cuenta para evitar suplantaciones. Los cambios que requieran corrección se gestionan por soporte. Una cuenta vinculada a Google conserva permanentemente el correo verificado con el que se creó. La cuenta puede cambiar su contraseña sin conocer la anterior mientras ya esté autenticada.
+El correo y la fecha de nacimiento no se modifican desde la cuenta para evitar suplantaciones. Los cambios que requieran corrección se gestionan por soporte. Una cuenta vinculada a Google o Apple conserva permanentemente el correo verificado con el que se creó. La cuenta puede cambiar su contraseña sin conocer la anterior mientras ya esté autenticada.
 
 Desde `Mi cuenta > Mis datos`, la persona puede deshabilitar temporalmente su acceso o eliminarlo permanentemente. Una cuenta deshabilitada voluntariamente conserva sus datos y ofrece restablecimiento confirmado en el siguiente ingreso. Un bloqueo administrativo impide ese restablecimiento hasta que Chile3X lo retire. La eliminación permanente no conserva anuncios, medios, accesos ni datos personales y crea una cuenta completamente nueva si el correo vuelve a registrarse.
 
@@ -135,9 +137,10 @@ Los archivos heredados de la antigua galería privada se migran a este modelo si
 - Cerrar dispositivos exige una sesión autenticada, origen válido y coincidencia de propietario en el servidor. Una cuenta nunca puede cerrar ni consultar sesiones ajenas desde la interfaz pública.
 - GitHub OAuth solo para administración del sitio.
 - Google Identity Services se utiliza solo para cuentas públicas. El servidor valida la firma RS256, emisor, audiencia, vigencia, nonce, correo verificado e identificador estable `sub` antes de crear una sesión; no acepta el correo enviado directamente por el navegador como prueba de identidad.
+- Sign in with Apple está preparado solo para cuentas públicas. Usa estado y nonce de un solo uso guardados en D1, valida el `id_token` RS256 con las claves públicas de Apple, crea el secreto de cliente ES256 por solicitud y cifra con AES-GCM cualquier autorización de revocación; los secretos permanecen exclusivamente en Cloudflare.
 - Solo la identidad propietaria protegida —GitHub `gprecabarren` con `genaropiedra@hotmail.com` verificado por GitHub— puede abrir **Administradores**, agregar o eliminar accesos y cambiar sus niveles. Ser colaborador del repositorio no concede acceso al panel.
 - Cada GitHub autorizado queda vinculado a una cuenta administrativa independiente; nunca se reutiliza la identidad de otro administrador. El historial conserva una copia del nombre, correo y usuario de GitHub usados en el momento de cada acción, incluso si más adelante cambia la cuenta.
-- Un correo verificado solo puede pertenecer al panel administrativo o a una cuenta pública de anunciante/tester, nunca a ambos. El conflicto se rechaza al registrar, al crear cuentas desde administración, al vincular Google y al primer ingreso administrativo con GitHub.
+- Un correo verificado solo puede pertenecer al panel administrativo o a una cuenta pública de anunciante/tester, nunca a ambos. Tampoco puede dividirse entre Google y Apple: los conflictos se rechazan al registrar, al crear cuentas desde administración, al vincular un proveedor y al primer ingreso administrativo con GitHub.
 - Los niveles disponibles son Administrador (todo salvo gestionar administradores), Moderación, Noticias y Soporte. La autorización se consulta en D1 en cada petición; revocar un acceso invalida sus sesiones inmediatamente. La identidad propietaria no puede revocarse, degradarse ni modificarse desde la web.
 - Contraseñas, hashes, tokens, secretos y claves de R2 se eliminan automáticamente de las capturas del historial administrativo.
 - Autorización comprobada en servidor en todas las rutas privadas de cuentas, archivos, moderación y contenido exclusivo.
@@ -168,7 +171,7 @@ Los archivos heredados de la antigua galería privada se migran a este modelo si
 - **Correo transaccional:** relay de Google Apps Script configurado como secreto de Cloudflare para verificación, restablecimiento de contraseña y avisos operativos.
 - **Analítica:** Google Tag Manager, Google Analytics y Search Console, sujetos al consentimiento correspondiente.
 - **Observabilidad interna:** eventos operativos agregados en D1 para entregas de correo, autenticación, errores controlados y revisiones de almacenamiento. No se guardan destinatarios, tokens, IP de visitantes ni claves de objetos en este historial.
-- **Autenticación pública opcional:** Google Identity Services con un cliente web configurado por ID público en `Administración > Configuración > Google`; el secreto de cliente no se usa ni se almacena en Chile3X.
+- **Autenticación pública opcional:** Google Identity Services con un cliente web configurado por ID público en `Administración > Configuración > Google`; el secreto de cliente no se usa ni se almacena en Chile3X. Apple está preparado en `Administración > Configuración > Inicio con Apple`, pero permanece deshabilitado hasta configurar una membresía, los identificadores y dos secretos del Worker.
 - **Telegram:** webhook y Bot API ejecutados por el mismo Worker, tablas D1 versionadas, cola principal `chile3x-telegram`, cola de mensajes no procesables `chile3x-telegram-dlq` y cron cada cinco minutos para recuperar trabajos interrumpidos y limpiar datos temporales.
 
 Las uniones de infraestructura están definidas en [`.openai/hosting.json`](.openai/hosting.json): `DB` para D1 y `MEDIA` para R2. Los secretos nunca deben añadirse al repositorio.
@@ -236,6 +239,19 @@ El registro comienza desde la migración que habilita esta función; no inventa 
 4. Al completar el registro se crea la cuenta, se elimina el intento temporal y se inicia sesión. Si se abandona, el intento vence a los diez minutos y se elimina en la siguiente limpieza.
 5. Si el correo pertenece a una identidad administrativa, la vinculación se rechaza. Las personas administradoras continúan ingresando exclusivamente mediante GitHub.
 
+### Activar el acceso con Apple cuando existan credenciales
+
+La integración está terminada en código y permanece en estado `Deshabilitado`. No inicia solicitudes hacia Apple ni genera costos mientras siga así.
+
+1. Contratar Apple Developer Program y crear un App ID principal con la capacidad **Sign in with Apple**.
+2. Crear un Services ID para la web, asociarlo al App ID principal y registrar el dominio `chile3x.cl` y la URL de retorno exacta `https://chile3x.cl/api/auth/apple/callback`.
+3. Crear una clave de Sign in with Apple y conservar una sola vez el archivo privado `.p8`, además del Team ID y Key ID. Si se utilizará el correo privado de retransmisión de Apple, registrar también los remitentes del correo transaccional de Chile3X.
+4. Guardar Services ID, Team ID, Key ID y App ID principal en `Administración > Configuración > Inicio con Apple`, todavía con estado `Deshabilitado`.
+5. Cargar la clave `.p8` y una clave aleatoria independiente de 32 bytes como secretos del Worker. El panel solo muestra si existen; nunca permite leerlos ni guardarlos en D1.
+6. Volver al panel, comprobar los dos indicadores en verde y cambiar el estado a `Activado`. El servidor rechazará la activación si falta cualquier requisito.
+
+Después de activarlo, una identidad Apple ya vinculada inicia sesión. Una identidad nueva continúa en el registro con correo verificado y bloqueado, nombre visible y nombre completo editables y el resto de los campos manuales. Si el correo ya pertenece a Google o a administración, el flujo informa el conflicto y no crea otra identidad. Apple puede entregar un correo privado de retransmisión; Chile3X lo trata como el correo estable de esa cuenta.
+
 ### Operar la comunidad de Telegram
 
 1. El propietario configura el bot, la URL pública, las normas y los límites de moderación en `Administración > Telegram`. El mismo panel informa la URL efectiva del webhook, su cola pendiente y el último error comunicado por Telegram.
@@ -296,7 +312,14 @@ pnpm exec wrangler secret put TELEGRAM_BOT_TOKEN
 pnpm exec wrangler secret put TELEGRAM_WEBHOOK_SECRET
 ```
 
-Las migraciones `0026_slim_white_tiger.sql` y `0027_messy_robbie_robertson.sql` crean la configuración, identidades, espacios, Novedades, moderación, auditoría, webhook, outbox y membresías. `0028_telegram_two_space_architecture.sql` retira el rol heredado de Alertas para conservar únicamente Comunidad y Miembros. Antes de desplegar, deben existir las colas declaradas en `wrangler.json` y la instalación del webhook debe terminarse desde `Administración > Telegram`.
+Cuando exista la cuenta de Apple Developer, cargar sus secretos sin copiarlos al repositorio. El primer comando lee directamente el archivo descargado; el segundo genera y envía una clave nueva sin guardarla en un archivo:
+
+```powershell
+Get-Content -Raw -LiteralPath 'C:\ruta\AuthKey_XXXXXXXXXX.p8' | pnpm exec wrangler secret put APPLE_PRIVATE_KEY --config wrangler.json
+node -e "process.stdout.write(require('crypto').randomBytes(32).toString('base64url'))" | pnpm exec wrangler secret put APPLE_TOKEN_ENCRYPTION_KEY --config wrangler.json
+```
+
+Las migraciones `0026_slim_white_tiger.sql` y `0027_messy_robbie_robertson.sql` crean la configuración, identidades, espacios, Novedades, moderación, auditoría, webhook, outbox y membresías. `0028_telegram_two_space_architecture.sql` retira el rol heredado de Alertas para conservar únicamente Comunidad y Miembros. `0029_dazzling_blockbuster.sql` agrega de forma aditiva las identidades Apple, los intentos anti-repetición y los registros temporales de alta. Antes de desplegar Telegram deben existir las colas declaradas en `wrangler.json` y la instalación del webhook debe terminarse desde `Administración > Telegram`.
 
 ## Publicación
 
@@ -308,6 +331,8 @@ pnpm deploy
 
 Este script fuerza el uso del `wrangler.json` del repositorio y conserva las variables configuradas en Cloudflare. No reutilizar configuraciones ni recursos del proyecto JurisConecta.
 
+El despliegue verificado el 13 de septiembre de 2026 corresponde a la versión del Worker `f08c5997-af16-497c-b176-b6027994322c`. La unión `CF_VERSION_METADATA` se usa únicamente para aislar la caché pública de cada despliegue.
+
 1. `pnpm lint` sin errores.
 2. `pnpm build` sin errores.
 3. Migración de D1 generada e inspeccionada si hubo cambios de esquema.
@@ -315,6 +340,8 @@ Este script fuerza el uso del `wrangler.json` del repositorio y conserva las var
 5. Revisión de `https://chile3x.cl/sitemap.xml`, `https://chile3x.cl/robots.txt` y una URL pública representativa.
 
 Cuando el despliegue incluye Telegram, comprobar además que D1 no tenga migraciones pendientes, que ambas colas existan, que los dos secretos estén configurados, que el bot sea administrador de los chats asignados y que `getWebhookInfo` no informe errores de entrega.
+
+Cuando se active Apple, comprobar además que el Services ID, dominio, retorno y App ID estén registrados en Apple, que ambos secretos existan, que el botón ya no aparezca deshabilitado y que funcionen ingreso, registro nuevo, correo privado de retransmisión, conflicto con Google y eliminación permanente. Antes de disponer de credenciales reales, las pruebas locales verifican la criptografía y los estados, pero no pueden sustituir una autorización real en los servidores de Apple.
 
 ## Historial de implementación — septiembre de 2026
 
@@ -328,6 +355,9 @@ Cuando el despliegue incluye Telegram, comprobar además que D1 no tenga migraci
 - `6b0b875` — guía operativa y verificación de la estructura nativa de Telegram.
 - `890eeaa` — identidades de Telegram visibles y vinculables en la administración de accesos.
 - `f3bf6e6` — recorrido de Miembros, perfil y ayuda del bot, salud del webhook y filtros de moderación.
+- `13faa29` — acceso compacto a Telegram en el encabezado y llamado amplio dentro de la cuenta.
+- `a02ebc1` — documentación operativa de Telegram y estado de los vínculos administrativos.
+- `84779a9` — Apple preparado y deshabilitado, migración 0029, documentos legales/FAQ, SEO de Quiénes somos y caché pública aislada por versión.
 
 ## Límites y decisiones pendientes
 
@@ -335,4 +365,4 @@ Cuando el despliegue incluye Telegram, comprobar además que D1 no tenga migraci
 - La verificación de identidad y salud es manual. Los archivos son privados, pero la decisión final corresponde al equipo administrador.
 - El orden de anuncios se aleatoriza dentro de la misma categoría para distribuir exposición; los niveles VIP, Premium y Gold mantienen su prioridad.
 - Antes de abrir masivamente el registro, conviene revisar el flujo completo en móvil y escritorio con cuentas de prueba y definir tiempos operativos de aprobación.
-- «Iniciar con Apple» no se incorporó: la autenticación web requiere una membresía pagada del Apple Developer Program. Se mantiene fuera del código mientras el requisito sea no asumir ningún costo.
+- «Iniciar con Apple» no puede habilitarse todavía: la implementación ya existe, pero faltan una membresía pagada de Apple Developer y credenciales reales. El botón permanece visible y no seleccionable, el servidor bloquea cualquier inicio accidental y Chile3X no ha contratado ni cobrado este servicio.

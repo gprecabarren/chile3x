@@ -166,6 +166,21 @@ test("the administrative Telegram panel reports webhook health and supports mode
   assert.match(adminPage, /name="case_q"/);
 });
 
+test("Telegram handoffs do not trigger a false delayed-response overlay", async () => {
+  const [progress, adminPage, accountPage] = await Promise.all([
+    source("app/FormProgress.tsx"),
+    source("app/admin/telegram/page.tsx"),
+    source("app/mi-cuenta/telegram/page.tsx"),
+  ]);
+  assert.match(progress, /form\.dataset\.skipFormProgress === "true"/);
+  assert.match(progress, /!delayed && <OfficialChile3xLogo/);
+  assert.match(adminPage, /data-skip-form-progress="true"/);
+  assert.match(accountPage, /data-skip-form-progress="true"/);
+  assert.match(adminPage, /id="identidad-administrativa"/);
+  assert.match(adminPage, /telegram-link-steps/);
+  assert.match(adminPage, /Hay un vínculo abierto esperando/);
+});
+
 test("the Telegram Community uses two spaces and sends operational alerts privately", async () => {
   const [schema, worker, adminPage, chatRoute] = await Promise.all([
     source("db/schema.ts"), source("worker/telegram.ts"), source("app/admin/telegram/page.tsx"), source("app/api/admin/telegram/chats/[chatId]/route.ts"),

@@ -15,7 +15,5 @@ export function AppleSignInButton({ enabled, intent, returnTo }: {
   }
   return <div className="apple-signin is-disabled">
     <button className="apple-signin-button" type="button" disabled aria-disabled="true"><AppleLogo /><span>{label}</span></button>
-    <small>Próximamente · requiere configurar Apple Developer</small>
   </div>;
 }
-

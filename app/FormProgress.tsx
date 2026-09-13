@@ -17,6 +17,11 @@ export function FormProgress() {
     const onSubmit = (event: SubmitEvent) => {
       const form = event.target;
       if (!(form instanceof HTMLFormElement)) return;
+      // Los formularios que entregan el control a una aplicación externa
+      // (por ejemplo Telegram) pueden dejar la pestaña abierta aunque la
+      // solicitud ya haya terminado. En esos casos el aviso global daría un
+      // falso timeout, por lo que el propio formulario puede omitirlo.
+      if (form.dataset.skipFormProgress === "true") return;
       window.setTimeout(() => {
         if (event.defaultPrevented) return;
         setActive(true);
@@ -35,6 +40,6 @@ export function FormProgress() {
 
   if (!active) return null;
   return <div className="form-progress-overlay" role="status" aria-live="polite" aria-busy={!delayed}>
-    <div className={delayed ? "is-delayed" : undefined}><OfficialChile3xLogo />{!delayed && <span className="form-progress-spinner" aria-hidden="true" />}<strong>{delayed ? "La respuesta está demorada" : "Procesando…"}</strong><p>{delayed ? "Cloudflare o tu conexión no respondieron dentro del tiempo esperado. Espera unos segundos y evita enviar el formulario nuevamente mientras la pestaña siga cargando." : "Estamos guardando o aplicando los filtros."}</p>{delayed && <button className="button button-outline" type="button" onClick={() => setActive(false)}>Cerrar aviso</button>}</div>
+    <div className={delayed ? "is-delayed" : undefined}>{!delayed && <OfficialChile3xLogo />}{!delayed && <span className="form-progress-spinner" aria-hidden="true" />}<strong>{delayed ? "La respuesta está demorada" : "Procesando…"}</strong><p>{delayed ? "Cloudflare o tu conexión no respondieron dentro del tiempo esperado. Espera unos segundos y evita enviar el formulario nuevamente mientras la pestaña siga cargando." : "Estamos guardando o aplicando los filtros."}</p>{delayed && <button className="button button-outline" type="button" onClick={() => setActive(false)}>Cerrar aviso</button>}</div>
   </div>;
 }

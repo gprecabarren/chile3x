@@ -15,6 +15,7 @@ test("Apple remains visibly disabled until every administrative requirement exis
   assert.match(login, /<AppleSignInButton/);
   assert.match(register, /<AppleSignInButton/);
   assert.match(button, /disabled aria-disabled="true"/);
+  assert.doesNotMatch(button, /Próximamente · requiere configurar Apple Developer/);
   for (const field of ["apple_services_id", "apple_team_id", "apple_key_id", "apple_primary_app_id"]) assert.match(settingsPage, new RegExp(`name="${field}"`));
   assert.match(settingsPage, /https:\/\/chile3x\.cl\/api\/auth\/apple\/callback/);
   assert.match(settingsPage, /APPLE_PRIVATE_KEY/);
@@ -43,4 +44,3 @@ test("Apple authorization is replay-safe and rejects cross-provider duplicates",
   assert.match(migration, /CREATE TABLE `account_apple_identities`/);
   assert.match(deletion, /revokeAppleGrantForUser/);
 });
-

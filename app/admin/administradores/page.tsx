@@ -124,6 +124,8 @@ export default async function AdministratorsPage({ searchParams }: { searchParam
           <div><dt>Autorizado</dt><dd>{formatDate(grant.createdAt)}</dd></div>
           <div><dt>Telegram administrativo</dt><dd>{grant.telegramIsActive && grant.telegramUserId
             ? telegramIdentityLabel(grant.telegramFirstName, grant.telegramUsername, grant.telegramUserId)
+            : grant.userId === admin.id
+              ? <Link href="/admin/telegram#identidad-administrativa">Vincular ahora desde mi sesión</Link>
             : grant.userId
               ? "Pendiente · debe vincularlo desde su propia sesión"
               : "Disponible después del primer ingreso"}</dd></div>

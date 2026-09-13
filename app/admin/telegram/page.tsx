@@ -150,9 +150,17 @@ export default async function AdminTelegramPage({ searchParams }: { searchParams
       <details className="telegram-command-guide"><summary>Ver comandos disponibles</summary><dl><div><dt>Todos</dt><dd>/start, /help y /rules</dd></div><div><dt>Administradores vinculados</dt><dd>/status, /warn, /mute, /unmute, /ban, /unban y /novedad</dd></div></dl><p>Los comandos de moderación también comprueban que la identidad tenga permisos en Chile3X y sea administradora real del chat de Telegram.</p></details>
     </section>
 
-    <section className="telegram-admin-section">
+    <section className="telegram-admin-section" id="identidad-administrativa">
       <header><div><p className="eyebrow">IDENTIDAD ADMINISTRATIVA</p><h2>Tu acceso desde Telegram</h2><p>El vínculo administrativo está separado de las cuentas públicas y solo funciona junto a un acceso GitHub activo.</p></div><span className={`telegram-status is-${identity?.isActive ? "linked" : "unlinked"}`}>{identity?.isActive ? "Vinculada" : "Sin vincular"}</span></header>
-      {identity?.isActive ? <p className="telegram-admin-identity">{telegramIdentityLabel(identity.firstName, identity.username, identity.telegramUserId)}</p> : <form action="/api/admin/telegram/vincular" method="post"><button className="button button-primary" type="submit">Vincular mi Telegram administrativo</button></form>}
+      {identity?.isActive ? <p className="telegram-admin-identity">{telegramIdentityLabel(identity.firstName, identity.username, identity.telegramUserId)}</p> : <>
+        <ol className="telegram-link-steps">
+          <li><span>1</span><p>Pulsa el botón desde tu propia sesión GitHub del panel.</p></li>
+          <li><span>2</span><p>Telegram abrirá <strong>@{configuration.botUsername || "Chile3XBot"}</strong>; pulsa «Iniciar» para acreditar tu identidad.</p></li>
+          <li><span>3</span><p>Vuelve a esta sección y confirma la identidad detectada.</p></li>
+        </ol>
+        {attempt?.status === "pending" && <p className="telegram-link-pending" role="status">Hay un vínculo abierto esperando que pulses «Iniciar» en Telegram. Si el enlace expiró o cerraste el bot, usa el botón nuevamente para generar uno nuevo.</p>}
+        <form action="/api/admin/telegram/vincular" method="post" data-skip-form-progress="true"><button className="button button-primary" type="submit">Vincular mi Telegram administrativo</button></form>
+      </>}
       {candidateReady && <div className="telegram-confirm-card"><strong>{telegramIdentityLabel(attempt.candidateFirstName, attempt.candidateUsername, attempt.candidateTelegramUserId)}</strong><p>Confirma únicamente si reconoces esta identidad.</p><form action="/api/admin/telegram/confirmar" method="post"><button className="button button-primary" type="submit">Confirmar identidad administrativa</button></form></div>}
     </section>
 

@@ -334,7 +334,7 @@ pnpm deploy
 
 Este script fuerza el uso del `wrangler.json` del repositorio y conserva las variables configuradas en Cloudflare. No reutilizar configuraciones ni recursos del proyecto JurisConecta.
 
-El despliegue verificado el 13 de septiembre de 2026 corresponde a la versión del Worker `77089d87-ea68-4bf7-b570-e1e88ffa2fc5`. La unión `CF_VERSION_METADATA` se usa únicamente para aislar la caché pública de cada despliegue.
+El despliegue verificado el 13 de septiembre de 2026 corresponde a la versión del Worker `7c7ee531-0527-482a-a36d-683eca497604`. La unión `CF_VERSION_METADATA` se usa únicamente para aislar la caché pública de cada despliegue.
 
 1. `pnpm lint` sin errores.
 2. `pnpm build` sin errores.

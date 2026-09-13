@@ -12,6 +12,7 @@ const eventLabels: Record<string, string> = {
   "portal.email": "Envío de correo",
   "account.registration": "Registro de cuenta",
   "google.sign_in": "Inicio con Google",
+  "apple.sign_in": "Inicio con Apple",
   "admin.audit": "Registro administrativo",
   "storage.audit": "Auditoría D1/R2",
 };

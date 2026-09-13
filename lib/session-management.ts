@@ -8,6 +8,7 @@ import { describeUserAgent, sessionLocation } from "@/lib/session-context";
 const authMethodLabels = {
   password: "Correo y contraseña",
   google: "Google",
+  apple: "Apple",
   github: "GitHub",
   reactivation: "Restablecimiento de cuenta",
   unknown: "Método anterior",

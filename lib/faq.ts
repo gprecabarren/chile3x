@@ -22,6 +22,8 @@ export const defaultFaqEntries: FaqEntry[] = [
   { question: "¿Cómo reporto u oculto un anuncio?", answer: "Debes iniciar sesión. Puedes reportar un anuncio indicando el motivo y adjuntar evidencias dentro del límite del formulario. También puedes ocultarlo para que deje de aparecerte; esa acción solo afecta a tu cuenta y puedes revertirla desde tu panel." },
   { question: "¿Qué es el contenido exclusivo?", answer: "Es una galería privada que una persona anunciante puede habilitar para cuentas específicas. Chile3X solo controla el acceso técnico: los pagos o acuerdos se coordinan directamente con el anunciante y no se procesan dentro del sitio." },
   { question: "¿Dónde reviso el rendimiento de mi anuncio?", answer: "El panel del anunciante muestra métricas de visualizaciones y de clics en los medios de contacto disponibles. Son indicadores de alcance dentro de Chile3X, no una garantía de reservas, pagos ni acuerdos externos." },
+  { question: "¿Cómo funciona la comunidad de Telegram?", answer: "La comunidad pública está abierta a visitantes. Si tienes una cuenta activa y el correo verificado, puedes vincular tu Telegram desde Mi cuenta para solicitar una invitación temporal al espacio privado de Miembros. El bot aplica las reglas, detecta señales claras de spam o abuso y deja las medidas relevantes disponibles para revisión administrativa." },
+  { question: "¿Ya se puede iniciar sesión con Apple?", answer: "Todavía no. El botón se muestra deshabilitado porque requiere una cuenta Apple Developer y credenciales que aún no están configuradas. Cuando se active, seguirá una lógica equivalente a Google: correo verificado y bloqueado, nombres editables durante el registro y rechazo de correos ya vinculados a otro proveedor." },
 ];
 
 function sanitizeEntry(value: unknown): FaqEntry | null {
@@ -36,7 +38,7 @@ function sanitizeEntry(value: unknown): FaqEntry | null {
 export function validateFaqEntries(value: string): FaqEntry[] | null {
   try {
     const parsed = JSON.parse(value);
-    if (!Array.isArray(parsed) || parsed.length < 1 || parsed.length > 16) return null;
+    if (!Array.isArray(parsed) || parsed.length < 1 || parsed.length > 20) return null;
     const entries = parsed.map(sanitizeEntry);
     return entries.every((entry): entry is FaqEntry => Boolean(entry)) ? entries : null;
   } catch {

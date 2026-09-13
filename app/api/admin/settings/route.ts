@@ -17,6 +17,7 @@ const allowedSettings = {
   robots_indexing: new Set(["enabled", "disabled"]),
   profile_gallery_watermark_enabled: new Set(["enabled", "disabled"]),
   profile_gallery_face_blur_enabled: new Set(["enabled", "disabled"]),
+  apple_sign_in_status: new Set(["enabled", "disabled"]),
 };
 
 function readText(formData: FormData, key: string, maximum: number) {
@@ -76,6 +77,7 @@ export async function POST(request: NextRequest) {
   const optionalText = [
     ["google_site_verification", 180], ["google_analytics_id", 20], ["google_oauth_client_id", 180], ["contact_whatsapp", 22],
     ["contact_telegram", 180], ["contact_instagram", 180], ["contact_email", 180],
+    ["apple_services_id", 180], ["apple_team_id", 10], ["apple_key_id", 10], ["apple_primary_app_id", 180],
   ] as const;
   const values: Record<string, string> = {};
   for (const [key, maximum] of optionalText) {
@@ -88,6 +90,19 @@ export async function POST(request: NextRequest) {
 
   if (values.google_analytics_id && !/^G-[A-Z0-9]{6,15}$/.test(values.google_analytics_id)) return new Response("El identificador de Analytics no tiene un formato válido.", { status: 400 });
   if (values.google_oauth_client_id && !/^\d+-[a-z0-9-]+\.apps\.googleusercontent\.com$/i.test(values.google_oauth_client_id)) return new Response("El ID del cliente de Google no tiene un formato válido.", { status: 400 });
+  if (values.apple_services_id && !/^[A-Za-z0-9.-]{3,180}$/.test(values.apple_services_id)) return new Response("El Services ID de Apple no tiene un formato válido.", { status: 400 });
+  if (values.apple_primary_app_id && !/^[A-Za-z0-9.-]{3,180}$/.test(values.apple_primary_app_id)) return new Response("El App ID principal de Apple no tiene un formato válido.", { status: 400 });
+  if (values.apple_team_id && !/^[A-Z0-9]{10}$/.test(values.apple_team_id)) return new Response("El Team ID de Apple debe tener 10 caracteres en mayúsculas.", { status: 400 });
+  if (values.apple_key_id && !/^[A-Z0-9]{10}$/.test(values.apple_key_id)) return new Response("El Key ID de Apple debe tener 10 caracteres en mayúsculas.", { status: 400 });
+  if (formData.get("apple_sign_in_status") === "enabled") {
+    if (!values.apple_services_id || !values.apple_team_id || !values.apple_key_id || !values.apple_primary_app_id) return new Response("Completa todos los identificadores de Apple antes de activar el acceso.", { status: 400 });
+    try {
+      const { env } = await import("cloudflare:workers");
+      if (!env.APPLE_PRIVATE_KEY || !env.APPLE_TOKEN_ENCRYPTION_KEY) return new Response("Configura APPLE_PRIVATE_KEY y APPLE_TOKEN_ENCRYPTION_KEY en Cloudflare antes de activar Apple.", { status: 400 });
+    } catch {
+      return new Response("No fue posible verificar los secretos de Apple.", { status: 503 });
+    }
+  }
   if (values.contact_whatsapp && !/^\+?[\d\s()-]{8,22}$/.test(values.contact_whatsapp)) return new Response("El WhatsApp de contacto no tiene un formato válido.", { status: 400 });
   if (Object.hasOwn(values, "contact_telegram")) {
     const normalizedTelegram = normalizeTelegramCommunityUrl(values.contact_telegram);

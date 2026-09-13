@@ -7,8 +7,8 @@ import { safeJsonLd } from "@/lib/json-ld";
 import { publicPageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = publicPageMetadata({
-  title: "Quiénes somos: misión y moderación de Chile3X",
-  description: "Conoce la misión, la cobertura, el proceso de moderación y los próximos pasos de Chile3X, una plataforma chilena destinada a personas adultas.",
+  title: "Qué es Chile3X | Directorio para adultos en Chile",
+  description: "Conoce Chile3X: directorio chileno para adultos con escorts, agencias y arriendos, cobertura nacional, revisión manual y comunidad moderada.",
   path: "/quienes-somos",
   socialTitle: "Quiénes somos | Chile3X",
 });
@@ -29,11 +29,18 @@ export default async function AboutPage() {
   const aboutSchema = {
     "@context": "https://schema.org",
     "@type": "AboutPage",
-    name: "Quiénes somos | Chile3X",
-    description: "Misión, cobertura territorial y proceso de moderación de Chile3X.",
+    name: "Qué es Chile3X y cómo funciona",
+    description: "Misión, cobertura nacional, revisión de publicaciones y comunidad de Chile3X.",
     url: `${siteUrl}/quienes-somos`,
     inLanguage: "es-CL",
     isPartOf: { "@type": "WebSite", name: "Chile3X", url: siteUrl },
+    mainEntity: {
+      "@type": "Organization",
+      name: "Chile3X",
+      url: siteUrl,
+      email: settings.contact_email.trim() || undefined,
+      sameAs: settings.contact_telegram.trim() ? [settings.contact_telegram.trim()] : undefined,
+    },
   };
 
   return <DirectoryShell>
@@ -41,8 +48,8 @@ export default async function AboutPage() {
     <section className="about-hero">
       <div className="about-hero-copy">
         <p className="eyebrow">CHILE3X · TODO CHILE</p>
-        <h1>Un directorio para adultos, <em>hecho con otra mirada.</em></h1>
-        <p>Chile3X reúne publicaciones independientes en un mismo lugar: una propuesta clara, territorial y pensada para ofrecer información ordenada a personas mayores de edad.</p>
+        <h1>Chile3X: un directorio para adultos, <em>hecho con otra mirada.</em></h1>
+        <p>Chile3X reúne anuncios de escorts, agencias y arriendos en Chile dentro de una experiencia clara, territorial y destinada exclusivamente a personas mayores de edad.</p>
         <div className="about-hero-actions">
           <Link className="button button-primary" href="/registro">Crear una cuenta</Link>
           <Link className="button button-outline" href="/escorts">Explorar escorts</Link>
@@ -62,8 +69,8 @@ export default async function AboutPage() {
       <p className="eyebrow">NUESTRA PROPUESTA</p>
       <div>
         <h2>Cobertura nacional, <em>con más orden.</em></h2>
-        <p>Chile3X nace para construir un espacio nacional para personas adultas que ofrecen compañía y servicios afines, sin excluir a hombres, mujeres, personas trans, agencias ni arriendos que cumplan las reglas del portal.</p>
-        <p>Queremos que encontrar o publicar un perfil sea simple: ciudades visibles, filtros útiles, información ordenada, contacto directo y una plataforma que se vea tan bien como funciona.</p>
+        <p>Chile3X nace para construir un espacio nacional para personas adultas que ofrecen compañía y servicios afines, sin excluir a hombres, mujeres, personas trans, agencias ni arriendos que cumplan las <Link href="/reglas-de-publicacion">reglas de publicación</Link>.</p>
+        <p>La navegación por región, ciudad y comuna, los filtros y las fichas ordenadas ayudan a encontrar información pública. El contacto y cualquier acuerdo ocurren directamente entre las personas: Chile3X no presta los servicios anunciados ni participa en pagos o citas.</p>
       </div>
     </section>
 
@@ -77,11 +84,11 @@ export default async function AboutPage() {
       <div>
         <p className="eyebrow">MIRANDO HACIA ADELANTE</p>
         <h2>Una red que quiere <em>seguir creciendo.</em></h2>
-        <p>La meta es que Chile3X se convierta en un referente nacional por su cobertura, diseño, soporte y criterios de publicación. Primero consolidamos un directorio responsable; después, solo cuando la infraestructura, la verificación y las reglas lo permitan, ampliaremos la experiencia.</p>
+        <p>La meta es consolidar un directorio útil por su cobertura, diseño, soporte y criterios de publicación. Cada función nueva se incorpora con controles de acceso, documentación y revisión de su impacto antes de abrirla a la comunidad.</p>
       </div>
       <div className="about-roadmap-list">
-        <article><strong>Próximamente, con condiciones claras</strong><h3>Comunidad y foro</h3><p>Un espacio moderado para conversación, ayuda e información útil de la comunidad.</p></article>
-        <article><strong>Futuro producto</strong><h3>Venta de contenido</h3><p>Una alternativa para creadores, sujeta a políticas, verificación y requisitos legales, con comisiones competitivas y reglas transparentes.</p></article>
+        <article><strong>Disponible en Telegram</strong><h3>Comunidad y Miembros</h3><p>El espacio público reúne ayuda, sugerencias y próximas funciones. Las cuentas verificadas pueden vincular Telegram para solicitar acceso al área privada de Miembros.</p>{settings.contact_telegram.trim() && <a className="text-link" href={settings.contact_telegram.trim()} target="_blank" rel="noreferrer">Abrir comunidad <span aria-hidden="true">→</span></a>}</article>
+        <article><strong>Actualizaciones del sitio</strong><h3>Novedades sincronizadas</h3><p>Las mejoras y avisos importantes pueden publicarse desde la administración o Telegram y quedan disponibles en una página pública separada del blog editorial.</p><Link className="text-link" href="/novedades">Ver Novedades <span aria-hidden="true">→</span></Link></article>
       </div>
     </section>
 

@@ -69,6 +69,7 @@ export default function TermsPage() {
           <li>Cada persona es responsable de mantener segura su contraseña y de las acciones efectuadas desde su cuenta. Debe avisar de inmediato si detecta un acceso no autorizado.</li>
           <li>No se permite vender, ceder, prestar ni compartir una cuenta para eludir una suspensión o permitir que otra persona se haga pasar por su titular.</li>
           <li>Chile3X puede solicitar corrección de datos, confirmación de correo, edad, identidad, autorización o representación antes de publicar o mantener un anuncio.</li>
+          <li>Un correo solo puede asociarse a un método federado compatible. Si ya está vinculado a Google o Apple, Chile3X puede exigir que se use ese mismo proveedor para evitar cuentas o identidades duplicadas. Las identidades administrativas continúan separadas e ingresan mediante GitHub.</li>
           <li>Los datos legales y documentos privados de una cuenta no se muestran en el anuncio salvo que su titular los incorpore voluntariamente a un campo público.</li>
         </ul>
       </section>
@@ -120,9 +121,10 @@ export default function TermsPage() {
       </section>
 
       <section id="comunidad">
-        <h2>9. Favoritos, likes, reseñas, comentarios, bloqueos y reportes</h2>
+        <h2>9. Favoritos, likes, reseñas, Telegram, bloqueos y reportes</h2>
         <p>Las cuentas pueden utilizar funciones de comunidad de acuerdo con su disponibilidad. Las reseñas y comentarios deben referirse a experiencias reales, expresarse con respeto y no contener datos personales, amenazas, extorsión, publicidad, acusaciones deliberadamente falsas ni contenido ilícito.</p>
         <p>Bloquear un anuncio solo lo oculta para la cuenta que realizó la acción; no sanciona al anunciante. Reportar inicia una revisión, no determina culpabilidad. El uso coordinado de votos, likes, reportes o reseñas para manipular resultados está prohibido.</p>
+        <p>La comunidad pública de Telegram puede utilizarse sin cuenta Chile3X. El acceso al espacio privado de Miembros requiere una cuenta activa, correo verificado y vinculación voluntaria con el bot. Los mensajes quedan sujetos a las reglas de la comunidad, a las condiciones de Telegram y a moderación manual o automática por spam, fraude, amenazas, acoso, contenido ilícito o reincidencia. Una medida en Telegram no reemplaza por sí sola una decisión sobre la cuenta del sitio.</p>
       </section>
 
       <section id="medios">
@@ -153,6 +155,7 @@ export default function TermsPage() {
       <section id="contacto-externo">
         <h2>14. Contactos, redes y servicios externos</h2>
         <p>Los botones de teléfono, WhatsApp, Telegram, Instagram, Arsmate, OnlyFans y otros enlaces conducen a servicios de terceros con sus propias reglas y políticas. Chile3X no controla sus mensajes, cobros, disponibilidad, seguridad ni tratamiento de datos.</p>
+        <p>Cuando una persona vincula Telegram, el bot puede comprobar su identidad del sitio, administrar invitaciones, sincronizar Novedades y aplicar las medidas descritas en las reglas. Chile3X no solicita la contraseña de Telegram. El botón de Apple permanece inactivo mientras no exista una configuración completa; si se habilita, la autenticación se realizará en los servidores de Apple y el correo asociado quedará bloqueado en Chile3X.</p>
         <p>La agenda de viajes es únicamente informativa: no modifica automáticamente la ciudad principal ni constituye intermediación, transporte o garantía. Está prohibido utilizarla para captar, trasladar o explotar personas o para facilitar conductas contrarias a los artículos 411 ter y 411 quáter del Código Penal u otras normas aplicables.</p>
       </section>
 
@@ -178,6 +181,7 @@ export default function TermsPage() {
         <h2>18. Pausa, suspensión, cierre y eliminación</h2>
         <p>La persona anunciante puede pausar publicaciones y solicitar el cierre de su cuenta mediante las funciones disponibles o el canal de soporte. Chile3X puede restringir o terminar el acceso por incumplimiento, riesgo, requerimiento de autoridad, fraude, inactividad prolongada o necesidad operativa fundada.</p>
         <p>El cierre no elimina de inmediato antecedentes que deban conservarse para resolver reportes, prevenir abuso, ejercer o defender derechos, cumplir obligaciones legales o mantener respaldos transitorios. El tratamiento posterior se rige por la Política de privacidad.</p>
+        <p>Deshabilitar o eliminar una cuenta revoca su acceso al espacio privado de Telegram. Cuando una cuenta creada con Apple se elimine permanentemente y el proveedor esté activo, Chile3X intentará además revocar la autorización externa antes de borrar localmente la identidad.</p>
       </section>
 
       <section id="cambios">

@@ -39,7 +39,7 @@ export const authSessions = sqliteTable("auth_sessions", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   tokenHash: text("token_hash").notNull().unique(),
-  authMethod: text("auth_method", { enum: ["password", "google", "github", "reactivation", "unknown"] }).notNull().default("unknown"),
+  authMethod: text("auth_method", { enum: ["password", "google", "apple", "github", "reactivation", "unknown"] }).notNull().default("unknown"),
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),
   countryCode: text("country_code"),
@@ -152,6 +152,56 @@ export const siteSettings = sqliteTable("site_settings", {
   updatedBy: text("updated_by").references(() => users.id, { onDelete: "set null" }),
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
+
+// Apple accounts follow the same separation as Google identities. The
+// immutable OpenID Connect subject is authoritative; email is retained to
+// detect cross-provider conflicts and may be an Apple private-relay address.
+export const accountAppleIdentities = sqliteTable("account_apple_identities", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  appleSubject: text("apple_subject").notNull(),
+  appleEmail: text("apple_email").notNull(),
+  refreshTokenEncrypted: text("refresh_token_encrypted"),
+  lastLoginAt: text("last_login_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  createdAt,
+}, (table) => [
+  uniqueIndex("account_apple_identity_user_unique").on(table.userId),
+  uniqueIndex("account_apple_identity_subject_unique").on(table.appleSubject),
+  uniqueIndex("account_apple_identity_email_unique").on(table.appleEmail),
+]);
+
+// Apple posts its callback from another origin, so the flow cannot rely on a
+// SameSite=Lax cookie for CSRF protection. This short-lived server-side state
+// record is consumed atomically before any authorization code is exchanged.
+export const appleAuthAttempts = sqliteTable("apple_auth_attempts", {
+  id: text("id").primaryKey(),
+  stateHash: text("state_hash").notNull(),
+  nonce: text("nonce").notNull(),
+  intent: text("intent", { enum: ["login", "register"] }).notNull(),
+  returnTo: text("return_to").notNull(),
+  expiresAt: text("expires_at").notNull(),
+  createdAt,
+}, (table) => [
+  uniqueIndex("apple_auth_attempt_state_unique").on(table.stateHash),
+  index("apple_auth_attempt_expiry_idx").on(table.expiresAt),
+]);
+
+// Apple shares the person's name only on the first authorization. A brief,
+// opaque registration intent carries that one-time value to the normal form.
+export const appleRegistrationIntents = sqliteTable("apple_registration_intents", {
+  id: text("id").primaryKey(),
+  tokenHash: text("token_hash").notNull(),
+  appleSubject: text("apple_subject").notNull(),
+  email: text("email").notNull(),
+  displayName: text("display_name"),
+  fullName: text("full_name"),
+  refreshTokenEncrypted: text("refresh_token_encrypted"),
+  expiresAt: text("expires_at").notNull(),
+  createdAt,
+}, (table) => [
+  uniqueIndex("apple_registration_intent_token_unique").on(table.tokenHash),
+  index("apple_registration_intent_expiry_idx").on(table.expiresAt),
+]);
 
 export const adminAuditLogs = sqliteTable("admin_audit_logs", {
   id: text("id").primaryKey(),

@@ -16,6 +16,8 @@ import { RegistrationPasswordFields } from "./RegistrationPasswordFields";
 import { RegistrationConsentFields } from "./RegistrationConsentFields";
 import { GoogleSignInButton } from "@/app/GoogleSignInButton";
 import { GOOGLE_REGISTRATION_COOKIE, readGoogleRegistrationIntent } from "@/lib/google-registration";
+import { AppleSignInButton } from "@/app/AppleSignInButton";
+import { APPLE_REGISTRATION_COOKIE, readAppleRegistrationIntent } from "@/lib/apple-registration";
 
 export const metadata: Metadata = privatePageMetadata({
   title: "Crear cuenta de anunciante",
@@ -36,13 +38,24 @@ const messages: Record<string, string> = {
   server: "No fue posible crear la cuenta en este momento. Inténtalo nuevamente en unos minutos.",
   antispam: "No pudimos validar la protección de seguridad. Inténtalo nuevamente.",
   legal: "Debes aceptar los Términos y condiciones y la Política de privacidad.",
+  apple_unavailable: "El registro con Apple todavía no está habilitado.",
+  apple_invalid: "Apple no entregó una respuesta válida. Inténtalo nuevamente.",
+  apple_state: "La solicitud de Apple venció o ya fue utilizada. Inicia el proceso nuevamente.",
+  apple_cancelled: "Cancelaste el registro con Apple. No se realizó ningún cambio.",
+  apple_admin_email: "Ese correo está reservado para una identidad administrativa y no puede registrarse como anunciante o tester.",
+  apple_conflict_google: "Ese correo ya está registrado con Google. Ingresa usando Google para evitar identidades duplicadas.",
+  apple_conflict: "Ese correo ya está vinculado a otra cuenta de Apple.",
+  apple_server: "Apple no está disponible temporalmente. Inténtalo nuevamente más tarde.",
 };
 
-export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ error?: string; return_to?: string; google_notice?: string; notice?: string }> }) {
+export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ error?: string; return_to?: string; google_notice?: string; apple_notice?: string; notice?: string }> }) {
   const params = await searchParams;
   const cookieStore = await cookies();
   const saved = decodeRegistrationState(cookieStore.get(registrationStateCookie)?.value);
   const googleIdentity = await readGoogleRegistrationIntent(cookieStore.get(GOOGLE_REGISTRATION_COOKIE)?.value);
+  const appleIdentity = await readAppleRegistrationIntent(cookieStore.get(APPLE_REGISTRATION_COOKIE)?.value);
+  const providerIdentity = appleIdentity ?? googleIdentity;
+  const providerName = appleIdentity ? "Apple" : googleIdentity ? "Google" : null;
   const returnTo = safeAccountReturnTo(params.return_to ?? null);
   const settings = await getSiteSettings();
   const whatsappHref = getPortalWhatsappLink(settings.contact_whatsapp, "Hola, quisiera solicitar que el equipo de Chile3X me cree una cuenta de anunciante.");
@@ -52,22 +65,27 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
     <div className="auth-register-topbar"><Link className="auth-brand" href="/"><OfficialChile3xLogo priority /></Link><p className="auth-login-shortcut">¿Ya tienes cuenta? <Link href={loginHref}>Ingresar</Link></p></div>
     <p className="eyebrow">CUENTA DE ANUNCIANTE</p>
     <h1>Crea tu cuenta para empezar a publicar.</h1>
-    <p>{googleIdentity ? "Tu correo ya fue verificado por Google. Completa los datos restantes para entrar a tu panel." : "Guarda borradores, envía anuncios a revisión y controla su visibilidad. Antes de entrar te enviaremos un correo de verificación."}</p>
+    <p>{providerIdentity ? `Tu correo ya fue verificado por ${providerName}. Completa los datos restantes para entrar a tu panel.` : "Guarda borradores, envía anuncios a revisión y controla su visibilidad. Antes de entrar te enviaremos un correo de verificación."}</p>
     {params.notice === "account_deleted" && <p className="auth-success" role="status">Tu cuenta y sus datos fueron eliminados. Si quieres volver, puedes crear una cuenta completamente nueva.</p>}
-    {settings.google_oauth_client_id && <GoogleSignInButton clientId={settings.google_oauth_client_id} intent="register" returnTo={returnTo} />}
-    {settings.google_oauth_client_id && <div className="auth-divider"><span>o completa el formulario</span></div>}
+    <div className="auth-provider-list">
+      {settings.google_oauth_client_id && <GoogleSignInButton clientId={settings.google_oauth_client_id} intent="register" returnTo={returnTo} />}
+      <AppleSignInButton enabled={settings.apple_sign_in_status === "enabled"} intent="register" returnTo={returnTo} />
+    </div>
+    <div className="auth-divider"><span>o completa el formulario</span></div>
     {params.google_notice === "new" && <p className="auth-google-notice" role="status">No existía una cuenta con ese correo de Google. Completa los datos restantes para crearla.</p>}
+    {params.apple_notice === "new" && <p className="auth-google-notice" role="status">No existía una cuenta con ese correo de Apple. Completa los datos restantes para crearla.</p>}
     {googleIdentity && <p className="auth-google-connected" role="status"><strong>Google verificado</strong><span>{googleIdentity.email}</span></p>}
+    {appleIdentity && <p className="auth-google-connected" role="status"><strong>Apple verificado</strong><span>{appleIdentity.email}</span></p>}
     {params.error && <p className="form-alert" role="alert">{messages[params.error] ?? messages.server}{params.error === "duplicate_rut" && <> <Link href="/recuperar-clave">Recuperar contraseña</Link></>}</p>}
     <form action="/api/auth/register" method="post" className="auth-form">
       <input name="return_to" type="hidden" value={returnTo} />
-      <label>Nombre visible<input name="display_name" required minLength={2} maxLength={80} autoComplete="nickname" defaultValue={saved?.displayName || googleIdentity?.displayName || ""} placeholder="Ej. Valentina" /></label>
-      <AccountIdentityFields values={saved ? { fullName: saved.fullName || googleIdentity?.fullName, documentType: saved.documentType, documentNumber: saved.documentNumber, foreignCountry: saved.foreignCountry, birthDate: saved.birthDate, region: saved.region, city: saved.city, phone: saved.phone } : googleIdentity ? { fullName: googleIdentity.fullName } : undefined} />
-      <RegistrationEmailField defaultValue={googleIdentity?.email ?? saved?.email ?? ""} locked={Boolean(googleIdentity)} />
-      {!googleIdentity && <RegistrationPasswordFields />}
+      <label>Nombre visible<input name="display_name" required minLength={2} maxLength={80} autoComplete="nickname" defaultValue={saved?.displayName || providerIdentity?.displayName || ""} placeholder="Ej. Valentina" /></label>
+      <AccountIdentityFields values={saved ? { fullName: saved.fullName || providerIdentity?.fullName, documentType: saved.documentType, documentNumber: saved.documentNumber, foreignCountry: saved.foreignCountry, birthDate: saved.birthDate, region: saved.region, city: saved.city, phone: saved.phone } : providerIdentity ? { fullName: providerIdentity.fullName } : undefined} />
+      <RegistrationEmailField defaultValue={providerIdentity?.email ?? saved?.email ?? ""} locked={Boolean(providerIdentity)} />
+      {!providerIdentity && <RegistrationPasswordFields />}
       <RegistrationConsentFields adultConfirmed={saved?.adultConfirmed} legalConfirmed={saved?.legalConfirmed} />
       <AuthTurnstile action={TURNSTILE_AUTH_REGISTER_ACTION} />
-      <button className="button button-primary" type="submit">{googleIdentity ? "Crear cuenta con Google" : "Crear cuenta y verificar correo"}</button>
+      <button className="button button-primary" type="submit">{providerName ? `Crear cuenta con ${providerName}` : "Crear cuenta y verificar correo"}</button>
     </form>
     {whatsappHref && <a className="button button-outline auth-whatsapp-request" href={whatsappHref} target="_blank" rel="noreferrer">Solicitar creación de cuenta por WhatsApp</a>}
     <p className="auth-switch">¿Ya tienes una cuenta? <Link href={loginHref}>Ingresar</Link></p>

@@ -22,13 +22,14 @@ test("administrative invitations reserve a unique verified GitHub email", async 
 });
 
 test("public registration paths reject reserved administrative emails", async () => {
-  const [passwordRegistration, googleRegistration, assistedRegistration] = await Promise.all([
+  const [passwordRegistration, googleRegistration, appleRegistration, assistedRegistration] = await Promise.all([
     read("app/api/auth/register/route.ts"),
     read("app/api/auth/google/route.ts"),
+    read("app/api/auth/apple/callback/route.ts"),
     read("app/api/admin/users/route.ts"),
   ]);
 
-  for (const route of [passwordRegistration, googleRegistration, assistedRegistration]) {
+  for (const route of [passwordRegistration, googleRegistration, appleRegistration, assistedRegistration]) {
     assert.match(route, /isReservedAdminEmail/);
   }
 });

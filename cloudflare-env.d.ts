@@ -108,6 +108,8 @@ interface Env {
   GITHUB_CLIENT_SECRET?: string;
   TELEGRAM_BOT_TOKEN?: string;
   TELEGRAM_WEBHOOK_SECRET?: string;
+  APPLE_PRIVATE_KEY?: string;
+  APPLE_TOKEN_ENCRYPTION_KEY?: string;
 }
 
 declare module "cloudflare:workers" {

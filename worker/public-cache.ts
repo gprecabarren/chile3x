@@ -1,4 +1,4 @@
-const CACHE_VERSION = "anonymous-documents-v2";
+const CACHE_VERSION = "anonymous-documents-v3";
 export const PUBLIC_PAGE_CACHE_SECONDS = 600;
 
 export function hasPrivateSession(request: Request) {
@@ -8,7 +8,7 @@ export function hasPrivateSession(request: Request) {
 
 /** Only full anonymous documents are shareable. Router payloads depend on
  * navigation headers, not just their URL, and must not overwrite HTML entries. */
-export function publicCacheKey(request: Request): Request | null {
+export function publicCacheKey(request: Request, deploymentVersion = CACHE_VERSION): Request | null {
   if (request.method !== "GET" || hasPrivateSession(request)) return null;
   const url = new URL(request.url);
   if (url.pathname.endsWith(".rsc") || request.headers.has("rsc")
@@ -21,7 +21,7 @@ export function publicCacheKey(request: Request): Request | null {
     || path.startsWith("/escorts/") || path.startsWith("/perfil/") || path.startsWith("/noticias/");
   if (!allowed) return null;
   // Never reuse entries created before authenticated home caching was removed.
-  url.searchParams.set("__chile3x_cache", CACHE_VERSION);
+  url.searchParams.set("__chile3x_cache", deploymentVersion || CACHE_VERSION);
   return new Request(url.toString(), { method: "GET" });
 }
 

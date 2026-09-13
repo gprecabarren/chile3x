@@ -82,7 +82,7 @@ const worker = {
       }, allowedWidths));
     }
 
-    const cacheKey = publicCacheKey(request);
+    const cacheKey = publicCacheKey(request, env.CF_VERSION_METADATA?.id);
     const cache = cacheKey ? (caches as CacheStorage & { default: Cache }).default : null;
 
     if (cache && cacheKey) {

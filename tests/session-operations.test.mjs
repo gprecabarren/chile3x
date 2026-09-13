@@ -38,10 +38,11 @@ test("session context keeps Cloudflare IP and approximate location without coord
 });
 
 test("all authentication methods create sessions with request metadata", async () => {
-  const [auth, password, google, github, register, reactivate] = await Promise.all([
+  const [auth, password, google, apple, github, register, reactivate] = await Promise.all([
     read("lib/auth.ts"),
     read("app/api/auth/login/route.ts"),
     read("app/api/auth/google/route.ts"),
+    read("app/api/auth/apple/callback/route.ts"),
     read("app/api/auth/github/callback/route.ts"),
     read("app/api/auth/register/route.ts"),
     read("app/api/auth/reactivate/route.ts"),
@@ -49,8 +50,10 @@ test("all authentication methods create sessions with request metadata", async (
   assert.match(auth, /sessionContextFromRequest\(request\)/);
   assert.match(password, /createUserSession\(user\.id, request, "password"\)/);
   assert.match(google, /createUserSession\(account\.userId, request, "google"\)/);
+  assert.match(apple, /createUserSession\(account\.userId, request, "apple"\)/);
   assert.match(github, /createAdminSession\(admin\.id, request\)/);
   assert.match(register, /createUserSession\(userId, request, "google"\)/);
+  assert.match(register, /createUserSession\(userId, request, "apple"\)/);
   assert.match(reactivate, /createUserSession\(intent\.userId, request, "reactivation"\)/);
 });
 

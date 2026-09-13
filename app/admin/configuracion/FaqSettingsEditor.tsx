@@ -39,6 +39,6 @@ export function FaqSettingsEditor({ initialEntries }: { initialEntries: FaqEntry
         </div>
       </article>)}
     </div>
-    {entries.length < 16 && <button type="button" className="button button-outline faq-add" onClick={() => setEntries((current) => [...current, { ...emptyEntry }])}>Agregar pregunta</button>}
+    {entries.length < 20 && <button type="button" className="button button-outline faq-add" onClick={() => setEntries((current) => [...current, { ...emptyEntry }])}>Agregar pregunta</button>}
   </section>;
 }

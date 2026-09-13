@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { accountGoogleIdentities, users } from "@/db/schema";
+import { accountAppleIdentities, accountGoogleIdentities, users } from "@/db/schema";
 import { isReservedAdminEmail } from "@/lib/admin-email";
 import { assertSameOrigin, createUserSession, getUserSessionCookieName, getUserSessionDuration, safeAccountReturnTo, sessionCookieOptions } from "@/lib/auth";
 import { GOOGLE_NONCE_COOKIE, verifyGoogleCredential } from "@/lib/google-auth";
@@ -9,6 +9,7 @@ import { createGoogleRegistrationIntent, GOOGLE_REGISTRATION_COOKIE } from "@/li
 import { getSiteSettings } from "@/lib/site-settings";
 import { ACCOUNT_REACTIVATION_COOKIE, ACCOUNT_REACTIVATION_DURATION_SECONDS, createAccountReactivationIntent } from "@/lib/account-reactivation";
 import { recordOperationalEvent } from "@/lib/operations";
+import { APPLE_REGISTRATION_COOKIE } from "@/lib/apple-registration";
 
 function jsonError(error: string, status = 400) {
   return NextResponse.json({ error }, { status, headers: { "cache-control": "no-store" } });
@@ -66,8 +67,11 @@ export async function POST(request: NextRequest) {
         .from(users).where(eq(users.email, identity.email)).limit(1);
       if (byEmail?.role === "admin") return jsonError("Ese correo pertenece al panel administrativo y no puede iniciar una sesión pública.", 409);
       if (byEmail) {
-        const [otherGoogleIdentity] = await db.select({ id: accountGoogleIdentities.id }).from(accountGoogleIdentities)
-          .where(eq(accountGoogleIdentities.userId, byEmail.id)).limit(1);
+        const [[otherGoogleIdentity], [appleIdentity]] = await Promise.all([
+          db.select({ id: accountGoogleIdentities.id }).from(accountGoogleIdentities).where(eq(accountGoogleIdentities.userId, byEmail.id)).limit(1),
+          db.select({ id: accountAppleIdentities.id }).from(accountAppleIdentities).where(eq(accountAppleIdentities.userId, byEmail.id)).limit(1),
+        ]);
+        if (appleIdentity) return jsonError("Ese correo ya está registrado con Apple. Ingresa usando Apple para evitar identidades duplicadas.", 409);
         if (otherGoogleIdentity) return jsonError("La cuenta ya está vinculada a otra identidad de Google.", 409);
         const identityId = `google_identity_${crypto.randomUUID()}`;
         await db.insert(accountGoogleIdentities).values({
@@ -114,6 +118,7 @@ export async function POST(request: NextRequest) {
       ...sessionCookieOptions(registration.maxAge),
       path: "/",
     });
+    response.cookies.delete({ name: APPLE_REGISTRATION_COOKIE, path: "/" });
     response.cookies.delete({ name: GOOGLE_NONCE_COOKIE, path: "/api/auth/google" });
     return response;
   } catch (error) {

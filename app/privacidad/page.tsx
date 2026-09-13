@@ -84,6 +84,8 @@ export default function PrivacyPage() {
           <li>favoritos, likes, bloqueos, reseñas, comentarios y su estado de moderación;</li>
           <li>reportes, motivo, texto y capturas de evidencia, además de las actuaciones administrativas asociadas;</li>
           <li>visualizaciones de anuncios y clics en botones de contacto, agrupados por fecha y tipo de acción.</li>
+          <li>si vinculas Telegram: identificador numérico, usuario y nombre que Telegram comparte, estado de vinculación y membresía, invitaciones, medidas de moderación y registros técnicos necesarios para operar el bot;</li>
+          <li>si en el futuro eliges Apple una vez habilitado: identificador estable, correo verificado —incluido un posible correo privado de retransmisión—, nombre compartido la primera vez y autorización cifrada necesaria para revocar el acceso al eliminar la cuenta.</li>
         </ul>
       </section>
 
@@ -107,6 +109,7 @@ export default function PrivacyPage() {
           <li>crear borradores, moderar cambios, publicar, ordenar, buscar, pausar y mostrar anuncios;</li>
           <li>gestionar historias, galerías, medios, relaciones agencia–escort y accesos exclusivos;</li>
           <li>habilitar favoritos, likes, reseñas, comentarios, bloqueos, reportes y paneles de rendimiento;</li>
+          <li>vincular voluntariamente Telegram, administrar el acceso a Miembros, sincronizar Novedades, moderar la comunidad y avisar al equipo sobre medidas relevantes;</li>
           <li>enviar correos transaccionales como verificación, recuperación, aprobación, rechazo, suspensión y avisos importantes de la cuenta;</li>
           <li>prevenir fraude, spam, suplantación, explotación, contenido ilícito, ataques y uso indebido;</li>
           <li>resolver solicitudes, cumplir obligaciones legales, colaborar con autoridades competentes y ejercer o defender derechos;</li>
@@ -140,9 +143,10 @@ export default function PrivacyPage() {
       </section>
 
       <section id="comunidad">
-        <h2>11. Reseñas, bloqueos, reportes y evidencias</h2>
+        <h2>11. Reseñas, Telegram, bloqueos, reportes y evidencias</h2>
         <p>Las reseñas o comentarios aprobados pueden mostrar el nombre visible de su autor y su contenido. Favoritos, bloqueos y listas personales no se muestran públicamente. Los reportes y sus capturas son privados y accesibles para el equipo autorizado y para la cuenta que los envió dentro de su panel.</p>
         <p>Podemos utilizar esos antecedentes para investigar, contactar a las partes cuando sea seguro y necesario, moderar, preservar evidencia, prevenir reiteración y responder a una autoridad. No revelaremos la identidad de quien reporta al perfil denunciado salvo consentimiento, obligación legal o necesidad fundada de defensa, aplicando minimización.</p>
+        <p>Vincular Telegram es opcional. El sitio conserva la relación entre tu cuenta y el identificador que entrega Telegram para comprobar acceso, crear invitaciones individuales y aplicar o retirar medidas. Los mensajes procesados por el bot pueden conservarse de forma temporal para deduplicar, detectar flood o spam y ejecutar la cola; una evidencia breve y la medida aplicada pueden mantenerse mientras sea necesario para revisar el caso y prevenir reincidencia. Desvincular, deshabilitar o eliminar la cuenta retira el acceso a Miembros, pero Telegram puede conservar mensajes conforme a sus propias reglas.</p>
       </section>
 
       <section id="medicion">
@@ -152,7 +156,10 @@ export default function PrivacyPage() {
         <h3>12.2. Inicio de sesión con Google</h3>
         <p>Si eliges continuar con Google, recibimos el identificador estable de tu cuenta de Google, tu correo verificado y el nombre que Google comparte. Usamos el identificador y el correo exclusivamente para comprobar tu identidad, vincular o crear tu cuenta y evitar accesos duplicados; el nombre solo rellena inicialmente campos que puedes editar durante el registro.</p>
         <p>No solicitamos acceso a Gmail, Drive, contactos, archivos ni calendario, y no almacenamos tokens de acceso de Google. El correo queda vinculado y no puede modificarse desde la cuenta. Si abandonas el registro, los datos del intento se eliminan automáticamente al vencer el plazo breve de seguridad.</p>
-        <h3>12.3. Google Tag Manager y Google Analytics</h3>
+        <h3>12.3. Inicio de sesión con Apple preparado, aún inactivo</h3>
+        <p>Chile3X muestra un botón de Apple deshabilitado mientras no exista una configuración completa de Apple Developer. En ese estado no se abre Apple ni se le envían datos. Si se habilita en el futuro y eliges usarlo, recibiremos el identificador estable, correo verificado y, únicamente en la primera autorización, el nombre que Apple comparta. Esos nombres solo rellenarán campos editables del registro; el correo quedará bloqueado.</p>
+        <p>El flujo rechazará un correo ya vinculado a Google o a una identidad administrativa. La autorización de larga duración que Apple entregue se almacenará cifrada y se utilizará únicamente para revocarla cuando corresponda, incluida la eliminación permanente de la cuenta. Chile3X no recibirá tu contraseña de Apple ni acceso a iCloud, fotos, contactos o archivos.</p>
+        <h3>12.4. Google Tag Manager y Google Analytics</h3>
         <p>La medición es opcional y solo se carga si eliges <strong>“Aceptar medición”</strong> en el aviso de privacidad. Si aceptas, medimos visitas y acciones generales como registros, envíos de anuncios, clics de contacto, favoritos, likes y reseñas para entender el uso y mejorar Chile3X.</p>
         <p>No configuramos el envío a Google de nombres, correos, teléfonos, RUT, direcciones, archivos privados, texto libre ni identificadores internos de perfiles como parámetros de Analytics. Google puede tratar información técnica como dirección IP, navegador, dispositivo y señales de interacción conforme a sus propias condiciones y medidas disponibles.</p>
         <p>Si eliges <strong>“Solo necesarias”</strong>, el sitio seguirá funcionando sin cargar Google Tag Manager ni Google Analytics. Puedes retirar o cambiar tu elección en cualquier momento; el cambio no invalida el tratamiento anterior basado en tu consentimiento.</p>
@@ -165,6 +172,8 @@ export default function PrivacyPage() {
         <ul>
           <li><strong>Cloudflare:</strong> alojamiento del sitio, base de datos, almacenamiento de archivos, red de entrega, certificados, seguridad y Turnstile para combatir bots;</li>
           <li><strong>Google:</strong> autenticación cuando eliges “Continuar con Google”, correo transaccional y, solo con consentimiento, Google Tag Manager y Google Analytics;</li>
+          <li><strong>Telegram:</strong> comunidad pública, vinculación voluntaria de cuentas, invitaciones a Miembros, Novedades y moderación mediante el bot;</li>
+          <li><strong>Apple:</strong> solo si el proveedor llega a habilitarse y la persona lo elige, autenticación y revocación de la autorización asociada;</li>
           <li><strong>proveedores de navegador, sistema operativo o redes externas:</strong> únicamente cuando la persona utiliza esas aplicaciones o sigue un enlace.</li>
         </ul>
         <p>Estos servicios pueden procesar o respaldar información fuera de Chile. Chile3X procura escoger proveedores reconocidos, limitar los datos enviados, configurar accesos y aplicar salvaguardas contractuales y técnicas razonables. La ubicación de la infraestructura puede cambiar sin que ello signifique una venta de datos.</p>

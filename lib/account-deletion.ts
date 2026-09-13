@@ -16,6 +16,8 @@ import {
 } from "@/db/schema";
 import { sha256 } from "@/lib/auth";
 import { createTelegramOutboxValues, dispatchTelegramJob } from "@/lib/telegram";
+import { revokeAppleGrantForUser } from "@/lib/apple-account";
+import { recordOperationalEvent } from "@/lib/operations";
 
 export type AccountDeletionActor = { kind: "user" } | { kind: "admin"; adminId: string };
 
@@ -24,6 +26,16 @@ export async function permanentlyDeleteAccount(userId: string, actor: AccountDel
   const [account] = await db.select({ id: users.id, email: users.email, role: users.role, createdAt: users.createdAt })
     .from(users).where(eq(users.id, userId)).limit(1);
   if (!account || account.role === "admin") return null;
+
+  // Apple expects the authorization grant to be revoked when an account is
+  // permanently deleted. An external outage must not trap personal data in
+  // Chile3X, so revocation is best-effort and independently observable.
+  try {
+    await revokeAppleGrantForUser(userId);
+  } catch (error) {
+    console.error("Apple grant revocation failed during account deletion", { userId, error });
+    await recordOperationalEvent({ category: "authentication", eventName: "apple.revoke", outcome: "failure", detail: "No fue posible revocar el acceso externo de Apple durante la eliminación local." });
+  }
 
   const [publicObjects, storyObjects, verificationObjects, reportObjects, exclusiveObjects, telegramLinks] = await Promise.all([
     db.select({ key: profileMedia.r2Key }).from(profileMedia).innerJoin(profiles, eq(profileMedia.profileId, profiles.id)).where(eq(profiles.ownerId, userId)),

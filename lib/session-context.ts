@@ -1,4 +1,4 @@
-export type SessionAuthMethod = "password" | "google" | "github" | "reactivation" | "unknown";
+export type SessionAuthMethod = "password" | "google" | "apple" | "github" | "reactivation" | "unknown";
 
 type HeaderReader = { get(name: string): string | null };
 

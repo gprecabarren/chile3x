@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { accountGoogleIdentities, users } from "@/db/schema";
+import { accountAppleIdentities, accountGoogleIdentities, users } from "@/db/schema";
 import { assertSameOrigin, createUserSession, getUserSessionCookieName, getUserSessionDuration, hashPassword, safeAccountReturnTo, sessionCookieOptions } from "@/lib/auth";
 import { createAccountToken, sendAccountEmail } from "@/lib/account-email";
 import { readAccountIdentity } from "@/lib/account-data";
@@ -13,6 +13,7 @@ import { generateUniqueAccountUsername } from "@/lib/account-username";
 import { isReservedAdminEmail } from "@/lib/admin-email";
 import { consumeGoogleRegistrationIntent, GOOGLE_REGISTRATION_COOKIE, readGoogleRegistrationIntent } from "@/lib/google-registration";
 import { recordOperationalEvent } from "@/lib/operations";
+import { APPLE_REGISTRATION_COOKIE, consumeAppleRegistrationIntent, readAppleRegistrationIntent } from "@/lib/apple-registration";
 
 function redirectWithError(request: Request, error: string, formData?: FormData) {
   const url = new URL("/registro", request.url);
@@ -47,12 +48,15 @@ export async function POST(request: NextRequest) {
   let formData: FormData | undefined;
   let createdEmail: string | undefined;
   let googleRegistration = null as Awaited<ReturnType<typeof readGoogleRegistrationIntent>>;
+  let appleRegistration = null as Awaited<ReturnType<typeof readAppleRegistrationIntent>>;
   try {
     formData = await request.formData();
     googleRegistration = await readGoogleRegistrationIntent(request.cookies.get(GOOGLE_REGISTRATION_COOKIE)?.value);
+    appleRegistration = await readAppleRegistrationIntent(request.cookies.get(APPLE_REGISTRATION_COOKIE)?.value);
+    const providerRegistration = appleRegistration ?? googleRegistration;
     if (!await verifyTurnstile(request, formData.get("cf-turnstile-response"), TURNSTILE_AUTH_REGISTER_ACTION)) return redirectWithError(request, "antispam", formData);
     const displayName = getFormString(formData, "display_name").trim().slice(0, 80);
-    const email = (googleRegistration?.email ?? getFormString(formData, "email")).trim().toLowerCase().slice(0, 160);
+    const email = (providerRegistration?.email ?? getFormString(formData, "email")).trim().toLowerCase().slice(0, 160);
     const password = getFormString(formData, "password");
     const passwordConfirmation = getFormString(formData, "password_confirmation");
     const identity = readAccountIdentity(formData);
@@ -62,8 +66,8 @@ export async function POST(request: NextRequest) {
     if (displayName.length < 2) return redirectWithError(request, "display_name", formData);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return redirectWithError(request, "email", formData);
     if (!identity) return redirectWithError(request, "identity", formData);
-    if (!googleRegistration && password.length < MIN_PASSWORD_LENGTH) return redirectWithError(request, "password", formData);
-    if (!googleRegistration && password !== passwordConfirmation) return redirectWithError(request, "password_mismatch", formData);
+    if (!providerRegistration && password.length < MIN_PASSWORD_LENGTH) return redirectWithError(request, "password", formData);
+    if (!providerRegistration && password !== passwordConfirmation) return redirectWithError(request, "password_mismatch", formData);
 
     stage = "lookup";
     const db = await getDb();
@@ -83,7 +87,7 @@ export async function POST(request: NextRequest) {
       email,
       username,
       displayName,
-      passwordHash: googleRegistration ? null : await hashPassword(password),
+      passwordHash: providerRegistration ? null : await hashPassword(password),
       role: "visitor",
       firstName: identity.firstName || null,
       lastName: null,
@@ -93,8 +97,25 @@ export async function POST(request: NextRequest) {
       birthDate: identity.birthDate,
       city: identity.city,
       phone: identity.phone || null,
-      emailVerifiedAt: googleRegistration ? new Date().toISOString() : null,
+      emailVerifiedAt: providerRegistration ? new Date().toISOString() : null,
     });
+
+    if (appleRegistration) {
+      await db.insert(accountAppleIdentities).values({
+        id: `apple_identity_${crypto.randomUUID()}`,
+        userId,
+        appleSubject: appleRegistration.subject,
+        appleEmail: appleRegistration.email,
+        refreshTokenEncrypted: appleRegistration.refreshTokenEncrypted,
+      });
+      await consumeAppleRegistrationIntent(appleRegistration.id);
+      const response = NextResponse.redirect(new URL(safeAccountReturnTo(getFormString(formData, "return_to")), request.url), 303);
+      response.cookies.set({ name: getUserSessionCookieName(), value: await createUserSession(userId, request, "apple"), ...sessionCookieOptions(getUserSessionDuration()) });
+      response.cookies.delete({ name: APPLE_REGISTRATION_COOKIE, path: "/" });
+      response.cookies.delete({ name: GOOGLE_REGISTRATION_COOKIE, path: "/" });
+      response.cookies.set(registrationStateCookie, "", { maxAge: 0, path: "/registro" });
+      return response;
+    }
 
     if (googleRegistration) {
       await db.insert(accountGoogleIdentities).values({
@@ -107,6 +128,7 @@ export async function POST(request: NextRequest) {
       const response = NextResponse.redirect(new URL(safeAccountReturnTo(getFormString(formData, "return_to")), request.url), 303);
       response.cookies.set({ name: getUserSessionCookieName(), value: await createUserSession(userId, request, "google"), ...sessionCookieOptions(getUserSessionDuration()) });
       response.cookies.delete({ name: GOOGLE_REGISTRATION_COOKIE, path: "/" });
+      response.cookies.delete({ name: APPLE_REGISTRATION_COOKIE, path: "/" });
       response.cookies.set(registrationStateCookie, "", { maxAge: 0, path: "/registro" });
       return response;
     }
@@ -129,7 +151,7 @@ export async function POST(request: NextRequest) {
     await recordOperationalEvent({ category: "application", eventName: "account.registration", outcome: "failure", detail: "El registro de cuenta no pudo completar una etapa interna.", metadata: { stage } });
     // If the account was saved, let the user retry sending verification rather
     // than asking them to register again (which would report a duplicate).
-    if (createdEmail && formData && !googleRegistration) {
+    if (createdEmail && formData && !googleRegistration && !appleRegistration) {
       const url = new URL("/verificar-correo", request.url);
       url.searchParams.set("email", createdEmail);
       url.searchParams.set("return_to", safeAccountReturnTo(getFormString(formData, "return_to")));

@@ -362,6 +362,7 @@ Cuando se active Apple, comprobar además que el Services ID, dominio, retorno y
 - `a02ebc1` — acceso compacto a Telegram en el encabezado y llamado amplio dentro de la cuenta.
 - `84779a9` — Apple preparado y deshabilitado, migración 0029, documentos legales/FAQ, SEO de Quiénes somos y caché pública aislada por versión.
 - `09e97e2` — guía de activación futura de Apple y requisitos de dominio, retorno, retransmisión de correo y secretos.
+- `4e80413` — vinculación administrativa de Telegram sin falso timeout, guía escalable, logo retirado del error, botones Apple simplificados e iconos compactos corregidos.
 
 ## Límites y decisiones pendientes
 

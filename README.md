@@ -355,8 +355,8 @@ Cuando se active Apple, comprobar además que el Services ID, dominio, retorno y
 - `6b0b875` — guía operativa y verificación de la estructura nativa de Telegram.
 - `890eeaa` — identidades de Telegram visibles y vinculables en la administración de accesos.
 - `f3bf6e6` — recorrido de Miembros, perfil y ayuda del bot, salud del webhook y filtros de moderación.
-- `13faa29` — acceso compacto a Telegram en el encabezado y llamado amplio dentro de la cuenta.
-- `a02ebc1` — documentación operativa de Telegram y estado de los vínculos administrativos.
+- `13faa29` — documentación operativa final de Telegram y estado de los vínculos administrativos.
+- `a02ebc1` — acceso compacto a Telegram en el encabezado y llamado amplio dentro de la cuenta.
 - `84779a9` — Apple preparado y deshabilitado, migración 0029, documentos legales/FAQ, SEO de Quiénes somos y caché pública aislada por versión.
 - `09e97e2` — guía de activación futura de Apple y requisitos de dominio, retorno, retransmisión de correo y secretos.
 

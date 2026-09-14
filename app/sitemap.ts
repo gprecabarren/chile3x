@@ -20,6 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/contacto`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${siteUrl}/noticias`, changeFrequency: "weekly", priority: 0.7 },
     { url: `${siteUrl}/novedades`, changeFrequency: "weekly", priority: 0.65 },
+    ...(settings.sponsors_enabled === "enabled" ? [{ url: `${siteUrl}/patrocinadores`, changeFrequency: "monthly" as const, priority: 0.5 }] : []),
     { url: `${siteUrl}/terminos`, lastModified: new Date("2026-09-13T00:00:00-03:00"), changeFrequency: "yearly", priority: 0.3 },
     { url: `${siteUrl}/privacidad`, lastModified: new Date("2026-09-13T00:00:00-03:00"), changeFrequency: "yearly", priority: 0.3 },
     { url: `${siteUrl}/reglas-de-publicacion`, changeFrequency: "yearly", priority: 0.3 },

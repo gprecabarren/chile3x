@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/db";
-import { exclusiveContentMedia, newsMedia, profileMedia, profileReportEvidence, profileStatuses, profileVerificationFiles, profiles, users } from "@/db/schema";
+import { exclusiveContentMedia, newsMedia, profileMedia, profileReportEvidence, profileStatuses, profileVerificationFiles, profiles, sponsors, users } from "@/db/schema";
 
 export const MAX_IMAGES_PER_PROFILE = 10;
 export const MAX_IMAGE_BYTES = 5_000_000;
@@ -97,6 +97,7 @@ export async function getMediaUsage() {
     db.select({ bytes: sql<number>`coalesce(sum(${newsMedia.byteSize}), 0)`, files: sql<number>`count(*)` }).from(newsMedia),
     db.select({ bytes: sql<number>`coalesce(sum(${profileReportEvidence.byteSize}), 0)`, files: sql<number>`count(*)` }).from(profileReportEvidence),
     db.select({ bytes: sql<number>`coalesce(sum(${exclusiveContentMedia.byteSize}), 0)`, files: sql<number>`count(*)` }).from(exclusiveContentMedia),
+    db.select({ bytes: sql<number>`coalesce(sum(${sponsors.backgroundByteSize} + ${sponsors.logoByteSize}), 0)`, files: sql<number>`count(*) + coalesce(sum(case when ${sponsors.logoR2Key} is not null then 1 else 0 end), 0)` }).from(sponsors),
   ]);
   return totals.reduce((usage, [row]) => ({
     bytes: usage.bytes + Number(row?.bytes ?? 0),

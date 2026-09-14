@@ -9,6 +9,7 @@ import {
   profileReportEvidence,
   profileStatuses,
   profileVerificationFiles,
+  sponsors,
 } from "@/db/schema";
 import { recordAdminAudit } from "@/lib/admin-audit";
 import { adminHasCapability } from "@/lib/admin-permissions";
@@ -65,6 +66,8 @@ export async function POST(request: NextRequest) {
       (limit: number) => db.select({ key: profileReportEvidence.r2Key }).from(profileReportEvidence).limit(limit),
       (limit: number) => db.select({ key: newsMedia.r2Key }).from(newsMedia).limit(limit),
       (limit: number) => db.select({ key: exclusiveContentMedia.r2Key }).from(exclusiveContentMedia).limit(limit),
+      (limit: number) => db.select({ key: sponsors.backgroundR2Key }).from(sponsors).limit(limit),
+      (limit: number) => db.select({ key: sponsors.logoR2Key }).from(sponsors).where(isNotNull(sponsors.logoR2Key)).limit(limit),
     ];
     for (const query of referenceQueries) {
       const remaining = MAX_REFERENCES_PER_SCAN - inspectedReferences;

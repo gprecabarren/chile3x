@@ -37,6 +37,7 @@ function publicSessionLabel(user: AccountUser) {
 
 export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeaderProps = {}) {
   const cookieStore = await cookies();
+  const settings = await getSiteSettings();
   const hasPotentialUserSession = Boolean(cookieStore.get(getUserSessionCookieName())?.value);
   const hasPotentialAdminSession = Boolean(cookieStore.get(getSessionCookieName())?.value);
   // Las consultas solo ocurren si existe una cookie. Así la cabecera puede
@@ -95,6 +96,7 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
         <PublicMobileMenu
           hasUserSession={hasUserSession}
           hasAdminSession={hasAdminSession}
+          showSponsors={settings.sponsors_enabled === "enabled"}
           session={sessionUser ? {
             label: sessionPrimary,
             username: sessionUser.username,
@@ -126,12 +128,14 @@ export function DirectoryShell({ children }: { children: ReactNode }) {
 }
 
 export async function PublicFooter() {
+  const settings = await getSiteSettings();
+  const showSponsors = settings.sponsors_enabled === "enabled";
   return (
     <footer className="public-footer">
       <div className="public-footer-brand"><Link className="public-footer-logo" href="/" aria-label="Chile3X, inicio"><Image src="/chile3x-logo-primary.jpeg" alt="Chile3X" width={800} height={225} unoptimized /></Link><p>Directorio de escorts y damas de compañía para adultos. Los acuerdos ocurren directamente entre visitantes y anunciantes.</p></div>
       <div className="public-footer-navigation">
         <div><strong>DIRECTORIO</strong><Link href="/escorts">Escorts</Link><Link href="/agencias">Agencias</Link><Link href="/arriendos">Arriendos</Link></div>
-        <div><strong>INFORMACIÓN</strong><Link href="/quienes-somos">Quiénes somos</Link><Link href="/noticias">Noticias</Link><Link href="/novedades">Novedades</Link><Link href="/faq">Preguntas frecuentes</Link><Link href="/contacto">Contacto</Link><Link href="/terminos">Términos</Link><Link href="/privacidad">Privacidad</Link><Link href="/reglas-de-publicacion">Reglas de publicación</Link></div>
+        <div><strong>INFORMACIÓN</strong><Link href="/quienes-somos">Quiénes somos</Link><Link href="/noticias">Noticias</Link><Link href="/novedades">Novedades</Link><Link href="/faq">Preguntas frecuentes</Link><Link href="/contacto">Contacto</Link>{showSponsors && <Link href="/patrocinadores">Sitios asociados</Link>}<Link href="/terminos">Términos</Link><Link href="/privacidad">Privacidad</Link><Link href="/reglas-de-publicacion">Reglas de publicación</Link></div>
       </div>
       <div className="public-footer-extras">
         <div><strong>SÍGUENOS</strong><PortalContactLinks placement="footer" /></div>

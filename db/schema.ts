@@ -153,6 +153,49 @@ export const siteSettings = sqliteTable("site_settings", {
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
+// Public partner cards are managed independently from advertisements. Groups
+// define the vertical page order; cards define their order inside each group.
+// Images remain in R2 and only their opaque keys and safe display metadata are
+// stored in D1.
+export const sponsorGroups = sqliteTable("sponsor_groups", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  description: text("description").notNull().default(""),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt,
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  uniqueIndex("sponsor_groups_slug_unique").on(table.slug),
+  index("sponsor_groups_active_order_idx").on(table.isActive, table.sortOrder),
+]);
+
+export const sponsors = sqliteTable("sponsors", {
+  id: text("id").primaryKey(),
+  groupId: text("group_id").notNull().references(() => sponsorGroups.id, { onDelete: "restrict" }),
+  name: text("name").notNull(),
+  headline: text("headline").notNull().default(""),
+  subtitle: text("subtitle").notNull().default(""),
+  destinationUrl: text("destination_url").notNull(),
+  ctaLabel: text("cta_label").notNull().default("Conocer más"),
+  imageAlt: text("image_alt").notNull(),
+  displayMode: text("display_mode", { enum: ["overlay", "image", "brand"] }).notNull().default("overlay"),
+  backgroundR2Key: text("background_r2_key").notNull().unique(),
+  backgroundContentType: text("background_content_type").notNull().default("image/jpeg"),
+  backgroundByteSize: integer("background_byte_size").notNull().default(0),
+  logoR2Key: text("logo_r2_key").unique(),
+  logoContentType: text("logo_content_type"),
+  logoByteSize: integer("logo_byte_size").notNull().default(0),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  isSponsored: integer("is_sponsored", { mode: "boolean" }).notNull().default(false),
+  createdAt,
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  index("sponsors_group_active_order_idx").on(table.groupId, table.isActive, table.sortOrder),
+]);
+
 // Apple accounts follow the same separation as Google identities. The
 // immutable OpenID Connect subject is authoritative; email is retained to
 // detect cross-provider conflicts and may be an Apple private-relay address.

@@ -211,6 +211,20 @@
       "when": 1789314061676,
       "tag": "0029_dazzling_blockbuster",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "6",
+      "when": 1789373967047,
+      "tag": "0030_brave_falcon",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "6",
+      "when": 1789374486408,
+      "tag": "0031_lowly_changeling",
+      "breakpoints": true
     }
   ]
 }

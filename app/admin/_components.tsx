@@ -93,6 +93,7 @@ function AdminNavigation({
       {adminHasCapability(user, "bugs.manage") && <Link prefetch={false} className={pendingBugs > 0 ? "admin-nav-alert" : undefined} href="/admin/bugs">Testers{pendingBugs > 0 && <b>{pendingBugs}</b>}</Link>}
       {adminHasCapability(user, "accounts.manage") && <Link href="/admin/cuentas" prefetch={false}>Cuentas</Link>}
       {adminHasCapability(user, "news.manage") && <Link href="/admin/noticias" prefetch={false}>Noticias</Link>}
+      {adminHasCapability(user, "settings.manage") && <Link href="/admin/patrocinadores" prefetch={false}>Sitios asociados</Link>}
       {adminHasCapability(user, "telegram.view") && <Link prefetch={false} className={pendingTelegram > 0 ? "admin-nav-alert" : undefined} href="/admin/telegram">Telegram{pendingTelegram > 0 && <b>{pendingTelegram}</b>}</Link>}
       {adminHasCapability(user, "audit.view") && <Link href="/admin/actividad" prefetch={false}>Actividad</Link>}
       {adminHasCapability(user, "settings.manage") && <Link href="/admin/configuracion" prefetch={false}>Configuración</Link>}

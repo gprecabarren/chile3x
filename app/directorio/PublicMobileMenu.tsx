@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 type PublicMobileMenuProps = {
   hasUserSession: boolean;
   hasAdminSession: boolean;
+  showSponsors?: boolean;
   session?: {
     label: string;
     username: string | null;
@@ -25,7 +26,7 @@ const portalLinks = [
   ["Contacto", "/contacto"],
 ] as const;
 
-export function PublicMobileMenu({ hasUserSession = false, hasAdminSession = false, session = null }: PublicMobileMenuProps) {
+export function PublicMobileMenu({ hasUserSession = false, hasAdminSession = false, showSponsors = false, session = null }: PublicMobileMenuProps) {
   const [open, setOpen] = useState(false);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const closeMenu = () => setOpen(false);
@@ -65,6 +66,7 @@ export function PublicMobileMenu({ hasUserSession = false, hasAdminSession = fal
           <div>
             <p>CHILE3X</p>
             {portalLinks.map(([label, href]) => <Link href={href} onClick={closeMenu} key={href}>{label}</Link>)}
+            {showSponsors && <Link href="/patrocinadores" onClick={closeMenu}>Sitios asociados</Link>}
           </div>
           {session && <div className="mobile-menu-session-summary">
             <p>{session.isAdmin ? "SESIÓN ADMINISTRATIVA" : "SESIÓN ACTIVA"}</p>

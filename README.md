@@ -271,6 +271,8 @@ La estructura temática mantiene `Novedades` para publicaciones sincronizadas. E
 
 Telegram no ofrece un campo de descripción individual para cada tema y ordena los temas de un foro según su actividad reciente. Por eso las orientaciones se mantienen en la descripción del espacio, las normas de General y mensajes introductorios; el orden visual puede cambiar cuando alguien publica y no significa que la estructura esté dañada.
 
+Estado verificado el 14 de septiembre de 2026: `@Chile3XBot` conserva la privacidad de grupos deshabilitada en BotFather, es administrador de los dos foros activos y recibió los once mensajes introductorios acordados —cinco en Comunidad y seis en Miembros—. D1 registró 69 actualizaciones del webhook, todas procesadas, sin trabajos de outbox pendientes o fallidos ni casos de moderación abiertos. La orientación publicada en el tema público `Novedades` apareció en `/novedades`, confirmando el recorrido Telegram → sitio; los antiguos chats separados permanecen inactivos y sin rol en D1.
+
 ### Preparar fotos de la galería pública
 
 1. La persona abre su anuncio y elige archivos en **Galería pública**.
@@ -363,6 +365,8 @@ Cuando se active Apple, comprobar además que el Services ID, dominio, retorno y
 - `84779a9` — Apple preparado y deshabilitado, migración 0029, documentos legales/FAQ, SEO de Quiénes somos y caché pública aislada por versión.
 - `09e97e2` — guía de activación futura de Apple y requisitos de dominio, retorno, retransmisión de correo y secretos.
 - `4e80413` — vinculación administrativa de Telegram sin falso timeout, guía escalable, logo retirado del error, botones Apple simplificados e iconos compactos corregidos.
+- `fc93569` — documentación final de las correcciones de interfaz y vinculación.
+- `2350a51` — registro de la versión de producción verificada del Worker.
 
 ## Límites y decisiones pendientes
 

@@ -64,22 +64,25 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
       <div className="age-strip"><span>+18</span>Este sitio está destinado exclusivamente a personas mayores de edad.</div>
       <header className={`site-header public-header${hasAnySession ? " has-session" : ""}`}>
         <Link className="brand" href="/" aria-label="Chile3X, inicio"><Image src="/chile3x-logo-primary.jpeg" alt="Chile3X" width={800} height={225} priority unoptimized /></Link>
-        <nav className="public-navigation" aria-label="Navegación principal">
-          <div className="public-navigation-group public-navigation-directory" aria-label="Directorio">
-            <Link href="/#cobertura">Regiones y ciudades</Link>
-            <Link href="/escorts">Escorts</Link>
-            <Link href="/agencias">Agencias</Link>
-            <Link href="/arriendos">Arriendos</Link>
-          </div>
-          <div className="public-navigation-group public-navigation-site" aria-label="Información y cuenta">
-            <Link href="/quienes-somos">Quiénes somos</Link>
-            <Link href="/noticias">Noticias</Link>
-            <Link href="/novedades">Novedades</Link>
-            <Link href="/faq">FAQ</Link>
-            <Link href="/contacto">Contacto</Link>
-            <Link href={sessionAccountHref}>{sessionAccountLabel}</Link>
-          </div>
-        </nav>
+        <div className="public-navigation-stack">
+          <nav className="public-navigation" aria-label="Navegación principal">
+            <div className="public-navigation-group public-navigation-directory" aria-label="Directorio">
+              <Link href="/#cobertura">Regiones y ciudades</Link>
+              <Link href="/escorts">Escorts</Link>
+              <Link href="/agencias">Agencias</Link>
+              <Link href="/arriendos">Arriendos</Link>
+            </div>
+            <div className="public-navigation-group public-navigation-site" aria-label="Información y cuenta">
+              <Link href="/quienes-somos">Quiénes somos</Link>
+              <Link href="/noticias">Noticias</Link>
+              <Link href="/novedades">Novedades</Link>
+              <Link href="/faq">FAQ</Link>
+              <Link href="/contacto">Contacto</Link>
+              <Link href={sessionAccountHref}>{sessionAccountLabel}</Link>
+            </div>
+          </nav>
+          <PortalContactLinks placement="header" />
+        </div>
         {sessionUser && <Link className="public-account-summary" href={sessionAccountHref} aria-label={`Abrir ${sessionAccountLabel.toLowerCase()}`}>
           <span>{currentUser ? "SESIÓN ACTIVA" : "SESIÓN ADMINISTRATIVA"}</span>
           <strong>{sessionPrimary}</strong>
@@ -89,7 +92,6 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
           {hasUserSession && <form action="/api/auth/session/logout" method="post"><button type="submit">Cerrar sesión</button></form>}
           {hasAdminSession && <form action="/api/auth/logout" method="post"><button className="public-admin-logout" type="submit">Cerrar sesión administrador</button></form>}
         </div>}
-        <PortalContactLinks placement="header" />
         <PublicMobileMenu
           hasUserSession={hasUserSession}
           hasAdminSession={hasAdminSession}

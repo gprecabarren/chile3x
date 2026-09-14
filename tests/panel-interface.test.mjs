@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [layoutSource, dashboardSource, cssSource, adminShellSource, mobileNavigationSource, accountShellSource, accountMobileNavigationSource] = await Promise.all([
+const [layoutSource, dashboardSource, cssSource, adminShellSource, mobileNavigationSource, accountShellSource, accountMobileNavigationSource, publicHeaderSource] = await Promise.all([
   readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/admin/page.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
@@ -10,6 +10,7 @@ const [layoutSource, dashboardSource, cssSource, adminShellSource, mobileNavigat
   readFile(new URL("../app/admin/AdminMobileNavigation.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/mi-cuenta/_components.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/mi-cuenta/AccountMobileNavigation.tsx", import.meta.url), "utf8"),
+  readFile(new URL("../app/directorio/_components.tsx", import.meta.url), "utf8"),
 ]);
 
 test("admin summary cards link to their existing filtered views", () => {
@@ -46,7 +47,10 @@ test("profile navigation cannot be interrupted halfway through a smooth return t
   assert.doesNotMatch(cssSource, /html \{ scroll-behavior: smooth;/);
 });
 
-test("desktop contact icons use their own row without colliding with sign-in actions", () => {
-  assert.match(cssSource, /@media \(min-width: 861px\) \{[\s\S]*?\.site-header\.public-header \.portal-contact-links-header \{[\s\S]*?order: 6;[\s\S]*?flex: 0 0 100%;[\s\S]*?justify-content: flex-end;/);
+test("desktop contact icons sit below sign-in without enlarging the full header", () => {
+  assert.match(publicHeaderSource, /<div className="public-navigation-stack">[\s\S]*?<nav className="public-navigation"[\s\S]*?<PortalContactLinks placement="header" \/>[\s\S]*?<\/div>/);
+  assert.match(cssSource, /@media \(min-width: 861px\) \{[\s\S]*?\.public-navigation-stack \{[\s\S]*?display: grid;[\s\S]*?justify-items: end;[\s\S]*?\.public-navigation-stack \.portal-contact-links-header \{[\s\S]*?width: auto;[\s\S]*?flex: 0 0 auto;/);
+  assert.doesNotMatch(cssSource, /\.site-header\.public-header \.portal-contact-links-header \{[\s\S]*?flex: 0 0 100%;/);
+  assert.match(cssSource, /@media \(max-width: 860px\) \{[\s\S]*?\.public-header \.public-navigation-stack \{ display: contents; \}/);
   assert.match(cssSource, /@media \(max-width: 860px\) \{[\s\S]*?\.public-header \.portal-contact-links-header \{ order: 2;/);
 });

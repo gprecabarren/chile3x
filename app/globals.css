@@ -1422,10 +1422,10 @@ select:disabled { opacity: .68; }
    controles se compriman o se monten entre sí. */
 @media (min-width: 861px) {
   .public-header.has-session { flex-wrap: wrap; gap: 10px 16px; }
-  .public-header.has-session .public-navigation { order: 4; width: 100%; margin-left: 0; justify-content: space-between; }
+  .public-header.has-session .public-navigation-stack { order: 4; width: 100%; margin-left: 0; }
+  .public-header.has-session .public-navigation { width: 100%; margin-left: 0; justify-content: space-between; }
   .public-header.has-session .public-account-summary { order: 2; flex: 1 1 210px; min-width: 180px; max-width: none; }
   .public-header.has-session .public-session-actions,
-  .public-header.has-session .portal-contact-links-header,
   .public-header.has-session .public-header-actions { order: 3; }
   .public-header.has-session .public-session-actions { width: auto; flex-wrap: nowrap; padding-top: 0; }
   .public-header.has-session .public-session-actions button { white-space: nowrap; }
@@ -1433,26 +1433,29 @@ select:disabled { opacity: .68; }
 
 @media (max-width: 1440px) and (min-width: 861px) {
   .public-header { flex-wrap: wrap; }
-  .public-header .public-navigation { order: 4; width: 100%; margin-left: 0; }
+  .public-header .public-navigation-stack { order: 4; width: 100%; margin-left: 0; }
+  .public-header .public-navigation { width: 100%; margin-left: 0; justify-content: space-between; }
   .public-header .public-account-summary { order: 2; flex: 1 1 210px; max-width: none; }
   .public-header .public-session-actions { order: 3; width: auto; padding-top: 0; }
-  .public-header .portal-contact-links-header { order: 3; }
   .public-header .public-header-actions { order: 3; }
 }
 
-/* En escritorio los accesos de contacto ocupan una fila compacta propia. De
-   este modo nunca compiten con Iniciar sesión ni con las acciones principales;
-   el encabezado móvil mantiene su distribución horizontal independiente. */
+/* En escritorio los accesos quedan justo bajo el último enlace de navegación.
+   La pila no consume ancho adicional ni crea una fila completa en el header. */
 @media (min-width: 861px) {
-  .site-header.public-header { flex-wrap: wrap; row-gap: 10px; }
-  .site-header.public-header .portal-contact-links-header {
-    order: 6;
-    width: 100%;
-    flex: 0 0 100%;
+  .public-navigation-stack {
+    min-width: 0;
+    margin-left: auto;
+    display: grid;
+    justify-items: end;
+    gap: 6px;
+  }
+  .public-navigation-stack .public-navigation { margin-left: 0; }
+  .public-navigation-stack .portal-contact-links-header {
+    width: auto;
+    flex: 0 0 auto;
     justify-content: flex-end;
-    gap: 8px;
-    padding-top: 9px;
-    border-top: 1px solid #202638;
+    gap: 7px;
   }
 }
 
@@ -1460,6 +1463,7 @@ select:disabled { opacity: .68; }
   .age-strip { min-height: 30px; padding: 5px 12px; gap: 7px; font-size: 9px; line-height: 1.25; }
   .age-strip span { width: 17px; height: 17px; }
   .site-header.public-header { min-height: 0; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 10px 14px 12px; }
+  .public-header .public-navigation-stack { display: contents; }
   .public-header .brand { order: 1; margin-right: auto; }
   .public-header .portal-contact-links-header { order: 2; gap: 8px; }
   .public-header .portal-contact-links-header .portal-contact-link { width: 40px; height: 40px; }

@@ -15,6 +15,7 @@ import {
   getTelegramConfiguration,
   TELEGRAM_LINK_TTL_MINUTES,
   telegramDeepLink,
+  telegramNativeDeepLink,
 } from "@/lib/telegram";
 
 type LinkSubject = "account" | "admin";
@@ -24,7 +25,8 @@ export async function beginTelegramLink(user: AccountUser | AdminUser, subjectTy
   const configuration = await getTelegramConfiguration();
   const secret = createOpaqueToken();
   const deepLink = telegramDeepLink(configuration.botUsername, secret);
-  if (!deepLink) return null;
+  const nativeDeepLink = telegramNativeDeepLink(configuration.botUsername, secret);
+  if (!deepLink || !nativeDeepLink) return null;
   const db = await getDb();
   const now = new Date().toISOString();
   const id = `telegram_link_attempt_${crypto.randomUUID()}`;
@@ -43,7 +45,7 @@ export async function beginTelegramLink(user: AccountUser | AdminUser, subjectTy
       createdAt: now,
     }),
   ]);
-  return { id, deepLink };
+  return { id, deepLink, nativeDeepLink };
 }
 
 export async function latestTelegramLinkAttempt(userId: string, subjectType: LinkSubject) {

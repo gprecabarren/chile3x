@@ -166,16 +166,27 @@ test("the administrative Telegram panel reports webhook health and supports mode
   assert.match(adminPage, /name="case_q"/);
 });
 
-test("Telegram handoffs do not trigger a false delayed-response overlay", async () => {
-  const [progress, adminPage, accountPage] = await Promise.all([
+test("Telegram linking launches explicitly across app, universal and web-capable links", async () => {
+  const [progress, adminPage, accountPage, launcher, adminRoute, accountRoute, telegram] = await Promise.all([
     source("app/FormProgress.tsx"),
     source("app/admin/telegram/page.tsx"),
     source("app/mi-cuenta/telegram/page.tsx"),
+    source("app/TelegramLinkLauncher.tsx"),
+    source("app/api/admin/telegram/vincular/route.ts"),
+    source("app/api/mi-cuenta/telegram/vincular/route.ts"),
+    source("lib/telegram.ts"),
   ]);
   assert.match(progress, /form\.dataset\.skipFormProgress === "true"/);
   assert.match(progress, /!delayed && <OfficialChile3xLogo/);
-  assert.match(adminPage, /data-skip-form-progress="true"/);
-  assert.match(accountPage, /data-skip-form-progress="true"/);
+  assert.match(adminPage, /<TelegramLinkLauncher endpoint="\/api\/admin\/telegram\/vincular"/);
+  assert.match(accountPage, /<TelegramLinkLauncher endpoint="\/api\/mi-cuenta\/telegram\/vincular"/);
+  assert.match(launcher, /window\.open\("about:blank", "_blank"\)/);
+  assert.match(launcher, /window\.location\.assign\(payload\.universalUrl\)/);
+  assert.match(launcher, /href=\{launch\.nativeUrl\}/);
+  assert.match(launcher, /href=\{launch\.universalUrl\}/);
+  assert.match(adminRoute, /universalUrl: attempt\.deepLink/);
+  assert.match(accountRoute, /nativeUrl: attempt\.nativeDeepLink/);
+  assert.match(telegram, /tg:\/\/resolve\?domain=\$\{username\}&start=link_\$\{secret\}/);
   assert.match(adminPage, /id="identidad-administrativa"/);
   assert.match(adminPage, /telegram-link-steps/);
   assert.match(adminPage, /Hay un vínculo abierto esperando/);

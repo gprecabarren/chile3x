@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getTelegramConfiguration, telegramIdentityLabel } from "@/lib/telegram";
 import { latestTelegramLinkAttempt } from "@/lib/telegram-linking";
 import { AccountHeading, AccountShell } from "../_components";
+import { TelegramLinkLauncher } from "@/app/TelegramLinkLauncher";
 
 export const dynamic = "force-dynamic";
 
@@ -64,7 +65,7 @@ export default async function AccountTelegramPage({ searchParams }: { searchPara
       <header><div><p className="eyebrow">IDENTIDAD VINCULADA</p><h2>{link ? telegramIdentityLabel(link.firstName, link.username, link.telegramUserId) : "Aún no vinculada"}</h2></div><span className={`telegram-status is-${link?.status ?? "unlinked"}`}>{link?.status === "linked" ? "Vinculada" : link?.status === "banned" ? "Vetada" : "Sin acceso"}</span></header>
       {!link || link.status === "revoked" ? <>
         <p>El proceso parte aquí, continúa en el bot y termina con una confirmación en esta misma sesión web. Así otra persona no puede apropiarse del enlace.</p>
-        <form action="/api/mi-cuenta/telegram/vincular" method="post" data-skip-form-progress="true"><button className="button button-primary" type="submit">Vincular Telegram</button></form>
+        <TelegramLinkLauncher endpoint="/api/mi-cuenta/telegram/vincular" label="Vincular Telegram" />
       </> : link.status === "banned" ? <p>Esta identidad fue vetada de los espacios de Telegram. La cuenta del sitio se mantiene separada; solicita una revisión desde <Link href="/contacto">Contacto</Link>.</p> : <>
         <dl><div><dt>Estado de Miembros</dt><dd>{membership?.status === "active" ? "Dentro del espacio privado" : membership?.status === "pending" ? "Solicitud o invitación pendiente" : "Fuera del espacio privado"}</dd></div><div><dt>Reingreso</dt><dd>Siempre es manual; una reactivación del sitio no te añade automáticamente.</dd></div></dl>
         <div className="telegram-account-actions"><form action="/api/mi-cuenta/telegram/invitacion" method="post"><button className="button button-primary" type="submit">{membership?.status === "active" ? "Enviar otra invitación" : "Volver a entrar"}</button></form><details><summary>Desvincular Telegram</summary><form action="/api/mi-cuenta/telegram/desvincular" method="post"><p>Se revocará el acceso a Miembros. Para confirmar, escribe DESVINCULAR.</p><label>Confirmación<input name="confirmation" autoComplete="off" required /></label><button className="button button-danger" type="submit">Desvincular y revocar acceso</button></form></details></div>

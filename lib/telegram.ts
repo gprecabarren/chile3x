@@ -119,6 +119,12 @@ export function telegramDeepLink(botUsername: string, secret: string) {
   return `https://t.me/${username}?start=link_${secret}`;
 }
 
+export function telegramNativeDeepLink(botUsername: string, secret: string) {
+  const username = normalizeTelegramUsername(botUsername);
+  if (!username || !/^[A-Za-z0-9_-]{20,60}$/.test(secret)) return null;
+  return `tg://resolve?domain=${username}&start=link_${secret}`;
+}
+
 export function telegramIdentityLabel(firstName: string | null | undefined, username: string | null | undefined, id?: string | null) {
   if (username) return `@${username}`;
   if (firstName?.trim()) return firstName.trim();

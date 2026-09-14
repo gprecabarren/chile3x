@@ -13,6 +13,7 @@ import {
 } from "@/db/schema";
 import { getCurrentAdmin } from "@/lib/auth";
 import { adminHasCapability } from "@/lib/admin-permissions";
+import { TelegramLinkLauncher } from "@/app/TelegramLinkLauncher";
 import { getTelegramConfiguration, telegramIdentityLabel } from "@/lib/telegram";
 import { latestTelegramLinkAttempt } from "@/lib/telegram-linking";
 import { AdminPageHeading, AdminShell } from "../_components";
@@ -159,7 +160,7 @@ export default async function AdminTelegramPage({ searchParams }: { searchParams
           <li><span>3</span><p>Vuelve a esta sección y confirma la identidad detectada.</p></li>
         </ol>
         {attempt?.status === "pending" && <p className="telegram-link-pending" role="status">Hay un vínculo abierto esperando que pulses «Iniciar» en Telegram. Si el enlace expiró o cerraste el bot, usa el botón nuevamente para generar uno nuevo.</p>}
-        <form action="/api/admin/telegram/vincular" method="post" data-skip-form-progress="true"><button className="button button-primary" type="submit">Vincular mi Telegram administrativo</button></form>
+        <TelegramLinkLauncher endpoint="/api/admin/telegram/vincular" label="Vincular mi Telegram administrativo" />
       </>}
       {candidateReady && <div className="telegram-confirm-card"><strong>{telegramIdentityLabel(attempt.candidateFirstName, attempt.candidateUsername, attempt.candidateTelegramUserId)}</strong><p>Confirma únicamente si reconoces esta identidad.</p><form action="/api/admin/telegram/confirmar" method="post"><button className="button button-primary" type="submit">Confirmar identidad administrativa</button></form></div>}
     </section>

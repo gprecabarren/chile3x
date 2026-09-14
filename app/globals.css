@@ -523,6 +523,14 @@ footer span { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid #272
 .telegram-link-steps p { margin: 1px 0 0; color: #c0ccda; font-size: 11px; line-height: 1.5; }
 .telegram-link-steps strong { color: #fff; }
 .telegram-link-pending { margin: 0 0 14px; padding: 12px 14px; border-left: 3px solid #e1aa4b; color: #ffe1a8; background: #2b2212; font-size: 11px; line-height: 1.55; }
+.telegram-link-launcher { display: grid; gap: 12px; margin-top: 18px; }
+.telegram-link-launcher > .button { width: 100%; }
+.telegram-launch-fallback { padding: 14px; border: 1px solid #356c8a; border-radius: var(--radius-sm); color: #d8eaf5; background: #0b1b29; }
+.telegram-launch-fallback > strong { display: block; color: #fff; font-size: 13px; }
+.telegram-launch-fallback > p { margin: 5px 0 12px; color: #adbfce; font-size: 11px; line-height: 1.55; }
+.telegram-launch-fallback > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.telegram-launch-fallback .button { min-height: 38px; padding: 9px 12px; }
+.telegram-launch-error { margin: 0; padding: 12px 14px; border-left: 3px solid #e1545c; color: #ffc8cc; background: #32171c; font-size: 12px; line-height: 1.55; }
 .telegram-admin-guide-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .telegram-admin-guide-grid article { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 13px; min-width: 0; padding: 17px; border: 1px solid #334155; border-radius: var(--radius-md); background: #080e17; }
 .telegram-admin-guide-grid h3 { margin: 0; color: #fff; font-size: 17px; }

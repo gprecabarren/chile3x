@@ -6,13 +6,16 @@ import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { safeJsonLd } from "@/lib/json-ld";
 import { publicPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = publicPageMetadata({
+export const metadata: Metadata = {
+  ...publicPageMetadata({
   title: "Chile3X: nuevo directorio para adultos en Chile",
   description: "Conoce Chile3X, un directorio chileno emergente para mayores de 18 años: publicaciones gratis durante el lanzamiento, cobertura nacional y revisión manual.",
   path: "/quienes-somos",
   socialTitle: "Chile3X: un nuevo directorio para adultos en Chile",
   socialDescription: "Un proyecto chileno emergente con publicación gratuita durante su lanzamiento, cobertura nacional, revisión manual y contacto directo.",
-});
+  }),
+  title: { absolute: "Chile3X: nuevo directorio para adultos en Chile" },
+};
 
 export const dynamic = "force-dynamic";
 
@@ -69,7 +72,6 @@ export default async function AboutPage() {
         name: "Chile3X",
         alternateName: "Chile 3X",
         url: siteUrl,
-        foundingDate: "2026",
         description: "Directorio chileno emergente para personas adultas, con cobertura nacional, revisión manual de publicaciones y contacto directo entre anunciantes y visitantes.",
         areaServed: { "@type": "Country", name: "Chile" },
         logo: { "@type": "ImageObject", url: `${siteUrl}/chile3x-logo-primary.jpeg` },
@@ -124,7 +126,7 @@ export default async function AboutPage() {
       <p className="eyebrow">UN PROYECTO CHILENO EMERGENTE</p>
       <div>
         <h2>Estamos comenzando, y queremos <em>hacerlo bien.</em></h2>
-        <p>Chile3X nace en 2026 como una propuesta nueva dentro de los directorios para adultos en Chile. No queremos aparentar una trayectoria que todavía estamos construyendo: estamos en una etapa inicial, incorporando las primeras publicaciones y perfeccionando la plataforma a partir del uso real y la retroalimentación de anunciantes y visitantes.</p>
+        <p>Chile3X es una propuesta nueva dentro de los directorios para adultos en Chile. Estamos en una etapa inicial, incorporando publicaciones y perfeccionando la plataforma con la experiencia de anunciantes y visitantes. Queremos que quienes llegan hoy puedan participar de su crecimiento y encontrar un espacio sencillo para dar a conocer sus anuncios.</p>
         <p>La plataforma incluye distintas identidades y tipos de publicación que cumplan las <Link href="/reglas-de-publicacion">reglas de publicación</Link>. La información se organiza por región, ciudad y comuna; el contacto y cualquier acuerdo ocurren directamente entre las personas. Chile3X no presta los servicios anunciados, no intermedia citas y no recibe pagos por acuerdos privados.</p>
       </div>
     </section>
@@ -133,7 +135,7 @@ export default async function AboutPage() {
       <header>
         <p className="eyebrow">NUESTRA FORMA DE HACERLO</p>
         <h2 id="about-differences-title">Qué distingue a Chile3X de otros directorios para adultos</h2>
-        <p>No necesitamos descalificar a otras plataformas para explicar nuestras decisiones. Estas son las diferencias concretas que Chile3X está construyendo desde el inicio.</p>
+        <p>Nuestra propuesta combina publicación gratuita durante el lanzamiento, alcance nacional y herramientas para que cada anunciante gestione su presencia. Estos son los pilares de esa experiencia.</p>
       </header>
       <div className="about-differences-grid">
         <article><span>01</span><h3>Todo Chile desde el diseño</h3><p>La navegación contempla las 16 regiones, con ciudades y comunas para dar visibilidad fuera de los centros habituales.</p></article>
@@ -166,7 +168,7 @@ export default async function AboutPage() {
         <li><span>1</span><div><h3>Crea tu cuenta</h3><p>Regístrate con correo o Google y completa los datos necesarios para administrar tus anuncios.</p></div></li>
         <li><span>2</span><div><h3>Elige el tipo de anuncio</h3><p>Prepara una publicación de Escort, Agencia o Arriendo con su ubicación, descripción y medios de contacto.</p></div></li>
         <li><span>3</span><div><h3>Envíala a revisión</h3><p>El equipo comprueba que la ficha cumpla las reglas antes de incorporarla al directorio público.</p></div></li>
-        <li><span>4</span><div><h3>Administra lo publicado</h3><p>Desde tu panel puedes actualizar información, pausar anuncios y gestionar las vinculaciones disponibles.</p></div></li>
+        <li><span>4</span><div><h3>Administra lo publicado</h3><p>Desde tu panel puedes actualizar información, ocultar y volver a mostrar anuncios y gestionar las vinculaciones disponibles.</p></div></li>
       </ol>
       <nav aria-label="Categorías del directorio">
         <Link href="/escorts">Ver escorts</Link>
@@ -195,7 +197,7 @@ export default async function AboutPage() {
       </div>
       <div className="about-roadmap-list">
         <article><strong>Agencias</strong><h3>Más herramientas de gestión</h3><p>Seguiremos mejorando la relación entre agencias, cuentas vinculadas y anuncios para que cada autorización sea comprensible y controlable.</p></article>
-        <article><strong>Acceso</strong><h3>Inicio de sesión con Apple</h3><p>La integración está preparada para activarse cuando exista una configuración externa completa y pueda verificarse de extremo a extremo.</p></article>
+        <article><strong>Acceso</strong><h3>Inicio de sesión con Apple</h3><p>Estamos preparando una alternativa para ingresar y registrarse con una cuenta Apple. Anunciaremos su disponibilidad cuando esté habilitada; por ahora puedes usar correo o Google.</p></article>
         <article><strong>Promoción opcional</strong><h3>Más formas de destacar</h3><p>Evaluamos periodos destacados y otras herramientas promocionales, siempre con condiciones claras antes de habilitar un cobro.</p></article>
         <article><strong>Comunidad</strong><h3>Cobertura y avisos útiles</h3><p>Queremos ampliar la presencia regional, escuchar sugerencias y mantener avisos de estado, seguridad y mejoras a través del sitio y Telegram.</p></article>
       </div>
@@ -209,7 +211,7 @@ export default async function AboutPage() {
       <div className="about-available-links">
         <Link href="/novedades"><strong>Novedades</strong><span>Actualizaciones, mantenimiento y cambios confirmados.</span><b aria-hidden="true">→</b></Link>
         {telegramHref && <a href={telegramHref} target="_blank" rel="noreferrer"><strong>Comunidad en Telegram</strong><span>Ayuda, sugerencias y comunicación de la plataforma.</span><b aria-hidden="true">→</b></a>}
-        <Link href="/patrocinadores"><strong>Sitios asociados</strong><span>Conoce proyectos y plataformas presentes en el directorio.</span><b aria-hidden="true">→</b></Link>
+        {settings.sponsors_enabled === "enabled" && <Link href="/patrocinadores"><strong>Sitios asociados</strong><span>Conoce proyectos y plataformas presentes en el directorio.</span><b aria-hidden="true">→</b></Link>}
       </div>
     </section>
 

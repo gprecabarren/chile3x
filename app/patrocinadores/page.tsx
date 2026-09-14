@@ -61,10 +61,9 @@ export default async function SponsorsPage() {
       <header className="sponsors-hero">
         <p className="eyebrow">RED CHILE3X</p>
         <h1>Sitios asociados y servicios para adultos en Chile</h1>
-        <p>Explora una selección independiente de spas, masajes y plataformas asociadas. Cada tarjeta abre el sitio oficial de un tercero en una pestaña nueva.</p>
       </header>
-      {groups.map((group) => <section className="sponsor-group" aria-labelledby={`sponsor-group-${group.slug}`} key={group.id}>
-        <header><p className="eyebrow">SITIOS ASOCIADOS</p><h2 id={`sponsor-group-${group.slug}`}>{group.name}</h2>{group.description && <p>{group.description}</p>}</header>
+      {groups.map((group) => <section className="sponsor-group" aria-label={groups.length === 1 ? "Sitios asociados" : undefined} aria-labelledby={groups.length > 1 ? `sponsor-group-${group.slug}` : undefined} key={group.id}>
+        {groups.length > 1 && <header><p className="eyebrow">SITIOS ASOCIADOS</p><h2 id={`sponsor-group-${group.slug}`}>{group.name}</h2>{group.description && <p>{group.description}</p>}</header>}
         <div className="sponsor-card-grid">
           {group.sponsors.map((card) => <article className={`sponsor-card sponsor-card-${card.displayMode}`} key={card.id}>
             <a href={card.destinationUrl} target="_blank" rel={`${card.isSponsored ? "sponsored " : ""}noreferrer`} aria-label={`${card.ctaLabel}: ${card.name}`}>

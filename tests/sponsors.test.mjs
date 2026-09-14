@@ -60,7 +60,8 @@ test("the public page is canonical, structured, conditional and responsive", asy
   assert.match(page, /path: "\/patrocinadores"/);
   assert.match(page, /"@type": "CollectionPage"/);
   assert.match(page, /<h1>Sitios asociados/);
-  assert.match(page, /<h2 id=/);
+  assert.match(page, /groups\.length > 1 && <header>/);
+  assert.match(page, /\(card\.headline \|\| card\.subtitle\)/);
   assert.match(page, /robots: enabled \? \{ index: true/);
   assert.match(page, /if \(!enabled && !admin\) notFound\(\)/);
   assert.match(menu, /showSponsors && <Link href="\/patrocinadores"/);

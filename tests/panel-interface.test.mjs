@@ -40,3 +40,8 @@ test("the mobile account menu closes after selecting a section", () => {
   assert.match(accountMobileNavigationSource, /removeAttribute\("open"\)/);
   assert.match(cssSource, /\.account-header > \.account-desktop-navigation \{ display: none; \}/);
 });
+
+test("profile navigation cannot be interrupted halfway through a smooth return to the top", () => {
+  assert.match(cssSource, /html \{ scroll-behavior: auto; background: var\(--ink\); \}/);
+  assert.doesNotMatch(cssSource, /html \{ scroll-behavior: smooth;/);
+});

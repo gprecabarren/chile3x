@@ -13,7 +13,7 @@ El proyecto está construido para operar en Cloudflare con Workers, D1 y R2, sin
 - Un error al ingresar conserva la página de destino. Los retornos rechazan URLs externas o malformadas y mantienen filtros y anclas. Un fallo al registrar conserva los datos no sensibles; si la cuenta ya se guardó pero falló el envío de correo, permite reenviar la verificación sin intentar crearla otra vez.
 - Las reseñas tienen un orden determinista incluso con fechas idénticas; todas continúan accesibles mediante «Ver más reseñas».
 - Los medios públicos revalidan su disponibilidad antes de reutilizarse. Las imágenes sin cambios pueden responder con `304`, evitando descargarlas nuevamente.
-- El menú móvil recupera texto legible y controles más cómodos. Hasta 480 px, Agencias y Arriendos quedan agrupados bajo «Directorio» en el menú; Regiones, Escorts e Iniciar sesión/Mi cuenta permanecen visibles. El menú tiene nombre accesible, cierre con Escape y altura limitada con desplazamiento interno. En PC, los iconos de contacto ocupan una fila inferior compacta y alineada a la derecha para no chocar con Iniciar sesión ni con las acciones principales.
+- El menú móvil recupera texto legible y controles más cómodos. Hasta 480 px, Agencias y Arriendos quedan agrupados bajo «Directorio» en el menú; Regiones, Escorts e Iniciar sesión/Mi cuenta permanecen visibles. El menú tiene nombre accesible, cierre con Escape y altura limitada con desplazamiento interno. En PC, los iconos de contacto quedan alineados justo debajo de «Iniciar sesión» dentro del propio bloque de navegación, sin ocupar una fila completa ni chocar con las acciones principales.
 - Las navegaciones entre el directorio y una ficha reinician el desplazamiento de inmediato. El sitio no aplica desplazamiento suave global porque un toque durante esa animación podía dejar un anuncio abierto a mitad o al final de la página en dispositivos móviles.
 - Los consentimientos del registro tienen casillas de 22 px. Se retiró la carga innecesaria de la biblioteca de Google Preferred Sources, cuyo botón ya estaba desactivado.
 - Las cuentas públicas distinguen la deshabilitación voluntaria del bloqueo administrativo. La primera se revierte mediante una confirmación segura al volver a iniciar sesión; la segunda solo puede retirarla el equipo administrador. Si ambos estados coinciden, prevalece el bloqueo administrativo.
@@ -337,7 +337,7 @@ pnpm deploy
 
 Este script fuerza el uso del `wrangler.json` del repositorio y conserva las variables configuradas en Cloudflare. No reutilizar configuraciones ni recursos del proyecto JurisConecta.
 
-El despliegue verificado el 14 de septiembre de 2026 corresponde a la versión del Worker `36681fab-8a58-4714-8d59-5a0a06e66912`. La unión `CF_VERSION_METADATA` se usa únicamente para aislar la caché pública de cada despliegue. La comprobación visual en producción confirmó que la fila de contactos no se superpone con «Iniciar sesión», que la vista móvil no genera desplazamiento horizontal y que una ficha abierta desde el final del directorio comienza en la parte superior.
+El despliegue verificado el 14 de septiembre de 2026 corresponde a la versión del Worker `4226f2e6-10e8-496a-9a64-a3db7a3f8cf1`. La unión `CF_VERSION_METADATA` se usa únicamente para aislar la caché pública de cada despliegue. La comprobación visual en producción confirmó una cabecera de escritorio compacta de 100 px, los contactos alineados bajo «Iniciar sesión» y separados de las acciones, la distribución móvil sin cambios ni desplazamiento horizontal y una ficha abierta desde el final del directorio comenzando en la parte superior.
 
 1. `pnpm lint` sin errores.
 2. `pnpm build` sin errores.
@@ -370,6 +370,7 @@ Cuando se active Apple, comprobar además que el Services ID, dominio, retorno y
 - `2350a51` — registro de la versión de producción verificada del Worker.
 - `39d5ca7` — navegación inmediata al inicio de cada ficha para impedir que un toque interrumpa el desplazamiento móvil.
 - `2338e14` — fila independiente de contactos en la cabecera de escritorio, sin colisión con sesión ni acciones principales.
+- `d17f69f` — cabecera de escritorio nuevamente compacta, con contactos debajo de «Iniciar sesión» sin alterar móvil.
 
 ## Límites y decisiones pendientes
 

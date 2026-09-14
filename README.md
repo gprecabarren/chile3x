@@ -55,7 +55,7 @@ pnpm typecheck
 pnpm test
 ```
 
-Las 52 pruebas automáticas cubren el Worker compilado, aislamiento de caché por versión, fallos de caché, retornos seguros, datos de reintento sin contraseñas, la criptografía y los estados de Apple y la entrega de los flujos de vinculación a Telegram sin falsos avisos de espera. Con `pnpm dev` y las migraciones aplicadas **solo a la D1 local**, `node scripts/qa-local.mjs` comprueba paneles, creación asistida, cuentas deshabilitadas, anuncios ocultos, paginación de reseñas y revocación de sesión usando cuentas ficticias. Después se ejecuta `node scripts/qa-local.mjs cleanup`, que elimina únicamente esas cuentas y anuncios locales. Nunca ejecutar estas pruebas contra producción ni subir los estados temporales de `outputs/`.
+Las 54 pruebas automáticas cubren el Worker compilado, aislamiento de caché por versión, fallos de caché, retornos seguros, datos de reintento sin contraseñas, la criptografía y los estados de Apple, la entrega de los flujos de vinculación a Telegram sin falsos avisos de espera y las protecciones de interfaz para la cabecera y el desplazamiento entre el directorio y una ficha. Con `pnpm dev` y las migraciones aplicadas **solo a la D1 local**, `node scripts/qa-local.mjs` comprueba paneles, creación asistida, cuentas deshabilitadas, anuncios ocultos, paginación de reseñas y revocación de sesión usando cuentas ficticias. Después se ejecuta `node scripts/qa-local.mjs cleanup`, que elimina únicamente esas cuentas y anuncios locales. Nunca ejecutar estas pruebas contra producción ni subir los estados temporales de `outputs/`.
 
 La caché de documentos anónimos dura hasta 600 segundos dentro de una misma versión: una moderación puede tardar ese intervalo en reflejarse en una página ya cacheada, pero un despliegue invalida de inmediato el contenido anterior. Las páginas con sesión, los paneles y las respuestas de navegación no utilizan esa caché compartida. Las pruebas de tamaños móviles no sustituyen una comprobación en un iPhone físico ni una prueba de carga sostenida en Cloudflare.
 
@@ -337,7 +337,7 @@ pnpm deploy
 
 Este script fuerza el uso del `wrangler.json` del repositorio y conserva las variables configuradas en Cloudflare. No reutilizar configuraciones ni recursos del proyecto JurisConecta.
 
-El despliegue verificado el 13 de septiembre de 2026 corresponde a la versión del Worker `7c7ee531-0527-482a-a36d-683eca497604`. La unión `CF_VERSION_METADATA` se usa únicamente para aislar la caché pública de cada despliegue.
+El despliegue verificado el 14 de septiembre de 2026 corresponde a la versión del Worker `36681fab-8a58-4714-8d59-5a0a06e66912`. La unión `CF_VERSION_METADATA` se usa únicamente para aislar la caché pública de cada despliegue. La comprobación visual en producción confirmó que la fila de contactos no se superpone con «Iniciar sesión», que la vista móvil no genera desplazamiento horizontal y que una ficha abierta desde el final del directorio comienza en la parte superior.
 
 1. `pnpm lint` sin errores.
 2. `pnpm build` sin errores.
@@ -368,6 +368,8 @@ Cuando se active Apple, comprobar además que el Services ID, dominio, retorno y
 - `4e80413` — vinculación administrativa de Telegram sin falso timeout, guía escalable, logo retirado del error, botones Apple simplificados e iconos compactos corregidos.
 - `fc93569` — documentación final de las correcciones de interfaz y vinculación.
 - `2350a51` — registro de la versión de producción verificada del Worker.
+- `39d5ca7` — navegación inmediata al inicio de cada ficha para impedir que un toque interrumpa el desplazamiento móvil.
+- `2338e14` — fila independiente de contactos en la cabecera de escritorio, sin colisión con sesión ni acciones principales.
 
 ## Límites y decisiones pendientes
 

@@ -45,3 +45,8 @@ test("profile navigation cannot be interrupted halfway through a smooth return t
   assert.match(cssSource, /html \{ scroll-behavior: auto; background: var\(--ink\); \}/);
   assert.doesNotMatch(cssSource, /html \{ scroll-behavior: smooth;/);
 });
+
+test("desktop contact icons use their own row without colliding with sign-in actions", () => {
+  assert.match(cssSource, /@media \(min-width: 861px\) \{[\s\S]*?\.site-header\.public-header \.portal-contact-links-header \{[\s\S]*?order: 6;[\s\S]*?flex: 0 0 100%;[\s\S]*?justify-content: flex-end;/);
+  assert.match(cssSource, /@media \(max-width: 860px\) \{[\s\S]*?\.public-header \.portal-contact-links-header \{ order: 2;/);
+});

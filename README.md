@@ -46,6 +46,9 @@ El proyecto está construido para operar en Cloudflare con Workers, D1 y R2, sin
 - «Iniciar con Apple» quedó implementado de extremo a extremo y visible, pero deliberadamente deshabilitado hasta contar con Apple Developer. El panel permite guardar los identificadores sin publicar el acceso, comprueba por separado los secretos de Cloudflare y no permite activar una configuración incompleta.
 - El botón Apple deshabilitado conserva la misma jerarquía visual que Google sin mostrar junto a él el texto técnico sobre Apple Developer; la explicación y la configuración permanecen únicamente en el panel administrativo y esta documentación.
 - El flujo Apple valida firma, emisor, audiencia, vigencia, nonce, correo verificado e identificador estable; impide reutilizar correos de Google o administración, conserva el correo bloqueado, precarga nombres editables y cifra la autorización necesaria para revocarla al eliminar la cuenta.
+- `/patrocinadores` publica la nueva guía **Sitios asociados** con un H1 único, grupos múltiples con H2, canonical, metadatos sociales, `CollectionPage`/`ItemList` y entrada condicional en el sitemap. Mientras exista un único grupo, su nombre genérico no ocupa espacio visual; al crear un segundo, aparecen los encabezados editables de todos los grupos. El acceso queda deliberadamente discreto en el footer y al final del menú hamburguesa; no se añadió una tarjeta de Paradisse.
+- `Administración > Sitios asociados` permite publicar u ocultar toda la página, crear grupos desplegables, ordenar grupos y tarjetas, cargar o reemplazar fondos y logos en R2, marcar enlaces compensados y mantener cada tarjeta sin título o subtítulo visible. El botón ofrece `Contactar` y `Conocer más` como sugerencias, pero acepta cualquier texto breve personalizado.
+- La selección inicial contiene ocho sitios autorizados tomados como referencia visual de Paradisse y los tres directorios ya presentes en el footer: Open Adult Directory, AngelisNET y Foro La EstoKada. Los banners horizontales usan un modo de marca centrado para conservar la imagen completa en escritorio y móvil.
 
 Verificación reproducible:
 
@@ -55,7 +58,7 @@ pnpm typecheck
 pnpm test
 ```
 
-Las 54 pruebas automáticas cubren el Worker compilado, aislamiento de caché por versión, fallos de caché, retornos seguros, datos de reintento sin contraseñas, la criptografía y los estados de Apple, la entrega de los flujos de vinculación a Telegram sin falsos avisos de espera y las protecciones de interfaz para la cabecera y el desplazamiento entre el directorio y una ficha. Con `pnpm dev` y las migraciones aplicadas **solo a la D1 local**, `node scripts/qa-local.mjs` comprueba paneles, creación asistida, cuentas deshabilitadas, anuncios ocultos, paginación de reseñas y revocación de sesión usando cuentas ficticias. Después se ejecuta `node scripts/qa-local.mjs cleanup`, que elimina únicamente esas cuentas y anuncios locales. Nunca ejecutar estas pruebas contra producción ni subir los estados temporales de `outputs/`.
+Las 57 pruebas automáticas cubren el Worker compilado, aislamiento de caché por versión, fallos de caché, retornos seguros, datos de reintento sin contraseñas, la criptografía y los estados de Apple, la entrega de los flujos de vinculación a Telegram sin falsos avisos de espera, las protecciones de interfaz para la cabecera y el desplazamiento entre el directorio y una ficha, y el CRUD, SEO, visibilidad, orden y almacenamiento del catálogo de sitios asociados. Con `pnpm dev` y las migraciones aplicadas **solo a la D1 local**, `node scripts/qa-local.mjs` comprueba paneles, creación asistida, cuentas deshabilitadas, anuncios ocultos, paginación de reseñas y revocación de sesión usando cuentas ficticias. Después se ejecuta `node scripts/qa-local.mjs cleanup`, que elimina únicamente esas cuentas y anuncios locales. Nunca ejecutar estas pruebas contra producción ni subir los estados temporales de `outputs/`.
 
 La caché de documentos anónimos dura hasta 600 segundos dentro de una misma versión: una moderación puede tardar ese intervalo en reflejarse en una página ya cacheada, pero un despliegue invalida de inmediato el contenido anterior. Las páginas con sesión, los paneles y las respuestas de navegación no utilizan esa caché compartida. Las pruebas de tamaños móviles no sustituyen una comprobación en un iPhone físico ni una prueba de carga sostenida en Cloudflare.
 
@@ -84,6 +87,7 @@ Actualmente incluye:
 - Panel operativo desplegable en el resumen administrativo, con filtros por período, área y resultado, historial de eventos, entrega de correos y auditorías agregadas de D1/R2.
 - Comunidad Telegram administrable desde `Administración > Telegram`, con chats descubiertos, asignación de roles, normas, límites anti-spam, vinculación administrativa, casos de moderación, auditoría y Novedades bidireccionales.
 - Integración de cuenta en `Mi cuenta > Telegram`, con vínculo de doble confirmación, acceso manual a Miembros, revocación y mensajes claros para cuentas vetadas o deshabilitadas.
+- Página pública de sitios asociados administrada íntegramente desde el panel, con grupos, orden, imágenes propias en R2, textos opcionales, enlaces externos trazables y desactivación completa sin dejar enlaces públicos ni URLs indexables.
 - Pestaña **Administradores** para autorizar usuarios exactos de GitHub, asignar funciones, cerrar sus sesiones y revocar o reactivar accesos sin tocar el repositorio.
 - Cada invitación administrativa reserva desde el inicio un correo verificado de GitHub. Ese correo no puede coexistir con una cuenta de anunciante o tester, y GitHub debe confirmarlo durante el primer acceso.
 - Historial administrativo separado y paginado: identifica a cada administrador por su cuenta interna y GitHub, registra fecha/hora, resultado, objeto afectado y valores anteriores/posteriores, con filtros por administrador, área, acción, objeto, resultado y rango de fechas.
@@ -162,6 +166,7 @@ Los archivos heredados de la antigua galería privada se migran a este modelo si
 - Canonical, Open Graph, X Cards y favicon oficial con versiones para navegador, Apple y manifiesto web.
 - Un H1 por página y jerarquía semántica de encabezados para páginas públicas.
 - URLs de ciudad orientadas a intención de búsqueda, enlazado interno, textos de cobertura y sitemap XML dinámico en `/sitemap.xml`. La portada expone cada ciudad mediante un `ItemList` con enlaces válidos a su página local; una página HTML normal nunca debe enviarse a Search Console como sitemap.
+- `/patrocinadores` usa contenido semántico y datos estructurados de colección. Cuando administración la oculta, desaparece del footer, del menú móvil y del sitemap; visitantes reciben `404` y los metadatos de la vista administrativa indican `noindex` y `noarchive`.
 - `robots.txt`, `sitemap.xml`, `llms.txt`, imágenes con texto alternativo y rutas 404 propias.
 - Metadatos sociales específicos para páginas públicas y anuncios compartibles.
 - Google Tag Manager y Google Analytics se cargan únicamente tras el consentimiento de medición.
@@ -177,6 +182,7 @@ Los archivos heredados de la antigua galería privada se migran a este modelo si
 - **Observabilidad interna:** eventos operativos agregados en D1 para entregas de correo, autenticación, errores controlados y revisiones de almacenamiento. No se guardan destinatarios, tokens, IP de visitantes ni claves de objetos en este historial.
 - **Autenticación pública opcional:** Google Identity Services con un cliente web configurado por ID público en `Administración > Configuración > Google`; el secreto de cliente no se usa ni se almacena en Chile3X. Apple está preparado en `Administración > Configuración > Inicio con Apple`, pero permanece deshabilitado hasta configurar una membresía, los identificadores y dos secretos del Worker.
 - **Telegram:** webhook y Bot API ejecutados por el mismo Worker, tablas D1 versionadas, cola principal `chile3x-telegram`, cola de mensajes no procesables `chile3x-telegram-dlq` y cron cada cinco minutos para recuperar trabajos interrumpidos y limpiar datos temporales.
+- **Sitios asociados:** grupos, orden, visibilidad y textos en D1; imágenes principales y logos en el bucket R2 existente bajo el prefijo protegido `sponsors/`. La auditoría operativa cuenta estos archivos sin exponer sus claves.
 
 Las uniones de infraestructura están definidas en [`.openai/hosting.json`](.openai/hosting.json): `DB` para D1 y `MEDIA` para R2. Los secretos nunca deben añadirse al repositorio.
 
@@ -274,6 +280,15 @@ Telegram no ofrece un campo de descripción individual para cada tema y ordena l
 
 Estado verificado el 14 de septiembre de 2026: `@Chile3XBot` conserva la privacidad de grupos deshabilitada en BotFather, es administrador de los dos foros activos y recibió los once mensajes introductorios acordados —cinco en Comunidad y seis en Miembros—. D1 registró 69 actualizaciones del webhook, todas procesadas, sin trabajos de outbox pendientes o fallidos ni casos de moderación abiertos. La orientación publicada en el tema público `Novedades` apareció en `/novedades`, confirmando el recorrido Telegram → sitio; los antiguos chats separados permanecen inactivos y sin rol en D1.
 
+### Administrar Sitios asociados
+
+1. Abrir `Administración > Sitios asociados`. El interruptor superior publica u oculta la página completa; ocultarla también la retira del sitemap, footer y menú móvil.
+2. Crear uno o más grupos y asignar su orden vertical. Un grupo oculto conserva sus tarjetas, pero no se entrega públicamente.
+3. Crear la tarjeta con nombre interno, enlace HTTPS, descripción accesible e imagen principal. El título visible y el subtítulo son opcionales; el logo también lo es.
+4. Elegir el diseño: texto sobre imagen, imagen protagonista o logo/banner centrado. Seleccionar `Contactar`, `Conocer más` o escribir un texto propio para el botón.
+5. Ordenar las tarjetas con números como 10, 20 y 30. Marcar el enlace como pagado o patrocinado cuando exista compensación para añadir `rel="sponsored"`.
+6. Previsualizar y probar el enlace antes de dejar la tarjeta activa. Reemplazar una imagen elimina de R2 la versión anterior después de que D1 haya guardado correctamente la nueva referencia.
+
 ### Preparar fotos de la galería pública
 
 1. La persona abre su anuncio y elige archivos en **Galería pública**.
@@ -325,7 +340,7 @@ Get-Content -Raw -LiteralPath 'C:\ruta\AuthKey_XXXXXXXXXX.p8' | pnpm exec wrangl
 node -e "process.stdout.write(require('crypto').randomBytes(32).toString('base64url'))" | pnpm exec wrangler secret put APPLE_TOKEN_ENCRYPTION_KEY --config wrangler.json
 ```
 
-Las migraciones `0026_slim_white_tiger.sql` y `0027_messy_robbie_robertson.sql` crean la configuración, identidades, espacios, Novedades, moderación, auditoría, webhook, outbox y membresías. `0028_telegram_two_space_architecture.sql` retira el rol heredado de Alertas para conservar únicamente Comunidad y Miembros. `0029_dazzling_blockbuster.sql` agrega de forma aditiva las identidades Apple, los intentos anti-repetición y los registros temporales de alta. Antes de desplegar Telegram deben existir las colas declaradas en `wrangler.json` y la instalación del webhook debe terminarse desde `Administración > Telegram`.
+Las migraciones `0026_slim_white_tiger.sql` y `0027_messy_robbie_robertson.sql` crean la configuración, identidades, espacios, Novedades, moderación, auditoría, webhook, outbox y membresías. `0028_telegram_two_space_architecture.sql` retira el rol heredado de Alertas para conservar únicamente Comunidad y Miembros. `0029_dazzling_blockbuster.sql` agrega de forma aditiva las identidades Apple, los intentos anti-repetición y los registros temporales de alta. `0030_brave_falcon.sql` crea grupos y tarjetas de sitios asociados, y `0031_lowly_changeling.sql` añade el título visible opcional y los tres directorios del footer. Antes de desplegar Telegram deben existir las colas declaradas en `wrangler.json` y la instalación del webhook debe terminarse desde `Administración > Telegram`.
 
 ## Publicación
 
@@ -337,7 +352,7 @@ pnpm deploy
 
 Este script fuerza el uso del `wrangler.json` del repositorio y conserva las variables configuradas en Cloudflare. No reutilizar configuraciones ni recursos del proyecto JurisConecta.
 
-El despliegue verificado el 14 de septiembre de 2026 corresponde a la versión del Worker `4226f2e6-10e8-496a-9a64-a3db7a3f8cf1`. La unión `CF_VERSION_METADATA` se usa únicamente para aislar la caché pública de cada despliegue. La comprobación visual en producción confirmó una cabecera de escritorio compacta de 100 px, los contactos alineados bajo «Iniciar sesión» y separados de las acciones, la distribución móvil sin cambios ni desplazamiento horizontal y una ficha abierta desde el final del directorio comenzando en la parte superior.
+El despliegue verificado el 14 de septiembre de 2026 corresponde a la versión del Worker `40eb3c61-ea80-4a61-b477-cd4e8bca281c`. La unión `CF_VERSION_METADATA` se usa únicamente para aislar la caché pública de cada despliegue. La comprobación visual en producción confirmó una cabecera de escritorio compacta, contactos sin colisiones, navegación móvil que se repliega al elegir una sección, `/patrocinadores` con 11 tarjetas adaptables y banners completos, panel administrativo accesible, sitemap XML con la URL canónica, grupo único sin encabezado redundante y ausencia de enlaces a Paradisse.
 
 1. `pnpm lint` sin errores.
 2. `pnpm build` sin errores.
@@ -371,6 +386,9 @@ Cuando se active Apple, comprobar además que el Services ID, dominio, retorno y
 - `39d5ca7` — navegación inmediata al inicio de cada ficha para impedir que un toque interrumpa el desplazamiento móvil.
 - `2338e14` — fila independiente de contactos en la cabecera de escritorio, sin colisión con sesión ni acciones principales.
 - `d17f69f` — cabecera de escritorio nuevamente compacta, con contactos debajo de «Iniciar sesión» sin alterar móvil.
+- `d5c50e4` — la vinculación de Telegram entrega una respuesta JSON y abre explícitamente la app, el enlace universal o Telegram Web según el dispositivo, evitando que un redireccionamiento posterior al formulario quede ignorado.
+- `644d7a0` — catálogo administrable de Sitios asociados, migraciones 0030/0031, CRUD y orden, imágenes R2, SEO condicional, 11 tarjetas iniciales y pruebas de escritorio/móvil.
+- `98f4792` — portada de Sitios asociados simplificada: se retiró el párrafo solicitado y el encabezado del grupo único solo reaparece cuando exista más de una sección.
 
 ## Límites y decisiones pendientes
 

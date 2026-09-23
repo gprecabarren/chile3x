@@ -149,7 +149,7 @@ export default async function Home() {
       </section>
 
       <section className="home-photo-banner" aria-label="Chile3X, directorio adulto en Chile">
-        <Image src="/chile3x-hero-banner.webp" alt="" fill sizes="100vw" unoptimized />
+        <Image src="/assets/chile3x-hero-banner-20260923.webp" alt="" fill sizes="100vw" unoptimized />
         <div><p className="eyebrow">CHILE3X</p><h2>Un espacio adulto, <em>privado y claro.</em></h2><p>Encuentra publicaciones revisadas y contacta directamente a cada anunciante.</p><Link className="button button-outline" href="/escorts">Ver directorio nacional</Link></div>
       </section>
 

@@ -53,9 +53,9 @@ test("server-renders the Chile3X public home", async () => {
   assert.match(html, /DIRECTORIO ADULTO/);
   assert.match(html, /Este sitio está destinado exclusivamente a personas mayores de edad/);
   assert.match(html, /damas de compañía/i);
-  assert.match(html, /chile3x-logo-primary-320\.webp/);
-  assert.match(html, /chile3x-hero-banner\.webp/);
-  assert.match(html, /angelisnet-logo\.webp/);
+  assert.match(html, /assets\/chile3x-logo-primary-320-20260923\.webp/);
+  assert.match(html, /assets\/chile3x-hero-banner-20260923\.webp/);
+  assert.match(html, /assets\/angelisnet-logo-vpd6ls\.webp/);
   assert.doesNotMatch(html, /static4\.dditscdn\.com/);
   assert.match(html, /ESCORTS Y DAMAS DE COMPAÑÍA DESTACADAS/i);
   assert.match(html, /Todas las regiones,/);

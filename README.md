@@ -58,6 +58,7 @@ El proyecto está construido para operar en Cloudflare con Workers, D1 y R2, sin
 - Si una identidad Telegram vinculada cambia su `@usuario` o nombre, el webhook actualiza los datos mostrados en el panel con el siguiente mensaje o evento recibido de esa persona.
 - Manrope se sirve desde el mismo dominio mediante WOFF2, sin rutas locales de Windows. Los módulos de privacidad y progreso se cargan después del contenido principal y Google Tag Manager se posterga hasta una interacción o doce segundos para reducir JavaScript no utilizado durante la carga crítica.
 - La revisión de PageSpeed Insights del 23 de septiembre de 2026 partió en 87/100 móvil y 96/100 escritorio. Después del despliegue, escritorio llegó a 98/100 y dos repeticiones móviles marcaron 83/100 por variación del LCP sintético; los datos reales siguen aprobando Core Web Vitals con LCP 2,3 s, INP 112 ms y CLS 0. La advertencia de entrega de imágenes desapareció, el bloqueo estimado móvil bajó de 350 a 160 ms y TBT quedó entre 90 y 100 ms. Accesibilidad, buenas prácticas y SEO permanecen en 100/100. El logo visible usa una variante WebP ajustada a su tamaño real, el banner principal bajó de 94 KiB a unos 16 KiB y la insignia de AngelisNET se sirve localmente para eliminar su caché e imagen externas. El Worker añade `Cross-Origin-Opener-Policy: same-origin-allow-popups`, compatible con el acceso de Google.
+- Los estilos exclusivos de administración, cuenta, Telegram, sesiones y panel operativo se sirven desde `/assets/panels-20260923.css` únicamente dentro de `/admin` y `/mi-cuenta`. El CSS compilado que bloquea la portada bajó de 284,9 KiB a 208,9 KiB sin eliminar reglas: las 795 líneas retiradas del archivo global están conservadas en la hoja privada. Esta separación reduce aproximadamente 76 KiB sin comprimir (26,7 %); la hoja privada ocupa 15 KiB comprimida y solo se descarga cuando corresponde.
 - Las alertas restantes de Lighthouse asociadas a `beacon.min.js` de Cloudflare Web Analytics dependen de ese proveedor. La aplicación no duplica el script ni intenta falsear su caché; los mapas de origen permanecen fuera de producción para no publicar el código fuente. La CSP bloquea atributos de script en línea y conserva únicamente la compatibilidad mínima que necesita el arranque de React/vinext; migrarla a nonces y Trusted Types requiere soporte completo del runtime antes de retirar `unsafe-inline`.
 
 Verificación reproducible:
@@ -418,6 +419,7 @@ Cuando se active Apple, comprobar además que el Services ID, dominio, retorno y
 - `506619f` — documentación del despliegue de mensajería, presencia, ubicación y notificaciones operativas.
 - `6df6052` — optimización PageSpeed de logos, banner e insignia asociada, junto con aislamiento COOP compatible con Google.
 - `cf7309d` — recursos WebP versionados bajo `/assets/` con caché inmutable de un año.
+- `1b28176` — separación real de estilos privados por ruta para reducir el CSS bloqueante de la portada sin retirar analíticas ni funciones de panel.
 
 ## Límites y decisiones pendientes
 

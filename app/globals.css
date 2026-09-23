@@ -777,7 +777,7 @@ footer span { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid #272
 .site-header .public-navigation a { font-size: 11px; }
 
 /* Landing "Quiénes somos". */
-.about-hero { min-height: 680px; padding: 100px max(28px, calc((100vw - 1184px) / 2)); display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(310px, .55fr); align-items: center; gap: 76px; border-bottom: 1px solid #303648; background-image: linear-gradient(90deg, #080910 0%, rgba(8,9,16,.96) 36%, rgba(8,9,16,.68) 100%), linear-gradient(0deg, rgba(15,17,31,.66), rgba(15,17,31,.66)), url('/chile3x-hero-banner.jpg'); background-size: cover; background-position: center; }
+.about-hero { min-height: 680px; padding: 100px max(28px, calc((100vw - 1184px) / 2)); display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(310px, .55fr); align-items: center; gap: 76px; border-bottom: 1px solid #303648; background-image: linear-gradient(90deg, #080910 0%, rgba(8,9,16,.96) 36%, rgba(8,9,16,.68) 100%), linear-gradient(0deg, rgba(15,17,31,.66), rgba(15,17,31,.66)), url('/chile3x-hero-banner.webp'); background-size: cover; background-position: center; }
 .about-hero-copy h1 { max-width: 780px; font-size: clamp(49px, 5.8vw, 78px); }
 .about-hero-copy > p:not(.eyebrow) { max-width: 680px; margin: 0; color: #d6dae4; font-size: 18px; line-height: 1.65; }
 .about-hero-copy > p.about-launch-note { max-width: 620px; margin-top: 22px; padding: 14px 17px; border-left: 3px solid #f15860; color: #f0e2e3; background: rgba(93, 29, 36, .44); font-size: 13px; }

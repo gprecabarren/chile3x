@@ -10,6 +10,9 @@ function withSecurityHeaders(response: Response) {
   headers.set("strict-transport-security", "max-age=63072000; includeSubDomains; preload");
   headers.set("x-content-type-options", "nosniff");
   headers.set("x-frame-options", "DENY");
+  // Keep this compatible with Google Identity popups while isolating the
+  // top-level page from unrelated cross-origin windows.
+  headers.set("cross-origin-opener-policy", "same-origin-allow-popups");
   headers.set("referrer-policy", "strict-origin-when-cross-origin");
   headers.set("permissions-policy", "camera=(self), geolocation=(self), microphone=(self)");
   headers.set("content-security-policy", "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://challenges.cloudflare.com https://www.googletagmanager.com https://news.google.com https://cdn.jsdelivr.net https://static.cloudflareinsights.com; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob:; font-src 'self' data:; frame-src https://accounts.google.com https://challenges.cloudflare.com https://www.googletagmanager.com https://news.google.com; connect-src 'self' https://accounts.google.com https://www.googleapis.com https://challenges.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com https://news.google.com https://cdn.jsdelivr.net https://storage.googleapis.com https://cloudflareinsights.com; upgrade-insecure-requests");

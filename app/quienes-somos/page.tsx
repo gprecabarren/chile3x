@@ -55,7 +55,7 @@ export default async function AboutPage() {
         breadcrumb: { "@id": breadcrumbId },
         primaryImageOfPage: {
           "@type": "ImageObject",
-          url: `${siteUrl}/chile3x-hero-banner.jpg`,
+          url: `${siteUrl}/chile3x-hero-banner.webp`,
         },
       },
       {

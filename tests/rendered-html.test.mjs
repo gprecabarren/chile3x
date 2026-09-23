@@ -39,6 +39,7 @@ test("server-renders the Chile3X public home", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
   assert.equal(response.headers.get("x-content-type-options"), "nosniff");
   assert.equal(response.headers.get("x-frame-options"), "DENY");
+  assert.equal(response.headers.get("cross-origin-opener-policy"), "same-origin-allow-popups");
   assert.match(response.headers.get("strict-transport-security") ?? "", /max-age=63072000; includeSubDomains; preload/);
   const contentSecurityPolicy = response.headers.get("content-security-policy") ?? "";
   assert.match(contentSecurityPolicy, /frame-ancestors 'none'/);
@@ -52,6 +53,10 @@ test("server-renders the Chile3X public home", async () => {
   assert.match(html, /DIRECTORIO ADULTO/);
   assert.match(html, /Este sitio está destinado exclusivamente a personas mayores de edad/);
   assert.match(html, /damas de compañía/i);
+  assert.match(html, /chile3x-logo-primary-320\.webp/);
+  assert.match(html, /chile3x-hero-banner\.webp/);
+  assert.match(html, /angelisnet-logo\.webp/);
+  assert.doesNotMatch(html, /static4\.dditscdn\.com/);
   assert.match(html, /ESCORTS Y DAMAS DE COMPAÑÍA DESTACADAS/i);
   assert.match(html, /Todas las regiones,/);
   assert.match(html, /numberOfItems":36/);

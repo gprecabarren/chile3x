@@ -57,6 +57,7 @@ El proyecto está construido para operar en Cloudflare con Workers, D1 y R2, sin
 - Una cuenta deshabilitada conserva sus anuncios para revisión administrativa, pero no puede crear ni aprobar publicaciones y sus anuncios no se entregan públicamente. El panel identifica expresamente estos casos.
 - Si una identidad Telegram vinculada cambia su `@usuario` o nombre, el webhook actualiza los datos mostrados en el panel con el siguiente mensaje o evento recibido de esa persona.
 - Manrope se sirve desde el mismo dominio mediante WOFF2, sin rutas locales de Windows. Los módulos de privacidad y progreso se cargan después del contenido principal y Google Tag Manager se posterga hasta una interacción o doce segundos para reducir JavaScript no utilizado durante la carga crítica.
+- Las alertas de Lighthouse asociadas a `beacon.min.js` de Cloudflare Web Analytics y a insignias alojadas por directorios externos dependen de sus proveedores. La aplicación no duplica esos scripts ni intenta falsear su caché; los mapas de origen permanecen fuera de producción para no publicar el código fuente. La CSP bloquea atributos de script en línea y conserva únicamente la compatibilidad mínima que necesita el arranque de React/vinext.
 
 Verificación reproducible:
 
@@ -86,7 +87,7 @@ Actualmente incluye:
 - Etiquetas y filtros para nivel VIP, Premium y Gold, además de categorías complementarias y servicios. Las etiquetas incompatibles se validan tanto en interfaz como en servidor.
 - Fichas públicas con contactos directos, redes sociales, tarifas por duración, disponibilidad semanal, agenda de viajes, galería, videos, historias, favoritos, likes, reseñas, reportes y un botón para compartir por las opciones del dispositivo o mediante WhatsApp, Telegram, correo y copia de enlace.
 - Chat privado asociado al anuncio, con historial, bandeja, no leídos, silencio, bloqueo, límites anti-spam y avisos voluntarios del navegador; las fotografías públicas usan esquinas levemente redondeadas y los anuncios muestran `Online` solo durante actividad reciente.
-- Selector rápido de región y ciudad en la parte superior. La geolocalización es voluntaria, se resuelve localmente contra la cobertura disponible y solo persiste la ciudad elegida para priorizar resultados.
+- Selector rápido de región y ciudad dentro de los directorios. En la portada solo aparece un resumen compacto después del bloque principal. La geolocalización es voluntaria, se resuelve localmente contra la cobertura disponible y solo persiste la ciudad elegida para priorizar resultados.
 - El distintivo de verificación abre una explicación con foto, fecha de aprobación e información sobre la revisión de identidad y documento. Las cantidades de favoritos y «Me gusta» permanecen visibles junto a cada acción.
 - Una cuenta con sesión iniciada puede solicitar avisos para las ciudades que ya tienen anuncios públicos. Si el anuncio cambia a esa ciudad y administración vuelve a aprobarlo, recibe un correo único; su dirección nunca se expone al anunciante.
 - Historias públicas de texto o imagen, con visualización por país, ciudad y resultado filtrado. Las historias de imagen caducan y se eliminan automáticamente de la base de datos según su ciclo de vida.
@@ -105,7 +106,7 @@ Actualmente incluye:
 - Noticias administrables con metadatos SEO, imágenes moderadas y URLs públicas.
 - Páginas de términos, privacidad, reglas de publicación, FAQ, contacto y quiénes somos editables desde configuración cuando corresponda.
 - Aviso para mayores de 18 años, consentimiento de medición, Turnstile en formularios sensibles y modo mantenimiento.
-- Transición de carga global liviana, basada solo en CSS y el logo local, con demora breve para no parpadear en navegaciones rápidas ni agregar peticiones externas.
+- Transición de carga global liviana, basada solo en CSS y dos corazones abstractos —sin el logotipo—, con demora breve para no parpadear en navegaciones rápidas ni agregar peticiones externas. Los formularios usan únicamente un indicador circular y texto de estado.
 
 ## Modelo operativo
 
@@ -372,7 +373,7 @@ pnpm deploy
 
 Este script fuerza el uso del `wrangler.json` del repositorio y conserva las variables configuradas en Cloudflare. No reutilizar configuraciones ni recursos del proyecto JurisConecta.
 
-El despliegue verificado el 14 de septiembre de 2026 corresponde a la versión del Worker `40eb3c61-ea80-4a61-b477-cd4e8bca281c`. La unión `CF_VERSION_METADATA` se usa únicamente para aislar la caché pública de cada despliegue. La comprobación visual en producción confirmó una cabecera de escritorio compacta, contactos sin colisiones, navegación móvil que se repliega al elegir una sección, `/patrocinadores` con 11 tarjetas adaptables y banners completos, panel administrativo accesible, sitemap XML con la URL canónica, grupo único sin encabezado redundante y ausencia de enlaces a Paradisse.
+El despliegue verificado el 23 de septiembre de 2026 corresponde a la versión del Worker `a238a89d-3df5-467b-8ccb-aa5676385fce`. La unión `CF_VERSION_METADATA` se usa únicamente para aislar la caché pública de cada despliegue. D1 remoto contiene las migraciones hasta `0033_huge_selene.sql` y no informa relaciones inválidas. La comprobación visual en producción confirmó una cabecera de escritorio compacta con los contactos debajo de la sesión, navegación móvil sin desbordamiento horizontal, resumen territorial después del hero, selector completo solo dentro del directorio, textos legibles a 390 px, perfiles sin recortes, Manrope autohospedada, centro de notificaciones, estadísticas de WhatsApp y control de eliminación sincronizada de Novedades en el panel de Telegram. `/patrocinadores` conserva sus 11 tarjetas adaptables, sitemap canónico y ausencia de enlaces a Paradisse.
 
 1. `pnpm lint` sin errores.
 2. `pnpm build` sin errores.
@@ -411,6 +412,8 @@ Cuando se active Apple, comprobar además que el Services ID, dominio, retorno y
 - `98f4792` — portada de Sitios asociados simplificada: se retiró el párrafo solicitado y el encabezado del grupo único solo reaparece cuando exista más de una sección.
 - `9c95f33` — Quiénes somos ampliado como carta de presentación emergente, gratuita y orientada a SEO, junto con el ajuste de visibilidad solicitado en Novedades.
 - `9174e16` — refinamiento responsive y editorial final de Quiénes somos.
+- `56cf748` — chat privado y anonimización, presencia Online, preferencias territoriales, analítica consentida de WhatsApp, notificaciones operativas, borrado sincronizado de Novedades, Manrope autohospedada y migraciones 0032/0033.
+- `c5bd80e` — cierre responsive del selector territorial: textos móviles completos, una sola acción de geolocalización en el directorio y resumen de portada ubicado después del hero.
 
 ## Límites y decisiones pendientes
 

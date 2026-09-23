@@ -3,10 +3,13 @@ import type { ReactNode } from "react";
 import type { AccountUser } from "@/lib/auth";
 import { OfficialChile3xLogo } from "@/app/OfficialChile3xLogo";
 import { AccountMobileNavigation } from "./AccountMobileNavigation";
+import { PresenceHeartbeat } from "@/app/PresenceHeartbeat";
+import { countUnreadMessages } from "@/lib/internal-messages";
 
-function AccountNavigation({ user }: { user: AccountUser }) {
+function AccountNavigation({ user, unreadMessages }: { user: AccountUser; unreadMessages: number }) {
   return <nav aria-label="Navegación de cuenta">
     <Link href="/mi-cuenta">Mis anuncios</Link>
+    <Link className="account-messages-link" href="/mi-cuenta/mensajes">Mensajes{unreadMessages > 0 && <b aria-label={`${unreadMessages} mensajes sin leer`}>{unreadMessages > 99 ? "99+" : unreadMessages}</b>}</Link>
     <Link href="/mi-cuenta/contenido">Mi contenido</Link>
     <Link href="/mi-cuenta/datos-personales">Mis datos</Link>
     <Link href="/mi-cuenta/favoritos">Favoritos</Link>
@@ -27,18 +30,20 @@ function AccountNavigation({ user }: { user: AccountUser }) {
   </nav>;
 }
 
-export function AccountShell({ user, children }: { user: AccountUser; children: ReactNode }) {
+export async function AccountShell({ user, children }: { user: AccountUser; children: ReactNode }) {
+  const unreadMessages = await countUnreadMessages(user.id);
   return (
     <main className="account-root">
       <header className="account-header">
         <Link href="/" className="account-brand"><OfficialChile3xLogo priority /><small>MI CUENTA</small></Link>
-        <div className="account-desktop-navigation"><AccountNavigation user={user} /></div>
+        <div className="account-desktop-navigation"><AccountNavigation user={user} unreadMessages={unreadMessages} /></div>
         <div className="account-user">
           <span>{user.displayName ?? "Cuenta Chile3X"}{user.username ? ` · @${user.username}` : ""}</span>
           <form action="/api/auth/session/logout" method="post"><button type="submit" title="Cerrar la sesión de esta cuenta">Cerrar sesión</button></form>
         </div>
-        <AccountMobileNavigation><AccountNavigation user={user} /></AccountMobileNavigation>
+      <AccountMobileNavigation><AccountNavigation user={user} unreadMessages={unreadMessages} /></AccountMobileNavigation>
       </header>
+      <PresenceHeartbeat />
       {children}
     </main>
   );

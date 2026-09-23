@@ -121,9 +121,10 @@ export default function TermsPage() {
       </section>
 
       <section id="comunidad">
-        <h2>9. Favoritos, likes, reseñas, Telegram, bloqueos y reportes</h2>
+        <h2>9. Favoritos, likes, reseñas, mensajes, Telegram, bloqueos y reportes</h2>
         <p>Las cuentas pueden utilizar funciones de comunidad de acuerdo con su disponibilidad. Las reseñas y comentarios deben referirse a experiencias reales, expresarse con respeto y no contener datos personales, amenazas, extorsión, publicidad, acusaciones deliberadamente falsas ni contenido ilícito.</p>
         <p>Bloquear un anuncio solo lo oculta para la cuenta que realizó la acción; no sanciona al anunciante. Reportar inicia una revisión, no determina culpabilidad. El uso coordinado de votos, likes, reportes o reseñas para manipular resultados está prohibido.</p>
+        <p>El chat interno vincula cada conversación con un anuncio y exige una cuenta activa. Está prohibido usarlo para spam, acoso, amenazas, suplantación, captación ilícita, envío de malware o intercambio de contenido ilegal. Silenciar detiene avisos; bloquear impide mensajes nuevos y mantiene el historial disponible mientras corresponda. Si una cuenta se deshabilita o elimina, su identidad se reemplaza por “Usuario de Chile3X” para el otro participante y no se admiten mensajes nuevos, aunque el texto previo puede permanecer como historial anonimizado.</p>
         <p>La comunidad pública de Telegram puede utilizarse sin cuenta Chile3X. El acceso al espacio privado de Miembros requiere una cuenta activa, correo verificado y vinculación voluntaria con el bot. Los mensajes quedan sujetos a las reglas de la comunidad, a las condiciones de Telegram y a moderación manual o automática por spam, fraude, amenazas, acoso, contenido ilícito o reincidencia. Una medida en Telegram no reemplaza por sí sola una decisión sobre la cuenta del sitio.</p>
       </section>
 

@@ -1,8 +1,8 @@
-import { and, asc, count, desc, eq, like, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, isNotNull, isNull, like, or, sql, type SQL } from "drizzle-orm";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
-import { adminAuditLogs, adminGithubIdentities, users } from "@/db/schema";
+import { adminAuditLogs, adminGithubIdentities, adminNotifications, profileContactEvents, profiles, users } from "@/db/schema";
 import {
   ADMIN_AUDIT_ACTIONS,
   ADMIN_AUDIT_CATEGORIES,
@@ -13,6 +13,7 @@ import { getCurrentAdmin } from "@/lib/auth";
 import { adminHasCapability } from "@/lib/admin-permissions";
 import { AdminPageHeading, AdminShell } from "../_components";
 import { AdminPagination, readAdminPage } from "../pagination";
+import { countryName } from "@/lib/session-context";
 
 export const dynamic = "force-dynamic";
 const PAGE_SIZE = 40;
@@ -28,6 +29,10 @@ type ActivitySearchParams = {
   to?: string;
   order?: string;
   page?: string;
+  notify_q?: string;
+  notify_kind?: string;
+  notify_state?: string;
+  notice?: string;
 };
 
 function option<T extends Record<string, string>>(value: string | undefined, options: T) {
@@ -161,9 +166,24 @@ export default async function AdminActivityPage({ searchParams }: { searchParams
   if (filters.from) conditions.push(sql`datetime(${adminAuditLogs.createdAt}) >= datetime(${chileDayBoundary(filters.from)})`);
   if (filters.to) conditions.push(sql`datetime(${adminAuditLogs.createdAt}) <= datetime(${chileDayBoundary(filters.to, true)})`);
   const where = conditions.length ? and(...conditions) : undefined;
+  const notificationFilters = {
+    q: (params.notify_q ?? "").trim().slice(0, 100),
+    kind: ["account_registered", "profile_created", "profile_updated"].includes(params.notify_kind ?? "") ? params.notify_kind! : "",
+    state: params.notify_state === "read" || params.notify_state === "unread" ? params.notify_state : "",
+  };
+  const notificationConditions: SQL[] = [];
+  if (notificationFilters.kind) notificationConditions.push(eq(adminNotifications.kind, notificationFilters.kind as "account_registered" | "profile_created" | "profile_updated"));
+  if (notificationFilters.state === "read") notificationConditions.push(isNotNull(adminNotifications.readAt));
+  if (notificationFilters.state === "unread") notificationConditions.push(isNull(adminNotifications.readAt));
+  if (notificationFilters.q) {
+    const pattern = `%${notificationFilters.q.toLocaleLowerCase("es-CL")}%`;
+    const match = or(like(sql`lower(${adminNotifications.summary})`, pattern), like(sql`lower(coalesce(${users.email}, ''))`, pattern), like(sql`lower(coalesce(${users.displayName}, ''))`, pattern), like(sql`lower(coalesce(${profiles.displayName}, ''))`, pattern));
+    if (match) notificationConditions.push(match);
+  }
+  const notificationWhere = notificationConditions.length ? and(...notificationConditions) : undefined;
   const requestedPage = readAdminPage(params.page);
 
-  const [[allCount], [filteredCount], administrators] = await Promise.all([
+  const [[allCount], [filteredCount], administrators, whatsappClicks, notificationRows, [unreadNotifications]] = await Promise.all([
     db.select({ total: count() }).from(adminAuditLogs),
     db.select({ total: count() }).from(adminAuditLogs).where(where),
     db.select({
@@ -172,6 +192,43 @@ export default async function AdminActivityPage({ searchParams }: { searchParams
       email: users.email,
       githubLogin: adminGithubIdentities.githubLogin,
     }).from(users).leftJoin(adminGithubIdentities, eq(adminGithubIdentities.userId, users.id)).where(eq(users.role, "admin")).orderBy(asc(users.displayName), asc(users.email)),
+    db.select({
+      id: profileContactEvents.id,
+      createdAt: profileContactEvents.createdAt,
+      clickedOn: profileContactEvents.clickedOn,
+      profileId: profiles.id,
+      profileName: profiles.displayName,
+      viewerUserId: profileContactEvents.viewerUserId,
+      viewerName: users.displayName,
+      viewerUsername: users.username,
+      viewerEmail: users.email,
+      countryCode: profileContactEvents.countryCode,
+      region: profileContactEvents.region,
+      city: profileContactEvents.city,
+      deviceType: profileContactEvents.deviceType,
+      referrerPath: profileContactEvents.referrerPath,
+    }).from(profileContactEvents)
+      .innerJoin(profiles, eq(profiles.id, profileContactEvents.profileId))
+      .leftJoin(users, eq(users.id, profileContactEvents.viewerUserId))
+      .where(eq(profileContactEvents.kind, "whatsapp"))
+      .orderBy(desc(profileContactEvents.createdAt)).limit(50),
+    db.select({
+      id: adminNotifications.id,
+      kind: adminNotifications.kind,
+      summary: adminNotifications.summary,
+      readAt: adminNotifications.readAt,
+      createdAt: adminNotifications.createdAt,
+      actorUserId: adminNotifications.actorUserId,
+      actorName: users.displayName,
+      actorUsername: users.username,
+      actorEmail: users.email,
+      profileId: adminNotifications.profileId,
+      profileName: profiles.displayName,
+    }).from(adminNotifications)
+      .leftJoin(users, eq(users.id, adminNotifications.actorUserId))
+      .leftJoin(profiles, eq(profiles.id, adminNotifications.profileId))
+      .where(notificationWhere).orderBy(desc(adminNotifications.createdAt)).limit(50),
+    db.select({ total: count() }).from(adminNotifications).where(isNull(adminNotifications.readAt)),
   ]);
   const total = Number(filteredCount?.total ?? 0);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -192,6 +249,30 @@ export default async function AdminActivityPage({ searchParams }: { searchParams
       <div><span>Coincidencias</span><strong>{total}</strong></div>
       <p>Hora mostrada en Chile continental. Los eventos nuevos se identifican por la cuenta interna y el usuario de GitHub.</p>
     </section>
+    {params.notice === "notifications_read" && <p className="admin-success" role="status">Las notificaciones seleccionadas quedaron marcadas como leídas.</p>}
+    <details className="admin-notification-center" open>
+      <summary><span><strong>Notificaciones del sitio</strong><small>Registros, anuncios nuevos y modificaciones hechas por usuarios</small></span><b>{Number(unreadNotifications?.total ?? 0)} nuevas</b></summary>
+      <form className="admin-notification-filters" method="get">
+        <label>Buscar<input type="search" name="notify_q" defaultValue={notificationFilters.q} placeholder="Cuenta o anuncio" /></label>
+        <label>Tipo<select name="notify_kind" defaultValue={notificationFilters.kind}><option value="">Todos</option><option value="account_registered">Nuevas cuentas</option><option value="profile_created">Anuncios creados</option><option value="profile_updated">Anuncios modificados</option></select></label>
+        <label>Estado<select name="notify_state" defaultValue={notificationFilters.state}><option value="">Leídas y nuevas</option><option value="unread">Solo nuevas</option><option value="read">Solo leídas</option></select></label>
+        <button className="button button-primary" type="submit">Filtrar</button>
+        {(notificationFilters.q || notificationFilters.kind || notificationFilters.state) && <Link className="button button-outline" href="/admin/actividad">Limpiar</Link>}
+      </form>
+      <form className="admin-notification-read-all" action="/api/admin/notificaciones" method="post"><input type="hidden" name="intent" value="all" /><input type="hidden" name="return_to" value="/admin/actividad?notice=notifications_read" /><button type="submit">Marcar todas como leídas</button></form>
+      {notificationRows.length ? <div className="admin-notification-list">{notificationRows.map((notification) => <article className={notification.readAt ? "is-read" : "is-unread"} key={notification.id}>
+        <div><span>{notification.kind === "account_registered" ? "Nueva cuenta" : notification.kind === "profile_created" ? "Anuncio creado" : "Anuncio modificado"}</span><strong>{notification.profileName ?? notification.actorName ?? (notification.actorUsername ? `@${notification.actorUsername}` : notification.actorEmail) ?? "Usuario de Chile3X"}</strong><p>{notification.summary}</p><time dateTime={activityInstant(notification.createdAt)}>{activityDate(notification.createdAt)}</time></div>
+        <nav>{notification.actorUserId && <Link href={`/admin/cuentas/${encodeURIComponent(notification.actorUserId)}`}>Ver cuenta</Link>}{notification.profileId && <Link href={`/admin/perfiles?q=${encodeURIComponent(notification.profileName ?? notification.profileId)}`}>Ver anuncio</Link>}{!notification.readAt && <form action="/api/admin/notificaciones" method="post"><input type="hidden" name="notification_id" value={notification.id} /><input type="hidden" name="return_to" value="/admin/actividad?notice=notifications_read" /><button type="submit">Marcar leída</button></form>}</nav>
+      </article>)}</div> : <p className="admin-media-empty">No hay notificaciones que coincidan con estos filtros.</p>}
+    </details>
+    <details className="admin-whatsapp-clicks" open>
+      <summary><span><strong>Clics únicos en WhatsApp</strong><small>Últimos 50 registros diarios por anuncio y navegador</small></span><b>{whatsappClicks.length}</b></summary>
+      <p>La cuenta, ubicación aproximada, dispositivo y ruta solo se agregan cuando la persona aceptó la medición. Sin ese permiso se conserva únicamente un identificador opaco para el conteo diario; nunca se guarda la IP en este registro.</p>
+      {whatsappClicks.length ? <div className="admin-whatsapp-click-list">{whatsappClicks.map((click) => <article key={click.id}>
+        <div><strong>{click.profileName}</strong><Link href={`/admin/perfiles?q=${encodeURIComponent(click.profileName)}`}>Abrir anuncio</Link></div>
+        <dl><div><dt>Persona</dt><dd>{click.viewerUserId ? `${click.viewerName ?? click.viewerUsername ?? "Cuenta Chile3X"}${click.viewerEmail ? ` · ${click.viewerEmail}` : ""}` : "Visitante anónimo"}</dd></div><div><dt>Ubicación aproximada</dt><dd>{[click.city, click.region, countryName(click.countryCode)].filter(Boolean).join(", ") || "No disponible"}</dd></div><div><dt>Dispositivo</dt><dd>{click.deviceType === "mobile" ? "Móvil" : click.deviceType === "tablet" ? "Tablet" : click.deviceType === "desktop" ? "Computador" : "No identificado"}</dd></div><div><dt>Fecha</dt><dd>{activityDate(click.createdAt)}</dd></div>{click.referrerPath && <div><dt>Origen</dt><dd>{click.referrerPath}</dd></div>}</dl>
+      </article>)}</div> : <p className="admin-media-empty">Aún no existen clics registrados en WhatsApp.</p>}
+    </details>
     <form className="admin-audit-filters" method="get" role="search">
       <label className="admin-audit-search">Buscar<input type="search" name="q" defaultValue={filters.q} placeholder="Administrador, cuenta, anuncio, correo o identificador" /></label>
       <label>Administrador<select name="admin" defaultValue={filters.admin}><option value="">Todos</option>{administrators.map((item) => <option value={item.id} key={item.id}>{item.githubLogin ? `@${item.githubLogin} · ` : ""}{item.name ?? item.email}</option>)}</select></label>

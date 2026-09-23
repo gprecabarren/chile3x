@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { listingPeriods, profileDetails, profileServices, profileTags as profileTagRows, profiles, users } from "@/db/schema";
+import { createAdminNotification } from "@/lib/admin-notifications";
 import {
   additionalServices,
   compactText,
@@ -443,6 +444,12 @@ export async function createProfile(ownerId: string, submission: ProfileSubmissi
     status: "active",
   });
   await db.update(users).set({ role: "advertiser" }).where(and(eq(users.id, ownerId), eq(users.role, "visitor")));
+  await createAdminNotification({
+    kind: "profile_created",
+    actorUserId: ownerId,
+    profileId: id,
+    summary: submission.intent === "submit" ? "Se creó un anuncio y fue enviado a revisión." : "Se creó un nuevo borrador de anuncio.",
+  });
 
   return id;
 }
@@ -537,5 +544,11 @@ export async function updateProfile(profileId: string, ownerId: string, submissi
     set: { ...submission.details, updatedAt },
   });
   if (!contactOnly) await replaceProfileCollections(profileId, submission);
+  await createAdminNotification({
+    kind: "profile_updated",
+    actorUserId: ownerId,
+    profileId,
+    summary: contactOnly ? "Se actualizaron los datos de contacto de un anuncio." : "Se modificó un anuncio y sus cambios requieren seguimiento.",
+  });
   return { updated: true, contactOnly };
 }

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { DirectoryFilters } from "@/app/directorio/DirectoryFilters";
 import { NearbyDirectoryButton } from "@/app/directorio/NearbyDirectoryButton";
-import { DirectoryShell, ProfileGrid } from "@/app/directorio/_components";
+import { DirectoryLocationPreference, DirectoryShell, ProfileGrid } from "@/app/directorio/_components";
 import { filterPublicProfiles, getPublicProfiles, prioritizeProfilesByCity, readDirectoryFilters, type DirectoryQuery } from "@/lib/directory";
-import { cityDirectory } from "@/app/locations";
+import { cityDirectory, getCityBySlug } from "@/app/locations";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { getActiveStories } from "@/lib/stories";
 import { StoryRail } from "@/app/historias/StoryRail";
@@ -11,6 +11,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { safeJsonLd } from "@/lib/json-ld";
 import { profilePublicPath } from "@/lib/profile";
 import { publicPageMetadata } from "@/lib/seo";
+import { cookies } from "next/headers";
 
 export const metadata: Metadata = publicPageMetadata({
   title: "Escorts y damas de compañía en Chile",
@@ -26,7 +27,8 @@ export default async function EscortsPage({ searchParams }: { searchParams: Prom
   const query = await searchParams;
   const filters = readDirectoryFilters(query, { type: "escort" });
   const nearbyCityValue = Array.isArray(query.cerca) ? query.cerca[0] : query.cerca;
-  const nearbyCity = cityDirectory.some((item) => item.city === nearbyCityValue) ? nearbyCityValue : undefined;
+  const preferredCity = getCityBySlug((await cookies()).get("chile3x_preferred_city")?.value ?? "")?.city;
+  const nearbyCity = cityDirectory.some((item) => item.city === nearbyCityValue) ? nearbyCityValue : preferredCity;
   const [viewer, settings] = await Promise.all([getCurrentUser(), getSiteSettings()]);
   const allProfiles = await getPublicProfiles({ viewerId: viewer?.id, type: "escort" });
   const profiles = prioritizeProfilesByCity(filterPublicProfiles(allProfiles, filters), nearbyCity);
@@ -45,6 +47,7 @@ export default async function EscortsPage({ searchParams }: { searchParams: Prom
         <NearbyDirectoryButton />
       </section>
       <section className="directory-content">
+        <DirectoryLocationPreference />
         <DirectoryFilters action="/escorts" filters={filters} />
         <StoryRail stories={stories} withActivity />
         {filters.invalidCombination && <p className="filter-warning" role="alert">MILF y Hombres son categorías incompatibles. Selecciona solo una para buscar.</p>}

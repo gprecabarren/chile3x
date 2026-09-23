@@ -34,21 +34,46 @@ function loadGoogleTagManager() {
   document.head.append(script);
 }
 
+function deferGoogleTagManager() {
+  let loaded = false;
+  const events: Array<keyof WindowEventMap> = ["pointerdown", "keydown", "touchstart", "scroll"];
+  const load = () => {
+    if (loaded) return;
+    loaded = true;
+    window.clearTimeout(timer);
+    events.forEach((event) => window.removeEventListener(event, load));
+    loadGoogleTagManager();
+  };
+  // Returning visitors who already consented should not pay the full Tag
+  // Manager parse cost during the critical render. Real interaction loads it
+  // immediately; the fallback still records visits that remain open.
+  const timer = window.setTimeout(load, 12_000);
+  events.forEach((event) => window.addEventListener(event, load, { passive: true }));
+  return () => {
+    window.clearTimeout(timer);
+    events.forEach((event) => window.removeEventListener(event, load));
+  };
+}
+
 export function PrivacyConsent() {
   const [ready, setReady] = useState(false);
   const [consent, setConsent] = useState<AnalyticsConsent>(null);
   const [showBanner, setShowBanner] = useState(false);
 
   useEffect(() => {
+    let cancelDeferredAnalytics: (() => void) | undefined;
     const timer = window.setTimeout(() => {
       const storedConsent = readConsent();
       const openPreferences = new URLSearchParams(window.location.search).get("medicion") === "editar";
       setConsent(storedConsent);
       setShowBanner(openPreferences || storedConsent === null);
       setReady(true);
-      if (storedConsent === "granted") loadGoogleTagManager();
+      if (storedConsent === "granted") cancelDeferredAnalytics = deferGoogleTagManager();
     }, 0);
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+      cancelDeferredAnalytics?.();
+    };
   }, []);
 
   function chooseConsent(nextConsent: Exclude<AnalyticsConsent, null>) {

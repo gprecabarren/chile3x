@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { DirectoryFilters } from "@/app/directorio/DirectoryFilters";
-import { CityProfileSections, DirectoryShell, SeoContent } from "@/app/directorio/_components";
+import { CityProfileSections, DirectoryLocationPreference, DirectoryShell, SeoContent } from "@/app/directorio/_components";
 import { StoryRail } from "@/app/historias/StoryRail";
 import { filterPublicProfiles, getCityInfo, getCityPath, getPublicProfiles, readDirectoryFilters, type DirectoryQuery } from "@/lib/directory";
 import { getActiveStories } from "@/lib/stories";
@@ -54,6 +54,7 @@ export default async function CityPage({ params, searchParams }: CityPageProps) 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(schema) }} />
       <section className="city-hero"><p className="eyebrow">DIRECTORIO ADULTO · {city.regionDisplay.toUpperCase()}</p><h1>Escorts y damas de compañía en <em>{city.city}</em></h1><p>Encuentra una escort en {city.city} y revisa perfiles, agencias y arriendos disponibles. Navega por categoría o afina la búsqueda con filtros avanzados.</p></section>
       <section className="directory-content city-content">
+        <DirectoryLocationPreference />
         <DirectoryFilters action={basePath} filters={filters} pinnedCity={city.city} pinnedRegion={city.region} showType />
         {filters.invalidCombination && <p className="filter-warning" role="alert">MILF y Hombres son categorías incompatibles. Selecciona solo una para buscar.</p>}
         <StoryRail stories={stories} city={city.city} withActivity />

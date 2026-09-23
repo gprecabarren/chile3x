@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db";
 import {
   accountDeletionHistory,
@@ -12,6 +12,7 @@ import {
   profileVerificationFiles,
   telegramAccountLinks,
   telegramOutboxJobs,
+  messageConversations,
   users,
 } from "@/db/schema";
 import { sha256 } from "@/lib/auth";
@@ -70,6 +71,7 @@ export async function permanentlyDeleteAccount(userId: string, actor: AccountDel
       db.insert(telegramOutboxJobs).values(telegramJob),
       db.delete(profiles).where(eq(profiles.ownerId, userId)),
       db.delete(users).where(eq(users.id, userId)),
+      db.delete(messageConversations).where(and(isNull(messageConversations.visitorUserId), isNull(messageConversations.ownerUserId))),
     ]);
     await dispatchTelegramJob(telegramJob.id);
   } else {
@@ -77,6 +79,7 @@ export async function permanentlyDeleteAccount(userId: string, actor: AccountDel
       historyStatement,
       db.delete(profiles).where(eq(profiles.ownerId, userId)),
       db.delete(users).where(eq(users.id, userId)),
+      db.delete(messageConversations).where(and(isNull(messageConversations.visitorUserId), isNull(messageConversations.ownerUserId))),
     ]);
   }
 

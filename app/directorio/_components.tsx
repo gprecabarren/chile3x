@@ -10,6 +10,8 @@ import { getSiteSettings } from "@/lib/site-settings";
 import { formatRegionName, getRegionByTitle } from "@/app/locations";
 import { PublicMobileMenu } from "./PublicMobileMenu";
 import { ADMIN_ACCESS_LABELS } from "@/lib/admin-permissions";
+import { PresenceHeartbeat } from "@/app/PresenceHeartbeat";
+import { LocationPreference } from "./LocationPreference";
 
 const typeLabel = {
   escort: "Escort",
@@ -119,8 +121,14 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
           <Link className="button button-primary" href="/ingresar?return_to=/mi-cuenta/nuevo-perfil" prefetch={false}>Publicar anuncio</Link>
         </div>
       </header>
+      {currentUser && <PresenceHeartbeat />}
     </>
   );
+}
+
+export async function DirectoryLocationPreference() {
+  const preferredCitySlug = (await cookies()).get("chile3x_preferred_city")?.value ?? "";
+  return <LocationPreference initialCitySlug={preferredCitySlug} />;
 }
 
 export function DirectoryShell({ children }: { children: ReactNode }) {
@@ -223,6 +231,7 @@ export function ProfileCard({ profile }: { profile: PublicProfile }) {
         <div className="public-profile-title">
           <div>
             <h3><Link href={profileHref}>{profile.displayName}</Link>{profile.verificationStatus === "reviewed" && profile.type === "escort" && <span className="verified-sticker" title="Perfil comprobado" aria-label="Perfil comprobado">✓</span>}</h3>
+            {profile.isOnline && <span className="profile-online-badge"><i aria-hidden="true" />Online</span>}
             {profile.handle && <small className="public-profile-handle">@{profile.handle}</small>}
             <p><Link href={getCityPath(profile.city)}>{profile.city}</Link>{subtitle && ` · ${subtitle}`}</p>
           </div>

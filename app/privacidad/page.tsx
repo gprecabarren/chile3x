@@ -83,7 +83,9 @@ export default function PrivacyPage() {
         <ul>
           <li>favoritos, likes, bloqueos, reseñas, comentarios y su estado de moderación;</li>
           <li>reportes, motivo, texto y capturas de evidencia, además de las actuaciones administrativas asociadas;</li>
-          <li>visualizaciones de anuncios y clics en botones de contacto, agrupados por fecha y tipo de acción.</li>
+          <li>visualizaciones de anuncios y clics en botones de contacto, agrupados por fecha y tipo de acción; solo si aceptas la medición, un clic de WhatsApp puede asociarse a tu cuenta iniciada y agregar país, región o ciudad aproximada entregada por Cloudflare, tipo de dispositivo y ruta de origen. Sin ese permiso se conserva únicamente un identificador opaco para el conteo diario y nunca se guarda la IP en ese registro;</li>
+          <li>mensajes privados enviados dentro de Chile3X, anuncio de origen, participantes, fecha, estado de lectura, silencio y bloqueos necesarios para mantener el historial y prevenir abuso;</li>
+          <li>última actividad reciente de cuentas con anuncios, utilizada únicamente para mostrar un indicador temporal “Online”; el público no recibe la fecha exacta;</li>
           <li>si vinculas Telegram: identificador numérico, usuario y nombre que Telegram comparte, estado de vinculación y membresía, invitaciones, medidas de moderación y registros técnicos necesarios para operar el bot;</li>
           <li>si en el futuro eliges Apple una vez habilitado: identificador estable, correo verificado —incluido un posible correo privado de retransmisión—, nombre compartido la primera vez y autorización cifrada necesaria para revocar el acceso al eliminar la cuenta.</li>
         </ul>
@@ -108,7 +110,8 @@ export default function PrivacyPage() {
           <li>comprobar mayoría de edad y, cuando corresponda, revisar identidad o antecedentes voluntarios;</li>
           <li>crear borradores, moderar cambios, publicar, ordenar, buscar, pausar y mostrar anuncios;</li>
           <li>gestionar historias, galerías, medios, relaciones agencia–escort y accesos exclusivos;</li>
-          <li>habilitar favoritos, likes, reseñas, comentarios, bloqueos, reportes y paneles de rendimiento;</li>
+          <li>habilitar favoritos, likes, reseñas, comentarios, mensajería privada, bloqueos, reportes y paneles de rendimiento;</li>
+          <li>ordenar anuncios por la ciudad elegida o inferida localmente después de autorizar la geolocalización; las coordenadas precisas no se guardan en Chile3X;</li>
           <li>vincular voluntariamente Telegram, administrar el acceso a Miembros, sincronizar Novedades, moderar la comunidad y avisar al equipo sobre medidas relevantes;</li>
           <li>enviar correos transaccionales como verificación, recuperación, aprobación, rechazo, suspensión y avisos importantes de la cuenta;</li>
           <li>prevenir fraude, spam, suplantación, explotación, contenido ilícito, ataques y uso indebido;</li>
@@ -147,6 +150,7 @@ export default function PrivacyPage() {
         <p>Las reseñas o comentarios aprobados pueden mostrar el nombre visible de su autor y su contenido. Favoritos, bloqueos y listas personales no se muestran públicamente. Los reportes y sus capturas son privados y accesibles para el equipo autorizado y para la cuenta que los envió dentro de su panel.</p>
         <p>Podemos utilizar esos antecedentes para investigar, contactar a las partes cuando sea seguro y necesario, moderar, preservar evidencia, prevenir reiteración y responder a una autoridad. No revelaremos la identidad de quien reporta al perfil denunciado salvo consentimiento, obligación legal o necesidad fundada de defensa, aplicando minimización.</p>
         <p>Vincular Telegram es opcional. El sitio conserva la relación entre tu cuenta y el identificador que entrega Telegram para comprobar acceso, crear invitaciones individuales y aplicar o retirar medidas. Los mensajes procesados por el bot pueden conservarse de forma temporal para deduplicar, detectar flood o spam y ejecutar la cola; una evidencia breve y la medida aplicada pueden mantenerse mientras sea necesario para revisar el caso y prevenir reincidencia. Desvincular, deshabilitar o eliminar la cuenta retira el acceso a Miembros, pero Telegram puede conservar mensajes conforme a sus propias reglas.</p>
+        <p>El chat interno requiere sesión. Cada participante puede silenciar o bloquear la conversación. Si una de las cuentas se deshabilita o elimina, la otra puede conservar el texto del historial, pero Chile3X sustituye la identidad de la persona retirada por “Usuario de Chile3X”, oculta sus referencias identificables y bloquea mensajes nuevos; las relaciones directas con la cuenta eliminada se desprenden de la conversación. Si ya no queda ningún participante con acceso, la conversación se elimina. Los indicadores de no leído y los avisos del navegador se usan solo para comunicar mensajes; Chile3X puede aplicar límites automáticos de frecuencia para reducir spam. No debes enviar contraseñas, códigos, documentos ni datos bancarios.</p>
       </section>
 
       <section id="medicion">

@@ -44,6 +44,7 @@ test("server-renders the Chile3X public home", async () => {
   assert.match(contentSecurityPolicy, /frame-ancestors 'none'/);
   assert.match(contentSecurityPolicy, /frame-src[^;]*www\.googletagmanager\.com/);
   assert.match(contentSecurityPolicy, /script-src[^;]*accounts\.google\.com/);
+  assert.match(contentSecurityPolicy, /script-src-attr 'none'/);
   assert.match(contentSecurityPolicy, /frame-src[^;]*accounts\.google\.com/);
 
   const html = await response.text();
@@ -92,6 +93,24 @@ test("the built Worker bypasses a shared cached document for user and admin cook
     assert.equal(await anonymous.text(), "cached-anonymous-page");
     assert.match(anonymous.headers.get("cache-control"), /private, no-store/);
     assert.equal(reads, 1);
+  } finally { globalThis.caches = original; }
+});
+
+test("a saved city preference never reuses or populates shared HTML", async () => {
+  const original = globalThis.caches;
+  let reads = 0;
+  let writes = 0;
+  globalThis.caches = { default: {
+    match: async () => { reads++; return new Response("wrong-city", { headers: { "content-type": "text/html" } }); },
+    put: async () => { writes++; },
+  } };
+  try {
+    const response = await render("/", { cookie: "chile3x_preferred_city=concepcion" });
+    assert.equal(response.status, 200);
+    assert.equal(reads, 0);
+    assert.equal(writes, 0);
+    assert.doesNotMatch(await response.text(), /wrong-city/);
+    assert.match(response.headers.get("cache-control"), /private, no-store/);
   } finally { globalThis.caches = original; }
 });
 

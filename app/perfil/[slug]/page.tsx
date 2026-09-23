@@ -26,6 +26,7 @@ import { formatRegionName } from "@/app/locations";
 import { ProfileVerificationBadge } from "../ProfileVerificationBadge";
 import { ProfileCityAlertPanel } from "../ProfileCityAlertPanel";
 import { getActiveProfileCityAlerts, getProfileAlertCities } from "@/lib/profile-city-alerts";
+import { InternalChatButton } from "../InternalChatButton";
 
 export const dynamic = "force-dynamic";
 
@@ -193,17 +194,18 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
         <div className={`profile-page-visual${coverImage ? " has-image" : ""}`}>{coverImage ? <Image className="profile-page-cover" src={coverImage.url} alt={coverImage.altText ?? `Foto de ${profile.displayName}`} fill priority unoptimized sizes="(max-width: 900px) 100vw, 45vw" /> : <span>{profile.displayName.slice(0, 1)}</span>}{stories.length > 0 && <span className="profile-story-photo-marker" aria-hidden="true" />}</div>
         <div className="profile-page-summary">
           <p className="eyebrow">{profileTypeLabel(profile.type).toUpperCase()} · {profile.city.toUpperCase()}</p>
-          <div className="profile-page-title"><h1>{profile.displayName}</h1>{profile.verificationStatus === "reviewed" && profile.type === "escort" && <ProfileVerificationBadge displayName={profile.displayName} imageUrl={coverImage?.url ?? null} verifiedAt={profile.verifiedAt} />}</div>
+          <div className="profile-page-title"><h1>{profile.displayName}</h1>{profile.verificationStatus === "reviewed" && profile.type === "escort" && <ProfileVerificationBadge displayName={profile.displayName} imageUrl={coverImage?.url ?? null} verifiedAt={profile.verifiedAt} />}{profile.isOnline && <span className="profile-online-badge profile-online-badge-large"><i aria-hidden="true" />Online</span>}</div>
           {profile.handle && <p className="profile-public-handle">@{profile.handle}</p>}
           <p className="profile-page-location"><Link href={getCityPath(profile.city)}>{location}</Link></p>
           <div className="public-tag-row">{tags.map((tag) => <span key={tag} className={`public-tag ${tag.toLowerCase().replaceAll(" ", "-")}`}>{tag}</span>)}</div>
           {stories.length > 0 && <ProfileStoryTrigger stories={stories} />}
           <p className="profile-page-description">{profile.description}</p>
           {prices.length > 0 && <section className="profile-price-panel"><p className="eyebrow">VALORES REFERENCIALES</p><div>{prices.map((price) => <article key={price.label}><span>{price.label}</span><strong>${price.amount.toLocaleString("es-CL")} {price.currency}</strong></article>)}</div></section>}
-          {!profile.isDemo && (contactButtons.some(([, href]) => href) || socialButtons.some(([, href]) => href)) && <section className="profile-contact-box">
+          {!profile.isDemo && (contactButtons.some(([, href]) => href) || socialButtons.some(([, href]) => href) || (profile.status === "approved" && !viewerOwnsProfile)) && <section className="profile-contact-box">
             <div className="profile-contact-heading"><p className="eyebrow">CONTACTO</p><h2>Habla directamente con {profile.displayName}</h2></div>
             {contactButtons.some(([, href]) => href) && <div className="profile-contact-group"><span>Contacto directo</span><div className="profile-contact-actions">{contactButtons.map(([key, href, label, className]) => href && <TrackedContactLink profileId={profile.id} kind={key} key={key} className={`button ${className}`} href={href} target={key === "call" || key === "email" ? undefined : "_blank"} rel={key === "call" || key === "email" ? undefined : "noreferrer"} aria-label={label} title={label}><PortalContactIcon kind={key} /><span className="sr-only">{label}</span></TrackedContactLink>)}{videoCallHref && <TrackedContactLink profileId={profile.id} kind="videocall" className="button contact-videocall" href={videoCallHref} target="_blank" rel="noreferrer"><PortalContactIcon kind="videocall" /><span>Videollamada</span></TrackedContactLink>}</div></div>}
             {socialButtons.some(([, href]) => href) && <div className="profile-contact-group"><span>Redes y plataformas</span><div className="profile-contact-actions">{socialButtons.map(([key, href, label, className]) => href && <TrackedContactLink profileId={profile.id} kind={key} key={key} className={`button ${className}`} href={href} target="_blank" rel="noreferrer" aria-label={label} title={label}><PortalContactIcon kind={key} /><span className="sr-only">{label}</span></TrackedContactLink>)}</div></div>}
+            {profile.status === "approved" && !viewerOwnsProfile && <div className="profile-contact-group profile-internal-chat-group"><span>Mensajería de Chile3X</span><InternalChatButton profileId={profile.id} signedIn={Boolean(viewer)} loginHref={`/ingresar?return_to=${encodeURIComponent(profilePublicPath(profile))}`} /></div>}
           </section>}
           {engagement && <ProfileEngagementActions profileId={profile.id} profileSlug={profileRouteValue} signedIn={Boolean(viewer)} initialEngagement={engagement} />}
           {profile.status === "approved" && !profile.isDemo && <ProfileSafetyActions profileId={profile.id} profileSlug={profileRouteValue} displayName={profile.displayName} signedIn={Boolean(viewer)} viewerOwnsProfile={viewerOwnsProfile} />}

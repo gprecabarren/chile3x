@@ -1,21 +1,13 @@
 import type { Metadata } from "next";
-import { Manrope } from "next/font/google";
 import "./globals.css";
 import { AgeGate } from "./AgeGate";
 import { MaintenanceScreen } from "./MaintenanceScreen";
-import { PrivacyConsent } from "./PrivacyConsent";
 import { getCurrentAdmin } from "@/lib/auth";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { socialCardImage, socialCardImageUrl } from "@/lib/seo";
-import { FormProgress } from "./FormProgress";
+import { DeferredClientFeatures } from "./DeferredClientFeatures";
 
 export const dynamic = "force-dynamic";
-
-const panelFont = Manrope({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-panel",
-});
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
@@ -81,11 +73,10 @@ export default async function RootLayout({
       <head>
         <meta name="rating" content="adult" />
       </head>
-      <body className={panelFont.variable}>
+      <body>
         {!maintenanceEnabled || admin ? children : <MaintenanceScreen />}
         <AgeGate />
-        <PrivacyConsent />
-        <FormProgress />
+        <DeferredClientFeatures />
       </body>
     </html>
   );

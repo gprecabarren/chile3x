@@ -2,7 +2,7 @@ import { and, count, desc, eq, gte, inArray, or } from "drizzle-orm";
 import { cache } from "react";
 import { cityDirectory, getCityBySlug, regions } from "@/app/locations";
 import { getDb } from "@/db";
-import { agencyMembers, profileDetails, profileMedia, profileServices, profileTags, profiles, profileViews } from "@/db/schema";
+import { accountPresence, agencyMembers, profileDetails, profileMedia, profileServices, profileTags, profiles, profileViews } from "@/db/schema";
 import { getApprovedMediaForProfiles } from "@/lib/media";
 import { getBlockedProfileIds } from "@/lib/profile-safety";
 import { publicProfileCondition } from "@/lib/public-profile-visibility";
@@ -65,6 +65,7 @@ export type PublicProfile = {
   healthReviewStatus: "not_requested" | "in_review" | "reviewed";
   isFeatured: boolean;
   isDemo: boolean;
+  isOnline: boolean;
   updatedAt: string;
   details: {
     contactPhone: string | null;
@@ -189,13 +190,18 @@ export async function getPublicProfiles(options: PublicProfileOptions = {}) {
     return [] as PublicProfile[];
   }
 
-  const [tags, services, memberships, mediaByProfile] = await Promise.all([
+  const ownerIds = [...new Set(visibleRows.map((row) => row.profile.ownerId))];
+  const onlineCutoff = new Date(Date.now() - 3 * 60_000).toISOString();
+  const [tags, services, memberships, mediaByProfile, presenceRows] = await Promise.all([
     db.select().from(profileTags).where(inArray(profileTags.profileId, ids)),
     db.select().from(profileServices).where(inArray(profileServices.profileId, ids)),
     options.includeAssociations
       ? db.select().from(agencyMembers).where(or(inArray(agencyMembers.agencyProfileId, ids), inArray(agencyMembers.memberProfileId, ids)))
       : Promise.resolve([]),
     getApprovedMediaForProfiles(ids),
+    ownerIds.length
+      ? db.select({ userId: accountPresence.userId }).from(accountPresence).where(and(inArray(accountPresence.userId, ownerIds), gte(accountPresence.lastActiveAt, onlineCutoff)))
+      : Promise.resolve([]),
   ]);
 
   const tagMap = new Map<string, string[]>();
@@ -203,6 +209,7 @@ export async function getPublicProfiles(options: PublicProfileOptions = {}) {
   const additionalMap = new Map<string, string[]>();
   const agencyMap = new Map<string, string[]>();
   const memberMap = new Map<string, string[]>();
+  const onlineOwnerIds = new Set(presenceRows.map((row) => row.userId));
   for (const tag of tags) tagMap.set(tag.profileId, [...(tagMap.get(tag.profileId) ?? []), tag.tag]);
   for (const service of services) {
     const target = service.kind === "included" ? includedMap : additionalMap;
@@ -233,6 +240,7 @@ export async function getPublicProfiles(options: PublicProfileOptions = {}) {
     healthReviewStatus: profile.healthReviewStatus,
     isFeatured: profile.isFeatured,
     isDemo: profile.isDemo,
+    isOnline: onlineOwnerIds.has(profile.ownerId),
     updatedAt: profile.updatedAt,
     details: {
       contactPhone: details?.contactPhone ?? null,
@@ -453,8 +461,8 @@ export function shuffleProfiles(profilesToShuffle: PublicProfile[], seed = new D
 export function prioritizeProfilesByCity(profilesToPrioritize: PublicProfile[], city?: string) {
   if (!city) return profilesToPrioritize;
   return [...profilesToPrioritize].sort((left, right) =>
-    tierRank[left.tier] - tierRank[right.tier]
-    || Number(right.city === city) - Number(left.city === city),
+    Number(right.city === city) - Number(left.city === city)
+    || tierRank[left.tier] - tierRank[right.tier],
   );
 }
 

@@ -62,8 +62,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     isFeatured: profiles.isFeatured,
     ownerEmail: users.email,
     ownerName: users.displayName,
+    ownerIsActive: users.isActive,
   }).from(profiles).innerJoin(users, eq(profiles.ownerId, users.id)).where(eq(profiles.id, profileId)).limit(1);
   if (!existingProfile) return new Response("Perfil no encontrado.", { status: 404 });
+  if (status === "approved" && !existingProfile.ownerIsActive) {
+    const destination = new URL(safeReturnTo(formData.get("return_to")) ?? "/admin/perfiles", request.url);
+    destination.searchParams.set("notice", "inactive_owner");
+    return NextResponse.redirect(destination, 303);
+  }
 
   const now = new Date().toISOString();
   await db.update(profiles).set({

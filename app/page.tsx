@@ -3,13 +3,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { FloatingWhatsappButton, PublicFooter, PublicHeader, ProfileGrid } from "./directorio/_components";
 import { StoryRail } from "./historias/StoryRail";
-import { cityDirectory, cityTotal, regions } from "./locations";
+import { cityDirectory, cityGeoDirectory, cityTotal, getCityBySlug, regions } from "./locations";
 import { RegionJumpSelect } from "./RegionJumpSelect";
-import { getCityEscortCounts, getFeaturedProfiles } from "@/lib/directory";
+import { getCityEscortCounts, getFeaturedProfiles, prioritizeProfilesByCity } from "@/lib/directory";
 import { getActiveStories } from "@/lib/stories";
 import { getCurrentAdmin, getCurrentUser } from "@/lib/auth";
 import { safeJsonLd } from "@/lib/json-ld";
 import { socialCardImage, socialCardImageUrl } from "@/lib/seo";
+import { cookies } from "next/headers";
 
 export const metadata: Metadata = {
   title: "Chile3X: directorio adulto por ciudad en Chile",
@@ -82,13 +83,21 @@ const websiteSchema = {
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
+  const preferredCity = getCityBySlug((await cookies()).get("chile3x_preferred_city")?.value ?? "");
+  const preferredGeo = preferredCity ? cityGeoDirectory.find((item) => item.citySlug === preferredCity.citySlug) : null;
+  const nearbyCities = preferredGeo ? cityGeoDirectory
+    .filter((item) => item.citySlug !== preferredGeo.citySlug)
+    .map((item) => ({ ...item, distance: (item.latitude - preferredGeo.latitude) ** 2 + (item.longitude - preferredGeo.longitude) ** 2 }))
+    .sort((left, right) => left.distance - right.distance)
+    .slice(0, 3) : [];
   const [viewer, admin] = await Promise.all([getCurrentUser(), getCurrentAdmin()]);
   const publishHref = viewer ? "/mi-cuenta/nuevo-perfil" : admin ? "/admin/perfiles" : "/registro";
-  const [featuredProfiles, stories, cityEscortCounts] = await Promise.all([
+  const [featuredProfileRows, stories, cityEscortCounts] = await Promise.all([
     getFeaturedProfiles(6, viewer?.id),
     getActiveStories({ viewerId: viewer?.id }),
     getCityEscortCounts(),
   ]);
+  const featuredProfiles = prioritizeProfilesByCity(featuredProfileRows, preferredCity?.city);
   return (
     <main>
       <script
@@ -98,6 +107,13 @@ export default async function Home() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteSchema) }} />
 
       <PublicHeader coverageHref="#cobertura" />
+
+      <aside className="home-location-summary" aria-label="Ubicación priorizada">
+        <span aria-hidden="true">⌖</span>
+        <div><small>{preferredCity ? "MOSTRANDO PRIMERO" : "COBERTURA NACIONAL"}</small><strong>{preferredCity?.city ?? "Todo Chile"}</strong></div>
+        {nearbyCities.length > 0 && <nav aria-label="Ciudades cercanas">Cerca: {nearbyCities.map((city) => <Link key={city.citySlug} href={`/escorts/${city.citySlug}`}>{city.city}</Link>)}</nav>}
+        <Link href="/escorts">Cambiar ciudad</Link>
+      </aside>
 
       <section className="hero" id="explorar">
         <div className="hero-copy">

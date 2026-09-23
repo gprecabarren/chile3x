@@ -1,8 +1,8 @@
-import { count, eq } from "drizzle-orm";
+import { count, eq, isNull } from "drizzle-orm";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
-import { exclusiveContentMedia, profileMedia, profiles } from "@/db/schema";
+import { adminNotifications, exclusiveContentMedia, profileMedia, profiles } from "@/db/schema";
 import { getCurrentAdmin, getSessionCookieName } from "@/lib/auth";
 import { ADMIN_ACCESS_LABELS, adminHasCapability } from "@/lib/admin-permissions";
 import { getAccountSessions } from "@/lib/session-management";
@@ -40,14 +40,15 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
       db.select({ total: count() }).from(profiles).where(eq(profiles.status, "paused")),
       db.select({ total: count() }).from(profileMedia).where(eq(profileMedia.moderationStatus, "pending")),
       db.select({ total: count() }).from(exclusiveContentMedia).where(eq(exclusiveContentMedia.moderationStatus, "pending")),
+      db.select({ total: count() }).from(adminNotifications).where(isNull(adminNotifications.readAt)),
     ]);
-  })() : Promise.resolve([[], [], [], [], []] as { total: number }[][]);
+  })() : Promise.resolve([[], [], [], [], [], []] as { total: number }[][]);
   const [sessions, stats, operational] = await Promise.all([
     getAccountSessions(admin.id, getSessionCookieName()),
     statsPromise,
     canViewOperations ? getOperationalDashboard(filters) : Promise.resolve(null),
   ]);
-  const [[allProfiles], [pendingProfiles], [pausedProfiles], [pendingPublicMedia], [pendingExclusiveMedia]] = stats;
+  const [[allProfiles], [pendingProfiles], [pausedProfiles], [pendingPublicMedia], [pendingExclusiveMedia], [unreadNotifications]] = stats;
 
   const pendingMedia = Number(pendingPublicMedia?.total ?? 0) + Number(pendingExclusiveMedia?.total ?? 0);
 
@@ -79,6 +80,13 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
       hint: "Los períodos de publicación se administran manualmente por ahora.",
       href: "/admin/perfiles?estado=paused",
       action: "Ver anuncios pausados",
+    },
+    {
+      label: "Notificaciones nuevas",
+      value: unreadNotifications?.total ?? 0,
+      hint: "Registros, anuncios creados y cambios realizados por usuarios.",
+      href: "/admin/actividad?notify_state=unread",
+      action: "Revisar notificaciones",
     },
   ];
 

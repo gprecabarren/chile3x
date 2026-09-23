@@ -22,8 +22,9 @@ test("admin summary cards link to their existing filtered views", () => {
 });
 
 test("account and admin panels use Manrope with readable action text", () => {
-  assert.match(layoutSource, /import \{ Manrope \} from "next\/font\/google"/);
-  assert.match(layoutSource, /variable: "--font-panel"/);
+  assert.doesNotMatch(layoutSource, /next\/font\/google/);
+  assert.match(cssSource, /src: url\("\/fonts\/manrope-latin-variable\.woff2"\)/);
+  assert.match(cssSource, /--font-panel: var\(--font-site\)/);
   assert.match(cssSource, /\.admin-root,\s*\.account-root \{\s*font-family: var\(--font-panel\)/s);
   assert.match(cssSource, /\.admin-root \.button,[\s\S]*?font-size: 14px !important/);
   assert.match(cssSource, /\.admin-content > \.admin-stat-grid \+ \.admin-review-alert \{\s*margin-top: 24px/);

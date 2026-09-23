@@ -118,7 +118,10 @@ test("Novedades synchronizes in both directions and stays separate from editoria
   assert.match(worker, /syncTelegramBulletin/);
   assert.match(worker, /outboxPublishBulletin/);
   assert.match(worker, /outboxEditBulletin/);
+  assert.match(worker, /\/eliminar_novedad/);
+  assert.match(worker, /payload\.deleteRecord === true/);
   assert.match(adminPage, /Novedades/);
+  assert.match(adminPage, /Eliminar de web y Telegram/);
   assert.match(publicPage, /telegramBulletins/);
   assert.match(sitemap, /\/novedades/);
   assert.doesNotMatch(schema.match(/telegramBulletins[\s\S]*?\n\s*\}\);/)?.[0] ?? "", /news/);
@@ -177,7 +180,7 @@ test("Telegram linking launches explicitly across app, universal and web-capable
     source("lib/telegram.ts"),
   ]);
   assert.match(progress, /form\.dataset\.skipFormProgress === "true"/);
-  assert.match(progress, /!delayed && <OfficialChile3xLogo/);
+  assert.doesNotMatch(progress, /OfficialChile3xLogo/);
   assert.match(adminPage, /<TelegramLinkLauncher endpoint="\/api\/admin\/telegram\/vincular"/);
   assert.match(accountPage, /<TelegramLinkLauncher endpoint="\/api\/mi-cuenta\/telegram\/vincular"/);
   assert.match(launcher, /window\.open\("about:blank", "_blank"\)/);

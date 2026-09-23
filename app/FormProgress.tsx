@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { OfficialChile3xLogo } from "./OfficialChile3xLogo";
 
 export function FormProgress() {
   const [active, setActive] = useState(false);
@@ -40,6 +39,6 @@ export function FormProgress() {
 
   if (!active) return null;
   return <div className="form-progress-overlay" role="status" aria-live="polite" aria-busy={!delayed}>
-    <div className={delayed ? "is-delayed" : undefined}>{!delayed && <OfficialChile3xLogo />}{!delayed && <span className="form-progress-spinner" aria-hidden="true" />}<strong>{delayed ? "La respuesta está demorada" : "Procesando…"}</strong><p>{delayed ? "Cloudflare o tu conexión no respondieron dentro del tiempo esperado. Espera unos segundos y evita enviar el formulario nuevamente mientras la pestaña siga cargando." : "Estamos guardando o aplicando los filtros."}</p>{delayed && <button className="button button-outline" type="button" onClick={() => setActive(false)}>Cerrar aviso</button>}</div>
+    <div className={delayed ? "is-delayed" : undefined}>{!delayed && <span className="form-progress-spinner" aria-hidden="true" />}<strong>{delayed ? "La respuesta está demorada" : "Procesando…"}</strong><p>{delayed ? "Cloudflare o tu conexión no respondieron dentro del tiempo esperado. Espera unos segundos y evita enviar el formulario nuevamente mientras la pestaña siga cargando." : "Estamos guardando o aplicando los filtros."}</p>{delayed && <button className="button button-outline" type="button" onClick={() => setActive(false)}>Cerrar aviso</button>}</div>
   </div>;
 }

@@ -14,6 +14,7 @@ import { isReservedAdminEmail } from "@/lib/admin-email";
 import { consumeGoogleRegistrationIntent, GOOGLE_REGISTRATION_COOKIE, readGoogleRegistrationIntent } from "@/lib/google-registration";
 import { recordOperationalEvent } from "@/lib/operations";
 import { APPLE_REGISTRATION_COOKIE, consumeAppleRegistrationIntent, readAppleRegistrationIntent } from "@/lib/apple-registration";
+import { createAdminNotification } from "@/lib/admin-notifications";
 
 function redirectWithError(request: Request, error: string, formData?: FormData) {
   const url = new URL("/registro", request.url);
@@ -99,6 +100,7 @@ export async function POST(request: NextRequest) {
       phone: identity.phone || null,
       emailVerifiedAt: providerRegistration ? new Date().toISOString() : null,
     });
+    await createAdminNotification({ kind: "account_registered", actorUserId: userId, summary: "Se registró una nueva cuenta en Chile3X." });
 
     if (appleRegistration) {
       await db.insert(accountAppleIdentities).values({

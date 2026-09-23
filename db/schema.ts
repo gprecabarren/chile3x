@@ -54,6 +54,14 @@ export const authSessions = sqliteTable("auth_sessions", {
   index("auth_sessions_user_last_seen_idx").on(table.userId, table.lastSeenAt),
 ]);
 
+// Presence is deliberately coarse. Public pages only expose whether the
+// account has interacted recently; the exact timestamp never leaves D1.
+export const accountPresence = sqliteTable("account_presence", {
+  userId: text("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  lastActiveAt: text("last_active_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [index("account_presence_active_idx").on(table.lastActiveAt)]);
+
 // GitHub administrators keep an independent internal account and audit
 // identity. The allow-list authorizes a login; this mapping makes actions
 // attributable to the person who actually authenticated.
@@ -442,12 +450,81 @@ export const profileContactEvents = sqliteTable("profile_contact_events", {
   id: text("id").primaryKey(),
   profileId: text("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
   viewerKey: text("viewer_key").notNull(),
+  viewerUserId: text("viewer_user_id").references(() => users.id, { onDelete: "set null" }),
   kind: text("kind", { enum: ["whatsapp", "telegram", "call", "email", "instagram", "arsmate", "onlyfans", "videocall"] }).notNull(),
   clickedOn: text("clicked_on").notNull(),
+  countryCode: text("country_code"),
+  region: text("region"),
+  city: text("city"),
+  deviceType: text("device_type", { enum: ["mobile", "tablet", "desktop", "unknown"] }).notNull().default("unknown"),
+  referrerPath: text("referrer_path"),
   createdAt,
 }, (table) => [
   uniqueIndex("profile_contact_event_daily_unique").on(table.profileId, table.viewerKey, table.kind, table.clickedOn),
   index("profile_contact_events_profile_day_idx").on(table.profileId, table.clickedOn),
+  index("profile_contact_events_kind_created_idx").on(table.kind, table.createdAt),
+  index("profile_contact_events_viewer_user_idx").on(table.viewerUserId, table.createdAt),
+]);
+
+// Operational notifications highlight user-driven changes that require the
+// team's attention. They are separate from the immutable administrator audit
+// trail and can therefore be marked as read without altering that history.
+export const adminNotifications = sqliteTable("admin_notifications", {
+  id: text("id").primaryKey(),
+  kind: text("kind", { enum: ["account_registered", "profile_created", "profile_updated"] }).notNull(),
+  actorUserId: text("actor_user_id").references(() => users.id, { onDelete: "set null" }),
+  profileId: text("profile_id").references(() => profiles.id, { onDelete: "set null" }),
+  summary: text("summary").notNull(),
+  readAt: text("read_at"),
+  createdAt,
+}, (table) => [
+  index("admin_notifications_unread_created_idx").on(table.readAt, table.createdAt),
+  index("admin_notifications_kind_created_idx").on(table.kind, table.createdAt),
+  index("admin_notifications_actor_created_idx").on(table.actorUserId, table.createdAt),
+]);
+
+// Private site messages are scoped to one listing. Participant and listing
+// references are detached on permanent deletion so the remaining participant
+// keeps an anonymized history without retaining the deleted identity.
+export const messageConversations = sqliteTable("message_conversations", {
+  id: text("id").primaryKey(),
+  profileId: text("profile_id").references(() => profiles.id, { onDelete: "set null" }),
+  visitorUserId: text("visitor_user_id").references(() => users.id, { onDelete: "set null" }),
+  ownerUserId: text("owner_user_id").references(() => users.id, { onDelete: "set null" }),
+  lastMessageAt: text("last_message_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  createdAt,
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  uniqueIndex("message_conversations_profile_visitor_unique").on(table.profileId, table.visitorUserId),
+  index("message_conversations_visitor_recent_idx").on(table.visitorUserId, table.lastMessageAt),
+  index("message_conversations_owner_recent_idx").on(table.ownerUserId, table.lastMessageAt),
+]);
+
+export const messageConversationPreferences = sqliteTable("message_conversation_preferences", {
+  id: text("id").primaryKey(),
+  conversationId: text("conversation_id").notNull().references(() => messageConversations.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  isMuted: integer("is_muted", { mode: "boolean" }).notNull().default(false),
+  blockedAt: text("blocked_at"),
+  lastReadAt: text("last_read_at"),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  createdAt,
+}, (table) => [
+  uniqueIndex("message_conversation_preferences_user_unique").on(table.conversationId, table.userId),
+  index("message_conversation_preferences_user_idx").on(table.userId, table.updatedAt),
+]);
+
+export const messageMessages = sqliteTable("message_messages", {
+  id: text("id").primaryKey(),
+  conversationId: text("conversation_id").notNull().references(() => messageConversations.id, { onDelete: "cascade" }),
+  senderUserId: text("sender_user_id").references(() => users.id, { onDelete: "set null" }),
+  senderRole: text("sender_role", { enum: ["visitor", "owner"] }).notNull(),
+  body: text("body").notNull(),
+  readAt: text("read_at"),
+  createdAt,
+}, (table) => [
+  index("message_messages_conversation_created_idx").on(table.conversationId, table.createdAt),
+  index("message_messages_unread_idx").on(table.conversationId, table.readAt, table.senderRole),
 ]);
 
 export const listingPeriods = sqliteTable("listing_periods", {

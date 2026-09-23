@@ -222,6 +222,19 @@ async function discoverChat(env: Env, chat: TelegramChat, botIsAdministrator?: b
   ).run();
 }
 
+async function syncLinkedTelegramIdentity(env: Env, user?: TelegramUser) {
+  if (!user || user.is_bot) return;
+  const telegramUserId = telegramId(user.id);
+  if (!telegramUserId) return;
+  const now = new Date().toISOString();
+  await env.DB.batch([
+    env.DB.prepare("UPDATE telegram_account_links SET username = ?, first_name = ?, updated_at = ? WHERE telegram_user_id = ?")
+      .bind(user.username?.slice(0, 64) ?? null, user.first_name?.slice(0, 100) ?? null, now, telegramUserId),
+    env.DB.prepare("UPDATE telegram_admin_identities SET username = ?, first_name = ?, updated_at = ? WHERE telegram_user_id = ?")
+      .bind(user.username?.slice(0, 64) ?? null, user.first_name?.slice(0, 100) ?? null, now, telegramUserId),
+  ]);
+}
+
 async function chatConfiguration(env: Env, chatId: string) {
   return env.DB.prepare(`
     SELECT id, telegram_chat_id, role, title, updates_thread_id, bot_is_administrator
@@ -585,12 +598,38 @@ async function processAdminCommand(env: Env, message: TelegramMessage) {
   if (!text.startsWith("/") || !message.from) return false;
   const [rawCommand, ...argumentParts] = text.split(/\s+/);
   const command = rawCommand.toLocaleLowerCase("es-CL").replace(/@[A-Za-z0-9_]+$/, "");
-  if (!["/warn", "/mute", "/unmute", "/ban", "/unban", "/rules", "/status"].includes(command)) return false;
+  if (!["/warn", "/mute", "/unmute", "/ban", "/unban", "/rules", "/status", "/eliminar_novedad"].includes(command)) return false;
   const chatId = telegramId(message.chat.id);
   const actorTelegramUserId = telegramId(message.from.id);
   if (command === "/rules") {
     const config = await getConfiguration(env);
     await sendTelegramMessage(env, chatId, `<b>Normas de Chile3X</b>\n\n${escapeTelegramHtml(config.rules_text)}`);
+    return true;
+  }
+  if (command === "/eliminar_novedad") {
+    const admin = await authorizedTelegramAdmin(env, chatId, actorTelegramUserId, "telegram.publish");
+    if (!admin) {
+      await sendTelegramMessage(env, chatId, "Este comando requiere una identidad administrativa vinculada con permiso para publicar novedades.", { reply_parameters: { message_id: message.message_id } }).catch(() => undefined);
+      return true;
+    }
+    const repliedMessageId = message.reply_to_message?.message_id;
+    if (!repliedMessageId) {
+      await sendTelegramMessage(env, chatId, "Responde a la novedad que quieres eliminar con /eliminar_novedad.", { reply_parameters: { message_id: message.message_id } });
+      return true;
+    }
+    const publication = await env.DB.prepare(`
+      SELECT tp.bulletin_id AS bulletin_id, tb.title AS title
+      FROM telegram_publications tp INNER JOIN telegram_bulletins tb ON tb.id = tp.bulletin_id
+      WHERE tp.telegram_chat_id = ? AND tp.telegram_message_id = ? LIMIT 1
+    `).bind(chatId, telegramId(repliedMessageId)).first<{ bulletin_id: string; title: string }>();
+    if (!publication) {
+      await sendTelegramMessage(env, chatId, "Ese mensaje no corresponde a una novedad sincronizada de Chile3X.", { reply_parameters: { message_id: message.message_id } });
+      return true;
+    }
+    await telegramApi(env, "deleteMessage", { chat_id: chatId, message_id: repliedMessageId }).catch(() => undefined);
+    await telegramApi(env, "deleteMessage", { chat_id: chatId, message_id: message.message_id }).catch(() => undefined);
+    await env.DB.prepare("DELETE FROM telegram_bulletins WHERE id = ?").bind(publication.bulletin_id).run();
+    await recordTelegramAudit(env, { actorType: "telegram_admin", actorUserId: admin.user_id, actorTelegramUserId, action: "bulletin.delete_from_telegram", entityType: "bulletin", entityId: publication.bulletin_id, summary: `Eliminó la novedad “${publication.title.slice(0, 180)}” desde Telegram.` });
     return true;
   }
   const admin = await authorizedTelegramAdmin(env, chatId, actorTelegramUserId, "telegram.moderate");
@@ -708,6 +747,13 @@ async function processTelegramUpdate(env: Env, updateId: string) {
   if (Number(claim.meta.changes ?? 0) === 0) return;
   const update = JSON.parse(row.payload) as unknown;
   if (!isTelegramUpdate(update)) throw new Error("Actualización de Telegram no válida.");
+  await Promise.all([
+    syncLinkedTelegramIdentity(env, update.message?.from ?? update.edited_message?.from),
+    syncLinkedTelegramIdentity(env, update.chat_join_request?.from),
+    syncLinkedTelegramIdentity(env, update.chat_member?.from),
+    syncLinkedTelegramIdentity(env, update.chat_member?.new_chat_member.user),
+    syncLinkedTelegramIdentity(env, update.my_chat_member?.from),
+  ]);
   if (update.my_chat_member) await processMembershipUpdate(env, update.my_chat_member, true);
   if (update.chat_member) await processMembershipUpdate(env, update.chat_member, false);
   if (update.chat_join_request) await processJoinRequest(env, update.chat_join_request);
@@ -781,6 +827,7 @@ async function outboxDeleteBulletin(env: Env, payload: Record<string, unknown>) 
     await telegramApi(env, "deleteMessage", { chat_id: publication.telegram_chat_id, message_id: Number(publication.telegram_message_id) }).catch(() => undefined);
     await env.DB.prepare("UPDATE telegram_publications SET status = 'deleted', updated_at = ? WHERE id = ?").bind(new Date().toISOString(), publication.id).run();
   }
+  if (payload.deleteRecord === true) await env.DB.prepare("DELETE FROM telegram_bulletins WHERE id = ?").bind(bulletinId).run();
 }
 
 async function outboxSendMemberInvite(env: Env, payload: Record<string, unknown>) {

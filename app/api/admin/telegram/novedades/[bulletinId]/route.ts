@@ -18,15 +18,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!current) return new Response("Novedad no encontrada.", { status: 404 });
   const intent = formData.get("intent");
   const now = new Date().toISOString();
-  if (intent === "archive") {
-    const job = createTelegramOutboxValues({ kind: "delete_bulletin", userId: admin.id, entityId: bulletinId, payload: { bulletinId } });
+  if (intent === "archive" || intent === "delete") {
+    const deleteRecord = intent === "delete";
+    const job = createTelegramOutboxValues({ kind: "delete_bulletin", userId: admin.id, entityId: bulletinId, payload: { bulletinId, deleteRecord } });
     await db.batch([
       db.update(telegramBulletins).set({ status: "archived", updatedAt: now }).where(eq(telegramBulletins.id, bulletinId)),
       db.insert(telegramOutboxJobs).values(job),
     ]);
     await dispatchTelegramJob(job.id);
-    await recordAdminAudit(admin, { category: "telegram", action: "telegram.bulletin_delete", summary: `Archivó la novedad “${current.title}”.`, entityType: "telegram_bulletin", entityId: bulletinId, entityLabel: current.title });
-    return NextResponse.redirect(new URL("/admin/telegram?notice=bulletin_archived", request.url), 303);
+    await recordAdminAudit(admin, { category: "telegram", action: "telegram.bulletin_delete", summary: `${deleteRecord ? "Eliminó" : "Archivó"} la novedad “${current.title}”.`, entityType: "telegram_bulletin", entityId: bulletinId, entityLabel: current.title });
+    return NextResponse.redirect(new URL(`/admin/telegram?notice=${deleteRecord ? "bulletin_deleted" : "bulletin_archived"}`, request.url), 303);
   }
   const title = typeof formData.get("title") === "string" ? String(formData.get("title")).trim().slice(0, 120) : "";
   const body = typeof formData.get("body") === "string" ? String(formData.get("body")).trim().slice(0, 3_800) : "";

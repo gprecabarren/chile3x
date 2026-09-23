@@ -2,10 +2,13 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [layoutSource, dashboardSource, cssSource, adminShellSource, mobileNavigationSource, accountShellSource, accountMobileNavigationSource, publicHeaderSource] = await Promise.all([
+const [layoutSource, dashboardSource, cssSource, panelCssSource, adminLayoutSource, accountLayoutSource, adminShellSource, mobileNavigationSource, accountShellSource, accountMobileNavigationSource, publicHeaderSource] = await Promise.all([
   readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/admin/page.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  readFile(new URL("../public/assets/panels-20260923.css", import.meta.url), "utf8"),
+  readFile(new URL("../app/admin/layout.tsx", import.meta.url), "utf8"),
+  readFile(new URL("../app/mi-cuenta/layout.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/admin/_components.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/admin/AdminMobileNavigation.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/mi-cuenta/_components.tsx", import.meta.url), "utf8"),
@@ -25,9 +28,12 @@ test("account and admin panels use Manrope with readable action text", () => {
   assert.doesNotMatch(layoutSource, /next\/font\/google/);
   assert.match(cssSource, /src: url\("\/fonts\/manrope-latin-variable\.woff2"\)/);
   assert.match(cssSource, /--font-panel: var\(--font-site\)/);
-  assert.match(cssSource, /\.admin-root,\s*\.account-root \{\s*font-family: var\(--font-panel\)/s);
-  assert.match(cssSource, /\.admin-root \.button,[\s\S]*?font-size: 14px !important/);
-  assert.match(cssSource, /\.admin-content > \.admin-stat-grid \+ \.admin-review-alert \{\s*margin-top: 24px/);
+  assert.match(panelCssSource, /\.admin-root,\s*\.account-root \{\s*font-family: var\(--font-panel\)/s);
+  assert.match(panelCssSource, /\.admin-root \.button,[\s\S]*?font-size: 14px !important/);
+  assert.match(panelCssSource, /\.admin-content > \.admin-stat-grid \+ \.admin-review-alert \{\s*margin-top: 24px/);
+  assert.match(adminLayoutSource, /PANEL_STYLESHEET = "\/assets\/panels-20260923\.css"/);
+  assert.match(accountLayoutSource, /PANEL_STYLESHEET = "\/assets\/panels-20260923\.css"/);
+  assert.doesNotMatch(cssSource, /\.admin-root,\s*\.account-root \{\s*font-family: var\(--font-panel\)/s);
 });
 
 test("the mobile administration menu closes after selecting a section", () => {
@@ -40,7 +46,7 @@ test("the mobile account menu closes after selecting a section", () => {
   assert.match(accountShellSource, /<AccountMobileNavigation>/);
   assert.match(accountMobileNavigationSource, /target\.closest\("a\[href\]"\)/);
   assert.match(accountMobileNavigationSource, /removeAttribute\("open"\)/);
-  assert.match(cssSource, /\.account-header > \.account-desktop-navigation \{ display: none; \}/);
+  assert.match(panelCssSource, /\.account-header > \.account-desktop-navigation \{ display: none; \}/);
 });
 
 test("profile navigation cannot be interrupted halfway through a smooth return to the top", () => {

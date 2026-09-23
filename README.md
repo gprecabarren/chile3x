@@ -374,7 +374,7 @@ pnpm deploy
 
 Este script fuerza el uso del `wrangler.json` del repositorio y conserva las variables configuradas en Cloudflare. No reutilizar configuraciones ni recursos del proyecto JurisConecta.
 
-El despliegue verificado el 23 de septiembre de 2026 corresponde a la versión del Worker `a238a89d-3df5-467b-8ccb-aa5676385fce`. La unión `CF_VERSION_METADATA` se usa únicamente para aislar la caché pública de cada despliegue. D1 remoto contiene las migraciones hasta `0033_huge_selene.sql` y no informa relaciones inválidas. La comprobación visual en producción confirmó una cabecera de escritorio compacta con los contactos debajo de la sesión, navegación móvil sin desbordamiento horizontal, resumen territorial después del hero, selector completo solo dentro del directorio, textos legibles a 390 px, perfiles sin recortes, Manrope autohospedada, centro de notificaciones, estadísticas de WhatsApp y control de eliminación sincronizada de Novedades en el panel de Telegram. `/patrocinadores` conserva sus 11 tarjetas adaptables, sitemap canónico y ausencia de enlaces a Paradisse.
+El despliegue verificado el 23 de septiembre de 2026 corresponde a la versión del Worker `172a77cf-2641-41c7-989d-40f99be4b591`. La unión `CF_VERSION_METADATA` se usa únicamente para aislar la caché pública de cada despliegue. D1 remoto contiene las migraciones hasta `0033_huge_selene.sql` y no informa relaciones inválidas. La comprobación visual en producción confirmó una cabecera de escritorio compacta con los contactos debajo de la sesión, navegación móvil sin desbordamiento horizontal, resumen territorial después del hero, selector completo solo dentro del directorio, textos legibles a 390 px, perfiles sin recortes, Manrope autohospedada, centro de notificaciones, estadísticas de WhatsApp y control de eliminación sincronizada de Novedades en el panel de Telegram. `/patrocinadores` conserva sus 11 tarjetas adaptables, sitemap canónico y ausencia de enlaces a Paradisse.
 
 1. `pnpm lint` sin errores.
 2. `pnpm build` sin errores.
@@ -417,6 +417,7 @@ Cuando se active Apple, comprobar además que el Services ID, dominio, retorno y
 - `c5bd80e` — cierre responsive del selector territorial: textos móviles completos, una sola acción de geolocalización en el directorio y resumen de portada ubicado después del hero.
 - `506619f` — documentación del despliegue de mensajería, presencia, ubicación y notificaciones operativas.
 - `6df6052` — optimización PageSpeed de logos, banner e insignia asociada, junto con aislamiento COOP compatible con Google.
+- `cf7309d` — recursos WebP versionados bajo `/assets/` con caché inmutable de un año.
 
 ## Límites y decisiones pendientes
 

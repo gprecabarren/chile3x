@@ -55,8 +55,8 @@ export function LocationPreference({ initialCitySlug = "" }: { initialCitySlug?:
 
   return <section className="quick-location" aria-label="Cambiar ciudad o región">
     <div className="quick-location-heading"><span aria-hidden="true">⌖</span><strong>Explorar cerca de</strong></div>
-    <label><span>Región</span><select value={regionSlug} onChange={(event) => { setRegionSlug(event.target.value); setCitySlug(""); }}><option value="">Todas las regiones</option>{regions.map((region) => <option value={region.id} key={region.id}>{region.shortTitle}</option>)}</select></label>
-    <label><span>Ciudad</span><select value={citySlug} onChange={(event) => setCitySlug(event.target.value)}><option value="">Seleccionar ciudad</option>{cities.map((city) => <option value={city.citySlug} key={city.citySlug}>{city.city}</option>)}</select></label>
+    <label><span>Región</span><select value={regionSlug} onChange={(event) => { setRegionSlug(event.target.value); setCitySlug(""); }}><option value="">Todas</option>{regions.map((region) => <option value={region.id} key={region.id}>{region.shortTitle}</option>)}</select></label>
+    <label><span>Ciudad</span><select value={citySlug} onChange={(event) => setCitySlug(event.target.value)}><option value="">Elegir ciudad</option>{cities.map((city) => <option value={city.citySlug} key={city.citySlug}>{city.city}</option>)}</select></label>
     <button className="quick-location-apply" type="button" onClick={() => applyCity()}>Aplicar</button>
     <button className="quick-location-detect" type="button" onClick={useLocation}>Usar mi ubicación</button>
     {status && <small role="status">{status}</small>}

@@ -996,6 +996,7 @@ main:has(.hero) { display: flex; flex-direction: column; }
 main:has(.hero) > .age-strip { order: 1; }
 main:has(.hero) > .site-header { order: 2; }
 main:has(.hero) > .hero { order: 3; }
+main:has(.hero) > .home-location-summary { order: 4; }
 main:has(.hero) > .directory-section { order: 4; }
 main:has(.hero) > .home-photo-banner { order: 5; }
 main:has(.hero) > .story-rail { order: 6; }

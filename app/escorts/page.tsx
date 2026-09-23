@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { DirectoryFilters } from "@/app/directorio/DirectoryFilters";
-import { NearbyDirectoryButton } from "@/app/directorio/NearbyDirectoryButton";
 import { DirectoryLocationPreference, DirectoryShell, ProfileGrid } from "@/app/directorio/_components";
 import { filterPublicProfiles, getPublicProfiles, prioritizeProfilesByCity, readDirectoryFilters, type DirectoryQuery } from "@/lib/directory";
 import { cityDirectory, getCityBySlug } from "@/app/locations";
@@ -44,7 +43,6 @@ export default async function EscortsPage({ searchParams }: { searchParams: Prom
         <p className="eyebrow">DIRECTORIO NACIONAL</p>
         <h1>Escorts y damas de compañía <em>en todo Chile.</em></h1>
         <p>Explora perfiles revisados por ciudad, categoría, atributos y servicios. Los filtros combinan sus condiciones para entregar resultados precisos.</p>
-        <NearbyDirectoryButton />
       </section>
       <section className="directory-content">
         <DirectoryLocationPreference />

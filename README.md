@@ -415,6 +415,8 @@ Cuando se active Apple, comprobar además que el Services ID, dominio, retorno y
 - `9174e16` — refinamiento responsive y editorial final de Quiénes somos.
 - `56cf748` — chat privado y anonimización, presencia Online, preferencias territoriales, analítica consentida de WhatsApp, notificaciones operativas, borrado sincronizado de Novedades, Manrope autohospedada y migraciones 0032/0033.
 - `c5bd80e` — cierre responsive del selector territorial: textos móviles completos, una sola acción de geolocalización en el directorio y resumen de portada ubicado después del hero.
+- `506619f` — documentación del despliegue de mensajería, presencia, ubicación y notificaciones operativas.
+- `6df6052` — optimización PageSpeed de logos, banner e insignia asociada, junto con aislamiento COOP compatible con Google.
 
 ## Límites y decisiones pendientes
 

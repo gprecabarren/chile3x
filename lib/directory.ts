@@ -428,7 +428,21 @@ export async function getFeaturedProfiles(limit = 6, viewerId?: string) {
       ...manualCandidates.map((candidate) => candidate.id),
       ...viewedCandidates.map((candidate) => candidate.profileId),
     ])];
-    if (!candidateIds.length) return [];
+    if (!candidateIds.length) {
+      // Durante el lanzamiento puede no existir todavía una escort real
+      // aprobada. En ese único caso se conserva una portada útil con los
+      // perfiles de demostración que ya son públicos en el directorio.
+      const demoCandidates = await db.select({ id: profiles.id }).from(profiles).where(and(
+        publicProfileCondition,
+        eq(profiles.type, "escort"),
+        eq(profiles.isDemo, true),
+      )).orderBy(desc(profiles.isFeatured), desc(profiles.updatedAt)).limit(limit);
+      const demoProfiles = await getPublicProfiles({ viewerId, type: "escort", profileIds: demoCandidates.map((candidate) => candidate.id) });
+      return [...demoProfiles]
+        .sort((left, right) => Number(right.isFeatured) - Number(left.isFeatured)
+          || right.updatedAt.localeCompare(left.updatedAt))
+        .slice(0, limit);
+    }
 
     const publicProfiles = await getPublicProfiles({ viewerId, type: "escort", profileIds: candidateIds });
     const viewTotals = new Map(viewedCandidates.map((candidate) => [candidate.profileId, Number(candidate.total)]));

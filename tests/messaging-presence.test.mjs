@@ -72,6 +72,13 @@ test("location preference asks for browser permission and stores only the covere
   assert.match(home, /HomeLocationSummary/);
 });
 
+test("home featured profiles prefer real listings and use demos only before launch", async () => {
+  const directory = await source("lib/directory.ts");
+  assert.match(directory, /eq\(profiles\.isDemo, false\)/);
+  assert.match(directory, /if \(!candidateIds\.length\)/);
+  assert.match(directory, /eq\(profiles\.isDemo, true\)/);
+});
+
 test("administrators receive filterable registration and profile notifications", async () => {
   const [schema, notifications, activity, register, profiles] = await Promise.all([
     source("db/schema.ts"), source("lib/admin-notifications.ts"), source("app/admin/actividad/page.tsx"), source("app/api/auth/register/route.ts"), source("lib/profile-submission.ts"),

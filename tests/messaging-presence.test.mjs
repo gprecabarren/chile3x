@@ -56,16 +56,20 @@ test("WhatsApp contact tracing is privacy-minimized and available to administrat
 });
 
 test("location preference asks for browser permission and stores only the covered city", async () => {
-  const [selector, directory, shell, home] = await Promise.all([
-    source("app/directorio/LocationPreference.tsx"), source("lib/directory.ts"), source("app/directorio/_components.tsx"), source("app/page.tsx"),
+  const [selector, locationClient, homeLocation, directory, shell, home] = await Promise.all([
+    source("app/directorio/LocationPreference.tsx"), source("app/directorio/location-client.ts"), source("app/HomeLocationSummary.tsx"), source("lib/directory.ts"), source("app/directorio/_components.tsx"), source("app/page.tsx"),
   ]);
-  assert.match(selector, /navigator\.geolocation\.getCurrentPosition/);
-  assert.match(selector, /chile3x_preferred_city/);
-  assert.doesNotMatch(selector, /document\.cookie.*latitude|document\.cookie.*longitude/);
+  assert.match(locationClient, /navigator\.geolocation\.getCurrentPosition/);
+  assert.match(locationClient, /enableHighAccuracy: true/);
+  assert.match(locationClient, /chile3x_preferred_city/);
+  assert.doesNotMatch(locationClient, /document\.cookie.*latitude|document\.cookie.*longitude/);
+  assert.match(selector, /requestNearestCoveredCity/);
+  assert.match(homeLocation, /Usar mi ubicación/);
+  assert.match(homeLocation, /router\.refresh\(\)/);
   assert.match(directory, /Number\(right\.city === city\) - Number\(left\.city === city\)/);
   assert.doesNotMatch(shell.match(/export async function PublicHeader[\s\S]*?export async function DirectoryLocationPreference/)?.[0] ?? "", /<LocationPreference/);
   assert.match(shell, /export async function DirectoryLocationPreference/);
-  assert.match(home, /home-location-summary/);
+  assert.match(home, /HomeLocationSummary/);
 });
 
 test("administrators receive filterable registration and profile notifications", async () => {

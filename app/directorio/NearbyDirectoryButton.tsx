@@ -1,39 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { cityGeoDirectory } from "@/app/locations";
-
-function distanceSquared(latitude: number, longitude: number, targetLatitude: number, targetLongitude: number) {
-  const latitudeScale = Math.cos(((latitude + targetLatitude) / 2) * Math.PI / 180);
-  return (latitude - targetLatitude) ** 2 + ((longitude - targetLongitude) * latitudeScale) ** 2;
-}
+import { locationErrorMessage, requestNearestCoveredCity, savePreferredCity } from "./location-client";
 
 export function NearbyDirectoryButton() {
   const [message, setMessage] = useState("");
+  const [isLocating, setIsLocating] = useState(false);
 
-  function useLocation() {
-    if (!navigator.geolocation) {
-      setMessage("Tu navegador no permite usar ubicación. Puedes elegir una ciudad desde los filtros.");
-      return;
-    }
-
-    setMessage("Consultando tu ubicación…");
-    navigator.geolocation.getCurrentPosition((position) => {
-      const nearest = cityGeoDirectory.reduce((current, city) => {
-        if (!current) return city;
-        const candidateDistance = distanceSquared(position.coords.latitude, position.coords.longitude, city.latitude, city.longitude);
-        const currentDistance = distanceSquared(position.coords.latitude, position.coords.longitude, current.latitude, current.longitude);
-        return candidateDistance < currentDistance ? city : current;
-      }, cityGeoDirectory[0]);
-
-      if (!nearest) {
-        setMessage("No hay una ciudad de cobertura configurada todavía.");
-        return;
-      }
-
+  async function useLocation() {
+    setIsLocating(true);
+    setMessage("El navegador solicitará permiso para detectar tu ciudad más cercana…");
+    try {
+      const nearest = await requestNearestCoveredCity();
+      savePreferredCity(nearest.citySlug);
       window.location.assign(`/escorts?cerca=${encodeURIComponent(nearest.city)}`);
-    }, () => setMessage("No compartiste tu ubicación. Puedes continuar explorando todo Chile."), { enableHighAccuracy: false, timeout: 8000, maximumAge: 900000 });
+    } catch (error) {
+      setMessage(locationErrorMessage(error));
+      setIsLocating(false);
+    }
   }
 
-  return <div className="nearby-directory-control"><button type="button" onClick={useLocation}>Usar mi ubicación</button>{message && <small role="status">{message}</small>}</div>;
+  return <div className="nearby-directory-control"><button type="button" onClick={useLocation} disabled={isLocating}>{isLocating ? "Buscando…" : "Usar mi ubicación"}</button>{message && <small role="status" aria-live="polite">{message}</small>}</div>;
 }

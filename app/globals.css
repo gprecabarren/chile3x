@@ -745,19 +745,7 @@ footer span { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid #272
 .profile-page-visual:has(.profile-story-photo-marker) { outline: 3px solid #e34b59; outline-offset: 4px; }
 .profile-page-summary .profile-story-trigger { margin-top: 12px; }
 
-/* Inicio: el selector territorial es la primera sección visible tras el hero. */
-main:has(.hero) { display: flex; flex-direction: column; }
-main:has(.hero) > .age-strip { order: 1; }
-main:has(.hero) > .site-header { order: 2; }
-main:has(.hero) > .hero { order: 3; }
-main:has(.hero) > .home-location-summary { order: 4; }
-main:has(.hero) > .directory-section { order: 4; }
-main:has(.hero) > .home-photo-banner { order: 5; }
-main:has(.hero) > .story-rail { order: 6; }
-main:has(.hero) > .listings-section { order: 7; }
-main:has(.hero) > .process-section { order: 8; }
-main:has(.hero) > .announce-section { order: 9; }
-main:has(.hero) > footer { order: 10; }
+/* Inicio: el orden visual coincide con el orden semántico del HTML. */
 .home-search-after-coverage { margin-inline: auto; }
 
 .portal-contact-link { border-radius: 6px; }.portal-contact-links-footer .portal-contact-link { width: 34px; height: 32px; border-radius: 5px; }
@@ -1533,14 +1521,21 @@ input[type="submit"] { text-transform: none !important; letter-spacing: .015em; 
   .admin-notification-filters { grid-template-columns: 1fr; padding: 12px; }.admin-notification-filters label:first-child { grid-column: auto; }.admin-notification-filters .button { width: 100%; }.admin-notification-list { padding: 10px 12px 12px; }.admin-notification-list article { align-items: flex-start; flex-direction: column; }.admin-notification-list nav { justify-content: flex-start; }
 }
 
-/* Contexto territorial: el selector completo vive dentro del directorio; la
-   portada solo conserva una referencia compacta a la preferencia guardada. */
+/* Contexto territorial: permiso explícito y acceso rápido bajo el hero. */
 .directory-content > .quick-location { width: 100%; margin: 0 0 24px; border-top: 1px solid #293145; border-radius: 12px; }
-.home-location-summary { width: min(100% - 32px, 1184px); min-height: 54px; margin: 18px auto 0; display: flex; align-items: center; gap: 12px; padding: 10px 13px; border: 1px solid #2d374b; border-radius: var(--radius-md); color: #c9d1dd; background: #0d131e; }
-.home-location-summary > span { color: #f35d65; font-size: 22px; }.home-location-summary > div { display: grid; gap: 2px; }.home-location-summary small { color: #8f9bad; font-size: 8px; font-weight: 900; letter-spacing: .09em; }.home-location-summary strong { color: #fff; font-size: 13px; }.home-location-summary nav { display: flex; flex-wrap: wrap; gap: 5px 10px; margin: 0; color: #8f9bad; font-size: 10px; }.home-location-summary nav a, .home-location-summary > a { color: #ff9399; font-size: 10px; font-weight: 800; }.home-location-summary > a { margin-left: auto; }
+.home-discovery-controls { width: min(100% - 32px, 1184px); margin: 18px auto 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(290px, 430px); align-items: stretch; gap: 12px; }
+.home-discovery-controls .region-jump { width: 100%; margin: 0; }
+.home-discovery-controls + .listings-section { padding-top: 72px; }
+.home-location-summary { min-width: 0; min-height: 72px; display: flex; align-items: center; flex-wrap: wrap; gap: 9px 12px; padding: 10px 13px; border: 1px solid #2d374b; border-radius: var(--radius-md); color: #c9d1dd; background: #0d131e; }
+.home-location-summary > span { color: #f35d65; font-size: 22px; }.home-location-summary > div:not(.home-location-actions) { display: grid; gap: 2px; }.home-location-summary small { color: #8f9bad; font-size: 8px; font-weight: 900; letter-spacing: .09em; }.home-location-summary strong { color: #fff; font-size: 13px; }.home-location-summary nav { display: flex; flex-wrap: wrap; gap: 5px 10px; margin: 0; color: #8f9bad; font-size: 10px; }.home-location-summary nav a, .home-location-actions a, .home-location-actions button { color: #ff9399; font-size: 10px; font-weight: 800; }
+.home-location-actions { margin-left: auto; display: flex; align-items: center; gap: 9px; }.home-location-actions button { min-height: 34px; padding: 7px 10px; border: 1px solid #88444b; border-radius: 7px; background: #28171d; }.home-location-actions button:hover { border-color: #ef6d74; background: #371b22; }.home-location-actions button:disabled { opacity: .68; }.home-location-status { flex-basis: 100%; padding-left: 34px; line-height: 1.45; letter-spacing: 0 !important; }
+
+@media (max-width: 760px) {
+  .home-discovery-controls { grid-template-columns: minmax(0, 1fr); }
+}
 
 @media (max-width: 560px) {
-  .home-location-summary { width: calc(100% - 24px); min-height: 48px; margin-top: 12px; gap: 9px; padding: 8px 10px; }.home-location-summary > span { font-size: 18px; }.home-location-summary nav { display: none; }.home-location-summary strong { font-size: 11px; }.home-location-summary > a { font-size: 9px; white-space: nowrap; }
+  .home-discovery-controls { width: calc(100% - 24px); margin-top: 12px; grid-template-columns: minmax(0, 1fr); gap: 9px; }.home-discovery-controls + .listings-section { padding-top: 52px; }.home-location-summary { min-height: 48px; gap: 8px; padding: 9px 10px; }.home-location-summary > span { font-size: 18px; }.home-location-summary nav { display: none; }.home-location-summary strong { font-size: 11px; }.home-location-actions { width: 100%; margin-left: 26px; justify-content: flex-start; }.home-location-actions a, .home-location-actions button { font-size: 9px; white-space: nowrap; }.home-location-status { padding-left: 26px; }
   .quick-location { width: 100%; gap: 7px; }.quick-location-heading strong { font-size: 10px; }.quick-location select { height: 36px; padding: 5px 28px 5px 7px !important; font-size: 10px; }.quick-location button { min-height: 34px; padding: 6px 8px; font-size: 8px; }
   .hero { padding: 50px 18px 42px; }.hero h1 { font-size: clamp(40px, 11.5vw, 51px); }.hero-text { font-size: 14px; }.section { padding-right: 18px; padding-left: 18px; }.section-heading h2, .listings-intro h2, .process-copy h2, .announce-section h2 { font-size: clamp(34px, 9.5vw, 45px); }
   .directory-hero, .city-hero { padding: 48px 18px 42px; }.directory-hero h1, .city-hero h1 { font-size: clamp(39px, 11vw, 51px); }.directory-hero > p:last-child, .city-hero > p:last-child { font-size: 13px; }.directory-content { width: min(100% - 28px, 1184px); padding-top: 35px; }

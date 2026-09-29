@@ -5,6 +5,7 @@ import { FloatingWhatsappButton, PublicFooter, PublicHeader, ProfileGrid } from 
 import { StoryRail } from "./historias/StoryRail";
 import { cityDirectory, cityGeoDirectory, cityTotal, getCityBySlug, regions } from "./locations";
 import { RegionJumpSelect } from "./RegionJumpSelect";
+import { HomeLocationSummary } from "./HomeLocationSummary";
 import { getCityEscortCounts, getFeaturedProfiles, prioritizeProfilesByCity } from "@/lib/directory";
 import { getActiveStories } from "@/lib/stories";
 import { getCurrentAdmin, getCurrentUser } from "@/lib/auth";
@@ -108,13 +109,6 @@ export default async function Home() {
 
       <PublicHeader coverageHref="#cobertura" />
 
-      <aside className="home-location-summary" aria-label="Ubicación priorizada">
-        <span aria-hidden="true">⌖</span>
-        <div><small>{preferredCity ? "MOSTRANDO PRIMERO" : "COBERTURA NACIONAL"}</small><strong>{preferredCity?.city ?? "Todo Chile"}</strong></div>
-        {nearbyCities.length > 0 && <nav aria-label="Ciudades cercanas">Cerca: {nearbyCities.map((city) => <Link key={city.citySlug} href={`/escorts/${city.citySlug}`}>{city.city}</Link>)}</nav>}
-        <Link href="/escorts">Cambiar ciudad</Link>
-      </aside>
-
       <section className="hero" id="explorar">
         <div className="hero-copy">
           <p className="eyebrow">DIRECTORIO ADULTO · TODO CHILE</p>
@@ -148,9 +142,18 @@ export default async function Home() {
         </aside>
       </section>
 
-      <section className="home-photo-banner" aria-label="Chile3X, directorio adulto en Chile">
-        <Image src="/assets/chile3x-hero-banner-20260923.webp" alt="" fill sizes="100vw" unoptimized />
-        <div><p className="eyebrow">CHILE3X</p><h2>Un espacio adulto, <em>privado y claro.</em></h2><p>Encuentra publicaciones revisadas y contacta directamente a cada anunciante.</p><Link className="button button-outline" href="/escorts">Ver directorio nacional</Link></div>
+      <section className="home-discovery-controls" aria-label="Ubicación y regiones">
+        <HomeLocationSummary initialCityName={preferredCity?.city} nearbyCities={nearbyCities} />
+        <RegionJumpSelect regions={regions} />
+      </section>
+
+      <section className="section listings-section">
+        <div className="listings-intro">
+          <p className="eyebrow">ESCORTS Y DAMAS DE COMPAÑÍA DESTACADAS</p>
+          <h2>Lo más visto <em>del directorio.</em></h2>
+          {(viewer || admin) && <p>Se priorizan las escorts con más visualizaciones únicas recientes. El equipo puede destacar avisos revisados de forma manual cuando sea necesario.</p>}
+        </div>
+        {featuredProfiles.length ? <ProfileGrid profiles={featuredProfiles} emptyMessage="Aún no hay perfiles destacados." /> : (viewer || admin) ? <p className="demo-note">Los perfiles destacados aparecerán aquí cuando existan publicaciones y visualizaciones registradas.</p> : null}
       </section>
 
       <StoryRail stories={stories} />
@@ -162,8 +165,6 @@ export default async function Home() {
             <h2>Todas las regiones,<br /><em>ciudades iniciales.</em></h2>
           </div>
         </div>
-
-        <RegionJumpSelect regions={regions} />
 
         <div className="regional-grid">
           {regions.map((region) => (
@@ -188,13 +189,9 @@ export default async function Home() {
         </form>
       </section>
 
-      <section className="section listings-section">
-        <div className="listings-intro">
-          <p className="eyebrow">ESCORTS Y DAMAS DE COMPAÑÍA DESTACADAS</p>
-          <h2>Lo más visto <em>del directorio.</em></h2>
-          {(viewer || admin) && <p>Se priorizan las escorts con más visualizaciones únicas recientes. El equipo puede destacar avisos revisados de forma manual cuando sea necesario.</p>}
-        </div>
-        {featuredProfiles.length ? <ProfileGrid profiles={featuredProfiles} emptyMessage="Aún no hay perfiles destacados." /> : (viewer || admin) ? <p className="demo-note">Los perfiles destacados aparecerán aquí cuando existan publicaciones y visualizaciones registradas.</p> : null}
+      <section className="home-photo-banner" aria-label="Chile3X, directorio adulto en Chile">
+        <Image src="/assets/chile3x-hero-banner-20260923.webp" alt="" fill sizes="100vw" unoptimized />
+        <div><p className="eyebrow">CHILE3X</p><h2>Un espacio adulto, <em>privado y claro.</em></h2><p>Encuentra publicaciones revisadas y contacta directamente a cada anunciante.</p><Link className="button button-outline" href="/escorts">Ver directorio nacional</Link></div>
       </section>
 
       <section className="section process-section" id="como-funciona">

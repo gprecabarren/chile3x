@@ -809,3 +809,71 @@
 .profile-statistics-panel { padding: 28px; border: 1px solid #363d50; background: #111622; }.profile-statistics-periods { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 25px; }.profile-statistics-periods a { padding: 9px 11px; border: 1px solid #3d455a; color: #bec6d8; font-size: 11px; font-weight: 700; }.profile-statistics-periods a.is-active { border-color: #ef555d; color: #fff; background: #5a1f2b; }.profile-statistics-total { padding: 21px; border-left: 3px solid #ee4b53; background: #0b0e16; }.profile-statistics-total span { display: block; color: #b3bbca; font-size: 12px; }.profile-statistics-total strong { display: block; margin-top: 8px; color: #fff; font-family: Georgia, serif; font-size: 61px; font-weight: 400; line-height: .9; }.profile-statistics-table { margin-top: 20px; border-top: 1px solid #30384b; }.profile-statistics-table > div { padding: 12px 0; display: flex; justify-content: space-between; gap: 20px; border-bottom: 1px solid #30384b; color: #cbd0da; font-size: 13px; }.profile-statistics-table > div:first-child { color: #939bae; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }.profile-statistics-table strong { color: #fff; }.profile-statistics-empty { margin: 20px 0 0; color: #b3bbc9; font-size: 13px; }
 .account-status { padding: 5px 7px; display: inline-flex; color: #ccd1df; border: 1px solid #485064; font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }.account-status-approved { color: #bdeecb; border-color: #2d8055; background: #193f2c; }.account-status-pending { color: #ffd988; border-color: #8c6729; background: #443516; }.account-status-paused, .account-status-draft { color: #cbd4ef; border-color: #4e638a; background: #202b42; }.account-status-rejected, .account-status-expired { color: #ffc2c4; border-color: #91494e; background: #431f25; }
 .profile-form { display: grid; gap: 13px; }.profile-form-section { padding: 30px; border: 1px solid #303647; background: #111521; }.profile-form-section-heading { margin-bottom: 24px; }.profile-form-section-heading p { margin-bottom: 8px; color: #f15a61; font-size: 10px; font-weight: 800; letter-spacing: .11em; }.profile-form-section-heading h2 { margin: 0; font-size: 31px; }.form-grid { display: grid; gap: 15px; }.form-grid-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }.form-grid-two { grid-template-columns: repeat(2, minmax(0, 1fr)); }.form-wide-label { margin-top: 16px; }.profile-form fieldset { margin: 22px 0 0; padding: 16px; border: 1px solid #383e50; }.profile-form legend { padding: 0 5px; color: #dfe2eb; font-size: 12px; font-weight: 700; }.check-grid { display: flex; flex-wrap: wrap; gap: 9px 16px; }.check-grid label { display: flex; align-items: flex-start; gap: 7px; color: #bdc2d0; font-size: 11px; font-weight: 400; }.service-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }.profile-media-notice { padding: 21px 25px; border-left: 3px solid #e04a51; color: #c2c6d3; background: #171a29; }.profile-media-notice strong { color: white; font-size: 13px; }.profile-media-notice p { margin: 7px 0 0; font-size: 12px; line-height: 1.55; }.profile-form-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; padding-top: 11px; }
+
+/* La hoja privada se carga después del CSS público. Estos breakpoints deben
+   cerrar el archivo para que las bases de escritorio no vuelvan a imponerse
+   sobre los paneles móviles después de separar los bundles. */
+@media (max-width: 860px) {
+  .account-header {
+    padding: 16px 20px;
+    flex-wrap: wrap;
+    gap: 14px 20px;
+  }
+  .account-content { padding: 52px 0 70px; }
+  .account-heading { display: block; }
+  .account-heading > .button { margin-top: 24px; }
+  .form-grid-three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 720px) {
+  .admin-header { padding: 16px 20px; gap: 14px 20px; }
+  .admin-content {
+    width: min(100% - 40px, 1128px);
+    padding: 50px 0 70px;
+  }
+  .admin-heading { display: block; }
+  .admin-heading span { margin-top: 18px; }
+  .admin-heading > .button { margin-top: 22px; }
+  .admin-settings-form,
+  .admin-note { padding: 22px; }
+  .telegram-case-filters { grid-template-columns: minmax(0, 1fr); }
+  .telegram-case-filters > div {
+    grid-column: auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+  }
+  .telegram-case-filters .button { width: 100%; }
+  .admin-root input[type="file"],
+  .account-root input[type="file"] { max-width: 100%; min-width: 0; }
+  .rich-news-toolbar input[type="file"],
+  .news-cover-uploader input[type="file"] {
+    width: 1px;
+    max-width: 1px;
+    height: 1px;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .account-content { width: min(100% - 40px, 1128px); }
+  .account-user { min-width: 0; font-size: 10px; }
+  .account-user span {
+    max-width: 125px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .owner-profile-card { display: block; }
+  .owner-profile-actions { justify-content: flex-start; margin-top: 20px; }
+  .form-grid-three,
+  .form-grid-two,
+  .service-columns { grid-template-columns: minmax(0, 1fr); }
+  .profile-form-section { padding: 21px 18px; }
+  .profile-form-section-heading h2 { font-size: 27px; }
+  .profile-form-actions .button { width: 100%; }
+  .exclusive-content-media-grid,
+  .buyer-content-grid .exclusive-media-grid { grid-template-columns: minmax(0, 1fr); }
+}

@@ -31,9 +31,15 @@ test("account and admin panels use Manrope with readable action text", () => {
   assert.match(panelCssSource, /\.admin-root,\s*\.account-root \{\s*font-family: var\(--font-panel\)/s);
   assert.match(panelCssSource, /\.admin-root \.button,[\s\S]*?font-size: 14px !important/);
   assert.match(panelCssSource, /\.admin-content > \.admin-stat-grid \+ \.admin-review-alert \{\s*margin-top: 24px/);
-  assert.match(adminLayoutSource, /PANEL_STYLESHEET = "\/assets\/panels-20260923\.css"/);
-  assert.match(accountLayoutSource, /PANEL_STYLESHEET = "\/assets\/panels-20260923\.css"/);
+  assert.match(adminLayoutSource, /PANEL_STYLESHEET = "\/assets\/panels-20260923\.css\?v=20260929"/);
+  assert.match(accountLayoutSource, /PANEL_STYLESHEET = "\/assets\/panels-20260923\.css\?v=20260929"/);
   assert.doesNotMatch(cssSource, /\.admin-root,\s*\.account-root \{\s*font-family: var\(--font-panel\)/s);
+});
+
+test("private panel stylesheet closes with mobile cascade guards", () => {
+  assert.match(panelCssSource, /@media \(max-width: 720px\) \{[\s\S]*?\.admin-content \{[\s\S]*?width: min\(100% - 40px, 1128px\);[\s\S]*?\.admin-heading \{ display: block; \}/);
+  assert.match(panelCssSource, /@media \(max-width: 480px\) \{[\s\S]*?\.account-content \{ width: min\(100% - 40px, 1128px\); \}[\s\S]*?\.owner-profile-card \{ display: block; \}/);
+  assert.match(panelCssSource, /\.telegram-case-filters \{ grid-template-columns: minmax\(0, 1fr\); \}/);
 });
 
 test("the mobile administration menu closes after selecting a section", () => {

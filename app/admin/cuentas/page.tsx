@@ -11,6 +11,7 @@ import { AdminPageHeading, AdminShell } from "../_components";
 import { AdminPasswordField } from "./AdminPasswordField";
 import { adminCallHref, adminWhatsappHref } from "@/lib/admin-contact";
 import { AdminPagination, pageHref, readAdminPage } from "../pagination";
+import { creationSourceLabel } from "@/lib/creation-provenance";
 
 export const dynamic = "force-dynamic";
 const PAGE_SIZE = 30;
@@ -19,6 +20,7 @@ type AccountSearchParams = {
   notice?: string;
   q?: string;
   role?: string;
+  origin?: string;
   account_status?: string;
   city?: string;
   phone?: string;
@@ -47,6 +49,7 @@ const notices: Record<string, string> = {
 };
 
 const roleValues = ["admin", "advertiser", "tester", "visitor"] as const;
+const originValues = ["self", "admin", "unknown"] as const;
 const accountStatusValues = ["active", "disabled"] as const;
 const phoneValues = ["with_phone", "without_phone"] as const;
 const emailStatusValues = ["verified", "unverified"] as const;
@@ -82,6 +85,7 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
   const [db, params] = await Promise.all([getDb(), searchParams]);
   const filters = {
     role: readOption(params.role, roleValues),
+    origin: readOption(params.origin, originValues),
     accountStatus: readOption(params.account_status, accountStatusValues),
     city: cityOptions.includes(params.city ?? "") ? params.city ?? "" : "",
     phone: readOption(params.phone, phoneValues),
@@ -99,6 +103,7 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
   const currentQuery = new URLSearchParams();
   if (q) currentQuery.set("q", params.q?.trim() ?? "");
   if (filters.role) currentQuery.set("role", filters.role);
+  if (filters.origin) currentQuery.set("origin", filters.origin);
   if (filters.accountStatus) currentQuery.set("account_status", filters.accountStatus);
   if (filters.city) currentQuery.set("city", filters.city);
   if (filters.phone) currentQuery.set("phone", filters.phone);
@@ -126,6 +131,7 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
       sql<boolean>`lower(coalesce(${users.foreignCountry}, '')) like ${searchPattern}`,
     ) : undefined,
     filters.role ? eq(users.role, filters.role as "admin" | "advertiser" | "tester" | "visitor") : undefined,
+    filters.origin ? eq(users.creationSource, filters.origin as typeof users.$inferSelect.creationSource) : undefined,
     filters.accountStatus ? eq(users.isActive, filters.accountStatus === "active") : undefined,
     filters.city ? eq(users.city, filters.city) : undefined,
     filters.phone === "with_phone" ? sql<boolean>`trim(coalesce(${users.phone}, '')) <> ''` : filters.phone === "without_phone" ? sql<boolean>`trim(coalesce(${users.phone}, '')) = ''` : undefined,
@@ -146,6 +152,8 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
     displayName: users.displayName,
     email: users.email,
     role: users.role,
+    creationSource: users.creationSource,
+    createdByAdminLogin: users.createdByAdminLogin,
     isActive: users.isActive,
     selfDisabledAt: users.selfDisabledAt,
     adminDisabledAt: users.adminDisabledAt,
@@ -197,6 +205,7 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
           <div className="admin-account-advanced-filter-grid">
             <label>Estado de cuenta<select name="account_status" defaultValue={filters.accountStatus}><option value="">Todas</option><option value="active">Activas</option><option value="disabled">Deshabilitadas</option></select></label>
             <label>Tipo de cuenta<select name="role" defaultValue={filters.role}><option value="">Todos</option><option value="advertiser">Anunciantes</option><option value="tester">Testers</option><option value="admin">Administradores</option><option value="visitor">Visitantes</option></select></label>
+            <label>Origen de la cuenta<select name="origin" defaultValue={filters.origin}><option value="">Todos</option><option value="self">Creada por la persona</option><option value="admin">Creada por administración</option><option value="unknown">Origen anterior sin verificar</option></select></label>
             <label>Ciudad<select name="city" defaultValue={filters.city}><option value="">Todas las ciudades</option>{cityOptions.map((city) => <option value={city} key={city}>{city}</option>)}</select></label>
             <label>Teléfono<select name="phone" defaultValue={filters.phone}><option value="">Cualquiera</option><option value="with_phone">Con teléfono</option><option value="without_phone">Sin teléfono</option></select></label>
             <label>Correo electrónico<select name="email_status" defaultValue={filters.emailStatus}><option value="">Todos</option><option value="verified">Correo verificado</option><option value="unverified">Correo pendiente de verificar</option></select></label>
@@ -218,7 +227,7 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
         const callHref = adminCallHref(user.phone);
         return <article className="admin-account-card" key={user.id}>
           <header><div><p className="eyebrow">{roleLabel(user.role)}</p><h3>{user.displayName ?? "Sin nombre"}</h3><a href={`mailto:${user.email}`}>{user.email}</a></div><div className="admin-account-state-badges"><span className={`account-status ${user.isActive ? "account-status-approved" : "account-status-rejected"}`}>{user.isActive ? "Activa" : "Deshabilitada"}</span>{user.selfDisabledAt && <span className="account-status account-status-paused">Por la persona</span>}{user.adminDisabledAt && <span className="account-status account-status-rejected">Por administración</span>}</div></header>
-          <dl><div><dt>Ciudad</dt><dd>{user.city || "Sin ciudad"}</dd></div><div><dt>Creación</dt><dd>{formattedDate}</dd></div><div><dt>Anuncios asociados</dt><dd>{user.profileCount > 0 ? <Link prefetch={false} className="admin-profile-count-link" href={accountProfilesHref(user.email, detailsHref)}>Ver {user.profileCount} anuncio{user.profileCount === 1 ? "" : "s"}</Link> : "Sin anuncios"}</dd></div></dl>
+          <dl><div><dt>Ciudad</dt><dd>{user.city || "Sin ciudad"}</dd></div><div><dt>Creación</dt><dd>{formattedDate}</dd></div><div><dt>Origen</dt><dd>{creationSourceLabel(user.creationSource, user.createdByAdminLogin)}</dd></div><div><dt>Anuncios asociados</dt><dd>{user.profileCount > 0 ? <Link prefetch={false} className="admin-profile-count-link" href={accountProfilesHref(user.email, detailsHref)}>Ver {user.profileCount} anuncio{user.profileCount === 1 ? "" : "s"}</Link> : "Sin anuncios"}</dd></div></dl>
           {pendingProfileCount > 0 && <Link prefetch={false} className="admin-account-pending-link" href={accountProfilesHref(user.email, detailsHref, "pending")}>{pendingProfileCount} anuncio{pendingProfileCount === 1 ? "" : "s"} pendiente{pendingProfileCount === 1 ? "" : "s"} de revisión</Link>}
           <div className="admin-account-card-actions"><Link prefetch={false} className="button button-primary" href={detailsHref}>Ver detalles</Link>{user.role !== "admin" && user.isActive && <Link prefetch={false} className="button button-outline" href={`${detailsBaseHref}/crear-perfil?return_to=${encodeURIComponent(currentAccountsHref)}`}>Crear anuncio</Link>}{whatsappHref && <a className="button contact-whatsapp" href={whatsappHref} target="_blank" rel="noreferrer">WhatsApp</a>}{callHref && <a className="button contact-call" href={callHref}>Llamar</a>}{user.role !== "admin" && <form action={`/api/admin/users/${user.id}/estado`} method="post"><input name="next_state" type="hidden" value={user.adminDisabledAt ? "active" : "disabled"} /><input name="return_to" type="hidden" value={currentAccountsHref} /><button className="button button-outline" type="submit">{user.adminDisabledAt ? "Quitar bloqueo administrativo" : "Deshabilitar como administrador"}</button></form>}</div>
         </article>;

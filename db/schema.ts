@@ -31,6 +31,9 @@ export const users = sqliteTable("users", {
   selfDisabledAt: text("self_disabled_at"),
   adminDisabledAt: text("admin_disabled_at"),
   role: text("role", { enum: ["visitor", "advertiser", "tester", "admin"] }).notNull().default("visitor"),
+  creationSource: text("creation_source", { enum: ["self", "admin", "unknown"] }).notNull().default("unknown"),
+  createdByAdminId: text("created_by_admin_id"),
+  createdByAdminLogin: text("created_by_admin_login"),
   emailVerifiedAt: text("email_verified_at"),
   createdAt,
 }, (table) => [uniqueIndex("users_username_unique").on(table.username)]);
@@ -336,6 +339,9 @@ export const accountDeletionHistory = sqliteTable("account_deletion_history", {
 export const profiles = sqliteTable("profiles", {
   id: text("id").primaryKey(),
   ownerId: text("owner_id").notNull().references(() => users.id),
+  creationSource: text("creation_source", { enum: ["self", "admin", "unknown"] }).notNull().default("unknown"),
+  createdByAdminId: text("created_by_admin_id"),
+  createdByAdminLogin: text("created_by_admin_login"),
   type: text("type", { enum: ["escort", "agency", "rental"] }).notNull(),
   status: text("status", { enum: ["draft", "pending", "approved", "paused", "rejected", "expired"] }).notNull().default("draft"),
   slug: text("slug").notNull().unique(),

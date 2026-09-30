@@ -395,7 +395,7 @@ async function replaceProfileCollections(profileId: string, submission: ProfileS
   }
 }
 
-export async function createProfile(ownerId: string, submission: ProfileSubmission) {
+export async function createProfile(ownerId: string, submission: ProfileSubmission, options: { adminCreator?: { id: string; githubLogin: string } } = {}) {
   const db = await getDb();
   if (submission.type === "escort") {
     const [existingEscort] = await db.select({ id: profiles.id }).from(profiles).where(and(
@@ -413,43 +413,49 @@ export async function createProfile(ownerId: string, submission: ProfileSubmissi
   const slug = [slugify(submission.displayName), slugify(submission.city), crypto.randomUUID().slice(0, 8)].join("-");
   const handle = await resolveProfileHandle(submission.handle, submission.displayName);
 
-  await db.insert(profiles).values({
-    id,
-    ownerId,
-    type: submission.type,
-    status,
-    slug,
-    handle,
-    displayName: submission.displayName,
-    shortDescription: submission.shortDescription,
-    description: submission.description,
-    region: submission.region,
-    city: submission.city,
-    comuna: submission.comuna,
-    contactWhatsapp: submission.contactWhatsapp,
-    contactTelegram: submission.contactTelegram,
-    tier: submission.tier,
-    verificationStatus: submission.intent === "submit" ? "in_review" : "unreviewed",
-    updatedAt,
-  });
+  try {
+    await db.insert(profiles).values({
+      id, ownerId, type: submission.type, status, slug, handle,
+      creationSource: options.adminCreator ? "admin" : "self",
+      createdByAdminId: options.adminCreator?.id ?? null,
+      createdByAdminLogin: options.adminCreator?.githubLogin ?? null,
+      displayName: submission.displayName, shortDescription: submission.shortDescription,
+      description: submission.description, region: submission.region, city: submission.city,
+      comuna: submission.comuna, contactWhatsapp: submission.contactWhatsapp,
+      contactTelegram: submission.contactTelegram, tier: submission.tier,
+      verificationStatus: submission.intent === "submit" ? "in_review" : "unreviewed", updatedAt,
+    });
+  } catch (error) {
+    if (String(error).includes("escort_profile_owner_conflict")) {
+      throw new ProfileValidationError("Esta cuenta ya administra un anuncio Escort. Puedes crear varios anuncios de Agencia o Arriendo, pero solo un anuncio Escort por cuenta.");
+    }
+    throw error;
+  }
 
-  await db.insert(profileDetails).values({ profileId: id, ...submission.details, updatedAt });
-  await replaceProfileCollections(id, submission);
-  await db.insert(listingPeriods).values({
-    id: `per_${crypto.randomUUID()}`,
-    profileId: id,
-    planName: "Cortesía inicial",
-    startsAt: updatedAt,
-    endsAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    status: "active",
-  });
-  await db.update(users).set({ role: "advertiser" }).where(and(eq(users.id, ownerId), eq(users.role, "visitor")));
-  await createAdminNotification({
-    kind: "profile_created",
-    actorUserId: ownerId,
-    profileId: id,
-    summary: submission.intent === "submit" ? "Se creó un anuncio y fue enviado a revisión." : "Se creó un nuevo borrador de anuncio.",
-  });
+  try {
+    await db.insert(profileDetails).values({ profileId: id, ...submission.details, updatedAt });
+    await replaceProfileCollections(id, submission);
+    await db.insert(listingPeriods).values({
+      id: `per_${crypto.randomUUID()}`, profileId: id, planName: "Cortesía inicial",
+      startsAt: updatedAt, endsAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(), status: "active",
+    });
+    await db.update(users).set({ role: "advertiser" }).where(and(eq(users.id, ownerId), eq(users.role, "visitor")));
+  } catch (error) {
+    // A failed second write must not strand a half-filled listing in the account.
+    await db.delete(profiles).where(eq(profiles.id, id));
+    throw error;
+  }
+  if (!options.adminCreator) {
+    try {
+      await createAdminNotification({
+        kind: "profile_created", actorUserId: ownerId, profileId: id,
+        summary: submission.intent === "submit" ? "Se creó un anuncio y fue enviado a revisión." : "Se creó un nuevo borrador de anuncio.",
+      });
+    } catch (error) {
+      // Notification failure must not make a completed creation look retryable.
+      console.error("Could not notify administrators of new profile", { profileId: id, error });
+    }
+  }
 
   return id;
 }

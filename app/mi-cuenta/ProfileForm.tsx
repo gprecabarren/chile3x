@@ -58,6 +58,7 @@ type ProfileFormProps = {
   submitLabel: string;
   initial?: ProfileFormInitial;
   allowEscort?: boolean;
+  adminAssisted?: boolean;
 };
 
 function socialUsername(value: string) {
@@ -81,7 +82,7 @@ function metadataValue(initial: ProfileFormInitial | undefined, key: string) {
   return initial?.details.metadata?.[key] ?? "";
 }
 
-export function ProfileForm({ action, submitLabel, initial, allowEscort = true }: ProfileFormProps) {
+export function ProfileForm({ action, submitLabel, initial, allowEscort = true, adminAssisted = false }: ProfileFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const storageKey = `chile3x-profile-draft:${action}`;
   const availableProfileTypes = useMemo(() => profileTypes.filter((item) => initial || allowEscort || item !== "escort"), [allowEscort, initial]);
@@ -425,7 +426,7 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true }
 
       <section className="profile-media-notice" aria-label="Estado de carga de fotos y videos">
         <strong>Galería y videos</strong>
-        <p>Guarda el perfil y luego administra hasta 10 fotos desde la edición. Cada imagen puede pesar hasta 5 MB y pasa por revisión antes de verse públicamente. Los videos siguen desactivados para proteger la cuota inicial. Si eres escort, después de guardar podrás adjuntar por separado tu carnet o examen médico privado (JPG, PNG, WebP o PDF de hasta 15 MB).</p>
+        <p>{adminAssisted ? "Al crear el anuncio pasarás directamente a la carga de la foto principal, hasta 10 fotos y hasta 3 videos. El material que subas como administrador se aprobará al instante; el anuncio se publica desde moderación." : "Guarda el perfil y luego administra hasta 10 fotos y 3 videos desde la edición. Cada imagen puede pesar hasta 5 MB y los archivos pasan por revisión antes de verse públicamente. Si eres escort, después de guardar podrás adjuntar por separado tu carnet o examen médico privado (JPG, PNG, WebP o PDF de hasta 15 MB)."}</p>
       </section>
 
       <div className="profile-form-actions">

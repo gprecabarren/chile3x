@@ -7,13 +7,6 @@ import { createProfile, ProfileValidationError, readProfileSubmission } from "@/
 import { recordAdminAudit } from "@/lib/admin-audit";
 import { adminHasCapability } from "@/lib/admin-permissions";
 
-function destinationFor(userId: string, email: string, request: Request) {
-  const url = new URL("/admin/perfiles", request.url);
-  url.searchParams.set("q", email);
-  url.searchParams.set("return_to", `/admin/cuentas/${encodeURIComponent(userId)}`);
-  return url;
-}
-
 export async function POST(request: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
   try {
     assertSameOrigin(request);
@@ -40,9 +33,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   try {
     const submission = readProfileSubmission(formData);
-    const profileId = await createProfile(owner.id, submission);
+    const profileId = await createProfile(owner.id, submission, { adminCreator: { id: admin.id, githubLogin: admin.githubLogin } });
     await recordAdminAudit(admin, { category: "profiles", action: "profile.create", summary: `Creó el anuncio ${submission.displayName} para ${owner.email}.`, entityType: "profile", entityId: profileId, entityLabel: submission.displayName, after: { ownerId: owner.id, type: submission.type, status: submission.intent === "submit" ? "pending" : "draft", region: submission.region, city: submission.city, handle: submission.handle } });
-    const url = destinationFor(owner.id, owner.email, request);
+    const url = new URL(`/admin/cuentas/${encodeURIComponent(owner.id)}/perfiles/${encodeURIComponent(profileId)}/medios`, request.url);
     url.searchParams.set("notice", "profile_created");
     return NextResponse.redirect(url, 303);
   } catch (error) {

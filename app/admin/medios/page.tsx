@@ -10,6 +10,7 @@ import { formatMediaBytes, getMediaQuotaState, getMediaUsage } from "@/lib/media
 import { profilePublicPath } from "@/lib/profile";
 import { AdminPageHeading, AdminShell } from "../_components";
 import { AdminPagination, pageHref, readAdminPage } from "../pagination";
+import { AdminMediaImageProcessing } from "./AdminMediaImageProcessing";
 
 export const dynamic = "force-dynamic";
 
@@ -73,6 +74,7 @@ function PublicMediaCard({ media, profileName, returnTo }: {
           : <button className="button button-primary" type="submit" name="action" value="approve">Aprobar archivo</button>}
         <button className="button button-outline" type="submit" name="action" value="delete">Eliminar</button>
       </form>
+      {media.mediaType === "image" && <AdminMediaImageProcessing mediaId={media.id} profileName={profileName} />}
     </div>
   </article>;
 }

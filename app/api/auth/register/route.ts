@@ -90,6 +90,7 @@ export async function POST(request: NextRequest) {
       displayName,
       passwordHash: providerRegistration ? null : await hashPassword(password),
       role: "visitor",
+      creationSource: "self",
       firstName: identity.firstName || null,
       lastName: null,
       documentType: identity.documentType,

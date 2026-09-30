@@ -10,6 +10,7 @@ import { adminHasCapability } from "@/lib/admin-permissions";
 import { profilePublicPath } from "@/lib/profile";
 import { AdminPageHeading, AdminShell } from "../_components";
 import { AdminPagination, pageHref, readAdminPage } from "../pagination";
+import { creationSourceLabel } from "@/lib/creation-provenance";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,7 @@ type AdminProfilesSearchParams = {
   verificacion?: string;
   salud?: string;
   tipo?: string;
+  origen?: string;
   ciudad?: string;
   page?: string;
   return_to?: string;
@@ -58,13 +60,14 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
   const verification = readFilter(params.verificacion, Object.keys(verificationLabel));
   const health = readFilter(params.salud, ["not_requested", "in_review", "reviewed"]);
   const type = readFilter(params.tipo, ["escort", "agency", "rental"]);
+  const origin = readFilter(params.origen, ["self", "admin", "unknown"]);
   const city = (params.ciudad ?? "").trim().slice(0, 80);
   const requestedReturnTo = params.return_to ?? "";
   const profileListReturnTo = requestedReturnTo.startsWith("/admin/cuentas/") ? safeAdminReturnTo(requestedReturnTo) : "/admin";
   const requestedPage = readAdminPage(params.page);
 
   const linkParams = new URLSearchParams();
-  for (const [key, value] of [["q", params.q?.trim()], ["estado", status], ["verificacion", verification], ["salud", health], ["tipo", type], ["ciudad", city]] as const) {
+  for (const [key, value] of [["q", params.q?.trim()], ["estado", status], ["verificacion", verification], ["salud", health], ["tipo", type], ["origen", origin], ["ciudad", city]] as const) {
     if (value) linkParams.set(key, value);
   }
   if (requestedReturnTo.startsWith("/admin/cuentas/")) linkParams.set("return_to", profileListReturnTo);
@@ -86,6 +89,7 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
   if (verification) filters.push(eq(profiles.verificationStatus, verification as typeof profiles.$inferSelect.verificationStatus));
   if (health) filters.push(eq(profiles.healthReviewStatus, health as typeof profiles.$inferSelect.healthReviewStatus));
   if (type) filters.push(eq(profiles.type, type as typeof profiles.$inferSelect.type));
+  if (origin) filters.push(eq(profiles.creationSource, origin as typeof profiles.$inferSelect.creationSource));
   if (city) filters.push(eq(profiles.city, city));
   const where = filters.length ? and(...filters) : undefined;
 
@@ -96,6 +100,8 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
     handle: profiles.handle,
     displayName: profiles.displayName,
     type: profiles.type,
+    creationSource: profiles.creationSource,
+    createdByAdminLogin: profiles.createdByAdminLogin,
     status: profiles.status,
     city: profiles.city,
     region: profiles.region,
@@ -178,6 +184,7 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
         <label>Verificación<select name="verificacion" defaultValue={verification}><option value="">Todas</option>{Object.entries(verificationLabel).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
         <label>Revisión médica<select name="salud" defaultValue={health}><option value="">Todas</option><option value="not_requested">No solicitada</option><option value="in_review">En revisión</option><option value="reviewed">Revisada</option></select></label>
         <label>Tipo<select name="tipo" defaultValue={type}><option value="">Todos los tipos</option><option value="escort">Escort</option><option value="agency">Agencia</option><option value="rental">Arriendo</option></select></label>
+        <label>Origen<select name="origen" defaultValue={origin}><option value="">Todos</option><option value="self">Creado por la persona</option><option value="admin">Creado por administración</option><option value="unknown">Origen anterior sin verificar</option></select></label>
         <label>Ciudad<select name="ciudad" defaultValue={city}><option value="">Todas las ciudades</option>{cities.map((item) => <option value={item} key={item}>{item}</option>)}</select></label>
         <div className="admin-filter-actions"><button className="button button-primary" type="submit">Aplicar filtros</button><Link prefetch={false} className="button button-outline" href="/admin/perfiles">Limpiar</Link></div>
       </form>
@@ -196,7 +203,7 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
               <header><div><p className="eyebrow">{profileTypeLabel[profile.type] ?? profile.type}</p><h2>{profile.displayName}</h2><p>{profile.city}, {formatRegionName(profile.region)}</p></div>
                 <div className="admin-profile-card-links"><Link prefetch={false} className="button button-public-preview" href={profilePreviewHref} target="_blank">Ver anuncio público</Link><Link prefetch={false} className="button button-outline" href={mediaHref(profile.id, adminReturnTo)}>Fotos y videos{publicMedia.total > 0 ? " (" + publicMedia.total + ")" : ""}</Link>{exclusiveMedia && <Link prefetch={false} className="button button-outline" href={mediaHref(profile.id, adminReturnTo, { type: "exclusive" })}>Contenido exclusivo{exclusiveMedia.total > 0 ? " (" + exclusiveMedia.total + ")" : ""}</Link>}{whatsappHref && <a className="button contact-whatsapp" href={whatsappHref} target="_blank" rel="noreferrer">WhatsApp</a>}{callHref && <a className="button contact-call" href={callHref}>Llamar</a>}</div>
               </header>
-              <dl className="admin-profile-card-owner"><div><dt>Cuenta propietaria</dt><dd><a href={"mailto:" + profile.ownerEmail}>{profile.ownerEmail}</a>{!profile.ownerIsActive && <span className="account-status account-status-rejected">Cuenta deshabilitada · anuncio no público</span>}</dd></div><div><dt>Usuario de la cuenta</dt><dd><Link href={accountHref} prefetch={false}>{profile.ownerUsername ? "@" + profile.ownerUsername : "Ver detalles de la cuenta"}</Link></dd></div></dl>
+              <dl className="admin-profile-card-owner"><div><dt>Cuenta propietaria</dt><dd><a href={"mailto:" + profile.ownerEmail}>{profile.ownerEmail}</a>{!profile.ownerIsActive && <span className="account-status account-status-rejected">Cuenta deshabilitada · anuncio no público</span>}</dd></div><div><dt>Usuario de la cuenta</dt><dd><Link href={accountHref} prefetch={false}>{profile.ownerUsername ? "@" + profile.ownerUsername : "Ver detalles de la cuenta"}</Link></dd></div><div><dt>Origen del anuncio</dt><dd>{creationSourceLabel(profile.creationSource, profile.createdByAdminLogin)}</dd></div></dl>
               {(publicMedia.pending > 0 || (exclusiveMedia?.pending ?? 0) > 0) && <div className="admin-profile-pending-media" aria-label="Archivos pendientes de aprobación">
                 {publicMedia.pending > 0 && <Link prefetch={false} href={mediaHref(profile.id, adminReturnTo, { status: "pending" })}>{publicMedia.pending} archivo{publicMedia.pending === 1 ? "" : "s"} público{publicMedia.pending === 1 ? "" : "s"} pendiente{publicMedia.pending === 1 ? "" : "s"}</Link>}
                 {(exclusiveMedia?.pending ?? 0) > 0 && <Link prefetch={false} href={mediaHref(profile.id, adminReturnTo, { status: "pending", type: "exclusive" })}>{exclusiveMedia?.pending} archivo{exclusiveMedia?.pending === 1 ? "" : "s"} de contenido exclusivo pendiente{exclusiveMedia?.pending === 1 ? "" : "s"}</Link>}

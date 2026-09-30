@@ -38,6 +38,7 @@ export const ADMIN_AUDIT_ACTIONS = {
   "profile.create": "Creó un anuncio para una cuenta",
   "profile.status_update": "Cambió estados de un anuncio",
   "media.public_approve": "Aprobó un archivo público",
+  "media.public_process": "Procesó una foto pública",
   "media.public_unapprove": "Devolvió un archivo público a revisión",
   "media.public_delete": "Eliminó un archivo público",
   "media.exclusive_approve": "Aprobó contenido exclusivo",

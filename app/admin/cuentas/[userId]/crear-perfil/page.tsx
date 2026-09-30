@@ -33,8 +33,8 @@ export default async function AdminCreateProfilePage({ params, searchParams }: {
     <AdminPageHeading eyebrow="CREACIÓN ASISTIDA" title="Crear anuncio para una cuenta" description={`El aviso quedará asociado a ${owner.displayName ?? owner.email} (${owner.email}). Puede tener un Escort y varios anuncios de Agencia o Arriendo.`} backHref={detailHref} />
     {!owner.isActive && <p className="form-alert" role="alert">Esta cuenta está deshabilitada. Reactívala antes de crear una publicación.</p>}
     {query.error && <p className="form-alert" role="alert">{query.message ?? "Revisa la información del formulario antes de crear el aviso."}</p>}
-    {owner.isActive && <ProfileForm action={`/api/admin/cuentas/${encodeURIComponent(owner.id)}/perfiles`} submitLabel="Crear y enviar a revisión" allowEscort={!escort} />}
-    <p className="admin-create-profile-note">Al guardar, podrás abrir el aviso desde moderación para revisar sus datos, documentos y material antes de aprobarlo.</p>
+    {owner.isActive && <ProfileForm action={`/api/admin/cuentas/${encodeURIComponent(owner.id)}/perfiles`} submitLabel="Crear y continuar con fotos y videos" allowEscort={!escort} adminAssisted />}
+    <p className="admin-create-profile-note">Al guardar, cargarás los medios y luego podrás publicar el anuncio desde moderación. La cuenta propietaria podrá seguir gestionándolo desde su panel.</p>
     <Link prefetch={false} className="button button-outline" href={detailHref}>Volver a los datos de la cuenta</Link>
   </div></AdminShell>;
 }

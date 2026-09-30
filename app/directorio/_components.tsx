@@ -7,7 +7,7 @@ import { getCityPath, getProfileDisplayTags, type PublicProfile } from "@/lib/di
 import { profilePublicPath, readProfilePrices, type Tier } from "@/lib/profile";
 import { getPortalContacts, getPortalWhatsappLink } from "@/lib/site-contacts";
 import { getSiteSettings } from "@/lib/site-settings";
-import { formatRegionName, getRegionByTitle } from "@/app/locations";
+import { formatRegionName, getPreferredCitySlug, getRegionByTitle } from "@/app/locations";
 import { PublicMobileMenu } from "./PublicMobileMenu";
 import { ADMIN_ACCESS_LABELS } from "@/lib/admin-permissions";
 import { PresenceHeartbeat } from "@/app/PresenceHeartbeat";
@@ -127,7 +127,7 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
 }
 
 export async function DirectoryLocationPreference() {
-  const preferredCitySlug = (await cookies()).get("chile3x_preferred_city")?.value ?? "";
+  const preferredCitySlug = getPreferredCitySlug(await cookies());
   return <LocationPreference initialCitySlug={preferredCitySlug} />;
 }
 

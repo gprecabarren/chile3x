@@ -1659,11 +1659,21 @@ input[type="submit"] { text-transform: none !important; letter-spacing: .015em; 
   .admin-profile-review-form .admin-featured-toggle, .admin-profile-review-form .button { grid-column: auto; }
 }
 
-/* Más espacio entre enlaces del encabezado sin alterar la distribución móvil. */
+/* Distribución de las pestañas del directorio en la cabecera de escritorio. */
 @media (min-width: 861px) {
-  .public-header.has-session .public-navigation-stack .public-navigation-group { gap: clamp(18px, 1.6vw, 24px); }
+  .public-header.has-session .public-navigation-stack .public-navigation { gap: clamp(24px, 3vw, 40px); }
+  .public-header.has-session .public-navigation-stack .public-navigation-group { gap: clamp(18px, 2.5vw, 32px); }
   .public-header.has-session .public-navigation-stack .public-navigation-site { padding-left: 21px; margin-left: 0; }
 }
+@media (min-width: 1200px) {
+  .public-header.has-session .public-navigation-stack .public-navigation-directory { flex: 0 0 410px; justify-content: space-between; }
+  .public-header.has-session .public-navigation-stack .public-navigation-site { flex: 0 1 610px; justify-content: space-between; }
+}
+@media (max-width: 1199px) and (min-width: 861px) {
+  .public-header.has-session .public-navigation-stack .public-navigation-group { gap: 18px; }
+}
+
+.home-location-actions .home-location-reset { border-color: #424d61; color: #b9c6d7; background: transparent; }
 
 /* Registro: aprovecha el escritorio sin transformar el formulario móvil. */
 .auth-register-card .auth-form label:not(.checkbox-label):not(:has(select)) { cursor: text; }

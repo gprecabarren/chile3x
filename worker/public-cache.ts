@@ -13,7 +13,7 @@ export function publicCacheKey(request: Request, deploymentVersion = CACHE_VERSI
   // The preferred city changes the server-rendered home summary, ordering and
   // directory selector. Never let that personalized variant enter the shared
   // anonymous document cache.
-  if (/(?:^|;\s*)chile3x_preferred_city=/.test(request.headers.get("cookie") ?? "")) return null;
+  if (/(?:^|;\s*)chile3x_preferred_city_v2=/.test(request.headers.get("cookie") ?? "")) return null;
   const url = new URL(request.url);
   if (url.pathname.endsWith(".rsc") || request.headers.has("rsc")
     || request.headers.get("accept")?.includes("text/x-component")) return null;

@@ -4,7 +4,6 @@ import handler from "vinext/server/app-router-entry";
 import { hasPrivateSession, isCacheableDocument, preventPrivateCaching, publicCacheKey, PUBLIC_PAGE_CACHE_SECONDS } from "./public-cache";
 import type { TelegramQueueMessage } from "../lib/telegram";
 import { handleTelegramQueue, handleTelegramScheduled, handleTelegramWebhook, isTelegramWebhookPath } from "./telegram";
-import { nearestCoveredCity } from "../app/directorio/location-client";
 
 function withSecurityHeaders(response: Response, pathname = "") {
   const headers = new Headers(response.headers);
@@ -77,21 +76,6 @@ const worker = {
 
     if (isLegacyApplicationProbe(url.pathname)) {
       return probeNotFoundResponse();
-    }
-
-    if (url.pathname === "/api/location-hint") {
-      const responseHeaders = { "cache-control": "private, no-store", "x-robots-tag": "noindex, nofollow" };
-      if (request.method !== "GET") {
-        return withSecurityHeaders(new Response(null, { status: 405, headers: { ...responseHeaders, allow: "GET" } }));
-      }
-      const cf = (request as Request & { cf?: { country?: string; latitude?: string; longitude?: string } }).cf;
-      const latitude = typeof cf?.latitude === "string" ? Number(cf.latitude) : NaN;
-      const longitude = typeof cf?.longitude === "string" ? Number(cf.longitude) : NaN;
-      const nearest = cf?.country === "CL" && Number.isFinite(latitude) && Number.isFinite(longitude)
-        ? nearestCoveredCity(latitude, longitude) : null;
-      return withSecurityHeaders(nearest
-        ? Response.json({ citySlug: nearest.citySlug }, { headers: responseHeaders })
-        : new Response(null, { status: 204, headers: responseHeaders }));
     }
 
     if (url.pathname === "/_vinext/image") {

@@ -17,8 +17,15 @@ function distanceInKilometers(latitude: number, longitude: number, targetLatitud
 }
 
 export function savePreferredCity(citySlug: string) {
-  document.cookie = `chile3x_preferred_city=${encodeURIComponent(citySlug)}; Path=/; Max-Age=31536000; SameSite=Lax; Secure`;
-  try { window.sessionStorage.removeItem("chile3x_location_hint"); } catch { /* Almacenamiento de sesión opcional. */ }
+  document.cookie = `chile3x_preferred_city_v2=${encodeURIComponent(citySlug)}; Path=/; Max-Age=31536000; SameSite=Lax; Secure`;
+  document.cookie = "chile3x_preferred_city=; Path=/; Max-Age=0; SameSite=Lax; Secure";
+  try { window.sessionStorage.removeItem("chile3x_location_hint"); } catch { /* El aviso antiguo era solo temporal. */ }
+}
+
+export function clearPreferredCity() {
+  document.cookie = "chile3x_preferred_city_v2=; Path=/; Max-Age=0; SameSite=Lax; Secure";
+  document.cookie = "chile3x_preferred_city=; Path=/; Max-Age=0; SameSite=Lax; Secure";
+  try { window.sessionStorage.removeItem("chile3x_location_hint"); } catch { /* El aviso antiguo era solo temporal. */ }
 }
 
 export function nearestCoveredCity(latitude: number, longitude: number) {
@@ -43,6 +50,7 @@ export function locationErrorMessage(error: unknown) {
     if (error.message === "insecure_context") return "La ubicación solo está disponible mediante una conexión segura HTTPS.";
     if (error.message === "unsupported") return "Este navegador no permite detectar tu ubicación. Puedes elegir una ciudad manualmente.";
     if (error.message === "no_coverage") return "No hay ciudades de cobertura configuradas todavía.";
+    if (error.message === "low_accuracy") return "El dispositivo entregó una ubicación demasiado imprecisa para elegir una ciudad con confianza. Selecciónala manualmente.";
   }
 
   const code = typeof error === "object" && error && "code" in error ? Number(error.code) : 0;
@@ -58,6 +66,10 @@ function requestDeviceCity() {
 
   return new Promise<NonNullable<ReturnType<typeof nearestCoveredCity>>>((resolve, reject) => {
     navigator.geolocation.getCurrentPosition((position) => {
+      if (!Number.isFinite(position.coords.accuracy) || position.coords.accuracy > 30_000) {
+        reject(new Error("low_accuracy"));
+        return;
+      }
       const nearest = nearestCoveredCity(position.coords.latitude, position.coords.longitude);
       if (!nearest) {
         reject(new Error("no_coverage"));
@@ -65,34 +77,14 @@ function requestDeviceCity() {
       }
       resolve(nearest);
     }, reject, {
-      enableHighAccuracy: true,
-      timeout: 15_000,
-      maximumAge: 60_000,
+      enableHighAccuracy: false,
+      timeout: 20_000,
+      maximumAge: 0,
     });
   });
 }
 
-async function requestApproximateCity() {
-  const response = await fetch("/api/location-hint", { cache: "no-store" });
-  if (!response.ok) throw new Error("network_location_unavailable");
-  const payload: unknown = await response.json();
-  const citySlug = typeof payload === "object" && payload !== null && "citySlug" in payload
-    ? payload.citySlug : null;
-  const city = cityGeoDirectory.find((item) => item.citySlug === citySlug);
-  if (!city) throw new Error("network_location_unavailable");
-  return city;
-}
-
 export async function requestNearestCoveredCity() {
-  try {
-    const city = await requestDeviceCity();
-    return { city: city.city, citySlug: city.citySlug, source: "device" as const };
-  } catch (deviceError) {
-    try {
-      const city = await requestApproximateCity();
-      return { city: city.city, citySlug: city.citySlug, source: "network" as const };
-    } catch {
-      throw deviceError;
-    }
-  }
+  const city = await requestDeviceCity();
+  return { city: city.city, citySlug: city.citySlug };
 }

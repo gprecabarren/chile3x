@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { DirectoryFilters } from "@/app/directorio/DirectoryFilters";
 import { DirectoryLocationPreference, DirectoryShell, ProfileGrid } from "@/app/directorio/_components";
 import { filterPublicProfiles, getPublicProfiles, prioritizeProfilesByCity, readDirectoryFilters, type DirectoryQuery } from "@/lib/directory";
-import { cityDirectory, getCityBySlug } from "@/app/locations";
+import { cityDirectory, getCityBySlug, getPreferredCitySlug } from "@/app/locations";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { getActiveStories } from "@/lib/stories";
 import { StoryRail } from "@/app/historias/StoryRail";
@@ -26,7 +26,7 @@ export default async function EscortsPage({ searchParams }: { searchParams: Prom
   const query = await searchParams;
   const filters = readDirectoryFilters(query, { type: "escort" });
   const nearbyCityValue = Array.isArray(query.cerca) ? query.cerca[0] : query.cerca;
-  const preferredCity = getCityBySlug((await cookies()).get("chile3x_preferred_city")?.value ?? "")?.city;
+  const preferredCity = getCityBySlug(getPreferredCitySlug(await cookies()))?.city;
   const nearbyCity = cityDirectory.some((item) => item.city === nearbyCityValue) ? nearbyCityValue : preferredCity;
   const [viewer, settings] = await Promise.all([getCurrentUser(), getSiteSettings()]);
   const allProfiles = await getPublicProfiles({ viewerId: viewer?.id, type: "escort" });

@@ -60,17 +60,14 @@ test("location preference asks for browser permission and stores only the covere
     source("app/directorio/LocationPreference.tsx"), source("app/directorio/location-client.ts"), source("app/HomeLocationSummary.tsx"), source("lib/directory.ts"), source("app/directorio/_components.tsx"), source("app/page.tsx"), source("worker/index.ts"),
   ]);
   assert.match(locationClient, /navigator\.geolocation\.getCurrentPosition/);
-  assert.match(locationClient, /enableHighAccuracy: true/);
-  assert.match(locationClient, /chile3x_preferred_city/);
+  assert.match(locationClient, /enableHighAccuracy: false/);
+  assert.match(locationClient, /chile3x_preferred_city_v2/);
   assert.match(locationClient, /sessionStorage\.removeItem\("chile3x_location_hint"\)/);
-  assert.match(locationClient, /fetch\("\/api\/location-hint", \{ cache: "no-store" \}\)/);
-  assert.match(locationClient, /source: "network"/);
-  assert.match(homeLocation, /sessionStorage\.setItem\("chile3x_location_hint", nearest\.citySlug\)/);
-  assert.match(homeLocation, /useSyncExternalStore\(subscribeToLocationHint, readLocationHint, noServerLocationHint\)/);
-  assert.match(homeLocation, /networkHintCitySlug === initialCitySlug/);
+  assert.doesNotMatch(locationClient, /fetch\("\/api\/location-hint"/);
+  assert.match(locationClient, /const city = await requestDeviceCity\(\)/);
+  assert.match(homeLocation, /clearPreferredCity\(\)/);
   assert.doesNotMatch(locationClient, /document\.cookie.*latitude|document\.cookie.*longitude/);
-  assert.match(worker, /cf\?\.country === "CL"/);
-  assert.match(worker, /Response\.json\(\{ citySlug: nearest\.citySlug \}/);
+  assert.doesNotMatch(worker, /url\.pathname === "\/api\/location-hint"/);
   assert.doesNotMatch(worker, /Response\.json\(\{[^}]*latitude|Response\.json\(\{[^}]*longitude/);
   assert.match(selector, /requestNearestCoveredCity/);
   assert.match(homeLocation, /Usar mi ubicación/);

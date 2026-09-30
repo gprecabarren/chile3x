@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { FloatingWhatsappButton, PublicFooter, PublicHeader, ProfileGrid } from "./directorio/_components";
 import { StoryRail } from "./historias/StoryRail";
-import { cityDirectory, cityGeoDirectory, cityTotal, getCityBySlug, regions } from "./locations";
+import { cityDirectory, cityGeoDirectory, cityTotal, getCityBySlug, getPreferredCitySlug, regions } from "./locations";
 import { RegionJumpSelect } from "./RegionJumpSelect";
 import { HomeLocationSummary } from "./HomeLocationSummary";
 import { getCityEscortCounts, getFeaturedProfiles, prioritizeProfilesByCity } from "@/lib/directory";
@@ -84,7 +84,7 @@ const websiteSchema = {
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const preferredCity = getCityBySlug((await cookies()).get("chile3x_preferred_city")?.value ?? "");
+  const preferredCity = getCityBySlug(getPreferredCitySlug(await cookies()));
   const preferredGeo = preferredCity ? cityGeoDirectory.find((item) => item.citySlug === preferredCity.citySlug) : null;
   const nearbyCities = preferredGeo ? cityGeoDirectory
     .filter((item) => item.citySlug !== preferredGeo.citySlug)
@@ -143,7 +143,7 @@ export default async function Home() {
       </section>
 
       <section className="home-discovery-controls" aria-label="Ubicación y regiones">
-        <HomeLocationSummary initialCityName={preferredCity?.city} initialCitySlug={preferredCity?.citySlug} nearbyCities={nearbyCities} />
+        <HomeLocationSummary initialCityName={preferredCity?.city} nearbyCities={nearbyCities} />
         <RegionJumpSelect regions={regions} />
       </section>
 

@@ -58,9 +58,8 @@ export function formatRegionName(title: string) {
   return getRegionByTitle(title)?.displayTitle ?? title;
 }
 
-// Coordenadas aproximadas de los centros urbanos cubiertos. El GPS se compara
-// localmente en el navegador; si falla, el Worker puede usar la ubicación
-// aproximada que Cloudflare ya conoce de la conexión. No se persisten coordenadas.
+// Coordenadas aproximadas de los centros urbanos cubiertos. La posición del
+// dispositivo se compara localmente; no se persisten coordenadas.
 const cityCoordinates: Record<string, readonly [number, number]> = {
   "Arica": [-18.478, -70.312], "Iquique": [-20.214, -70.152], "Antofagasta": [-23.65, -70.4], "Calama": [-22.456, -68.93],
   "Caldera": [-27.066, -70.82], "Copiapó": [-27.366, -70.333], "Vallenar": [-28.576, -71.575], "La Serena": [-29.902, -71.2],
@@ -80,4 +79,11 @@ export const cityGeoDirectory = cityDirectory.flatMap((city) => {
 
 export function getCityBySlug(citySlug: string) {
   return cityDirectory.find((item) => item.citySlug === citySlug) ?? null;
+}
+
+// La cookie anterior mezclaba ciudades elegidas con estimaciones de red.
+// Solo la nueva preferencia, creada explícitamente por la persona o su dispositivo,
+// se usa para priorizar resultados. Es una migración única y segura.
+export function getPreferredCitySlug(cookieStore: { get(name: string): { value: string } | undefined }) {
+  return cookieStore.get("chile3x_preferred_city_v2")?.value ?? "";
 }

@@ -427,6 +427,7 @@ Cuando se active Apple, comprobar además que el Services ID, dominio, retorno y
 - `2771597` — restauración de la cascada responsive de todos los paneles privados y actualización de caché para móviles.
 - `b888d56` — geolocalización visible y robusta en portada/directorios, selector territorial bajo el H1 y perfiles destacados antes de la cobertura regional sin alterar la jerarquía SEO.
 - `9bd06b2` — respaldo temporal de perfiles destacados de demostración mientras no existan escorts reales aprobadas; las publicaciones reales conservan siempre la prioridad.
+- `d1a1262` — carga administrativa directa de fotos y videos, procesamiento opcional de imágenes por foto, origen verificable y filtros para cuentas y anuncios, junto con migraciones 0034/0035 y pruebas de regresión.
 
 ## Límites y decisiones pendientes
 

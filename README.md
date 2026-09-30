@@ -390,6 +390,8 @@ Este script fuerza el uso del `wrangler.json` del repositorio y conserva las var
 
 El 30 de septiembre de 2026 se publicó inicialmente un respaldo aproximado por red mediante `/api/location-hint` (versión `5a7308c8-9ff9-49ab-812f-49836c9e9387`). **Ese comportamiento quedó retirado** al comprobarse que podía guardar Santiago Centro o Concepción para una persona situada en Linares. La versión actual solo usa una posición autorizada y suficientemente precisa del dispositivo o una ciudad elegida manualmente; el antiguo endpoint ya no se ofrece.
 
+La corrección quedó desplegada en el Worker de Chile3X como versión `1302f448-9dd0-4b4d-b80a-5366e3755154`. Se verificó en producción que una cookie antigua con Santiago Centro muestra «Todo Chile», que una nueva preferencia confirmada con Linares sí prioriza Linares, y que `/api/location-hint` ya responde 404. Pasaron 85 pruebas, tipado y lint. La cabecera se comprobó visualmente en Chrome de escritorio; esta revisión no sustituye una prueba en el iPhone físico.
+
 El despliegue verificado el 23 de septiembre de 2026 corresponde a la versión del Worker `172a77cf-2641-41c7-989d-40f99be4b591`. La unión `CF_VERSION_METADATA` se usa únicamente para aislar la caché pública de cada despliegue. D1 remoto contiene las migraciones hasta `0033_huge_selene.sql` y no informa relaciones inválidas. La comprobación visual en producción confirmó una cabecera de escritorio compacta con los contactos debajo de la sesión, navegación móvil sin desbordamiento horizontal, resumen territorial después del hero, selector completo solo dentro del directorio, textos legibles a 390 px, perfiles sin recortes, Manrope autohospedada, centro de notificaciones, estadísticas de WhatsApp y control de eliminación sincronizada de Novedades en el panel de Telegram. `/patrocinadores` conserva sus 11 tarjetas adaptables, sitemap canónico y ausencia de enlaces a Paradisse.
 
 1. `pnpm lint` sin errores.
@@ -404,6 +406,7 @@ Cuando se active Apple, comprobar además que el Services ID, dominio, retorno y
 
 ## Historial de implementación — septiembre de 2026
 
+- `1d343d6` — retiró el respaldo impreciso por IP, migró las preferencias territoriales a una cookie confiable, añadió la opción de ver todo Chile y espació la navegación con sesión en PC.
 - `b44e42b` — controles de ciclo de vida de cuentas y anuncios.
 - `099212a` — posición móvil segura del acceso flotante a WhatsApp.
 - `e17679a` — reserva de correos para identidades administrativas.

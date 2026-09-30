@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { DirectoryFilters } from "@/app/directorio/DirectoryFilters";
-import { DirectoryLocationPreference, DirectoryShell, ProfileGrid } from "@/app/directorio/_components";
+import { DirectoryShell, ProfileGrid } from "@/app/directorio/_components";
 import { filterPublicProfiles, getPublicProfiles, prioritizeProfilesByCity, readDirectoryFilters, type DirectoryQuery } from "@/lib/directory";
 import { cityDirectory, getCityBySlug, getPreferredCitySlug } from "@/app/locations";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
@@ -37,7 +37,7 @@ export default async function EscortsPage({ searchParams }: { searchParams: Prom
   const schema = { "@context": "https://schema.org", "@type": "CollectionPage", name: "Escorts y damas de compañía en Chile", description: "Directorio nacional de escorts y damas de compañía por ciudad, categoría y servicios.", url: `${siteUrl}/escorts`, inLanguage: "es-CL", mainEntity: { "@type": "ItemList", numberOfItems: canonicalProfiles.length, itemListElement: canonicalProfiles.map((profile, index) => ({ "@type": "ListItem", position: index + 1, name: profile.displayName, url: `${siteUrl}${profilePublicPath(profile)}` })) } };
 
   return (
-    <DirectoryShell>
+    <DirectoryShell selectedCity={filters.city ?? nearbyCity}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(schema) }} />
       <section className="directory-hero">
         <p className="eyebrow">DIRECTORIO NACIONAL</p>
@@ -45,10 +45,9 @@ export default async function EscortsPage({ searchParams }: { searchParams: Prom
         <p>Explora perfiles revisados por ciudad, categoría, atributos y servicios. Los filtros combinan sus condiciones para entregar resultados precisos.</p>
       </section>
       <section className="directory-content">
-        <DirectoryLocationPreference />
-        <DirectoryFilters action="/escorts" filters={filters} />
+        <DirectoryFilters key={JSON.stringify(filters)} action="/escorts" filters={filters} />
         <StoryRail stories={stories} withActivity />
-        {filters.invalidCombination && <p className="filter-warning" role="alert">MILF y Hombres son categorías incompatibles. Selecciona solo una para buscar.</p>}
+        {filters.invalidCombination && <p className="filter-warning" role="alert">MILF y TRANS no se pueden combinar. Selecciona solo una para buscar.</p>}
         <div className="directory-results-heading"><div><p className="eyebrow">RESULTADOS</p><h2>{profiles.length} perfil{profiles.length === 1 ? "" : "es"} encontrado{profiles.length === 1 ? "" : "s"}</h2></div><p>{nearbyCity ? `Mostramos primero los perfiles de ${nearbyCity}; puedes cambiar la ciudad desde los filtros.` : "Las etiquetas y servicios se muestran según la información aprobada de cada perfil."}</p></div>
         <ProfileGrid profiles={profiles} />
       </section>

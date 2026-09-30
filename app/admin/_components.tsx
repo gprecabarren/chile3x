@@ -87,7 +87,6 @@ function AdminNavigation({
     <nav aria-label="Administración">
       <Link href="/admin" prefetch={false}>Resumen</Link>
       {adminHasCapability(user, "profiles.moderate") && <Link prefetch={false} className={pendingCount > 0 ? "admin-nav-alert" : undefined} href="/admin/anuncios-publicaciones">Anuncios{pendingCount > 0 && <b>{pendingCount}</b>}</Link>}
-      {adminHasCapability(user, "profiles.recycle") && <Link prefetch={false} href="/admin/anuncios-publicaciones/papelera">🗑 Papelera</Link>}
       {adminHasCapability(user, "media.moderate") && <Link prefetch={false} className={pendingMedia > 0 ? "admin-nav-alert" : undefined} href="/admin/medios">Medios{pendingMedia > 0 && <b>{pendingMedia}</b>}</Link>}
       {adminHasCapability(user, "reviews.moderate") && <Link href="/admin/resenas" prefetch={false}>Reseñas</Link>}
       {adminHasCapability(user, "reports.manage") && <Link prefetch={false} className={pendingReports > 0 ? "admin-nav-alert" : undefined} href="/admin/reportes">Reportes{pendingReports > 0 && <b>{pendingReports}</b>}</Link>}

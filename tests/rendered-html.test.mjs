@@ -39,7 +39,7 @@ test("legacy network-derived city is ignored until a new trusted city is saved",
   assert.match(await legacy.text(), /COBERTURA NACIONAL/);
   const trusted = await render("/", { cookie: "chile3x_preferred_city_v2=linares" });
   assert.equal(trusted.status, 200);
-  assert.match(await trusted.text(), /CIUDAD PRIORIZADA/);
+  assert.match(await trusted.text(), /CIUDAD ELEGIDA/);
 });
 
 test("server-renders the Chile3X public home", async () => {
@@ -71,7 +71,7 @@ test("server-renders the Chile3X public home", async () => {
   assert.equal((html.match(/<h1\b/gi) ?? []).length, 1);
   assert.ok(html.indexOf("DIRECTORIO ADULTO") < html.indexOf("ESCORTS Y DAMAS DE COMPAÑÍA DESTACADAS"));
   assert.ok(html.indexOf("ESCORTS Y DAMAS DE COMPAÑÍA DESTACADAS") < html.indexOf("Todas las regiones,"));
-  assert.match(html, /Usar mi ubicación/);
+  assert.match(html, /Elegir ciudad/);
   assert.match(html, /numberOfItems":36/);
   assert.match(html, /"url":"https:\/\/chile3x\.cl\/escorts\/concepcion"/);
   assert.match(html, /ciudades y comunas disponibles/);

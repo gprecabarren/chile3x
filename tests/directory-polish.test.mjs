@@ -12,7 +12,8 @@ const [directory, cityPage, profile, registration, googleButton, css] = await Pr
 ].map((path) => readFile(new URL(path, import.meta.url), "utf8")));
 
 test("city tiers and other listing types have a concise semantic divider", () => {
-  assert.match(directory, /sections\.slice\(0, 3\)\.map\([\s\S]*?<div className="city-section-divider"><h3>También en \{city\}<\/h3>/);
+  assert.match(directory, /selectedCategory \? sections\.filter\(\(section\) => section\.id === selectedCategory\) : sections\.slice\(0, 3\)/);
+  assert.match(directory, /!selectedCategory && <><div className="city-section-divider"><h3>También en \{city\}<\/h3>/);
   assert.match(directory, /city-section-divider[\s\S]*?sections\.slice\(3\)\.map/);
   assert.match(css, /\.city-section-divider span \{[^}]*height: 1px/);
   assert.match(cityPage, /profiles\.length === 1 \? "publicación visible" : "publicaciones visibles"/);

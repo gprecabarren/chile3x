@@ -58,3 +58,13 @@ test("large admin lists paginate in SQL and do not prefetch every detail", async
   assert.match(pagination, /prefetch=\{false\}/);
   assert.match(shell, /prefetch=\{false\}/);
 });
+
+test("activity shows twenty entries per page and the listing trash lives inside listings", async () => {
+  const [activity, shell, listings] = await Promise.all([
+    source("app/admin/actividad/page.tsx"), source("app/admin/_components.tsx"), source("app/admin/anuncios-publicaciones/page.tsx"),
+  ]);
+  assert.match(activity, /const PAGE_SIZE = 20;/);
+  assert.match(activity, /\.limit\(PAGE_SIZE\)\.offset\(\(page - 1\) \* PAGE_SIZE\)/);
+  assert.doesNotMatch(shell, /href="\/admin\/anuncios-publicaciones\/papelera"/);
+  assert.match(listings, /href="\/admin\/anuncios-publicaciones\/papelera">♻ Ver papelera/);
+});

@@ -55,26 +55,22 @@ test("WhatsApp contact tracing is privacy-minimized and available to administrat
   assert.match(privacy, /nunca se guarda la IP en ese registro/);
 });
 
-test("location preference asks for browser permission and stores only the covered city", async () => {
-  const [selector, locationClient, homeLocation, directory, shell, home, worker] = await Promise.all([
-    source("app/directorio/LocationPreference.tsx"), source("app/directorio/location-client.ts"), source("app/HomeLocationSummary.tsx"), source("lib/directory.ts"), source("app/directorio/_components.tsx"), source("app/page.tsx"), source("worker/index.ts"),
+test("manual city selection replaces GPS and persists only a chosen city", async () => {
+  const [selector, locationClient, homeLocation, directory, shell, home, worker, privacy] = await Promise.all([
+    source("app/directorio/DirectoryCityBar.tsx"), source("app/directorio/location-client.ts"), source("app/HomeLocationSummary.tsx"), source("lib/directory.ts"), source("app/directorio/_components.tsx"), source("app/page.tsx"), source("worker/index.ts"), source("app/privacidad/page.tsx"),
   ]);
-  assert.match(locationClient, /navigator\.geolocation\.getCurrentPosition/);
-  assert.match(locationClient, /enableHighAccuracy: false/);
+  assert.match(selector, /position|chooseCity/);
+  assert.match(selector, /cityDirectory/);
+  assert.match(selector, /Buscar ciudad o comuna/);
+  assert.match(selector, /savePreferredCity\(city\.citySlug\)/);
   assert.match(locationClient, /chile3x_preferred_city_v2/);
-  assert.match(locationClient, /sessionStorage\.removeItem\("chile3x_location_hint"\)/);
-  assert.doesNotMatch(locationClient, /fetch\("\/api\/location-hint"/);
-  assert.match(locationClient, /const city = await requestDeviceCity\(\)/);
-  assert.match(homeLocation, /clearPreferredCity\(\)/);
-  assert.doesNotMatch(locationClient, /document\.cookie.*latitude|document\.cookie.*longitude/);
+  assert.doesNotMatch(locationClient, /geolocation|latitude|longitude/);
   assert.doesNotMatch(worker, /url\.pathname === "\/api\/location-hint"/);
-  assert.doesNotMatch(worker, /Response\.json\(\{[^}]*latitude|Response\.json\(\{[^}]*longitude/);
-  assert.match(selector, /requestNearestCoveredCity/);
-  assert.match(homeLocation, /Usar mi ubicación/);
-  assert.match(homeLocation, /router\.refresh\(\)/);
+  assert.match(homeLocation, /clearPreferredCity\(\)/);
+  assert.doesNotMatch(homeLocation, /Usar mi ubicación/);
+  assert.match(privacy, /no solicita coordenadas GPS/);
   assert.match(directory, /Number\(right\.city === city\) - Number\(left\.city === city\)/);
-  assert.doesNotMatch(shell.match(/export async function PublicHeader[\s\S]*?export async function DirectoryLocationPreference/)?.[0] ?? "", /<LocationPreference/);
-  assert.match(shell, /export async function DirectoryLocationPreference/);
+  assert.match(shell, /<DirectoryCityBar selectedCity=\{selectedCity\} kind=\{kind\}/);
   assert.match(home, /HomeLocationSummary/);
 });
 

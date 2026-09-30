@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { FloatingWhatsappButton, PublicFooter, PublicHeader, ProfileGrid } from "./directorio/_components";
 import { StoryRail } from "./historias/StoryRail";
-import { cityDirectory, cityGeoDirectory, cityTotal, getCityBySlug, getPreferredCitySlug, regions } from "./locations";
+import { cityDirectory, cityTotal, getCityBySlug, getPreferredCitySlug, regions } from "./locations";
 import { RegionJumpSelect } from "./RegionJumpSelect";
 import { HomeLocationSummary } from "./HomeLocationSummary";
 import { getCityEscortCounts, getFeaturedProfiles, prioritizeProfilesByCity } from "@/lib/directory";
@@ -85,11 +85,8 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const preferredCity = getCityBySlug(getPreferredCitySlug(await cookies()));
-  const preferredGeo = preferredCity ? cityGeoDirectory.find((item) => item.citySlug === preferredCity.citySlug) : null;
-  const nearbyCities = preferredGeo ? cityGeoDirectory
-    .filter((item) => item.citySlug !== preferredGeo.citySlug)
-    .map((item) => ({ ...item, distance: (item.latitude - preferredGeo.latitude) ** 2 + (item.longitude - preferredGeo.longitude) ** 2 }))
-    .sort((left, right) => left.distance - right.distance)
+  const nearbyCities = preferredCity ? cityDirectory
+    .filter((item) => item.regionSlug === preferredCity.regionSlug && item.citySlug !== preferredCity.citySlug)
     .slice(0, 3) : [];
   const [viewer, admin] = await Promise.all([getCurrentUser(), getCurrentAdmin()]);
   const publishHref = viewer ? "/mi-cuenta/nuevo-perfil" : admin ? "/admin/anuncios-publicaciones" : "/registro";

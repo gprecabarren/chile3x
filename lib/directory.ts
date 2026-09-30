@@ -27,6 +27,9 @@ export type DirectoryQuery = Record<string, QueryValue>;
 
 export type DirectoryFilters = {
   name?: string;
+  category?: "vip" | "premium" | "bronze" | "masajes" | "agency" | "rental";
+  online: boolean;
+  verified: boolean;
   region?: string;
   city?: string;
   type?: ProfileType;
@@ -125,8 +128,12 @@ function numberQuery(value: string | undefined) {
 
 export function readDirectoryFilters(query: DirectoryQuery, pinned?: { region?: string; city?: string; type?: ProfileType }): DirectoryFilters {
   const requestedTags = values(query, "tag").filter((value) => allowedTags.includes(value as (typeof allowedTags)[number]));
+  const requestedCategory = one(query, "categoria");
+  const category = (["vip", "premium", "bronze", "masajes", "agency", "rental"] as const).find((value) => value === requestedCategory && (!pinned?.type || pinned.type === "escort" && value !== "agency" && value !== "rental"))
+    ?? undefined;
+  const nonEscortCategory = category === "agency" || category === "rental";
   const tierValue = one(query, "tier");
-  const typeValue = pinned?.type ?? one(query, "tipo");
+  const typeValue = pinned?.type ?? (category === "agency" || category === "rental" ? category : category ? "escort" : one(query, "tipo"));
   const region = pinned?.region ?? one(query, "region");
   const city = pinned?.city ?? one(query, "ciudad");
   // MILF y TRANS son categorías mutuamente excluyentes. Hombres puede
@@ -135,23 +142,26 @@ export function readDirectoryFilters(query: DirectoryQuery, pinned?: { region?: 
 
   return {
     name: one(query, "nombre")?.slice(0, 80),
+    category,
+    online: one(query, "online") === "1",
+    verified: one(query, "verificados") === "1",
     region: regions.some((item) => item.title === region) ? region : undefined,
     city: cityDirectory.some((item) => item.city === city && (!region || item.region === region)) ? city : undefined,
     type: profileTypes.includes(typeValue as ProfileType) ? typeValue as ProfileType : undefined,
-    tier: tiers.includes(tierValue as Tier) ? tierValue as Tier : undefined,
-    tags: invalidCombination ? [] : requestedTags,
-    nationality: one(query, "nacionalidad"),
-    gender: one(query, "genero"),
-    skinColor: one(query, "piel"),
-    hairColor: one(query, "pelo"),
-    bodyType: one(query, "cuerpo"),
-    bustSize: one(query, "busto"),
-    language: one(query, "idioma"),
-    ageMin: numberQuery(one(query, "edad_min")),
-    ageMax: numberQuery(one(query, "edad_max")),
-    servicesIncluded: values(query, "incluido").filter((value) => includedServices.includes(value as (typeof includedServices)[number])),
-    servicesAdditional: values(query, "adicional").filter((value) => additionalServices.includes(value as (typeof additionalServices)[number])),
-    invalidCombination,
+    tier: category ? tiers.includes(category as Tier) ? category as Tier : undefined : tiers.includes(tierValue as Tier) ? tierValue as Tier : undefined,
+    tags: nonEscortCategory || invalidCombination ? [] : requestedTags,
+    nationality: nonEscortCategory ? undefined : one(query, "nacionalidad"),
+    gender: nonEscortCategory ? undefined : one(query, "genero"),
+    skinColor: nonEscortCategory ? undefined : one(query, "piel"),
+    hairColor: nonEscortCategory ? undefined : one(query, "pelo"),
+    bodyType: nonEscortCategory ? undefined : one(query, "cuerpo"),
+    bustSize: nonEscortCategory ? undefined : one(query, "busto"),
+    language: nonEscortCategory ? undefined : one(query, "idioma"),
+    ageMin: nonEscortCategory ? undefined : numberQuery(one(query, "edad_min")),
+    ageMax: nonEscortCategory ? undefined : numberQuery(one(query, "edad_max")),
+    servicesIncluded: nonEscortCategory ? [] : values(query, "incluido").filter((value) => includedServices.includes(value as (typeof includedServices)[number])),
+    servicesAdditional: nonEscortCategory ? [] : values(query, "adicional").filter((value) => additionalServices.includes(value as (typeof additionalServices)[number])),
+    invalidCombination: nonEscortCategory ? false : invalidCombination,
   };
 }
 
@@ -357,7 +367,10 @@ export function filterPublicProfiles(profilesToFilter: PublicProfile[], filters:
     if (filters.region && profile.region !== filters.region) return false;
     if (filters.city && profile.city !== filters.city) return false;
     if (filters.type && profile.type !== filters.type) return false;
+    if (filters.category === "masajes" && (profile.type !== "escort" || !profile.tags.includes("masajes"))) return false;
     if (filters.tier && profile.tier !== filters.tier) return false;
+    if (filters.online && !profile.isOnline) return false;
+    if (filters.verified && profile.verificationStatus !== "reviewed") return false;
     if (!matchesText(profile.displayName, filters.name)) return false;
     if (filters.tags.some((tag) => !profile.tags.includes(tag))) return false;
     if (!matchesText(metadataValue(profile, "nationality"), filters.nationality)) return false;

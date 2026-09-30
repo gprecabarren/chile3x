@@ -16,7 +16,7 @@ import { AdminPagination, readAdminPage } from "../pagination";
 import { countryName } from "@/lib/session-context";
 
 export const dynamic = "force-dynamic";
-const PAGE_SIZE = 40;
+const PAGE_SIZE = 20;
 
 type ActivitySearchParams = {
   q?: string;

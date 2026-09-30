@@ -58,7 +58,7 @@ export default async function CityPage({ params, searchParams }: CityPageProps) 
         <DirectoryFilters action={basePath} filters={filters} pinnedCity={city.city} pinnedRegion={city.region} showType />
         {filters.invalidCombination && <p className="filter-warning" role="alert">MILF y Hombres son categorías incompatibles. Selecciona solo una para buscar.</p>}
         <StoryRail stories={stories} city={city.city} withActivity />
-        <div className="directory-results-heading"><div><p className="eyebrow">{city.city.toUpperCase()}</p><h2>{profiles.length} publicación{profiles.length === 1 ? "" : "es"} visible{profiles.length === 1 ? "" : "s"}</h2></div></div>
+        <div className="directory-results-heading"><div><p className="eyebrow">{city.city.toUpperCase()}</p><h2>{profiles.length} {profiles.length === 1 ? "publicación visible" : "publicaciones visibles"}</h2></div></div>
         <CityProfileSections city={city.city} profiles={profiles} />
         <SeoContent city={city.city} region={city.region} count={profiles.length} />
       </section>

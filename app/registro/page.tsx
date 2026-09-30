@@ -61,7 +61,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
   const whatsappHref = getPortalWhatsappLink(settings.contact_whatsapp, "Hola, quisiera solicitar que el equipo de Chile3X me cree una cuenta de anunciante.");
   const loginHref = `/ingresar?return_to=${encodeURIComponent(returnTo)}`;
 
-  return <main className="auth-page"><section className="auth-card">
+  return <main className="auth-page"><section className="auth-card auth-register-card">
     <div className="auth-register-topbar"><Link className="auth-brand" href="/"><OfficialChile3xLogo priority /></Link><p className="auth-login-shortcut">¿Ya tienes cuenta? <Link href={loginHref}>Ingresar</Link></p></div>
     <p className="eyebrow">CUENTA DE ANUNCIANTE</p>
     <h1>Crea tu cuenta para empezar a publicar.</h1>

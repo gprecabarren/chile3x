@@ -131,11 +131,6 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   const previewPath = `${profilePublicPath(profile)}?return_to=${encodeURIComponent(adminReturnTo)}`;
   const isAdminPreview = Boolean(admin) && profile.status !== "approved";
   const relatedProfileIds = profile.type === "agency" ? profile.memberIds : profile.agencyIds;
-  const relatedProfiles = relatedProfileIds.length
-    ? await getPublicProfiles({ includeUnapproved: Boolean(admin), viewerId: viewer?.id, profileIds: relatedProfileIds })
-    : [];
-  const agencyProfiles = profile.type === "escort" ? relatedProfiles : [];
-  const agencyMembers = profile.type === "agency" ? relatedProfiles : [];
   const facts = metadataFacts(profile).filter((item): item is [string, string] => Boolean(item[1]));
   const tags = getProfileDisplayTags(profile);
   const location = [profile.comuna, profile.city, formatRegionName(profile.region)].filter(Boolean).join(", ");
@@ -162,19 +157,20 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   const availability = readAvailability(profile.details.metadata.availability);
   const availabilityStatus = getAvailabilityStatus(availability);
   const showCityAlerts = profile.status === "approved" && profile.type === "escort" && !profile.isDemo;
-  const [stories, approvedReviewsPage, verificationDocuments, exclusiveContent, cityAlertCities, activeCityAlerts] = await Promise.all([
+  const [relatedProfiles, stories, approvedReviewsPage, verificationDocuments, exclusiveContent, cityAlertCities, activeCityAlerts, viewerOwnsProfile, engagement] = await Promise.all([
+    relatedProfileIds.length ? getPublicProfiles({ includeUnapproved: Boolean(admin), viewerId: viewer?.id, profileIds: relatedProfileIds }) : Promise.resolve([]),
     getActiveStories({ profileId: profile.id }),
     getApprovedReviewsPage(profile.id),
     admin && profile.type === "escort" ? getVerificationDocuments(profile.id) : Promise.resolve([]),
     getExclusiveContentForProfile(profile.id, { viewerId: viewer?.id, isAdmin: Boolean(admin) }),
     showCityAlerts ? getProfileAlertCities() : Promise.resolve([]),
     showCityAlerts ? getActiveProfileCityAlerts(profile.id, viewer?.id) : Promise.resolve([]),
+    viewer ? (async () => (await (await getDb()).select({ ownerId: profiles.ownerId }).from(profiles).where(eq(profiles.id, profile.id)).limit(1))[0]?.ownerId === viewer.id)() : Promise.resolve(false),
+    profile.status === "approved" && !profile.isDemo ? getProfileEngagement(profile.id, viewer?.id) : Promise.resolve(null),
   ]);
-  const viewerOwnsProfile = viewer ? (await (await getDb()).select({ ownerId: profiles.ownerId }).from(profiles).where(eq(profiles.id, profile.id)).limit(1))[0]?.ownerId === viewer.id : false;
+  const agencyProfiles = profile.type === "escort" ? relatedProfiles : [];
+  const agencyMembers = profile.type === "agency" ? relatedProfiles : [];
   const coverImage = profile.media.find((media) => media.mediaType === "image" && media.isProfilePhoto) ?? profile.media.find((media) => media.mediaType === "image");
-  const engagement = profile.status === "approved" && !profile.isDemo
-    ? await getProfileEngagement(profile.id, viewer?.id)
-    : null;
   const exclusiveMedia = exclusiveContent.media;
   const hasExclusiveAccess = exclusiveMedia.length > 0 && exclusiveContent.hasAccess;
   const travel = profile.type === "escort" && profile.details.metadata.travel_city && profile.details.metadata.travel_start && profile.details.metadata.travel_end ? {

@@ -82,11 +82,19 @@ export function GoogleSignInButton({ clientId, intent, returnTo }: {
             }
           },
         });
+        let renderedWidth = 0;
         const render = () => {
           if (!containerRef.current || !window.google?.accounts.id) return;
           const width = Math.max(200, Math.min(400, Math.floor(containerRef.current.clientWidth)));
-          containerRef.current.replaceChildren();
-          window.google.accounts.id.renderButton(containerRef.current, {
+          if (width === renderedWidth) return;
+          renderedWidth = width;
+          // Google can finish drawing asynchronously. Render into a new host so
+          // an older draw cannot append a second button to the visible container.
+          const host = document.createElement("div");
+          host.style.width = `${width}px`;
+          host.style.maxWidth = "100%";
+          containerRef.current.replaceChildren(host);
+          window.google.accounts.id.renderButton(host, {
             type: "standard",
             theme: "outline",
             size: "large",

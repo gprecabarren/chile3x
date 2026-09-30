@@ -253,6 +253,13 @@
       "when": 1790727933250,
       "tag": "0035_creation_provenance",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "6",
+      "when": 1790741594577,
+      "tag": "0036_bronze_tier",
+      "breakpoints": true
     }
   ]
 }

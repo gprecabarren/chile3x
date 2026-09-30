@@ -727,7 +727,7 @@ footer span { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid #272
 .public-card-badge { padding: 4px 5px; border: 1px solid rgba(255,255,255,.34); border-radius: 4px; color: #fff; background: rgba(7,9,15,.82); box-shadow: 0 1px 4px rgba(0,0,0,.3); font-size: 7px; font-weight: 900; letter-spacing: .045em; line-height: 1; text-transform: uppercase; }
 .public-card-badge.vip, .public-tag.vip { border-color: #f5c342; color: #fff0ae; background: linear-gradient(135deg, #6f4a0a, #bd861b); }
 .public-card-badge.premium { border-color: #c397ff; color: #f0e4ff; background: rgba(73,40,119,.9); }
-.public-card-badge.gold, .public-tag.gold { border-color: #d8a740; color: #ffe29a; background: rgba(83,60,13,.92); }
+.public-card-badge.bronze, .public-tag.bronze { border-color: #bc8157; color: #f8d6b5; background: rgba(83,45,27,.94); }
 .public-card-badge.hombres { border-color: #4faed4; color: #cef1ff; background: rgba(15,64,91,.9); }
 .public-card-badge.masajes { border-color: #64bb91; color: #d2f8df; background: rgba(18,79,58,.9); }
 .public-card-badge.milf { border-color: #d96c9e; color: #ffe0ef; background: rgba(105,29,68,.9); }
@@ -1563,3 +1563,65 @@ input[type="submit"] { text-transform: none !important; letter-spacing: .015em; 
 .admin-photo-processing-options { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 12px; }
 .admin-photo-processing-options label { display: inline-flex; align-items: center; gap: 7px; color: #d7e0ed; font-size: 12px; }
 .admin-photo-processing-options input { accent-color: #d8404a; }
+
+/* El buscador conserva el mismo HTML en PC y móvil; solo se compacta su interfaz móvil. */
+.filter-mobile-toggle { display: none; }
+@media (max-width: 620px) {
+  .directory-filters { margin-bottom: 26px; }
+  .directory-filters .filter-heading { margin-bottom: 14px; }
+  .filter-mobile-toggle {
+    width: 100%; min-height: 46px; display: flex; align-items: center; gap: 10px;
+    padding: 10px 13px; border: 1px solid #3c465d; border-radius: var(--radius-sm);
+    color: #f4f5f8; background: #101624; font: inherit; text-align: left; cursor: pointer;
+  }
+  .filter-mobile-toggle span { flex: 0 0 auto; font-size: 12px; font-weight: 800; }
+  .filter-mobile-toggle small { min-width: 0; margin-left: auto; color: #aab4c5; font-size: 10px; line-height: 1.35; text-align: right; }
+  .filter-mobile-toggle::after { flex: 0 0 auto; color: #f17a83; content: "+"; font-size: 21px; line-height: 1; }
+  .filter-mobile-toggle[aria-expanded="true"]::after { content: "−"; }
+  .filter-mobile-toggle:focus-visible { outline: 2px solid #f17a83; outline-offset: 3px; }
+  .filter-mobile-body:not(.is-open) { display: none; }
+  .filter-mobile-body.is-open { min-width: 0; padding-top: 18px; }
+  .filter-mobile-body > .filter-grid { grid-template-columns: minmax(0, 1fr); }
+  .filter-mobile-body > .filter-grid .filter-full { grid-column: auto; }
+}
+@media (max-width: 380px) {
+  .filter-mobile-toggle small { display: none; }
+}
+
+/* Niveles de visibilidad: el mismo código de color e icono en secciones y fichas. */
+.city-profile-section.tier-vip { border-color: #99732c; background: linear-gradient(105deg, #211b13, #111622 48%); }
+.city-profile-section.tier-premium { border-color: #7552a2; background: linear-gradient(105deg, #1e172b, #111622 48%); }
+.city-profile-section.tier-bronze { border-color: #865a43; background: linear-gradient(105deg, #211916, #111622 48%); }
+.city-profile-section.tier-vip summary strong { color: #ffe4a2; }
+.city-profile-section.tier-premium summary strong { color: #e1c4ff; }
+.city-profile-section.tier-bronze summary strong { color: #efc29e; }
+.city-profile-section.tier-vip summary strong::before,
+.public-card-tier-badge.vip::before,
+.public-tag.vip::before { content: "✦"; }
+.city-profile-section.tier-premium summary strong::before,
+.public-card-tier-badge.premium::before,
+.public-tag.premium::before { content: "◆"; }
+.city-profile-section.tier-bronze summary strong::before,
+.public-card-tier-badge.bronze::before,
+.public-tag.bronze::before { content: "⬡"; }
+.city-profile-section.tier-vip summary strong::before,
+.city-profile-section.tier-premium summary strong::before,
+.city-profile-section.tier-bronze summary strong::before { display: inline-block; margin-right: 10px; font-family: Arial, sans-serif; font-size: .72em; vertical-align: .08em; }
+.public-card-tier-badge.bronze { border-color: #bc8157; color: #f8d6b5; background: rgba(83,45,27,.94); }
+.public-card-tier-badge.vip::before,
+.public-card-tier-badge.premium::before,
+.public-card-tier-badge.bronze::before,
+.public-tag.vip::before,
+.public-tag.premium::before,
+.public-tag.bronze::before { margin-right: .35em; font-family: Arial, sans-serif; }
+.public-tag.premium { border-color: #c397ff; color: #f0e4ff; background: rgba(73,40,119,.9); }
+.tier-form-field { min-width: 0; }
+.tier-form-guide { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+.tier-form-chip { padding: 5px 8px; border: 1px solid; border-radius: 5px; font-size: 10px; font-weight: 800; }
+.tier-form-chip.tier-vip { border-color: #b88926; color: #ffe4a2; background: #3f2c0f; }
+.tier-form-chip.tier-premium { border-color: #9465c4; color: #e1c4ff; background: #2d1d42; }
+.tier-form-chip.tier-bronze { border-color: #a66c49; color: #efc29e; background: #38251d; }
+.tier-form-chip.tier-vip::before { content: "✦"; }
+.tier-form-chip.tier-premium::before { content: "◆"; }
+.tier-form-chip.tier-bronze::before { content: "⬡"; }
+.tier-form-chip::before { margin-right: .4em; font-family: Arial, sans-serif; }

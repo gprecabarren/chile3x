@@ -17,6 +17,7 @@ import {
   skinColors,
   tagLabels,
   tiers,
+  tierLabels,
   type ProfileType,
   type Tier,
 } from "@/lib/profile";
@@ -331,12 +332,12 @@ function readMetadata(value: string | null | undefined): Record<string, string> 
   }
 }
 
-const tierRank: Record<Tier, number> = { vip: 0, premium: 1, gold: 2 };
+const tierRank: Record<Tier, number> = { vip: 0, premium: 1, bronze: 2 };
 
 /**
  * Mantiene el privilegio de cada categoría, pero evita que un perfil quede
  * siempre primero dentro de su propio nivel. Se calcula en cada render para
- * que una recarga entregue una rotación justa sin mezclar VIP/Premium/Gold.
+ * que una recarga entregue una rotación justa sin mezclar VIP/Premium/Bronze.
  */
 export function orderProfilesByTierAndRandom(profilesToOrder: PublicProfile[]) {
   const randomScores = new Map(profilesToOrder.map((profile) => [profile.id, Math.random()]));
@@ -486,7 +487,7 @@ export function getCityPath(city: string) {
 }
 
 export function getProfileDisplayTags(profile: PublicProfile) {
-  const tags = profile.type === "escort" ? [profile.tier.toUpperCase(), ...profile.tags.map((tag) => tagLabels[tag as keyof typeof tagLabels] ?? tag)] : [];
+  const tags = profile.type === "escort" ? [tierLabels[profile.tier], ...profile.tags.map((tag) => tagLabels[tag as keyof typeof tagLabels] ?? tag)] : [];
   // Tier is always the primary tag. A manually assigned tag can have the same
   // label (for example, tier "vip" plus tag "vip"), so normalize before
   // rendering to guarantee visitors never see a duplicate badge.

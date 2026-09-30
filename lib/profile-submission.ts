@@ -298,7 +298,7 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
 
   return {
     type: typeValue,
-    tier: typeValue === "escort" ? tierValue : "gold",
+    tier: typeValue === "escort" ? tierValue : "bronze",
     handle,
     displayName,
     region,

@@ -39,6 +39,12 @@ export function DirectoryFilters({ action, filters, pinnedCity, pinnedRegion, sh
     filters.nationality || filters.gender || filters.ageMin || filters.ageMax || filters.skinColor || filters.hairColor ||
     filters.bodyType || filters.bustSize || filters.language || filters.tags.length || filters.servicesIncluded.length || filters.servicesAdditional.length,
   );
+  const hasVisibleFilters = Boolean(
+    filters.name || (!pinnedCity && (filters.region || filters.city)) || (showType && filters.type) ||
+    (showEscortFilters && filters.tier) || hasAdvancedFilters,
+  );
+  const [mobileFilterOpen, setMobileFilterOpen] = useState<boolean | null>(null);
+  const showMobileFilters = mobileFilterOpen ?? hasVisibleFilters;
 
   function changeRegion(nextRegion: string) {
     setRegion(nextRegion);
@@ -57,8 +63,13 @@ export function DirectoryFilters({ action, filters, pinnedCity, pinnedRegion, sh
   return (
     <form className="directory-filters" action={action} method="get">
       <div className="filter-heading"><div><p className="eyebrow">BUSCADOR DE ESCORTS</p><h2>Encuentra con más precisión</h2><p>Elige una ciudad, categoría o nombre. Las características y servicios quedan disponibles en filtros avanzados.</p></div></div>
+      <button className="filter-mobile-toggle" type="button" aria-expanded={showMobileFilters} aria-controls="directory-filter-controls" onClick={() => setMobileFilterOpen(!showMobileFilters)}>
+        <span>{showMobileFilters ? "Ocultar filtros" : "Mostrar filtros"}</span>
+        <small>{hasVisibleFilters ? "Filtros aplicados" : "Nombre, ciudad y categoría"}</small>
+      </button>
+      <div id="directory-filter-controls" className={`filter-mobile-body${showMobileFilters ? " is-open" : ""}`}>
       <div className="filter-grid">
-        <label className="filter-full">Buscar por nombre<input name="nombre" type="search" minLength={2} maxLength={80} defaultValue={filters.name ?? ""} placeholder="Valentina, Camila o Alejandra" /></label>
+        <label className="filter-full">Buscar por nombre<input name="nombre" type="search" minLength={2} maxLength={80} defaultValue={filters.name ?? ""} placeholder="Ej.: Valentina, Camila, Alejandra" /></label>
         {!pinnedCity && <label>Región<select name="region" value={region} onChange={(event) => changeRegion(event.target.value)}><option value="">Todas las regiones</option>{regions.map((item) => <option key={item.id} value={item.title}>Región {item.numeral} · {item.shortTitle}</option>)}</select></label>}
         {!pinnedCity && <label>Ciudad<select name="ciudad" value={city} onChange={(event) => setCity(event.target.value)} disabled={Boolean(region) && !availableCities.length}><option value="">Todas las ciudades</option>{(region ? availableCities : regions.flatMap((item) => item.cities)).map((item) => <option key={item} value={item}>{item}</option>)}</select></label>}
         {showType && <label>Tipo de publicación<select name="tipo" defaultValue={filters.type ?? ""}><option value="">Todos los tipos</option>{types.map((type) => <option key={type} value={type}>{type === "escort" ? "Escorts" : type === "agency" ? "Agencias" : "Arriendos"}</option>)}</select></label>}
@@ -79,6 +90,7 @@ export function DirectoryFilters({ action, filters, pinnedCity, pinnedRegion, sh
         </details>}
       </details>}
       <div className="filter-actions"><a href={action}>Limpiar filtros</a><button className="button button-primary" type="submit">Buscar perfiles</button></div>
+      </div>
     </form>
   );
 }

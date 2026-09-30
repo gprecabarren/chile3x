@@ -22,7 +22,7 @@ cada módulo.
    rechazo, publicación, pausa y vencimiento.
 4. Fotos y videos en almacenamiento de objetos, con límite y moderación antes
    de ser públicos.
-5. Etiquetas de nivel exclusivas: Gold, Premium o VIP.
+5. Etiquetas de nivel exclusivas: Bronze, Premium o VIP.
 6. Perfiles de agencia y relación entre la agencia y sus miembros.
 7. Estados temporales, favoritos, reacciones y reseñas moderadas.
 8. Periodos y pausas de avisos registrados por administración mientras el

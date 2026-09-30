@@ -1,7 +1,7 @@
 import { regions } from "@/app/locations";
 
 export const profileTypes = ["escort", "agency", "rental"] as const;
-export const tiers = ["gold", "premium", "vip"] as const;
+export const tiers = ["bronze", "premium", "vip"] as const;
 export const profileTags = ["milf", "hombres", "trans", "masajes"] as const;
 export const includedServices = [
   "Departamento propio",
@@ -79,7 +79,7 @@ export const tagLabels: Record<(typeof profileTags)[number], string> = {
 };
 
 export const tierLabels: Record<Tier, string> = {
-  gold: "Gold",
+  bronze: "Bronze",
   premium: "Premium",
   vip: "VIP",
 };

@@ -357,7 +357,7 @@ export const profiles = sqliteTable("profiles", {
   comuna: text("comuna"),
   contactWhatsapp: text("contact_whatsapp"),
   contactTelegram: text("contact_telegram"),
-  tier: text("tier", { enum: ["gold", "premium", "vip"] }).notNull().default("gold"),
+  tier: text("tier", { enum: ["bronze", "premium", "vip"] }).notNull().default("bronze"),
   verificationStatus: text("verification_status", { enum: ["unreviewed", "in_review", "reviewed"] }).notNull().default("unreviewed"),
   verifiedAt: text("verified_at"),
   healthReviewStatus: text("health_review_status", { enum: ["not_requested", "in_review", "reviewed"] }).notNull().default("not_requested"),

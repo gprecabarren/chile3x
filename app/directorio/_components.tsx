@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import type { ReactNode } from "react";
 import { getCurrentAdmin, getCurrentUser, getSessionCookieName, getUserSessionCookieName, type AccountUser } from "@/lib/auth";
 import { getCityPath, getProfileDisplayTags, type PublicProfile } from "@/lib/directory";
-import { profilePublicPath, readProfilePrices } from "@/lib/profile";
+import { profilePublicPath, readProfilePrices, type Tier } from "@/lib/profile";
 import { getPortalContacts, getPortalWhatsappLink } from "@/lib/site-contacts";
 import { getSiteSettings } from "@/lib/site-settings";
 import { formatRegionName, getRegionByTitle } from "@/app/locations";
@@ -210,7 +210,7 @@ export function LaEstokadaBadge() {
 
 export function ProfileCard({ profile }: { profile: PublicProfile }) {
   const tags = getProfileDisplayTags(profile);
-  const tierTag = profile.type === "escort" ? tags[0] ?? "Gold" : null;
+  const tierTag = profile.type === "escort" ? tags[0] ?? "Bronze" : null;
   const detailTags = profile.type === "escort" ? tags.slice(1) : [];
   const age = profile.details.metadata.age;
   const subtitle = [age ? `${age} años` : null, profile.comuna ?? profile.details.referenceLocation].filter(Boolean).join(" · ");
@@ -254,8 +254,8 @@ type CityProfileSectionsProps = {
   profiles: PublicProfile[];
 };
 
-function CityProfileSection({ title, description, profiles }: { title: string; description: string; profiles: PublicProfile[] }) {
-  return <details className="city-profile-section" open>
+function CityProfileSection({ title, description, profiles, tier }: { title: string; description: string; profiles: PublicProfile[]; tier?: Tier }) {
+  return <details className={`city-profile-section${tier ? ` tier-${tier}` : ""}`} open>
     <summary>
       <span><strong>{title}</strong><small>{description}</small></span>
       <b>{profiles.length}</b>
@@ -268,17 +268,17 @@ function CityProfileSection({ title, description, profiles }: { title: string; d
 
 export function CityProfileSections({ city, profiles }: CityProfileSectionsProps) {
   const escorts = profiles.filter((profile) => profile.type === "escort");
-  const sections = [
-    ["VIP", "Escorts con categoría VIP", escorts.filter((profile) => profile.tier === "vip")],
-    ["Premium", "Escorts con categoría Premium", escorts.filter((profile) => profile.tier === "premium")],
-    ["Gold", "Escorts con categoría Gold", escorts.filter((profile) => profile.tier === "gold")],
-    ["Agencias", "Agencias visibles en la ciudad", profiles.filter((profile) => profile.type === "agency")],
-    ["Masajes", "Escorts con la etiqueta Masajes; también aparecen en su categoría de visibilidad", escorts.filter((profile) => profile.tags.includes("masajes"))],
-    ["Arriendos", "Arriendos visibles en la ciudad", profiles.filter((profile) => profile.type === "rental")],
-  ] as const;
+  const sections: { title: string; description: string; profiles: PublicProfile[]; tier?: Tier }[] = [
+    { title: "VIP", description: "Perfiles de élite con máxima visibilidad.", profiles: escorts.filter((profile) => profile.tier === "vip"), tier: "vip" },
+    { title: "Premium", description: "Perfiles con visibilidad intermedia y presentación destacada.", profiles: escorts.filter((profile) => profile.tier === "premium"), tier: "premium" },
+    { title: "Bronze", description: "Perfiles con visibilidad estándar en el directorio.", profiles: escorts.filter((profile) => profile.tier === "bronze"), tier: "bronze" },
+    { title: "Agencias", description: "Agencias visibles en la ciudad", profiles: profiles.filter((profile) => profile.type === "agency") },
+    { title: "Masajes", description: "Escorts con la etiqueta Masajes; también aparecen en su categoría de visibilidad", profiles: escorts.filter((profile) => profile.tags.includes("masajes")) },
+    { title: "Arriendos", description: "Arriendos visibles en la ciudad", profiles: profiles.filter((profile) => profile.type === "rental") },
+  ];
 
   return <section className="city-profile-sections" aria-label={`Publicaciones en ${city}`}>
-    {sections.map(([title, description, sectionProfiles]) => <CityProfileSection key={title} title={title} description={description} profiles={sectionProfiles} />)}
+    {sections.map(({ title, description, profiles: sectionProfiles, tier }) => <CityProfileSection key={title} title={title} description={description} profiles={sectionProfiles} tier={tier} />)}
   </section>;
 }
 

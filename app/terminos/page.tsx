@@ -87,7 +87,7 @@ export default function TermsPage() {
         <p>Una agencia solo puede vincular a una escort con autorización expresa de esa persona. La invitación debe ser aceptada por la cuenta correspondiente; está prohibido crear relaciones aparentes, reutilizar identidades o agregar personas sin consentimiento. La agencia responde por la veracidad de su información institucional y por sus propios actos, sin adquirir propiedad ni control sobre las cuentas vinculadas.</p>
         <h3>6.2. Arriendos</h3>
         <p>Quien publica un arriendo declara tener derecho para ofrecer el espacio, entregar información veraz y cumplir las normas civiles, sanitarias, de copropiedad, seguridad y demás obligaciones aplicables. Chile3X no inspecciona inmuebles ni garantiza disponibilidad, condiciones, permisos o acuerdos entre las partes.</p>
-        <p>Las categorías comerciales y etiquetas propias de escorts, como VIP, Premium, Gold, MILF, Trans, Hombres o Masajes, no se aplican a agencias ni arriendos.</p>
+        <p>Las categorías de visibilidad y etiquetas propias de escorts, como VIP, Premium, Bronze, MILF, Trans, Hombres o Masajes, no se aplican a agencias ni arriendos.</p>
       </section>
 
       <section id="obligaciones">

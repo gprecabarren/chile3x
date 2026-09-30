@@ -17,14 +17,15 @@ import {
   readAvailability,
   skinColors,
   spokenLanguages,
+  tierLabels,
   tiers,
   type ProfileType,
 } from "@/lib/profile";
 
 const tierVisibilityOptions = {
-  gold: "Gold: visibilidad estándar (futura opción más económica) · GRATIS ahora",
-  premium: "Premium: mayor visibilidad (futura opción intermedia) · GRATIS ahora",
-  vip: "VIP: máxima visibilidad (futura opción más cara) · GRATIS ahora",
+  bronze: "Bronze: visibilidad estándar · GRATIS ahora",
+  premium: "Premium: visibilidad intermedia · GRATIS ahora",
+  vip: "VIP: máxima visibilidad · GRATIS ahora",
 } as const;
 
 type ProfileFormInitial = {
@@ -200,13 +201,18 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
             <span className="profile-handle-input"><b>@</b><input name="handle" minLength={3} maxLength={41} defaultValue={initial?.handle ?? ""} placeholder={type === "agency" ? "agenciaejemplo" : type === "rental" ? "arriendo-centro" : "tu-nombre"} autoCapitalize="none" autoCorrect="off" /></span>
             <small>Será parte de tu enlace. Si lo dejas vacío, Chile3X crea uno único basado en el nombre del anuncio.</small>
           </label>
-          {type === "escort" ? <label>
-            Categoría de visibilidad
-            <select name="tier" defaultValue={initial?.tier ?? "gold"}>
-              {tiers.map((tier) => <option key={tier} value={tier}>{tierVisibilityOptions[tier]}</option>)}
-            </select>
-            <small>Por lanzamiento, todas las categorías son gratis. Sus valores se definirán más adelante.</small>
-          </label> : <input name="tier" type="hidden" value="gold" />}
+          {type === "escort" ? <div className="tier-form-field">
+            <label>
+              Categoría de visibilidad
+              <select name="tier" defaultValue={initial?.tier ?? "bronze"}>
+                {tiers.map((tier) => <option key={tier} value={tier}>{tierVisibilityOptions[tier]}</option>)}
+              </select>
+              <small>Por lanzamiento, todas las categorías son gratis. Sus valores se definirán más adelante.</small>
+            </label>
+            <div className="tier-form-guide" aria-label="Niveles de visibilidad">
+              {tiers.map((tier) => <span key={tier} className={`tier-form-chip tier-${tier}`}>{tierLabels[tier]}</span>)}
+            </div>
+          </div> : <input name="tier" type="hidden" value="bronze" />}
         </div>
       </section>
 

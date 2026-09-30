@@ -5,8 +5,12 @@ import { hasPrivateSession, isCacheableDocument, preventPrivateCaching, publicCa
 import type { TelegramQueueMessage } from "../lib/telegram";
 import { handleTelegramQueue, handleTelegramScheduled, handleTelegramWebhook, isTelegramWebhookPath } from "./telegram";
 
-function withSecurityHeaders(response: Response) {
+function withSecurityHeaders(response: Response, pathname = "") {
   const headers = new Headers(response.headers);
+  const faceBlurPage = pathname === "/admin/medios"
+    || /^\/admin\/cuentas\/[^/]+\/perfiles\/[^/]+\/medios$/.test(pathname)
+    || /^\/mi-cuenta\/[^/]+\/editar$/.test(pathname);
+  const wasmPermission = faceBlurPage ? " 'wasm-unsafe-eval'" : "";
   headers.set("strict-transport-security", "max-age=63072000; includeSubDomains; preload");
   headers.set("x-content-type-options", "nosniff");
   headers.set("x-frame-options", "DENY");
@@ -15,7 +19,7 @@ function withSecurityHeaders(response: Response) {
   headers.set("cross-origin-opener-policy", "same-origin-allow-popups");
   headers.set("referrer-policy", "strict-origin-when-cross-origin");
   headers.set("permissions-policy", "camera=(self), geolocation=(self), microphone=(self)");
-  headers.set("content-security-policy", "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://challenges.cloudflare.com https://www.googletagmanager.com https://news.google.com https://cdn.jsdelivr.net https://static.cloudflareinsights.com; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob:; font-src 'self' data:; frame-src https://accounts.google.com https://challenges.cloudflare.com https://www.googletagmanager.com https://news.google.com; connect-src 'self' https://accounts.google.com https://www.googleapis.com https://challenges.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com https://news.google.com https://cdn.jsdelivr.net https://storage.googleapis.com https://cloudflareinsights.com; upgrade-insecure-requests");
+  headers.set("content-security-policy", `default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline'${wasmPermission} https://accounts.google.com https://challenges.cloudflare.com https://www.googletagmanager.com https://news.google.com https://cdn.jsdelivr.net https://static.cloudflareinsights.com; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob:; font-src 'self' data:; frame-src https://accounts.google.com https://challenges.cloudflare.com https://www.googletagmanager.com https://news.google.com; connect-src 'self' https://accounts.google.com https://www.googleapis.com https://challenges.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com https://news.google.com https://cdn.jsdelivr.net https://storage.googleapis.com https://cloudflareinsights.com; upgrade-insecure-requests`);
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
@@ -98,7 +102,7 @@ const worker = {
       }
     }
 
-    const response = withSecurityHeaders(await handler.fetch(request, env, ctx));
+    const response = withSecurityHeaders(await handler.fetch(request, env, ctx), url.pathname);
     if (!cache || !cacheKey || !isCacheableDocument(response)) {
       const isDocument = /text\/(?:html|x-component)/i.test(response.headers.get("content-type") ?? "");
       return hasPrivateSession(request) || isDocument || url.pathname.startsWith("/api/auth/")

@@ -9,7 +9,7 @@ export function NearbyDirectoryButton() {
 
   async function useLocation() {
     setIsLocating(true);
-    setMessage("El navegador solicitará permiso para detectar tu ciudad más cercana…");
+    setMessage("Buscando la ciudad más cercana…");
     try {
       const nearest = await requestNearestCoveredCity();
       savePreferredCity(nearest.citySlug);

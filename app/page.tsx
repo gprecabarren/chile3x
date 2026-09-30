@@ -143,7 +143,7 @@ export default async function Home() {
       </section>
 
       <section className="home-discovery-controls" aria-label="Ubicación y regiones">
-        <HomeLocationSummary initialCityName={preferredCity?.city} nearbyCities={nearbyCities} />
+        <HomeLocationSummary initialCityName={preferredCity?.city} initialCitySlug={preferredCity?.citySlug} nearbyCities={nearbyCities} />
         <RegionJumpSelect regions={regions} />
       </section>
 

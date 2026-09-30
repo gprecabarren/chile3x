@@ -58,9 +58,9 @@ export function formatRegionName(title: string) {
   return getRegionByTitle(title)?.displayTitle ?? title;
 }
 
-// Coordenadas aproximadas de los centros urbanos cubiertos. Se usan solo en el
-// navegador, después de que la persona acepta compartir su ubicación, para
-// priorizar resultados sin enviar la ubicación a un servicio externo.
+// Coordenadas aproximadas de los centros urbanos cubiertos. El GPS se compara
+// localmente en el navegador; si falla, el Worker puede usar la ubicación
+// aproximada que Cloudflare ya conoce de la conexión. No se persisten coordenadas.
 const cityCoordinates: Record<string, readonly [number, number]> = {
   "Arica": [-18.478, -70.312], "Iquique": [-20.214, -70.152], "Antofagasta": [-23.65, -70.4], "Calama": [-22.456, -68.93],
   "Caldera": [-27.066, -70.82], "Copiapó": [-27.366, -70.333], "Vallenar": [-28.576, -71.575], "La Serena": [-29.902, -71.2],

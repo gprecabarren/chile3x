@@ -111,7 +111,7 @@ export default function PrivacyPage() {
           <li>crear borradores, moderar cambios, publicar, ordenar, buscar, pausar y mostrar anuncios;</li>
           <li>gestionar historias, galerías, medios, relaciones agencia–escort y accesos exclusivos;</li>
           <li>habilitar favoritos, likes, reseñas, comentarios, mensajería privada, bloqueos, reportes y paneles de rendimiento;</li>
-          <li>ordenar anuncios por la ciudad elegida o inferida localmente después de autorizar la geolocalización; las coordenadas precisas no se guardan en Chile3X;</li>
+          <li>ordenar anuncios por la ciudad elegida, inferida localmente tras autorizar la geolocalización o sugerida de forma aproximada por Cloudflare a partir de la conexión si el dispositivo no entrega una posición; las coordenadas precisas no se guardan en Chile3X;</li>
           <li>vincular voluntariamente Telegram, administrar el acceso a Miembros, sincronizar Novedades, moderar la comunidad y avisar al equipo sobre medidas relevantes;</li>
           <li>enviar correos transaccionales como verificación, recuperación, aprobación, rechazo, suspensión y avisos importantes de la cuenta;</li>
           <li>prevenir fraude, spam, suplantación, explotación, contenido ilícito, ataques y uso indebido;</li>

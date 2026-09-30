@@ -18,6 +18,7 @@ function distanceInKilometers(latitude: number, longitude: number, targetLatitud
 
 export function savePreferredCity(citySlug: string) {
   document.cookie = `chile3x_preferred_city=${encodeURIComponent(citySlug)}; Path=/; Max-Age=31536000; SameSite=Lax; Secure`;
+  try { window.sessionStorage.removeItem("chile3x_location_hint"); } catch { /* Almacenamiento de sesión opcional. */ }
 }
 
 export function nearestCoveredCity(latitude: number, longitude: number) {
@@ -45,13 +46,13 @@ export function locationErrorMessage(error: unknown) {
   }
 
   const code = typeof error === "object" && error && "code" in error ? Number(error.code) : 0;
-  if (code === 1) return "El permiso de ubicación está bloqueado. Habilítalo para chile3x.cl en los ajustes del navegador o elige una ciudad manualmente.";
+  if (code === 1) return "El navegador o el dispositivo rechazó la ubicación. Revisa el permiso de chile3x.cl y la ubicación del sistema, o elige una ciudad manualmente.";
   if (code === 2) return "El dispositivo no pudo determinar tu ubicación. Comprueba que la ubicación esté activada o elige una ciudad manualmente.";
   if (code === 3) return "La ubicación tardó demasiado en responder. Inténtalo nuevamente o elige una ciudad manualmente.";
   return "No pudimos detectar tu ubicación. Puedes elegir una ciudad manualmente.";
 }
 
-export function requestNearestCoveredCity() {
+function requestDeviceCity() {
   if (!window.isSecureContext) return Promise.reject(new Error("insecure_context"));
   if (!navigator.geolocation) return Promise.reject(new Error("unsupported"));
 
@@ -69,4 +70,29 @@ export function requestNearestCoveredCity() {
       maximumAge: 60_000,
     });
   });
+}
+
+async function requestApproximateCity() {
+  const response = await fetch("/api/location-hint", { cache: "no-store" });
+  if (!response.ok) throw new Error("network_location_unavailable");
+  const payload: unknown = await response.json();
+  const citySlug = typeof payload === "object" && payload !== null && "citySlug" in payload
+    ? payload.citySlug : null;
+  const city = cityGeoDirectory.find((item) => item.citySlug === citySlug);
+  if (!city) throw new Error("network_location_unavailable");
+  return city;
+}
+
+export async function requestNearestCoveredCity() {
+  try {
+    const city = await requestDeviceCity();
+    return { city: city.city, citySlug: city.citySlug, source: "device" as const };
+  } catch (deviceError) {
+    try {
+      const city = await requestApproximateCity();
+      return { city: city.city, citySlug: city.citySlug, source: "network" as const };
+    } catch {
+      throw deviceError;
+    }
+  }
 }

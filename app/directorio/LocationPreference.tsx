@@ -33,7 +33,7 @@ export function LocationPreference({ initialCitySlug = "" }: { initialCitySlug?:
 
   async function useLocation() {
     setIsLocating(true);
-    setStatus("El navegador solicitará permiso para detectar tu ciudad más cercana…");
+    setStatus("Buscando la ciudad más cercana…");
     try {
       const nearest = await requestNearestCoveredCity();
       applyCity(nearest.citySlug);

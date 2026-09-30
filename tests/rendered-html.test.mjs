@@ -33,6 +33,23 @@ async function render(path = "/", headers = {}) {
   );
 }
 
+test("network location fallback returns only a covered city and is never cached", async () => {
+  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
+  const { default: worker } = await import(workerUrl.href);
+  const request = new Request("http://localhost/api/location-hint");
+  Object.defineProperty(request, "cf", { value: { country: "CL", latitude: "-36.827", longitude: "-73.05" } });
+  const response = await worker.fetch(request, {}, {});
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("cache-control") ?? "", /no-store/);
+  assert.deepEqual(await response.json(), { citySlug: "concepcion" });
+
+  const outsideChile = new Request("http://localhost/api/location-hint");
+  Object.defineProperty(outsideChile, "cf", { value: { country: "US", latitude: "30.27130", longitude: "-97.74260" } });
+  const unavailable = await worker.fetch(outsideChile, {}, {});
+  assert.equal(unavailable.status, 204);
+  assert.match(unavailable.headers.get("cache-control") ?? "", /no-store/);
+});
+
 test("server-renders the Chile3X public home", async () => {
   const response = await render();
   assert.equal(response.status, 200);

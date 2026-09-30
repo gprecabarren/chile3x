@@ -63,6 +63,7 @@ test("profile navigation cannot be interrupted halfway through a smooth return t
 test("desktop contact icons sit below sign-in without enlarging the full header", () => {
   assert.match(publicHeaderSource, /<div className="public-navigation-stack">[\s\S]*?<nav className="public-navigation"[\s\S]*?<PortalContactLinks placement="header" \/>[\s\S]*?<\/div>/);
   assert.match(cssSource, /@media \(min-width: 861px\) \{[\s\S]*?\.public-navigation-stack \{[\s\S]*?display: grid;[\s\S]*?justify-items: end;[\s\S]*?\.public-navigation-stack \.portal-contact-links-header \{[\s\S]*?width: auto;[\s\S]*?flex: 0 0 auto;/);
+  assert.match(cssSource, /\.public-header \.public-navigation-stack \.public-navigation \{[\s\S]*?justify-content: flex-start;/);
   assert.doesNotMatch(cssSource, /\.site-header\.public-header \.portal-contact-links-header \{[\s\S]*?flex: 0 0 100%;/);
   assert.match(cssSource, /@media \(max-width: 860px\) \{[\s\S]*?\.public-header \.public-navigation-stack \{ display: contents; \}/);
   assert.match(cssSource, /@media \(max-width: 860px\) \{[\s\S]*?\.public-header \.portal-contact-links-header \{ order: 2;/);

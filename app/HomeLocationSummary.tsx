@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { locationErrorMessage, requestNearestCoveredCity, savePreferredCity } from "@/app/directorio/location-client";
 
 type NearbyCity = {
@@ -10,27 +10,44 @@ type NearbyCity = {
   citySlug: string;
 };
 
+function subscribeToLocationHint() { return () => {}; }
+function readLocationHint() {
+  try { return window.sessionStorage.getItem("chile3x_location_hint") ?? ""; } catch { return ""; }
+}
+function noServerLocationHint() { return ""; }
+
 export function HomeLocationSummary({
   initialCityName,
+  initialCitySlug,
   nearbyCities,
 }: {
   initialCityName?: string;
+  initialCitySlug?: string;
   nearbyCities: readonly NearbyCity[];
 }) {
   const router = useRouter();
   const [detectedCity, setDetectedCity] = useState("");
-  const [status, setStatus] = useState("");
+  const [transientStatus, setStatus] = useState("");
   const [isLocating, setIsLocating] = useState(false);
+  const networkHintCitySlug = useSyncExternalStore(subscribeToLocationHint, readLocationHint, noServerLocationHint);
   const cityName = detectedCity || initialCityName || "Todo Chile";
+  const status = transientStatus || (initialCitySlug && networkHintCitySlug === initialCitySlug
+    ? `Ubicación aproximada por tu conexión: ${initialCityName}. Puede variar; también puedes elegir otra ciudad.`
+    : "");
 
   async function useLocation() {
     setIsLocating(true);
-    setStatus("El navegador solicitará permiso para detectar tu ciudad más cercana…");
+    setStatus("Buscando la ciudad más cercana…");
     try {
       const nearest = await requestNearestCoveredCity();
       savePreferredCity(nearest.citySlug);
+      if (nearest.source === "network") {
+        try { window.sessionStorage.setItem("chile3x_location_hint", nearest.citySlug); } catch { /* Aviso ya visible antes de actualizar. */ }
+      }
       setDetectedCity(nearest.city);
-      setStatus(`Ubicación encontrada. Priorizaremos ${nearest.city} y sectores cercanos.`);
+      setStatus(nearest.source === "network"
+        ? `Ubicación aproximada por tu conexión: ${nearest.city}. Puede variar; también puedes elegir otra ciudad.`
+        : `Ubicación encontrada. Priorizaremos ${nearest.city} y sectores cercanos.`);
       router.refresh();
     } catch (error) {
       setStatus(locationErrorMessage(error));

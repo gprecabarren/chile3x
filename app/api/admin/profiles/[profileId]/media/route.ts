@@ -17,9 +17,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!adminHasCapability(admin, "accounts.manage") || !adminHasCapability(admin, "media.moderate")) return error("No tienes permiso para cargar material de otras cuentas.", 403);
   const { profileId } = await params;
   const [row] = await (await getDb()).select({
-    ownerId: profiles.ownerId, displayName: profiles.displayName, ownerActive: users.isActive, ownerRole: users.role,
+    ownerId: profiles.ownerId, displayName: profiles.displayName, trashedAt: profiles.trashedAt, ownerActive: users.isActive, ownerRole: users.role,
   }).from(profiles).innerJoin(users, eq(profiles.ownerId, users.id)).where(eq(profiles.id, profileId)).limit(1);
-  if (!row) return error("Anuncio no encontrado.", 404);
+  if (!row || row.trashedAt) return error("Anuncio no encontrado o en papelera.", 404);
   if (!row.ownerActive || row.ownerRole === "admin") return error("La cuenta propietaria no está activa o no admite anuncios.", 403);
   const formData = await request.formData();
   const file = formData.get("file");

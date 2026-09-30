@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { profiles } from "@/db/schema";
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const returnTo = safeAccountReturnTo(requestedReturnTo);
   if (action !== "hide" && action !== "show") return NextResponse.redirect(new URL(`${returnTo}?notice=error`, request.url), 303);
   const db = await getDb();
-  const [profile] = await db.select({ id: profiles.id }).from(profiles).where(and(eq(profiles.id, profileId), eq(profiles.ownerId, user.id))).limit(1);
+  const [profile] = await db.select({ id: profiles.id }).from(profiles).where(and(eq(profiles.id, profileId), eq(profiles.ownerId, user.id), isNull(profiles.trashedAt))).limit(1);
   if (!profile) return NextResponse.redirect(new URL("/mi-cuenta?notice=error", request.url), 303);
   await db.update(profiles).set({ ownerHiddenAt: action === "hide" ? new Date().toISOString() : null, updatedAt: new Date().toISOString() }).where(eq(profiles.id, profileId));
   const destination = new URL(returnTo, request.url);

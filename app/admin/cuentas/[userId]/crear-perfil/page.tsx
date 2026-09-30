@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { ProfileForm } from "@/app/mi-cuenta/ProfileForm";
 import { getDb } from "@/db";
@@ -24,7 +24,7 @@ export default async function AdminCreateProfilePage({ params, searchParams }: {
     .from(users)
     .where(eq(users.id, userId))
     .limit(1),
-    db.select({ id: profiles.id }).from(profiles).where(and(eq(profiles.ownerId, userId), eq(profiles.type, "escort"))).limit(1),
+    db.select({ id: profiles.id }).from(profiles).where(and(eq(profiles.ownerId, userId), eq(profiles.type, "escort"), isNull(profiles.trashedAt))).limit(1),
   ]);
   if (!owner || owner.role === "admin") redirect("/admin/cuentas?notice=account_missing");
 

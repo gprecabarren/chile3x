@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { profiles } from "@/db/schema";
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const user = await getCurrentUser();
   if (!user) return error("Ingresa para subir archivos.", 401);
   const { profileId } = await params;
-  const [profile] = await (await getDb()).select({ ownerId: profiles.ownerId }).from(profiles).where(eq(profiles.id, profileId)).limit(1);
+  const [profile] = await (await getDb()).select({ ownerId: profiles.ownerId }).from(profiles).where(and(eq(profiles.id, profileId), isNull(profiles.trashedAt))).limit(1);
   if (!profile || profile.ownerId !== user.id) return error("No tienes permiso para administrar este material.", 403);
   const formData = await request.formData();
   const file = formData.get("file");

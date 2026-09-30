@@ -19,7 +19,7 @@ function safeReturnTo(value: FormDataEntryValue | null) {
   try {
     const url = new URL(value, "https://chile3x.cl");
     const isProfile = url.pathname.startsWith("/perfil/") && url.pathname.length > "/perfil/".length;
-    const isAdminList = url.pathname === "/admin/perfiles";
+    const isAdminList = url.pathname === "/admin/anuncios-publicaciones" || url.pathname === "/admin/perfiles";
     return isProfile || isAdminList ? `${url.pathname}${url.search}` : null;
   } catch {
     return null;
@@ -63,10 +63,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     ownerEmail: users.email,
     ownerName: users.displayName,
     ownerIsActive: users.isActive,
+    trashedAt: profiles.trashedAt,
   }).from(profiles).innerJoin(users, eq(profiles.ownerId, users.id)).where(eq(profiles.id, profileId)).limit(1);
   if (!existingProfile) return new Response("Perfil no encontrado.", { status: 404 });
+  if (existingProfile.trashedAt) return new Response("El anuncio está en la papelera. Restáuralo antes de cambiar su estado.", { status: 409 });
   if (status === "approved" && !existingProfile.ownerIsActive) {
-    const destination = new URL(safeReturnTo(formData.get("return_to")) ?? "/admin/perfiles", request.url);
+    const destination = new URL(safeReturnTo(formData.get("return_to")) ?? "/admin/anuncios-publicaciones", request.url);
     destination.searchParams.set("notice", "inactive_owner");
     return NextResponse.redirect(destination, 303);
   }
@@ -119,5 +121,5 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (cityNotifications > 0) console.info("Profile city subscribers notified", { profileId, cityNotifications });
   }
 
-  return NextResponse.redirect(new URL(safeReturnTo(formData.get("return_to")) ?? "/admin/perfiles", request.url), 303);
+  return NextResponse.redirect(new URL(safeReturnTo(formData.get("return_to")) ?? "/admin/anuncios-publicaciones", request.url), 303);
 }

@@ -19,7 +19,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
   const { profileId, mediaId } = await params;
   const record = await findProfileMedia(mediaId);
-  if (!record || record.media.profileId !== profileId || record.profile.ownerId !== user.id) {
+  if (!record || record.media.profileId !== profileId || record.profile.ownerId !== user.id || record.profile.trashedAt) {
     return NextResponse.json({ error: "No tienes permiso para eliminar esta foto." }, { status: 403 });
   }
 

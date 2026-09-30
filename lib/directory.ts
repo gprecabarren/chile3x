@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, inArray, or } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, isNull, or } from "drizzle-orm";
 import { cache } from "react";
 import { cityDirectory, getCityBySlug, regions } from "@/app/locations";
 import { getDb } from "@/db";
@@ -174,6 +174,7 @@ export async function getPublicProfiles(options: PublicProfileOptions = {}) {
   if (options.profileIds && options.profileIds.length === 0) return [] as PublicProfile[];
 
   const conditions = [];
+  conditions.push(isNull(profiles.trashedAt));
   if (!options.includeUnapproved) conditions.push(publicProfileCondition);
   if (options.type) conditions.push(eq(profiles.type, options.type));
   if (options.city) conditions.push(eq(profiles.city, options.city));

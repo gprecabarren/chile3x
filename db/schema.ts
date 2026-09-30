@@ -364,11 +364,16 @@ export const profiles = sqliteTable("profiles", {
   isFeatured: integer("is_featured", { mode: "boolean" }).notNull().default(false),
   isDemo: integer("is_demo", { mode: "boolean" }).notNull().default(false),
   ownerHiddenAt: text("owner_hidden_at"),
+  trashedAt: text("trashed_at"),
+  trashedByKind: text("trashed_by_kind", { enum: ["self", "admin"] }),
+  trashedByActorId: text("trashed_by_actor_id"),
+  trashedByAdminLogin: text("trashed_by_admin_login"),
   createdAt,
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
   index("profiles_status_region_city_idx").on(table.status, table.region, table.city),
   index("profiles_owner_idx").on(table.ownerId),
+  index("profiles_trash_date_idx").on(table.trashedAt),
   uniqueIndex("profiles_handle_unique").on(table.handle),
 ]);
 

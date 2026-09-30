@@ -1691,3 +1691,44 @@ input[type="submit"] { text-transform: none !important; letter-spacing: .015em; 
   .auth-register-card .account-identity-note { grid-column: 1 / -1; }
   .auth-register-card .registration-password-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
 }
+
+/* Papelera de anuncios: controles claros sin ocupar el espacio de moderación. */
+.account-profile-rule-note, .admin-profile-rule-note {
+  margin: 0 0 18px; padding: 11px 15px; border: 1px solid #3b4960;
+  border-left: 3px solid #8196bc; border-radius: 8px; color: #cbd4e4;
+  background: #121a29; font-size: 13px; line-height: 1.55;
+}
+.profile-trash-control { margin-top: 16px; border: 1px solid #684045; border-radius: 10px; background: #1b151c; }
+.profile-trash-control > summary, .profile-trash-actions summary, .profile-trash-history summary {
+  padding: 12px 15px; color: #f4d4d5; cursor: pointer; font-size: 14px; font-weight: 700;
+}
+.profile-trash-control form, .profile-trash-actions form { display: grid; gap: 12px; padding: 0 15px 16px; max-width: 520px; }
+.profile-trash-control p, .profile-trash-actions p { margin: 0; color: #cad1df; font-size: 13px; line-height: 1.5; }
+.profile-trash-control label, .profile-trash-actions label { display: grid; gap: 7px; color: #e7eaf2; font-size: 13px; font-weight: 650; }
+.profile-trash-control input, .profile-trash-actions input {
+  width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; border: 1px solid #606a7d;
+  border-radius: 7px; color: #fff; background: #090d15; font: inherit; font-size: 16px;
+}
+.profile-trash-control .button, .profile-trash-actions .button { min-height: 44px; width: fit-content; padding: 10px 16px; font-size: 13px; }
+.admin-profile-trash-bar { width: min(100% - 56px, 1184px); margin: 0 auto 12px; }
+.profile-trash-list { display: grid; gap: 16px; }
+.profile-trash-card { min-width: 0; padding: 20px; border: 1px solid #465067; border-radius: 12px; background: #111723; }
+.profile-trash-card-main { min-width: 0; }
+.profile-trash-card h2 { margin: 9px 0; color: #fff; font-size: clamp(22px, 3vw, 28px); }
+.profile-trash-card p { overflow-wrap: anywhere; margin: 6px 0; color: #c9d0de; font-size: 13px; line-height: 1.5; }
+.profile-trash-card a { color: #b7cffb; }
+.profile-trash-badge { display: inline-block; padding: 5px 9px; border-radius: 6px; color: #ffced1; background: #532329; font-size: 12px; font-weight: 750; }
+.profile-trash-history { margin: 14px 0; border-top: 1px solid #364154; }
+.profile-trash-history summary { color: #cbd5e9; padding-left: 0; }
+.profile-trash-history ol { margin: 0 0 11px; padding-left: 24px; color: #bdc8d9; font-size: 12px; line-height: 1.8; }
+.profile-trash-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: start; }
+.profile-trash-actions > details { min-width: min(100%, 280px); flex: 1 1 280px; border: 1px solid #405a4e; border-radius: 9px; background: #101c1a; }
+.profile-trash-actions > details.is-destructive { border-color: #674045; background: #201519; }
+.profile-trash-actions summary { color: #eaf1e9; }
+@media (max-width: 620px) {
+  .profile-trash-card { padding: 15px; }
+  .profile-trash-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .profile-trash-actions > details { min-width: 0; }
+  .profile-trash-control .button, .profile-trash-actions .button { width: 100%; justify-content: center; }
+  .admin-profile-trash-bar { width: calc(100% - 32px); }
+}

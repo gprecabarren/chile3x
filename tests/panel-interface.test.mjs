@@ -17,10 +17,10 @@ const [layoutSource, dashboardSource, cssSource, panelCssSource, adminLayoutSour
 ]);
 
 test("admin summary cards link to their existing filtered views", () => {
-  assert.match(dashboardSource, /href: "\/admin\/perfiles"/);
-  assert.match(dashboardSource, /href: "\/admin\/perfiles\?estado=pending"/);
+  assert.match(dashboardSource, /href: "\/admin\/anuncios-publicaciones"/);
+  assert.match(dashboardSource, /href: "\/admin\/anuncios-publicaciones\?estado=pending"/);
   assert.match(dashboardSource, /href: "\/admin\/medios\?estado=pending"/);
-  assert.match(dashboardSource, /href: "\/admin\/perfiles\?estado=paused"/);
+  assert.match(dashboardSource, /href: "\/admin\/anuncios-publicaciones\?estado=paused"/);
   assert.match(dashboardSource, /className="admin-stat-link"/);
 });
 

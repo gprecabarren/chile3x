@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db";
 import { profiles } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin, getCurrentUser } from "@/lib/auth";
@@ -15,7 +15,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pro
   if (!record) notFound();
 
   const [user, admin] = await Promise.all([getCurrentUser(), getCurrentAdmin()]);
-  if (user?.id !== record.profile.ownerId && !admin) notFound();
+  if ((user?.id !== record.profile.ownerId || Boolean(record.profile.trashedAt)) && !admin) notFound();
 
   const { env } = await import("cloudflare:workers");
   if (!env.MEDIA) return new Response("El almacenamiento privado no está disponible.", { status: 503 });
@@ -37,7 +37,7 @@ async function getManager(profileId: string) {
   const [user, admin] = await Promise.all([getCurrentUser(), getCurrentAdmin()]);
   if (admin) return { allowed: true, admin };
   if (!user) return { allowed: false, admin: null };
-  const [profile] = await (await getDb()).select({ ownerId: profiles.ownerId }).from(profiles).where(eq(profiles.id, profileId)).limit(1);
+  const [profile] = await (await getDb()).select({ ownerId: profiles.ownerId }).from(profiles).where(and(eq(profiles.id, profileId), isNull(profiles.trashedAt))).limit(1);
   return { allowed: profile?.ownerId === user.id, admin: null };
 }
 

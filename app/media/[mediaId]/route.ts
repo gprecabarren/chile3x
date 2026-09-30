@@ -12,12 +12,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ medi
 
   const [user, admin] = await Promise.all([getCurrentUser(), getCurrentAdmin()]);
   const canModerateMedia = adminHasCapability(admin, "media.moderate");
-  const isPublic = record.ownerIsActive && record.media.visibility === "public" && record.media.moderationStatus === "approved" && record.profile.status === "approved";
+  const isPublic = record.ownerIsActive && !record.profile.trashedAt && record.media.visibility === "public" && record.media.moderationStatus === "approved" && record.profile.status === "approved";
   if (!isPublic) {
     // Legacy private media is only retained as a migration source. Access for
     // buyers is served exclusively by /contenido/:id, whose authorization is
     // based on the account-owned collection rather than a listing status.
-    if (user?.id !== record.profile.ownerId && !canModerateMedia) notFound();
+    if ((user?.id !== record.profile.ownerId || Boolean(record.profile.trashedAt)) && !canModerateMedia) notFound();
   }
 
   const { env } = await import("cloudflare:workers");

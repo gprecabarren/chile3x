@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { listingPeriods, profiles } from "@/db/schema";
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const action = (await request.formData()).get("action");
   const db = await getDb();
   const [profile] = await db.select({ id: profiles.id, status: profiles.status }).from(profiles)
-    .where(and(eq(profiles.id, profileId), eq(profiles.ownerId, user.id))).limit(1);
+    .where(and(eq(profiles.id, profileId), eq(profiles.ownerId, user.id), isNull(profiles.trashedAt))).limit(1);
   const [period] = await db.select().from(listingPeriods).where(eq(listingPeriods.profileId, profileId)).orderBy(desc(listingPeriods.createdAt)).limit(1);
 
   if (!profile || !period) {

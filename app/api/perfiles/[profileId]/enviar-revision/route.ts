@@ -1,4 +1,4 @@
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, isNull, or } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { profiles } from "@/db/schema";
@@ -23,6 +23,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }).where(and(
     eq(profiles.id, profileId),
     eq(profiles.ownerId, user.id),
+    isNull(profiles.trashedAt),
     or(eq(profiles.status, "draft"), eq(profiles.status, "rejected")),
   )).returning({ id: profiles.id });
 

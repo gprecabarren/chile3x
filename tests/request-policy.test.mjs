@@ -45,7 +45,7 @@ test("return links reject external or malformed destinations and preserve filter
   for (const value of [null, "", "https://[", "https://evil.test/admin", "//evil.test/admin", "/\\evil.test/admin", "/\t/evil.test/admin", "/admin/../../outside", "/administrador"]) {
     assert.equal(safeAdminReturnTo(value), "/admin", String(value));
   }
-  assert.equal(safeAdminReturnTo("/admin/perfiles?page=2#anuncio"), "/admin/perfiles?page=2#anuncio");
+  assert.equal(safeAdminReturnTo("/admin/anuncios-publicaciones?page=2#anuncio"), "/admin/anuncios-publicaciones?page=2#anuncio");
   assert.equal(safeAccountReturnTo("/perfil/demo?return_to=x#resenas"), "/perfil/demo?return_to=x#resenas");
   assert.equal(safeAccountReturnTo("/mi-cuenta/nuevo-perfil"), "/mi-cuenta/nuevo-perfil");
   assert.equal(safeAccountReturnTo("/admin"), "/mi-cuenta");

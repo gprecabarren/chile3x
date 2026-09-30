@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { agencyMembershipRequests, profiles } from "@/db/schema";
@@ -20,8 +20,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const message = typeof messageValue === "string" ? messageValue.trim().slice(0, 240) : null;
   const db = await getDb();
   const [[agency], [escort]] = await Promise.all([
-    db.select({ id: profiles.id }).from(profiles).where(and(eq(profiles.id, agencyProfileId), eq(profiles.ownerId, user.id), eq(profiles.type, "agency"))).limit(1),
-    db.select({ id: profiles.id, ownerId: profiles.ownerId }).from(profiles).where(and(eq(profiles.id, escortProfileId), eq(profiles.type, "escort"), eq(profiles.status, "approved"))).limit(1),
+    db.select({ id: profiles.id }).from(profiles).where(and(eq(profiles.id, agencyProfileId), eq(profiles.ownerId, user.id), eq(profiles.type, "agency"), isNull(profiles.trashedAt))).limit(1),
+    db.select({ id: profiles.id, ownerId: profiles.ownerId }).from(profiles).where(and(eq(profiles.id, escortProfileId), eq(profiles.type, "escort"), eq(profiles.status, "approved"), isNull(profiles.trashedAt))).limit(1),
   ]);
   if (!agency || !escort || agencyProfileId === escortProfileId) return NextResponse.redirect(new URL("/mi-cuenta?notice=invite_error", request.url), 303);
   await db.insert(agencyMembershipRequests).values({

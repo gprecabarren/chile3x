@@ -47,7 +47,7 @@ test("account and listing origin remain attributable and filterable", async () =
   const [schema, migration, accountList, accountDetails, listingList, register, adminAccount] = await Promise.all([
     source("db/schema.ts"), source("drizzle/0035_creation_provenance.sql"),
     source("app/admin/cuentas/page.tsx"), source("app/admin/cuentas/[userId]/page.tsx"),
-    source("app/admin/perfiles/page.tsx"), source("app/api/auth/register/route.ts"),
+    source("app/admin/anuncios-publicaciones/page.tsx"), source("app/api/auth/register/route.ts"),
     source("app/api/admin/users/route.ts"),
   ]);
   assert.match(schema, /creationSource: text\("creation_source"/);

@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db";
 import { listingPeriods, profileDetails, profileServices, profileTags as profileTagRows, profiles, users } from "@/db/schema";
 import { createAdminNotification } from "@/lib/admin-notifications";
@@ -401,9 +401,10 @@ export async function createProfile(ownerId: string, submission: ProfileSubmissi
     const [existingEscort] = await db.select({ id: profiles.id }).from(profiles).where(and(
       eq(profiles.ownerId, ownerId),
       eq(profiles.type, "escort"),
+      isNull(profiles.trashedAt),
     )).limit(1);
     if (existingEscort) {
-      throw new ProfileValidationError("Esta cuenta ya administra un anuncio Escort. Puedes crear varios anuncios de Agencia o Arriendo, pero solo un anuncio Escort por cuenta.");
+      throw new ProfileValidationError("Esta cuenta ya tiene un anuncio Escort activo. Puede tener varios anuncios de Agencia o Arriendo, pero solo un Escort fuera de la papelera.");
     }
   }
   const id = `prf_${crypto.randomUUID()}`;
@@ -427,7 +428,7 @@ export async function createProfile(ownerId: string, submission: ProfileSubmissi
     });
   } catch (error) {
     if (String(error).includes("escort_profile_owner_conflict")) {
-      throw new ProfileValidationError("Esta cuenta ya administra un anuncio Escort. Puedes crear varios anuncios de Agencia o Arriendo, pero solo un anuncio Escort por cuenta.");
+      throw new ProfileValidationError("Esta cuenta ya tiene un anuncio Escort activo. Puede tener varios anuncios de Agencia o Arriendo, pero solo un Escort fuera de la papelera.");
     }
     throw error;
   }
@@ -464,7 +465,7 @@ export async function updateProfile(profileId: string, ownerId: string, submissi
   const db = await getDb();
   const [existing] = await db.select({ profile: profiles, details: profileDetails }).from(profiles)
     .leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id))
-    .where(and(eq(profiles.id, profileId), eq(profiles.ownerId, ownerId))).limit(1);
+    .where(and(eq(profiles.id, profileId), eq(profiles.ownerId, ownerId), isNull(profiles.trashedAt))).limit(1);
 
   if (!existing) {
     return { updated: false, contactOnly: false };
@@ -529,7 +530,7 @@ export async function updateProfile(profileId: string, ownerId: string, submissi
     && sameValues(sorted(savedServices.filter((item) => item.kind === "additional").map((item) => item.service)), sorted(submission.servicesAdditional));
   const status = contactOnly ? "approved" : existing.profile.status === "paused" ? "paused" : submission.intent === "submit" || existing.profile.status === "approved" ? "pending" : existing.profile.status;
 
-  await db.update(profiles).set({
+  const updated = await db.update(profiles).set({
     status,
     handle,
     displayName: submission.displayName,
@@ -543,7 +544,8 @@ export async function updateProfile(profileId: string, ownerId: string, submissi
     tier: submission.tier,
     verificationStatus: contactOnly ? existing.profile.verificationStatus : status === "pending" ? "in_review" : "unreviewed",
     updatedAt,
-  }).where(eq(profiles.id, profileId));
+  }).where(and(eq(profiles.id, profileId), isNull(profiles.trashedAt))).returning({ id: profiles.id });
+  if (!updated.length) return { updated: false, contactOnly: false };
 
   await db.insert(profileDetails).values({ profileId, ...submission.details, updatedAt }).onConflictDoUpdate({
     target: profileDetails.profileId,

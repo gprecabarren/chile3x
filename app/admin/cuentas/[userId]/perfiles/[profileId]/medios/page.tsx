@@ -29,7 +29,7 @@ export default async function AdminProfileMediaPage({ params, searchParams }: {
   if (!profile) notFound();
   const [media, usage, settings, query] = await Promise.all([getProfileMedia(profileId), getMediaUsage(), getSiteSettings(), searchParams]);
   const accountHref = `/admin/cuentas/${encodeURIComponent(userId)}`;
-  const moderationHref = `/admin/perfiles?q=${encodeURIComponent(profile.ownerEmail)}&return_to=${encodeURIComponent(accountHref)}`;
+  const moderationHref = `/admin/anuncios-publicaciones?q=${encodeURIComponent(profile.ownerEmail)}&return_to=${encodeURIComponent(accountHref)}`;
   return <AdminShell user={admin}><div className="admin-content">
     <AdminPageHeading eyebrow="CREACIÓN ASISTIDA · MEDIOS" title={`Fotos y videos de ${profile.displayName}`} description={`Cuenta propietaria: ${profile.ownerEmail}. Las cargas de administración se aprueban al instante, pero el anuncio solo será público al aprobarlo en moderación.`} backHref={accountHref} />
     {query.notice === "profile_created" && <p className="admin-success" role="status">El anuncio se creó para esta cuenta. Ahora agrega la foto principal y los archivos de galería.</p>}

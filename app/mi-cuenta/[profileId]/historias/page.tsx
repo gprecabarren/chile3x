@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { profiles } from "@/db/schema";
@@ -13,7 +13,7 @@ export default async function ProfileStoriesPage({ params }: { params: Promise<{
   const user = await getCurrentUser();
   if (!user) redirect("/ingresar?return_to=/mi-cuenta");
   const { profileId } = await params;
-  const [profile] = await (await getDb()).select({ id: profiles.id, displayName: profiles.displayName, status: profiles.status }).from(profiles).where(and(eq(profiles.id, profileId), eq(profiles.ownerId, user.id))).limit(1);
+  const [profile] = await (await getDb()).select({ id: profiles.id, displayName: profiles.displayName, status: profiles.status }).from(profiles).where(and(eq(profiles.id, profileId), eq(profiles.ownerId, user.id), isNull(profiles.trashedAt))).limit(1);
   if (!profile) notFound();
   if (profile.status !== "approved") redirect(`/mi-cuenta/${profileId}/editar`);
   const stories = await getOwnerStories(profileId);

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db";
 import {
   exclusiveContentAccess,
@@ -72,7 +72,7 @@ export async function getSellerExclusiveContent(ownerId: string) {
     handle: profiles.handle,
     status: profiles.status,
     type: profiles.type,
-  }).from(profiles).where(and(eq(profiles.id, collection.profileId), eq(profiles.ownerId, ownerId))).limit(1) : [];
+  }).from(profiles).where(and(eq(profiles.id, collection.profileId), eq(profiles.ownerId, ownerId), isNull(profiles.trashedAt))).limit(1) : [];
   const [media, grants, escortProfiles] = await Promise.all([
     db.select().from(exclusiveContentMedia).where(eq(exclusiveContentMedia.collectionId, collection.id))
       .orderBy(asc(exclusiveContentMedia.sortOrder), asc(exclusiveContentMedia.createdAt)),
@@ -84,7 +84,7 @@ export async function getSellerExclusiveContent(ownerId: string) {
     }).from(exclusiveContentAccess).innerJoin(users, eq(exclusiveContentAccess.userId, users.id))
       .where(eq(exclusiveContentAccess.collectionId, collection.id)).orderBy(desc(exclusiveContentAccess.createdAt)),
     db.select({ id: profiles.id, displayName: profiles.displayName, handle: profiles.handle, status: profiles.status })
-      .from(profiles).where(and(eq(profiles.ownerId, ownerId), eq(profiles.type, "escort"))).limit(1),
+      .from(profiles).where(and(eq(profiles.ownerId, ownerId), eq(profiles.type, "escort"), isNull(profiles.trashedAt))).limit(1),
   ]);
   return {
     collection,
@@ -103,6 +103,7 @@ export async function linkExclusiveContentToEscort(ownerId: string, profileId: s
       eq(profiles.id, profileId),
       eq(profiles.ownerId, ownerId),
       eq(profiles.type, "escort"),
+      isNull(profiles.trashedAt),
     )).limit(1);
     if (!profile) throw new Error("El contenido exclusivo solo se puede vincular a un anuncio Escort propio.");
   }

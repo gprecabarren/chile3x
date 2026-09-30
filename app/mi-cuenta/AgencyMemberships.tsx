@@ -1,4 +1,4 @@
-import { and, eq, inArray, or } from "drizzle-orm";
+import { and, eq, inArray, isNull, or } from "drizzle-orm";
 import { getDb } from "@/db";
 import { agencyMembers, agencyMembershipRequests, profiles } from "@/db/schema";
 
@@ -6,14 +6,14 @@ type AgencyMembershipsProps = { ownerId: string };
 
 export async function AgencyMemberships({ ownerId }: AgencyMembershipsProps) {
   const db = await getDb();
-  const ownedProfiles = await db.select().from(profiles).where(eq(profiles.ownerId, ownerId));
+  const ownedProfiles = await db.select().from(profiles).where(and(eq(profiles.ownerId, ownerId), isNull(profiles.trashedAt)));
   const agencyProfiles = ownedProfiles.filter((profile) => profile.type === "agency");
   const escortProfiles = ownedProfiles.filter((profile) => profile.type === "escort");
   const ownedIds = ownedProfiles.map((profile) => profile.id);
   if (!ownedIds.length) return null;
 
   const [availableEscorts, requests, memberships] = await Promise.all([
-    agencyProfiles.length ? db.select({ id: profiles.id, displayName: profiles.displayName, city: profiles.city }).from(profiles).where(and(eq(profiles.type, "escort"), eq(profiles.status, "approved"))) : Promise.resolve([]),
+    agencyProfiles.length ? db.select({ id: profiles.id, displayName: profiles.displayName, city: profiles.city }).from(profiles).where(and(eq(profiles.type, "escort"), eq(profiles.status, "approved"), isNull(profiles.trashedAt))) : Promise.resolve([]),
     db.select().from(agencyMembershipRequests).where(or(inArray(agencyMembershipRequests.agencyProfileId, ownedIds), inArray(agencyMembershipRequests.escortProfileId, ownedIds))),
     db.select().from(agencyMembers).where(or(inArray(agencyMembers.agencyProfileId, ownedIds), inArray(agencyMembers.memberProfileId, ownedIds))),
   ]);

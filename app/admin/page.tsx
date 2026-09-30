@@ -1,4 +1,4 @@
-import { count, eq, isNull } from "drizzle-orm";
+import { and, count, eq, isNull } from "drizzle-orm";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
@@ -35,9 +35,9 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
   const statsPromise = canViewSummary ? (async () => {
     const db = await getDb();
     return Promise.all([
-      db.select({ total: count() }).from(profiles),
-      db.select({ total: count() }).from(profiles).where(eq(profiles.status, "pending")),
-      db.select({ total: count() }).from(profiles).where(eq(profiles.status, "paused")),
+      db.select({ total: count() }).from(profiles).where(isNull(profiles.trashedAt)),
+      db.select({ total: count() }).from(profiles).where(and(eq(profiles.status, "pending"), isNull(profiles.trashedAt))),
+      db.select({ total: count() }).from(profiles).where(and(eq(profiles.status, "paused"), isNull(profiles.trashedAt))),
       db.select({ total: count() }).from(profileMedia).where(eq(profileMedia.moderationStatus, "pending")),
       db.select({ total: count() }).from(exclusiveContentMedia).where(eq(exclusiveContentMedia.moderationStatus, "pending")),
       db.select({ total: count() }).from(adminNotifications).where(isNull(adminNotifications.readAt)),
@@ -57,14 +57,14 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
       label: "Anuncios registrados",
       value: allProfiles?.total ?? 0,
       hint: "Incluye borradores, anuncios en revisión y publicados.",
-      href: "/admin/perfiles",
+      href: "/admin/anuncios-publicaciones",
       action: "Ver todos los anuncios",
     },
     {
       label: "Pendientes de revisión",
       value: pendingProfiles?.total ?? 0,
       hint: "Revisa identidad fuera del sitio y aprueba solo material moderado.",
-      href: "/admin/perfiles?estado=pending",
+      href: "/admin/anuncios-publicaciones?estado=pending",
       action: "Revisar pendientes",
     },
     {
@@ -78,7 +78,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
       label: "Pausados",
       value: pausedProfiles?.total ?? 0,
       hint: "Los períodos de publicación se administran manualmente por ahora.",
-      href: "/admin/perfiles?estado=paused",
+      href: "/admin/anuncios-publicaciones?estado=paused",
       action: "Ver anuncios pausados",
     },
     {

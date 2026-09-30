@@ -1,4 +1,4 @@
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, isNull } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { profileStatuses, profiles } from "@/db/schema";
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 
   await purgeExpiredImageStories();
   const db = await getDb();
-  const [profile] = await db.select({ id: profiles.id }).from(profiles).where(and(eq(profiles.id, profileId), eq(profiles.ownerId, user.id), eq(profiles.status, "approved"))).limit(1);
+  const [profile] = await db.select({ id: profiles.id }).from(profiles).where(and(eq(profiles.id, profileId), eq(profiles.ownerId, user.id), eq(profiles.status, "approved"), isNull(profiles.trashedAt))).limit(1);
   if (!profile) return response(request, formData, "story_error", 403);
 
   const activeStories = await db.select({ id: profileStatuses.id }).from(profileStatuses).where(and(eq(profileStatuses.profileId, profile.id), eq(profileStatuses.storyType, storyType), gt(profileStatuses.expiresAt, new Date().toISOString()))).limit(5);

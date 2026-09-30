@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { profileDetails, profileServices, profileTags, profiles } from "@/db/schema";
@@ -36,7 +36,7 @@ export default async function EditProfilePage({ params, searchParams }: { params
   const db = await getDb();
   const [row] = await db.select({ profile: profiles, details: profileDetails }).from(profiles)
     .leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id))
-    .where(and(eq(profiles.id, profileId), eq(profiles.ownerId, user.id))).limit(1);
+    .where(and(eq(profiles.id, profileId), eq(profiles.ownerId, user.id), isNull(profiles.trashedAt))).limit(1);
   if (!row) {
     notFound();
   }
@@ -59,6 +59,7 @@ export default async function EditProfilePage({ params, searchParams }: { params
         {query.notice === "shown" && <p className="account-success" role="status">El anuncio volvió a mostrarse según su estado de moderación.</p>}
         {query.notice === "contacts_saved" && <p className="account-success" role="status">WhatsApp, teléfono, correo y redes fueron actualizados inmediatamente. El anuncio conserva su aprobación.</p>}
         <section className="profile-visibility-panel"><div><p className="eyebrow">VISIBILIDAD</p><h2>{row.profile.ownerHiddenAt ? "Tu anuncio está oculto" : "Ocultar este anuncio"}</h2><p>Ocultarlo lo retira del directorio sin borrar sus datos, medios ni estado de revisión. Puedes volver a mostrarlo cuando quieras.</p></div><form action={`/api/perfiles/${profileId}/visibilidad`} method="post"><input name="return_to" type="hidden" value={`/mi-cuenta/${profileId}/editar`} /><input name="action" type="hidden" value={row.profile.ownerHiddenAt ? "show" : "hide"} /><button className="button button-outline" type="submit">{row.profile.ownerHiddenAt ? "Volver a mostrar" : "Ocultar anuncio"}</button></form></section>
+        <details className="profile-trash-control is-destructive"><summary>🗑 Eliminar este anuncio</summary><form action={`/api/perfiles/${profileId}/papelera`} method="post"><p>El aviso dejará de verse públicamente y saldrá de tu panel. Solo administración podrá restaurarlo.</p><label>Escribe ELIMINAR<input name="confirmation" required autoComplete="off" /></label><button className="button button-danger" type="submit">Confirmar eliminación</button></form></details>
         {query.notice === "submitted" && <ProfileSubmissionConfirmation profileId={profileId} profileType={row.profile.type} />}
         <ProfileForm
           action={`/api/perfiles/${profileId}`}

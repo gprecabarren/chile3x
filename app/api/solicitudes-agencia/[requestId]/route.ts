@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { agencyMembers, agencyMembershipRequests, profiles } from "@/db/schema";
@@ -18,8 +18,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const db = await getDb();
   const [requestRecord] = await db.select({ request: agencyMembershipRequests, ownerId: profiles.ownerId }).from(agencyMembershipRequests)
     .innerJoin(profiles, eq(agencyMembershipRequests.escortProfileId, profiles.id))
-    .where(and(eq(agencyMembershipRequests.id, requestId), eq(agencyMembershipRequests.status, "pending"), eq(profiles.ownerId, user.id))).limit(1);
+    .where(and(eq(agencyMembershipRequests.id, requestId), eq(agencyMembershipRequests.status, "pending"), eq(profiles.ownerId, user.id), isNull(profiles.trashedAt))).limit(1);
   if (!requestRecord) return NextResponse.redirect(new URL("/mi-cuenta?notice=invite_error", request.url), 303);
+  const [agency] = await db.select({ id: profiles.id }).from(profiles)
+    .where(and(eq(profiles.id, requestRecord.request.agencyProfileId), isNull(profiles.trashedAt))).limit(1);
+  if (!agency) return NextResponse.redirect(new URL("/mi-cuenta?notice=invite_error", request.url), 303);
   const updated = await db.update(agencyMembershipRequests).set({ status: action, respondedAt: new Date().toISOString() })
     .where(and(eq(agencyMembershipRequests.id, requestId), eq(agencyMembershipRequests.status, "pending"))).returning({ id: agencyMembershipRequests.id });
   if (action === "accepted" && updated.length) {

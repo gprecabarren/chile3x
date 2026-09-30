@@ -36,7 +36,7 @@ export async function notifyProfileCitySubscribers(profileId: string) {
     handle: profiles.handle,
     city: profiles.city,
     status: profiles.status,
-  }).from(profiles).where(eq(profiles.id, profileId)).limit(1);
+  }).from(profiles).where(and(eq(profiles.id, profileId), publicProfileCondition)).limit(1);
 
   if (!profile || profile.status !== "approved") return 0;
 

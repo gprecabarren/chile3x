@@ -66,7 +66,7 @@ function roleLabel(role: string) {
 function accountProfilesHref(email: string, returnTo = "/admin/cuentas", status?: string) {
   const params = new URLSearchParams({ q: email, return_to: returnTo });
   if (status) params.set("estado", status);
-  return `/admin/perfiles?${params.toString()}`;
+  return `/admin/anuncios-publicaciones?${params.toString()}`;
 }
 
 function readOption<T extends string>(value: string | undefined, allowed: readonly T[]) {
@@ -117,8 +117,8 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
   const requestedPage = readAdminPage(params.page);
 
   const searchPattern = `%${q}%`;
-  const hasAnyListing = sql<boolean>`exists (select 1 from profiles account_listing where account_listing.owner_id = ${users.id})`;
-  const hasPendingListing = sql<boolean>`exists (select 1 from profiles account_listing where account_listing.owner_id = ${users.id} and account_listing.status = 'pending')`;
+  const hasAnyListing = sql<boolean>`exists (select 1 from profiles account_listing where account_listing.owner_id = ${users.id} and account_listing.trashed_at is null)`;
+  const hasPendingListing = sql<boolean>`exists (select 1 from profiles account_listing where account_listing.owner_id = ${users.id} and account_listing.status = 'pending' and account_listing.trashed_at is null)`;
   const accountScope = and(
     q ? or(
       sql<boolean>`lower(coalesce(${users.displayName}, '')) like ${searchPattern}`,
@@ -138,8 +138,8 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
     filters.emailStatus === "verified" ? isNotNull(users.emailVerifiedAt) : filters.emailStatus === "unverified" ? isNull(users.emailVerifiedAt) : undefined,
     filters.document === "none" ? sql<boolean>`trim(coalesce(${users.documentNumber}, '')) = ''` : filters.document === "rut" ? and(eq(users.documentType, "rut"), sql<boolean>`trim(coalesce(${users.documentNumber}, '')) <> ''`) : filters.document === "foreign" ? and(eq(users.documentType, "foreign"), sql<boolean>`trim(coalesce(${users.documentNumber}, '')) <> ''`) : undefined,
     filters.listings === "with_listings" ? hasAnyListing : filters.listings === "without_listings" ? sql<boolean>`not (${hasAnyListing})` : filters.listings === "pending" ? hasPendingListing : undefined,
-    filters.listingStatus ? sql<boolean>`exists (select 1 from profiles account_listing where account_listing.owner_id = ${users.id} and account_listing.status = ${filters.listingStatus})` : undefined,
-    filters.listingType ? sql<boolean>`exists (select 1 from profiles account_listing where account_listing.owner_id = ${users.id} and account_listing.type = ${filters.listingType})` : undefined,
+    filters.listingStatus ? sql<boolean>`exists (select 1 from profiles account_listing where account_listing.owner_id = ${users.id} and account_listing.status = ${filters.listingStatus} and account_listing.trashed_at is null)` : undefined,
+    filters.listingType ? sql<boolean>`exists (select 1 from profiles account_listing where account_listing.owner_id = ${users.id} and account_listing.type = ${filters.listingType} and account_listing.trashed_at is null)` : undefined,
     filters.createdFrom ? sql<boolean>`substr(${users.createdAt}, 1, 10) >= ${filters.createdFrom}` : undefined,
     filters.createdTo ? sql<boolean>`substr(${users.createdAt}, 1, 10) <= ${filters.createdTo}` : undefined,
   );
@@ -176,7 +176,7 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
     agencyProfileCount: sql<number>`coalesce(sum(case when ${profiles.type} = 'agency' then 1 else 0 end), 0)`,
     rentalProfileCount: sql<number>`coalesce(sum(case when ${profiles.type} = 'rental' then 1 else 0 end), 0)`,
   }).from(users)
-    .leftJoin(profiles, eq(profiles.ownerId, users.id))
+    .leftJoin(profiles, and(eq(profiles.ownerId, users.id), isNull(profiles.trashedAt)))
     .where(accountScope)
     .groupBy(users.id)
     .orderBy(desc(users.createdAt))

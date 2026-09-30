@@ -92,7 +92,7 @@ export default async function Home() {
     .sort((left, right) => left.distance - right.distance)
     .slice(0, 3) : [];
   const [viewer, admin] = await Promise.all([getCurrentUser(), getCurrentAdmin()]);
-  const publishHref = viewer ? "/mi-cuenta/nuevo-perfil" : admin ? "/admin/perfiles" : "/registro";
+  const publishHref = viewer ? "/mi-cuenta/nuevo-perfil" : admin ? "/admin/anuncios-publicaciones" : "/registro";
   const [featuredProfileRows, stories, cityEscortCounts] = await Promise.all([
     getFeaturedProfiles(6, viewer?.id),
     getActiveStories({ viewerId: viewer?.id }),

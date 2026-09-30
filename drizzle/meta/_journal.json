@@ -260,6 +260,13 @@
       "when": 1790741594577,
       "tag": "0036_bronze_tier",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "6",
+      "when": 1790805880348,
+      "tag": "0037_loud_captain_america",
+      "breakpoints": true
     }
   ]
 }

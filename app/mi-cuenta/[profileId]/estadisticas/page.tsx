@@ -1,4 +1,4 @@
-import { and, asc, count, eq, gte, sql } from "drizzle-orm";
+import { and, asc, count, eq, gte, isNull, sql } from "drizzle-orm";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
@@ -28,7 +28,7 @@ export default async function ProfileStatisticsPage({ params, searchParams }: { 
   const db = await getDb();
   const [profile] = await db.select({ id: profiles.id, displayName: profiles.displayName, slug: profiles.slug, handle: profiles.handle, status: profiles.status })
     .from(profiles)
-    .where(and(eq(profiles.id, profileId), eq(profiles.ownerId, user.id)))
+    .where(and(eq(profiles.id, profileId), eq(profiles.ownerId, user.id), isNull(profiles.trashedAt)))
     .limit(1);
 
   if (!profile) redirect("/mi-cuenta");

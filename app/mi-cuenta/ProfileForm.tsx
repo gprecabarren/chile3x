@@ -190,7 +190,7 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
             {typeLocked ? <><input name="type" type="hidden" value={type} /><span className="profile-type-locked"><strong>{profileTypeLabel(type)}</strong><small>El tipo queda definido al crear el anuncio. Para otro tipo, crea una publicación nueva.</small></span></> : <select name="type" value={type} onChange={(event) => setType(event.target.value as ProfileType)}>
               {availableProfileTypes.map((item) => <option key={item} value={item}>{profileTypeLabel(item)}</option>)}
             </select>}
-            {!typeLocked && !allowEscort && <small>Esta cuenta ya tiene un anuncio Escort. Puedes crear agencias o arriendos adicionales.</small>}
+            {!typeLocked && !allowEscort && <small>Ya tienes un Escort activo. Puedes crear varias agencias o arriendos.</small>}
           </label>
           <label>
             Nombre visible

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db";
 import { profiles } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
@@ -14,7 +14,7 @@ export default async function NewProfilePage({ searchParams }: { searchParams: P
     redirect("/ingresar?return_to=/mi-cuenta/nuevo-perfil");
   }
   const [params, db] = await Promise.all([searchParams, getDb()]);
-  const [escort] = await db.select({ id: profiles.id }).from(profiles).where(and(eq(profiles.ownerId, user.id), eq(profiles.type, "escort"))).limit(1);
+  const [escort] = await db.select({ id: profiles.id }).from(profiles).where(and(eq(profiles.ownerId, user.id), eq(profiles.type, "escort"), isNull(profiles.trashedAt))).limit(1);
 
   return (
     <AccountShell user={user}>

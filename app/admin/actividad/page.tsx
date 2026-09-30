@@ -119,7 +119,7 @@ function Changes({ beforeData, afterData, metadata }: { beforeData: string | nul
 function entityHref(type: string, id: string | null, label: string | null, returnTo: string) {
   if (!id) return null;
   if (type === "account") return `/admin/cuentas/${encodeURIComponent(id)}?return_to=${encodeURIComponent(returnTo)}`;
-  if (type === "profile") return `/admin/perfiles?q=${encodeURIComponent(label ?? id)}&return_to=${encodeURIComponent(returnTo)}`;
+  if (type === "profile") return `/admin/anuncios-publicaciones?q=${encodeURIComponent(label ?? id)}&return_to=${encodeURIComponent(returnTo)}`;
   if (type === "news") return `/admin/noticias?edit=${encodeURIComponent(id)}`;
   if (type === "report" || type === "report_evidence") return "/admin/reportes";
   if (type === "bug_report") return "/admin/bugs";
@@ -262,14 +262,14 @@ export default async function AdminActivityPage({ searchParams }: { searchParams
       <form className="admin-notification-read-all" action="/api/admin/notificaciones" method="post"><input type="hidden" name="intent" value="all" /><input type="hidden" name="return_to" value="/admin/actividad?notice=notifications_read" /><button type="submit">Marcar todas como leídas</button></form>
       {notificationRows.length ? <div className="admin-notification-list">{notificationRows.map((notification) => <article className={notification.readAt ? "is-read" : "is-unread"} key={notification.id}>
         <div><span>{notification.kind === "account_registered" ? "Nueva cuenta" : notification.kind === "profile_created" ? "Anuncio creado" : "Anuncio modificado"}</span><strong>{notification.profileName ?? notification.actorName ?? (notification.actorUsername ? `@${notification.actorUsername}` : notification.actorEmail) ?? "Usuario de Chile3X"}</strong><p>{notification.summary}</p><time dateTime={activityInstant(notification.createdAt)}>{activityDate(notification.createdAt)}</time></div>
-        <nav>{notification.actorUserId && <Link href={`/admin/cuentas/${encodeURIComponent(notification.actorUserId)}`}>Ver cuenta</Link>}{notification.profileId && <Link href={`/admin/perfiles?q=${encodeURIComponent(notification.profileName ?? notification.profileId)}`}>Ver anuncio</Link>}{!notification.readAt && <form action="/api/admin/notificaciones" method="post"><input type="hidden" name="notification_id" value={notification.id} /><input type="hidden" name="return_to" value="/admin/actividad?notice=notifications_read" /><button type="submit">Marcar leída</button></form>}</nav>
+        <nav>{notification.actorUserId && <Link href={`/admin/cuentas/${encodeURIComponent(notification.actorUserId)}`}>Ver cuenta</Link>}{notification.profileId && <Link href={`/admin/anuncios-publicaciones?q=${encodeURIComponent(notification.profileName ?? notification.profileId)}`}>Ver anuncio</Link>}{!notification.readAt && <form action="/api/admin/notificaciones" method="post"><input type="hidden" name="notification_id" value={notification.id} /><input type="hidden" name="return_to" value="/admin/actividad?notice=notifications_read" /><button type="submit">Marcar leída</button></form>}</nav>
       </article>)}</div> : <p className="admin-media-empty">No hay notificaciones que coincidan con estos filtros.</p>}
     </details>
     <details className="admin-whatsapp-clicks" open>
       <summary><span><strong>Clics únicos en WhatsApp</strong><small>Últimos 50 registros diarios por anuncio y navegador</small></span><b>{whatsappClicks.length}</b></summary>
       <p>La cuenta, ubicación aproximada, dispositivo y ruta solo se agregan cuando la persona aceptó la medición. Sin ese permiso se conserva únicamente un identificador opaco para el conteo diario; nunca se guarda la IP en este registro.</p>
       {whatsappClicks.length ? <div className="admin-whatsapp-click-list">{whatsappClicks.map((click) => <article key={click.id}>
-        <div><strong>{click.profileName}</strong><Link href={`/admin/perfiles?q=${encodeURIComponent(click.profileName)}`}>Abrir anuncio</Link></div>
+        <div><strong>{click.profileName}</strong><Link href={`/admin/anuncios-publicaciones?q=${encodeURIComponent(click.profileName)}`}>Abrir anuncio</Link></div>
         <dl><div><dt>Persona</dt><dd>{click.viewerUserId ? `${click.viewerName ?? click.viewerUsername ?? "Cuenta Chile3X"}${click.viewerEmail ? ` · ${click.viewerEmail}` : ""}` : "Visitante anónimo"}</dd></div><div><dt>Ubicación aproximada</dt><dd>{[click.city, click.region, countryName(click.countryCode)].filter(Boolean).join(", ") || "No disponible"}</dd></div><div><dt>Dispositivo</dt><dd>{click.deviceType === "mobile" ? "Móvil" : click.deviceType === "tablet" ? "Tablet" : click.deviceType === "desktop" ? "Computador" : "No identificado"}</dd></div><div><dt>Fecha</dt><dd>{activityDate(click.createdAt)}</dd></div>{click.referrerPath && <div><dt>Origen</dt><dd>{click.referrerPath}</dd></div>}</dl>
       </article>)}</div> : <p className="admin-media-empty">Aún no existen clics registrados en WhatsApp.</p>}
     </details>

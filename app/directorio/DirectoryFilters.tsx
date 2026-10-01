@@ -65,10 +65,10 @@ export function DirectoryFilters({ action, filters, pinnedCity, pinnedRegion, sh
   return (
     <form className="directory-filter-form" action={action} method="get">
       <section className="directory-filters" aria-label="Filtros avanzados">
-      <div className="filter-heading"><div><p className="eyebrow">BUSCADOR DE ESCORTS</p><h2>Encuentra con más precisión</h2><p>Elige una región o ciudad y afina características y servicios. Nombre, categoría y edad están en el filtro rápido de abajo.</p></div></div>
+      <div className="filter-heading"><div><p className="eyebrow">BUSCADOR DE ESCORTS</p><h2>Encuentra con más precisión</h2><p>{pinnedCity ? "Afina apariencia y servicios. Nombre, categoría y edad están en el filtro rápido." : "Elige una región o ciudad y afina características y servicios. Nombre, categoría y edad están en el filtro rápido de abajo."}</p></div></div>
       <button className="filter-mobile-toggle" type="button" aria-expanded={showMobileFilters} aria-controls="directory-filter-controls" onClick={() => setMobileFilterOpen(!showMobileFilters)}>
         <span>{showMobileFilters ? "Ocultar filtros" : "Mostrar filtros"}</span>
-        <small>{hasVisibleFilters ? "Filtros avanzados aplicados" : "Región, ciudad y características"}</small>
+        <small>{hasVisibleFilters ? "Filtros avanzados aplicados" : pinnedCity ? "Apariencia y servicios" : "Región, ciudad y características"}</small>
       </button>
       <div id="directory-filter-controls" className={`filter-mobile-body${showMobileFilters ? " is-open" : ""}`}>
       <div className="filter-grid">

@@ -33,3 +33,13 @@ test("manual city bar stays visible on mobile and the quick filters share one fo
   assert.match(component, /destination = action === "\/escorts" && value === "agency" \? "\/agencias"/);
   assert.match(component, /<option value="rental">▣ Arriendos<\/option>/);
 });
+
+test("advanced search is compact on desktop and quick toggles keep accessible native inputs", () => {
+  assert.match(css, /@media \(min-width: 900px\) \{[\s\S]*?\.directory-filter-form \.directory-filters \{ display: grid;/);
+  assert.match(css, /\.directory-filter-form \.filter-mobile-body > \.filter-grid:empty \{ display: none; \}/);
+  assert.match(css, /\.directory-filter-form \.filter-heading h2 \{ font-size: 22px;/);
+  assert.match(css, /\.quick-filter-toggle:has\(input:checked\) \{[^}]*background: #ae202d;/);
+  assert.match(css, /\.quick-filter-toggle input \{ position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; \}/);
+  assert.match(component, /<input name="online" value="1" type="checkbox"/);
+  assert.match(component, /<input name="verificados" value="1" type="checkbox"/);
+});

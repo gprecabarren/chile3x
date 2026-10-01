@@ -71,7 +71,7 @@ test("server-renders the Chile3X public home", async () => {
   assert.equal((html.match(/<h1\b/gi) ?? []).length, 1);
   assert.ok(html.indexOf("DIRECTORIO ADULTO") < html.indexOf("ESCORTS Y DAMAS DE COMPAÑÍA DESTACADAS"));
   assert.ok(html.indexOf("ESCORTS Y DAMAS DE COMPAÑÍA DESTACADAS") < html.indexOf("Todas las regiones,"));
-  assert.match(html, /Elegir ciudad/);
+  assert.match(html, /Ir a una ciudad/);
   assert.match(html, /numberOfItems":36/);
   assert.match(html, /"url":"https:\/\/chile3x\.cl\/escorts\/concepcion"/);
   assert.match(html, /ciudades y comunas disponibles/);

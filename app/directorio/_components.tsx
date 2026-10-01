@@ -248,6 +248,7 @@ type CityProfileSectionsProps = {
   city: string;
   profiles: PublicProfile[];
   selectedCategory?: string;
+  paginated?: boolean;
 };
 
 function CityProfileSection({ id, title, description, profiles, tier }: { id: string; title: string; description: string; profiles: PublicProfile[]; tier?: Tier }) {
@@ -262,7 +263,7 @@ function CityProfileSection({ id, title, description, profiles, tier }: { id: st
   </details>;
 }
 
-export function CityProfileSections({ city, profiles, selectedCategory }: CityProfileSectionsProps) {
+export function CityProfileSections({ city, profiles, selectedCategory, paginated = false }: CityProfileSectionsProps) {
   const escorts = profiles.filter((profile) => profile.type === "escort");
   const sections: { id: string; title: string; description: string; profiles: PublicProfile[]; tier?: Tier }[] = [
     { id: "vip", title: "VIP", description: "Perfiles de élite con máxima visibilidad.", profiles: escorts.filter((profile) => profile.tier === "vip"), tier: "vip" },
@@ -274,9 +275,9 @@ export function CityProfileSections({ city, profiles, selectedCategory }: CityPr
   ];
 
   return <section className="city-profile-sections" aria-label={`Publicaciones en ${city}`}>
-    {(selectedCategory ? sections.filter((section) => section.id === selectedCategory) : sections.slice(0, 3)).map(({ id, title, description, profiles: sectionProfiles, tier }) => <CityProfileSection key={id} id={id} title={title} description={description} profiles={sectionProfiles} tier={tier} />)}
+    {(selectedCategory ? sections.filter((section) => section.id === selectedCategory) : sections.slice(0, 3).filter((section) => !paginated || section.profiles.length > 0)).map(({ id, title, description, profiles: sectionProfiles, tier }) => <CityProfileSection key={id} id={id} title={title} description={description} profiles={sectionProfiles} tier={tier} />)}
     {!selectedCategory && <><div className="city-section-divider"><h3>También en {city}</h3><span aria-hidden="true" /></div>
-    {sections.slice(3).map(({ id, title, description, profiles: sectionProfiles, tier }) => <CityProfileSection key={id} id={id} title={title} description={description} profiles={sectionProfiles} tier={tier} />)}</>}
+    {sections.slice(3).filter((section) => !paginated || section.profiles.length > 0).map(({ id, title, description, profiles: sectionProfiles, tier }) => <CityProfileSection key={id} id={id} title={title} description={description} profiles={sectionProfiles} tier={tier} />)}</>}
   </section>;
 }
 
@@ -309,7 +310,7 @@ export function SeoContent({ city, region, count }: { city: string; region: stri
       <p>Esta página reúne publicaciones asociadas específicamente a {city}, {regionName}. Puedes revisar fotografías, categorías y datos entregados por cada anunciante antes de usar sus canales de contacto directo. Chile3X no participa en pagos ni acuerdos privados.</p>
       <p>{regionalContext[regionInfo?.id ?? ""] ?? `La ruta de ${city} forma parte de la cobertura territorial de Chile3X y mantiene sus resultados separados de otras ciudades.`}</p>
       <h3>Cómo explorar publicaciones en {city}</h3>
-      <p>{count ? `Hay ${count} ${count === 1 ? "publicación visible" : "publicaciones visibles"} en esta búsqueda. Usa los filtros para acotar por categoría, atributos o servicios y abre cada perfil para consultar su información aprobada.` : `Todavía no hay publicaciones visibles para esta búsqueda. La página se mantiene disponible para incorporar nuevos avisos una vez que completen la revisión correspondiente.`} Si necesitas entender la moderación, consulta las preguntas frecuentes y las reglas antes de publicar o contactar.</p>
+      <p>{count ? `Esta página muestra ${count} ${count === 1 ? "publicación visible" : "publicaciones visibles"}. Usa los filtros para acotar por categoría, atributos o servicios y abre cada perfil para consultar su información aprobada.` : `Todavía no hay publicaciones visibles para esta búsqueda. La página se mantiene disponible para incorporar nuevos avisos una vez que completen la revisión correspondiente.`} Si necesitas entender la moderación, consulta las preguntas frecuentes y las reglas antes de publicar o contactar.</p>
       <nav className="seo-content-links" aria-label={`Información y ciudades relacionadas con ${city}`}>
         <Link href="/escorts">Directorio de escorts en Chile</Link>
         {nearbyCities.map((nearbyCity) => <Link href={getCityPath(nearbyCity)} key={nearbyCity}>Escorts en {nearbyCity}</Link>)}

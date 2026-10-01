@@ -1,0 +1,1 @@
+CREATE INDEX `profiles_public_directory_page_idx` ON `profiles` (`type`,`tier`,`is_featured`,`updated_at`,`id`) WHERE "profiles"."status" = 'approved' and "profiles"."owner_hidden_at" is null and "profiles"."trashed_at" is null;

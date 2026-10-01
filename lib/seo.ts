@@ -58,6 +58,16 @@ export function publicPageMetadata({
   };
 }
 
+/** Keep paginated directory pages discoverable without indexing filter permutations. */
+export function directoryPageMetadata(base: Metadata, path: string, query: Record<string, string | string[] | undefined>, page: number): Metadata {
+  const filtered = Object.entries(query).some(([key, value]) => key !== "pagina" && key !== "cerca" && Boolean(Array.isArray(value) ? value.length : value));
+  return {
+    ...base,
+    alternates: { canonical: !filtered && page > 1 ? `${path}?pagina=${page}` : path },
+    ...(filtered ? { robots: { index: false, follow: true } } : {}),
+  };
+}
+
 /** Metadata for account and authentication routes that must never be indexed. */
 export function privatePageMetadata({ title, description, path }: PrivatePageMetadataOptions): Metadata {
   return {

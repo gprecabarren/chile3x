@@ -12,7 +12,9 @@ const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
 
 const localBindingConfig = {
   main: "./worker/index.ts",
-  compatibility_flags: ["nodejs_compat"],
+  // The flag also comes from wrangler.json; duplicating it prevents local
+  // Miniflare from starting. Keep the preview date within bundled workerd.
+  compatibility_date: "2026-05-22",
   d1_databases: d1
     ? [
         {
@@ -82,6 +84,7 @@ export default defineConfig(async () => {
       cloudflare({
         viteEnvironment: { name: "rsc", childEnvironments: ["ssr"] },
         config: localBindingConfig,
+        persistState: { path: ".wrangler/visual-state" },
       }),
     ],
   };

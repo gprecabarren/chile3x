@@ -372,6 +372,8 @@ export const profiles = sqliteTable("profiles", {
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
   index("profiles_status_region_city_idx").on(table.status, table.region, table.city),
+  index("profiles_public_directory_page_idx").on(table.type, table.tier, table.isFeatured, table.updatedAt, table.id)
+    .where(sql`${table.status} = 'approved' and ${table.ownerHiddenAt} is null and ${table.trashedAt} is null`),
   index("profiles_owner_idx").on(table.ownerId),
   index("profiles_trash_date_idx").on(table.trashedAt),
   uniqueIndex("profiles_handle_unique").on(table.handle),

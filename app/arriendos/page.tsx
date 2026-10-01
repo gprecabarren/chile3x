@@ -1,27 +1,36 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
+import { notFound } from "next/navigation";
 import { DirectoryFilters } from "@/app/directorio/DirectoryFilters";
+import { DirectoryPagination } from "@/app/directorio/DirectoryPagination";
 import { DirectoryShell, ProfileGrid } from "@/app/directorio/_components";
-import { filterPublicProfiles, getPublicProfiles, prioritizeProfilesByCity, readDirectoryFilters, type DirectoryQuery } from "@/lib/directory";
+import { getPublicProfilePage, readDirectoryFilters, readDirectoryPage, type DirectoryQuery } from "@/lib/directory";
 import { getCurrentUser } from "@/lib/auth";
-import { publicPageMetadata } from "@/lib/seo";
+import { directoryPageMetadata, publicPageMetadata } from "@/lib/seo";
 import { getCityBySlug, getPreferredCitySlug } from "@/app/locations";
 
-export const metadata: Metadata = publicPageMetadata({ title: "Arriendos para escorts en Chile", description: "Explora arriendos para escorts en Chile por ciudad, con características y servicios incluidos publicados en Chile3X.", path: "/arriendos", socialTitle: "Arriendos para escorts en Chile | Chile3X", socialDescription: "Arriendos publicados por ciudad en Chile3X." });
+const baseMetadata: Metadata = publicPageMetadata({ title: "Arriendos para escorts en Chile", description: "Explora arriendos para escorts en Chile por ciudad, con características y servicios incluidos publicados en Chile3X.", path: "/arriendos", socialTitle: "Arriendos para escorts en Chile | Chile3X", socialDescription: "Arriendos publicados por ciudad en Chile3X." });
+export async function generateMetadata({ searchParams }: { searchParams: Promise<DirectoryQuery> }): Promise<Metadata> {
+  const query = await searchParams;
+  return directoryPageMetadata(baseMetadata, "/arriendos", query, readDirectoryPage(query));
+}
 export const dynamic = "force-dynamic";
 
 export default async function RentalsPage({ searchParams }: { searchParams: Promise<DirectoryQuery> }) {
-  const filters = readDirectoryFilters(await searchParams, { type: "rental" });
+  const query = await searchParams;
+  const filters = readDirectoryFilters(query, { type: "rental" });
   const viewer = await getCurrentUser();
   const preferredCity = getCityBySlug(getPreferredCitySlug(await cookies()))?.city;
-  const profiles = prioritizeProfilesByCity(filterPublicProfiles(await getPublicProfiles({ viewerId: viewer?.id, type: "rental" }), filters), preferredCity);
+  const { profiles, page, hasNext, outOfRange } = await getPublicProfilePage(filters, { viewerId: viewer?.id, preferredCity, page: readDirectoryPage(query) });
+  if (outOfRange) notFound();
   return <DirectoryShell kind="rental" selectedCity={filters.city ?? preferredCity}>
     <section className="directory-hero"><p className="eyebrow">DIRECTORIO DE ARRIENDOS</p><h1>Arriendos para escorts en <em>Chile.</em></h1><p>Explora opciones publicadas por ciudad, con ubicación referencial, características y servicios incluidos.</p></section>
     <section className="directory-content">
       <DirectoryFilters key={JSON.stringify(filters)} action="/arriendos" filters={filters} showEscortFilters={false} />
-      <div className="directory-results-heading"><div><p className="eyebrow">ARRIENDOS</p><h2>{profiles.length} arriendo{profiles.length === 1 ? "" : "s"} visible{profiles.length === 1 ? "" : "s"}</h2></div></div>
+      <div id="resultados" className="directory-results-heading"><div><p className="eyebrow">ARRIENDOS</p><h2>{profiles.length} arriendo{profiles.length === 1 ? "" : "s"}{hasNext || page > 1 ? " en esta página" : ` visible${profiles.length === 1 ? "" : "s"}`}</h2></div></div>
       <ProfileGrid profiles={profiles} emptyMessage="Todavía no hay arriendos visibles con esos filtros." />
+      <DirectoryPagination path="/arriendos" query={query} page={page} hasNext={hasNext} />
       <section className="directory-seo-summary"><p className="eyebrow">DIRECTORIO POR CIUDAD</p><h2>Arriendos para escorts, con información clara</h2><p>Compara arriendos publicados en Chile3X por ciudad y revisa sus características antes de contactar directamente a quien publica. Los acuerdos se realizan fuera de la plataforma.</p><Link href="/escorts">Explorar escorts en Chile</Link></section>
     </section>
   </DirectoryShell>;

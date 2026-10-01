@@ -1,10 +1,9 @@
-import { and, count, desc, eq, gte, inArray, isNull, or } from "drizzle-orm";
+import { and, count, desc, eq, exists, gte, inArray, isNull, notExists, or, sql, type SQL } from "drizzle-orm";
 import { cache } from "react";
 import { cityDirectory, getCityBySlug, regions } from "@/app/locations";
 import { getDb } from "@/db";
-import { accountPresence, agencyMembers, profileDetails, profileMedia, profileServices, profileTags, profiles, profileViews } from "@/db/schema";
+import { accountPresence, agencyMembers, blockedProfiles, profileDetails, profileMedia, profileServices, profileTags, profiles, profileViews } from "@/db/schema";
 import { getApprovedMediaForProfiles } from "@/lib/media";
-import { getBlockedProfileIds } from "@/lib/profile-safety";
 import { publicProfileCondition } from "@/lib/public-profile-visibility";
 import {
   additionalServices,
@@ -192,10 +191,9 @@ export async function getPublicProfiles(options: PublicProfileOptions = {}) {
   if (options.profileIds?.length) conditions.push(inArray(profiles.id, options.profileIds));
   if (options.handle) conditions.push(eq(profiles.handle, options.handle));
   if (options.slug) conditions.push(eq(profiles.slug, options.slug));
+  if (options.viewerId) conditions.push(notExists(db.select({ id: blockedProfiles.id }).from(blockedProfiles).where(and(eq(blockedProfiles.userId, options.viewerId), eq(blockedProfiles.profileId, profiles.id)))));
 
-  const rows = conditions.length ? await baseQuery.where(and(...conditions)) : await baseQuery;
-  const blockedIds = await getBlockedProfileIds(options.viewerId);
-  const visibleRows = rows.filter((row) => !blockedIds.has(row.profile.id));
+  const visibleRows = conditions.length ? await baseQuery.where(and(...conditions)) : await baseQuery;
   const ids = visibleRows.map((row) => row.profile.id);
 
   if (!ids.length) {
@@ -270,6 +268,85 @@ export async function getPublicProfiles(options: PublicProfileOptions = {}) {
     agencyIds: agencyMap.get(profile.id) ?? [],
     memberIds: memberMap.get(profile.id) ?? [],
   }));
+}
+
+export const DIRECTORY_PAGE_SIZE = 24;
+
+export function readDirectoryPage(query: DirectoryQuery) {
+  const raw = Array.isArray(query.pagina) ? query.pagina[0] : query.pagina;
+  const page = raw && /^\d{1,4}$/.test(raw) ? Number(raw) : 1;
+  // Bound pathological OFFSET requests on the free D1 tier. A cursor can
+  // replace page numbers if the directory grows beyond 24,000 listings.
+  return Math.min(Math.max(page, 1), 1000);
+}
+
+function searchableText(column: SQL) {
+  let result = sql<string>`lower(${column})`;
+  for (const [from, to] of [["á", "a"], ["é", "e"], ["í", "i"], ["ó", "o"], ["ú", "u"], ["ü", "u"], ["ñ", "n"], ["Á", "a"], ["É", "e"], ["Í", "i"], ["Ó", "o"], ["Ú", "u"], ["Ü", "u"], ["Ñ", "n"]]) {
+    result = sql<string>`replace(${result}, ${from}, ${to})`;
+  }
+  return result;
+}
+
+function containsText(column: SQL, value: string) {
+  return sql<boolean>`instr(${searchableText(column)}, ${normalized(value)}) > 0`;
+}
+
+function metadataText(key: string) {
+  return sql<string>`coalesce(json_extract(${profileDetails.metadata}, ${`$.${key}`}), '')`;
+}
+
+/** Filter IDs in D1 first, then hydrate only the 24 cards in this page. */
+export async function getPublicProfilePage(filters: DirectoryFilters, options: { page?: number; viewerId?: string; preferredCity?: string } = {}) {
+  const page = Math.min(Math.max(Math.trunc(options.page ?? 1), 1), 1000);
+  if (filters.invalidCombination) return { profiles: [] as PublicProfile[], page, pageSize: DIRECTORY_PAGE_SIZE, hasNext: false, outOfRange: page > 1 };
+
+  const db = await getDb();
+  const conditions: SQL[] = [publicProfileCondition];
+  if (options.viewerId) conditions.push(notExists(db.select({ id: blockedProfiles.id }).from(blockedProfiles).where(and(eq(blockedProfiles.userId, options.viewerId), eq(blockedProfiles.profileId, profiles.id)))));
+  if (filters.region) conditions.push(eq(profiles.region, filters.region));
+  if (filters.city) conditions.push(eq(profiles.city, filters.city));
+  if (filters.type) conditions.push(eq(profiles.type, filters.type));
+  if (filters.category === "masajes") {
+    conditions.push(eq(profiles.type, "escort"));
+    conditions.push(exists(db.select({ id: profileTags.id }).from(profileTags).where(and(eq(profileTags.profileId, profiles.id), eq(profileTags.tag, "masajes")))));
+  }
+  if (filters.tier) conditions.push(eq(profiles.tier, filters.tier));
+  if (filters.verified) conditions.push(eq(profiles.verificationStatus, "reviewed"));
+  if (filters.online) {
+    const cutoff = new Date(Date.now() - 3 * 60_000).toISOString();
+    conditions.push(exists(db.select({ id: accountPresence.userId }).from(accountPresence).where(and(eq(accountPresence.userId, profiles.ownerId), gte(accountPresence.lastActiveAt, cutoff)))));
+  }
+  if (filters.name) conditions.push(containsText(sql`${profiles.displayName}`, filters.name));
+  for (const tag of filters.tags) conditions.push(exists(db.select({ id: profileTags.id }).from(profileTags).where(and(eq(profileTags.profileId, profiles.id), eq(profileTags.tag, tag)))));
+  for (const [key, value] of [["nationality", filters.nationality], ["gender", filters.gender], ["skin_color", filters.skinColor], ["hair_color", filters.hairColor], ["body_type", filters.bodyType], ["bust_size", filters.bustSize], ["languages", filters.language]] as const) {
+    if (value) conditions.push(containsText(metadataText(key), value));
+  }
+  if (filters.ageMin) conditions.push(sql<boolean>`cast(${metadataText("age")} as integer) >= ${filters.ageMin}`);
+  if (filters.ageMax) conditions.push(sql<boolean>`cast(${metadataText("age")} as integer) <= ${filters.ageMax}`);
+  for (const service of filters.servicesIncluded) conditions.push(exists(db.select({ id: profileServices.id }).from(profileServices).where(and(eq(profileServices.profileId, profiles.id), eq(profileServices.kind, "included"), eq(profileServices.service, service)))));
+  for (const service of filters.servicesAdditional) conditions.push(exists(db.select({ id: profileServices.id }).from(profileServices).where(and(eq(profileServices.profileId, profiles.id), eq(profileServices.kind, "additional"), eq(profileServices.service, service)))));
+
+  const where = and(...conditions);
+  // Stable ordering can use the public-page index. Random SQL ordering would
+  // scan the entire directory and make adjacent pages overlap or skip cards.
+  const ordering = [desc(profiles.tier), desc(profiles.isFeatured), desc(profiles.updatedAt), desc(profiles.id)];
+  if (options.preferredCity && !filters.city) ordering.unshift(sql`case when ${profiles.city} = ${options.preferredCity} then 0 else 1 end`);
+  const needsMetadata = Boolean(filters.nationality || filters.gender || filters.skinColor || filters.hairColor || filters.bodyType || filters.bustSize || filters.language || filters.ageMin || filters.ageMax);
+  const idsBase = db.select({ id: profiles.id }).from(profiles);
+  const ids = await (needsMetadata ? idsBase.leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id)) : idsBase)
+    .where(where).orderBy(...ordering).limit(DIRECTORY_PAGE_SIZE + 1).offset((page - 1) * DIRECTORY_PAGE_SIZE);
+  const hasNext = ids.length > DIRECTORY_PAGE_SIZE;
+  const pageIds = ids.slice(0, DIRECTORY_PAGE_SIZE);
+  const hydrated = pageIds.length ? await getPublicProfiles({ profileIds: pageIds.map((row) => row.id), viewerId: options.viewerId }) : [];
+  const byId = new Map(hydrated.map((profile) => [profile.id, profile]));
+  return { profiles: pageIds.flatMap((row) => { const profile = byId.get(row.id); return profile ? [profile] : []; }), page, pageSize: DIRECTORY_PAGE_SIZE, hasNext, outOfRange: page > 1 && !pageIds.length };
+}
+
+/** Sitemap needs only canonical paths and timestamps, never media or tags. */
+export async function getPublicProfileSitemapRows() {
+  return (await getDb()).select({ slug: profiles.slug, handle: profiles.handle, updatedAt: profiles.updatedAt })
+    .from(profiles).where(and(publicProfileCondition, eq(profiles.isDemo, false)));
 }
 
 const getPublicProfileForRouteCached = cache(async function getPublicProfileForRouteCached(

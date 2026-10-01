@@ -4,6 +4,13 @@ Chile3X es un directorio nacional para adultos en Chile. Reúne anuncios de Esco
 
 El proyecto está construido para operar en Cloudflare con Workers, D1 y R2, sin depender de WordPress ni de un hosting tradicional.
 
+## Directorio y navegación — octubre de 2026
+
+- La portada ofrece un selector rápido independiente de los filtros del directorio: «Ir a una ciudad» agrupa las ciudades y comunas configuradas bajo encabezados regionales no clicables. La región se puede localizar también con el control «Ir a una región» y cada ciudad enlaza a su página local. El listado territorial que ya se renderiza en el servidor conserva los enlaces y la estructura SEO del home.
+- Los directorios públicos de Escort, Agencia, Arriendo y ciudad aplican sus filtros en D1. Cada petición obtiene como máximo 25 identificadores ordenados de forma estable, hidrata fotos y relaciones solo para los 24 anuncios visibles y usa el identificador adicional para mostrar «Siguiente». No consulta el recuento completo en cada visita: el número mostrado corresponde a la página actual. Los filtros y enlaces `?pagina=` conservan sus parámetros, y una página fuera del rango responde `404`.
+- Las páginas paginadas sin filtros usan canonical propio; las combinaciones de filtros quedan en `noindex,follow` para evitar duplicados. El sitemap obtiene únicamente ruta y fecha de actualización de anuncios públicos reales, sin traer galerías ni servicios. La migración `0038_sturdy_slipstream.sql` agrega un índice parcial para el listado público, sin tocar registros existentes.
+- La estrategia evita nuevas dependencias pagadas de Cloudflare. D1 Free sigue sujeto a límites diarios de filas leídas/escritas: el índice puede añadir escrituras de mantenimiento cuando cambia un anuncio indexado, pero reduce lecturas del listado común. Las búsquedas de texto y los saltos a páginas muy profundas aún pueden recorrer más filas; si el volumen crece mucho, evaluar cursores o búsqueda indexada antes de ampliar la cobertura. La vista local usa `.wrangler/visual-state` y no cambia los datos de D1 remotos.
+
 ## Revisión de errores — septiembre de 2026
 
 - La portada y los directorios ya no solicitan GPS ni deducen una ciudad a partir de la IP. La persona elige manualmente entre las ciudades y comunas de cobertura mediante una barra compacta que permanece visible al desplazarse en móvil. «Ver todo Chile» borra la preferencia; solo se guarda el identificador de la ciudad elegida. La cabecera con sesión distribuye mejor las pestañas del directorio en PC, sin cambiar el menú móvil.
@@ -361,6 +368,12 @@ pnpm db:generate
 pnpm build
 ```
 
+En un entorno local nuevo, aplicar las migraciones al estado de prueba antes de abrir rutas que consultan D1:
+
+```bash
+pnpm exec wrangler d1 migrations apply chile3x-db --local --persist-to .wrangler/visual-state
+```
+
 Al cambiar [`db/schema.ts`](db/schema.ts), generar la migración, revisar el SQL y mantenerla dentro de `drizzle/` antes de publicar. Las migraciones de datos deben preservar registros y archivos existentes.
 
 Para Telegram, los secretos se cargan directamente en Cloudflare y nunca en archivos locales versionados:
@@ -377,7 +390,7 @@ Get-Content -Raw -LiteralPath 'C:\ruta\AuthKey_XXXXXXXXXX.p8' | pnpm exec wrangl
 node -e "process.stdout.write(require('crypto').randomBytes(32).toString('base64url'))" | pnpm exec wrangler secret put APPLE_TOKEN_ENCRYPTION_KEY --config wrangler.json
 ```
 
-Las migraciones `0026_slim_white_tiger.sql` y `0027_messy_robbie_robertson.sql` crean la configuración, identidades, espacios, Novedades, moderación, auditoría, webhook, outbox y membresías. `0028_telegram_two_space_architecture.sql` retira el rol heredado de Alertas para conservar únicamente Comunidad y Miembros. `0029_dazzling_blockbuster.sql` agrega de forma aditiva las identidades Apple, los intentos anti-repetición y los registros temporales de alta. `0030_brave_falcon.sql` crea grupos y tarjetas de sitios asociados, `0031_lowly_changeling.sql` añade el título visible opcional y los tres directorios del footer, `0032_black_kulan_gath.sql` incorpora presencia reciente, conversaciones privadas, mensajes, preferencias de silencio/bloqueo y el enriquecimiento consentido de clics de contacto, y `0033_huge_selene.sql` preserva esos mensajes de forma anonimizada al retirar una cuenta y agrega las notificaciones administrativas de registros y anuncios. `0034_one_escort_per_account.sql` bloquea Escort adicionales nuevos sin borrar registros existentes; `0035_creation_provenance.sql` añade y reconstruye prudentemente el origen de cuentas y anuncios; `0036_bronze_tier.sql` establece Bronze como nivel persistido; `0037_loud_captain_america.sql` agrega la papelera y hace que solo un Escort no eliminado ocupe el cupo. Antes de desplegar Telegram deben existir las colas declaradas en `wrangler.json` y la instalación del webhook debe terminarse desde `Administración > Telegram`.
+Las migraciones `0026_slim_white_tiger.sql` y `0027_messy_robbie_robertson.sql` crean la configuración, identidades, espacios, Novedades, moderación, auditoría, webhook, outbox y membresías. `0028_telegram_two_space_architecture.sql` retira el rol heredado de Alertas para conservar únicamente Comunidad y Miembros. `0029_dazzling_blockbuster.sql` agrega de forma aditiva las identidades Apple, los intentos anti-repetición y los registros temporales de alta. `0030_brave_falcon.sql` crea grupos y tarjetas de sitios asociados, `0031_lowly_changeling.sql` añade el título visible opcional y los tres directorios del footer, `0032_black_kulan_gath.sql` incorpora presencia reciente, conversaciones privadas, mensajes, preferencias de silencio/bloqueo y el enriquecimiento consentido de clics de contacto, y `0033_huge_selene.sql` preserva esos mensajes de forma anonimizada al retirar una cuenta y agrega las notificaciones administrativas de registros y anuncios. `0034_one_escort_per_account.sql` bloquea Escort adicionales nuevos sin borrar registros existentes; `0035_creation_provenance.sql` añade y reconstruye prudentemente el origen de cuentas y anuncios; `0036_bronze_tier.sql` establece Bronze como nivel persistido; `0037_loud_captain_america.sql` agrega la papelera y hace que solo un Escort no eliminado ocupe el cupo; `0038_sturdy_slipstream.sql` crea el índice parcial del directorio público. Antes de desplegar Telegram deben existir las colas declaradas en `wrangler.json` y la instalación del webhook debe terminarse desde `Administración > Telegram`.
 
 ## Publicación
 

@@ -47,12 +47,13 @@ test("news sitemap omits drafts and noindex without retrieving HTML or cover joi
   assert.match(news, /getNewsBySlug = cache\(async/);
 });
 
-test("mobile login matches menu links and restores the third shortcut without changing desktop login", async () => {
+test("mobile login appears only in the quick row, not duplicated in the hamburger", async () => {
   const [menu, header, css] = await Promise.all([source("app/directorio/PublicMobileMenu.tsx"), source("app/directorio/_components.tsx"), source("app/globals.css")]);
-  assert.ok(menu.indexOf('className="mobile-menu-account-entry"') < menu.indexOf('className="mobile-menu-directory-extra"'));
-  assert.match(menu, /!hasUserSession && !hasAdminSession/);
-  assert.match(menu, /<Link href="\/ingresar" onClick=\{closeMenu\}>Iniciar sesión<\/Link>/);
-  assert.doesNotMatch(menu, /public-login-link/);
+  assert.doesNotMatch(menu, /mobile-menu-account-entry|Iniciar sesión|href="\/ingresar"|public-login-link/);
+  assert.match(menu, /href="\/agencias" onClick=\{closeMenu\}/);
+  assert.match(menu, /href="\/arriendos" onClick=\{closeMenu\}/);
+  assert.match(menu, /action="\/api\/auth\/session\/logout" method="post"/);
+  assert.match(menu, /action="\/api\/auth\/logout" method="post"/);
   const start = header.indexOf('<nav className="mobile-public-quick-links"');
   const mobile = header.slice(start, header.indexOf('</nav>', start));
   assert.match(mobile, /<Link href=\{sessionAccountHref\}>\{sessionAccountLabel\}<\/Link>/);

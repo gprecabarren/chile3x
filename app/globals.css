@@ -1051,7 +1051,8 @@ select:disabled { opacity: .68; }
    Se reserva una fila propia para la navegación antes de permitir que esos
    controles se compriman o se monten entre sí. */
 @media (min-width: 861px) {
-  .public-header.has-session { flex-wrap: wrap; gap: 10px 16px; }
+  .site-header.public-header.has-session { flex-wrap: wrap; justify-content: flex-end; gap: 8px 12px; }
+  .site-header.public-header.has-session > .brand { flex: 0 0 auto; margin-right: auto; }
   .public-header.has-session .public-navigation-stack { order: 4; width: 100%; margin-left: 0; }
   .public-header.has-session .public-navigation { width: 100%; margin-left: 0; justify-content: space-between; }
   .public-header.has-session .public-account-summary { order: 2; flex: 1 1 210px; min-width: 180px; max-width: none; }
@@ -1851,7 +1852,6 @@ input[type="submit"] { text-transform: none !important; letter-spacing: .015em; 
 .staged-profile-photo { padding: 16px; border: 1px solid #495b74; border-radius: 8px; }
 .public-navigation .public-login-link { border: 1px solid #8d343b; border-radius: 8px; color: #fff; background: #3a131b; box-shadow: inset 0 1px 0 #ffffff0d; }
 .public-navigation .public-login-link { padding: 7px 10px; }
-.mobile-menu-panel > .mobile-menu-account-entry { grid-column: 1 / -1; }
 .public-login-link:hover, .public-login-link:focus-visible { background: #6a1923; border-color: #f2666e; outline-offset: 3px; }
 @media (min-width: 1441px) {
   .public-header:not(.has-session) .public-navigation-stack .public-navigation { gap: 12px; }

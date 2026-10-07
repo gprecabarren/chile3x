@@ -68,3 +68,10 @@ test("desktop contact icons sit below sign-in without enlarging the full header"
   assert.match(cssSource, /@media \(max-width: 860px\) \{[\s\S]*?\.public-header \.public-navigation-stack \{ display: contents; \}/);
   assert.match(cssSource, /@media \(max-width: 860px\) \{[\s\S]*?\.public-header \.portal-contact-links-header \{ order: 2;/);
 });
+
+test("signed-in desktop header keeps session and actions together, not spaced across the row", () => {
+  assert.match(cssSource, /@media \(min-width: 861px\) \{\s*\.site-header\.public-header\.has-session \{ flex-wrap: wrap; justify-content: flex-end; gap: 8px 12px; \}/);
+  assert.match(cssSource, /\.site-header\.public-header\.has-session > \.brand \{ flex: 0 0 auto; margin-right: auto; \}/);
+  assert.match(cssSource, /\.public-header\.has-session \.public-account-summary \{[\s\S]*?flex: 0 1 auto;/);
+  assert.match(cssSource, /@media \(max-width: 860px\) \{[\s\S]*?\.site-header\.public-header \{ min-height: 0; flex-wrap: wrap; align-items: center; gap: 6px 8px;/);
+});

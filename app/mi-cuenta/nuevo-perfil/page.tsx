@@ -3,6 +3,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db";
 import { profiles } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
+import { hasUnlimitedEscortListings } from "@/lib/profile-limits";
 import { AccountHeading, AccountShell } from "../_components";
 import { ProfileForm } from "../ProfileForm";
 
@@ -21,7 +22,7 @@ export default async function NewProfilePage({ searchParams }: { searchParams: P
       <div className="account-content"><a className="page-back-link" href="/mi-cuenta">← Volver a mi cuenta</a>
         <AccountHeading eyebrow="NUEVA PUBLICACIÓN" title="Crea tu anuncio" description="Completa la información esencial. Los anuncios no aparecen públicamente hasta que el equipo los revise." />
         {params.error && <p className="form-alert" role="alert">{params.message ?? "Revisa la información del formulario. La región, ciudad y contacto deben ser válidos."}</p>}
-        <ProfileForm action="/api/perfiles/nuevo" submitLabel="Enviar a revisión" allowEscort={!escort} />
+        <ProfileForm action="/api/perfiles/nuevo" submitLabel="Enviar a revisión" allowEscort={hasUnlimitedEscortListings(user) || !escort} />
       </div>
     </AccountShell>
   );

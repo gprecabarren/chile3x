@@ -4,15 +4,10 @@ import { getDb } from "@/db";
 import { publicProfileCondition } from "@/lib/public-profile-visibility";
 import { profiles, profileViews } from "@/db/schema";
 import { assertSameOrigin, createOpaqueToken } from "@/lib/auth";
+import { chileanDay } from "@/lib/chile-day";
 
 const VIEWER_COOKIE = "chile3x_profile_viewer";
 const VIEWER_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
-
-function chileanDay(date = new Date()) {
-  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/Santiago", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date);
-  const value = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
-  return `${value.year}-${value.month}-${value.day}`;
-}
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ profileId: string }> }) {
   try {

@@ -1,5 +1,6 @@
 import { and, count, desc, eq, exists, gte, inArray, isNull, notExists, or, sql, type SQL } from "drizzle-orm";
 import { cache } from "react";
+import { chileanDay } from "@/lib/chile-day";
 import { cityDirectory, getCityBySlug, regions } from "@/app/locations";
 import { getDb } from "@/db";
 import { accountPresence, agencyMembers, blockedProfiles, profileDetails, profileMedia, profileServices, profileTags, profiles, profileViews } from "@/db/schema";
@@ -490,7 +491,7 @@ export async function getCityEscortCounts() {
  */
 export async function getFeaturedProfiles(limit = 6, viewerId?: string) {
   const candidateLimit = Math.max(limit * 3, 18);
-  const cutoff = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000).toLocaleDateString("en-CA", { timeZone: "America/Santiago" });
+  const cutoff = chileanDay(new Date(Date.now() - 29 * 24 * 60 * 60 * 1000));
 
   try {
     const db = await getDb();

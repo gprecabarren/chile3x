@@ -1,4 +1,4 @@
-const CACHE_VERSION = "anonymous-documents-v3";
+const CACHE_VERSION = "anonymous-documents-v4";
 export const PUBLIC_PAGE_CACHE_SECONDS = 600;
 
 export function hasPrivateSession(request: Request) {
@@ -8,13 +8,20 @@ export function hasPrivateSession(request: Request) {
 
 /** Only full anonymous documents are shareable. Router payloads depend on
  * navigation headers, not just their URL, and must not overwrite HTML entries. */
-export function publicCacheKey(request: Request, deploymentVersion = CACHE_VERSION): Request | null {
+export function publicCacheKey(request: Request, deploymentVersion = CACHE_VERSION, availableCitySlugs?: ReadonlySet<string>): Request | null {
   if (request.method !== "GET" || hasPrivateSession(request)) return null;
-  // The preferred city changes the server-rendered home summary, ordering and
-  // directory selector. Never let that personalized variant enter the shared
-  // anonymous document cache.
-  if (/(?:^|;\s*)chile3x_preferred_city_v2=/.test(request.headers.get("cookie") ?? "")) return null;
   const url = new URL(request.url);
+  // City preferences are public, finite variants, not account data. Isolate
+  // each supported city's anonymous HTML instead of disabling the cache for
+  // everyone who used the city selector. Unknown/duplicate values fail closed.
+  const cityCookies = [...(request.headers.get("cookie") ?? "").matchAll(/(?:^|;\s*)chile3x_preferred_city_v2=([^;]*)/g)];
+  if (cityCookies.length) {
+    if (cityCookies.length !== 1 || !availableCitySlugs?.has(cityCookies[0][1])) return null;
+    url.searchParams.set("__chile3x_city", cityCookies[0][1]);
+  } else {
+    // User-supplied query parameters must not select another city's cache.
+    url.searchParams.delete("__chile3x_city");
+  }
   if (url.pathname.endsWith(".rsc") || request.headers.has("rsc")
     || request.headers.get("accept")?.includes("text/x-component")) return null;
   for (const name of request.headers.keys()) {

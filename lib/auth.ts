@@ -254,7 +254,7 @@ const getSessionUser = cache(async function getSessionUser(cookieName: string): 
   } as AccountUser;
 });
 
-export async function getCurrentAdmin(): Promise<AdminUser | null> {
+export const getCurrentAdmin = cache(async function getCurrentAdmin(): Promise<AdminUser | null> {
   const user = await getSessionUser(ADMIN_SESSION_COOKIE);
   if (user?.role !== "admin") return null;
 
@@ -277,7 +277,7 @@ export async function getCurrentAdmin(): Promise<AdminUser | null> {
     githubLogin: grant.githubLogin,
     isProtectedOwner: grant.isProtectedOwner,
   } : null;
-}
+});
 
 export async function getCurrentUser() {
   return getSessionUser(USER_SESSION_COOKIE);

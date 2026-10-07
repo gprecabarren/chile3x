@@ -114,21 +114,30 @@ test("the built Worker bypasses a shared cached document for user and admin cook
   } finally { globalThis.caches = original; }
 });
 
-test("a saved city preference never reuses or populates shared HTML", async () => {
+test("the built Worker isolates anonymous city HTML and never shares it with an authenticated session", async () => {
   const original = globalThis.caches;
-  let reads = 0;
-  let writes = 0;
+  const reads = [];
+  const writes = [];
   globalThis.caches = { default: {
-    match: async () => { reads++; return new Response("wrong-city", { headers: { "content-type": "text/html" } }); },
-    put: async () => { writes++; },
+    match: async key => {
+      reads.push(key.url);
+      const city = new URL(key.url).searchParams.get("__chile3x_city");
+      return new Response(`anonymous-city:${city}`, { headers: { "content-type": "text/html" } });
+    },
+    put: async key => { writes.push(key.url); },
   } };
   try {
-    const response = await render("/", { cookie: "chile3x_preferred_city_v2=concepcion" });
-    assert.equal(response.status, 200);
-    assert.equal(reads, 0);
-    assert.equal(writes, 0);
-    assert.doesNotMatch(await response.text(), /wrong-city/);
-    assert.match(response.headers.get("cache-control"), /private, no-store/);
+    for (const city of ["concepcion", "linares"]) {
+      const response = await render("/", { cookie: `chile3x_preferred_city_v2=${city}` });
+      assert.equal(response.status, 200);
+      assert.equal(await response.text(), `anonymous-city:${city}`);
+      assert.match(response.headers.get("cache-control"), /private, no-store/);
+    }
+    assert.notEqual(reads[0], reads[1]);
+    const authenticated = await render("/", { cookie: "chile3x_user_session=invalid; chile3x_preferred_city_v2=concepcion" });
+    assert.doesNotMatch(await authenticated.text(), /anonymous-city:/);
+    assert.equal(reads.length, 2);
+    assert.equal(writes.length, 0);
   } finally { globalThis.caches = original; }
 });
 

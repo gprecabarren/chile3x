@@ -81,7 +81,7 @@ export default async function AdminProfileTrashPage({ searchParams }: { searchPa
   return <AdminShell user={admin}><div className="admin-content">
     <AdminPageHeading eyebrow="ANUNCIOS Y PUBLICACIONES" title="Papelera de anuncios" description="Anuncios retirados por la persona propietaria o por administración. Solo aquí pueden restaurarse o borrarse definitivamente." backHref="/admin/anuncios-publicaciones" />
     {params.notice && notices[params.notice] && <p className="admin-success" role="status">{notices[params.notice]}</p>}
-    <p className="admin-profile-rule-note">Restaurar un Escort solo es posible si la cuenta no tiene otro Escort activo. Agencia y Arriendo pueden existir varias veces en la misma cuenta.</p>
+    <p className="admin-profile-rule-note">Salvo una excepción expresamente autorizada, restaurar un Escort solo es posible si la cuenta no tiene otro Escort activo. Agencia y Arriendo pueden existir varias veces en la misma cuenta.</p>
     <form className="admin-profile-filters" method="get" role="search">
       <label className="admin-filter-search">Buscar anuncio, correo, usuario o ID<input name="q" type="search" defaultValue={q} placeholder="Nombre, @usuario o correo" /></label>
       <label>Tipo<select name="tipo" defaultValue={type}><option value="">Todos</option><option value="escort">Escort</option><option value="agency">Agencia</option><option value="rental">Arriendo</option></select></label>

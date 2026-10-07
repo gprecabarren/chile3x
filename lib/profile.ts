@@ -218,15 +218,17 @@ export function serializeAvailability(formData: FormData) {
   }).join("|");
 }
 
-export function getAvailabilityStatus(entries: AvailabilityEntry[], date = new Date()) {
-  if (!entries.length) return null;
-  const parts = new Intl.DateTimeFormat("en-US", {
+const availabilityFormatter = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/Santiago",
     weekday: "short",
     hour: "2-digit",
     minute: "2-digit",
     hourCycle: "h23",
-  }).formatToParts(date);
+});
+
+export function getAvailabilityStatus(entries: AvailabilityEntry[], date = new Date()) {
+  if (!entries.length) return null;
+  const parts = availabilityFormatter.formatToParts(date);
   const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? "";
   const weekdays: Record<string, AvailabilityDayKey> = { Mon: "mon", Tue: "tue", Wed: "wed", Thu: "thu", Fri: "fri", Sat: "sat", Sun: "sun" };
   const currentKey = weekdays[part("weekday")];

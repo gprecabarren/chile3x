@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import type { ReactNode } from "react";
 import { and, count, eq, isNull, or } from "drizzle-orm";
 import type { AdminUser } from "@/lib/auth";

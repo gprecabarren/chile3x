@@ -41,6 +41,21 @@ test("cookies, errors and non-document bodies never become shared cache entries"
   assert.match(privateResponse.headers.get("cache-control"), /private, no-store/);
 });
 
+test("anonymous city variants remain bounded and isolated, with authenticated traffic excluded", () => {
+  const cities = new Set(["linares", "concepcion"]);
+  const key = (cookie, path = "/") => publicCacheKey(request(path, cookie ? { cookie } : {}), "version-city", cities);
+  const linares = key("chile3x_preferred_city_v2=linares");
+  const concepcion = key("chile3x_preferred_city_v2=concepcion");
+  assert.ok(linares && concepcion);
+  assert.notEqual(linares.url, concepcion.url);
+  assert.notEqual(linares.url, key("").url);
+  assert.equal(new URL(linares.url).searchParams.get("__chile3x_city"), "linares");
+  assert.equal(new URL(key("", "/?__chile3x_city=linares").url).searchParams.has("__chile3x_city"), false);
+  assert.equal(new URL(key("chile3x_preferred_city_v2=concepcion", "/?__chile3x_city=linares").url).searchParams.get("__chile3x_city"), "concepcion");
+  for (const cookie of ["chile3x_preferred_city_v2=unknown", "chile3x_preferred_city_v2=", "chile3x_preferred_city_v2=linares; chile3x_preferred_city_v2=concepcion", "chile3x_user_session=valid; chile3x_preferred_city_v2=linares", "chile3x_admin_session=expired; chile3x_preferred_city_v2=linares"]) assert.equal(key(cookie), null, cookie);
+  assert.equal(key("chile3x_preferred_city_v2=linares", "/escorts.rsc"), null);
+});
+
 test("return links reject external or malformed destinations and preserve filters and anchors", () => {
   for (const value of [null, "", "https://[", "https://evil.test/admin", "//evil.test/admin", "/\\evil.test/admin", "/\t/evil.test/admin", "/admin/../../outside", "/administrador"]) {
     assert.equal(safeAdminReturnTo(value), "/admin", String(value));

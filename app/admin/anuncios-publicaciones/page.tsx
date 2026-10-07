@@ -174,7 +174,7 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
   return <AdminShell user={admin}>
     <div className="admin-content">
       <AdminPageHeading eyebrow="MODERACIÓN GLOBAL" title="Anuncios y publicaciones" description="Encuentra, filtra y revisa los anuncios antes de publicarlos. Los documentos opcionales de verificación se mantienen privados." backHref={profileListReturnTo}>{adminHasCapability(admin, "profiles.recycle") && <Link prefetch={false} className="button button-outline" href="/admin/anuncios-publicaciones/papelera">♻ Ver papelera</Link>}</AdminPageHeading>
-      <p className="admin-profile-rule-note">Una cuenta puede tener <strong>un Escort activo</strong> y varios anuncios de Agencia o Arriendo. Un Escort en papelera no ocupa cupo; solo administración puede restaurarlo.</p>
+      <p className="admin-profile-rule-note">Salvo una excepción expresamente autorizada, una cuenta puede tener <strong>un Escort activo</strong> y varios anuncios de Agencia o Arriendo. Un Escort en papelera no ocupa cupo; solo administración puede restaurarlo.</p>
       {params.notice && notices[params.notice] && <p className="admin-success" role="status">{notices[params.notice]}</p>}
       {pendingCount > 0 && <section className="admin-review-alert" role="status"><div><p>REVISIÓN PENDIENTE</p><h2>{pendingCount} {pendingCount === 1 ? "anuncio requiere" : "anuncios requieren"} tu aprobación</h2><span>Actualiza sus estados directamente en esta lista o abre la ficha si necesitas revisar el anuncio completo.</span></div><Link prefetch={false} className="button button-primary" href="/admin/anuncios-publicaciones?estado=pending">Revisar ahora</Link></section>}
       <form className="admin-profile-filters" method="get" role="search">

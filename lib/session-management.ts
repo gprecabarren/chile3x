@@ -19,12 +19,14 @@ function asUtcInstant(value: string) {
   return `${value.replace(" ", "T")}Z`;
 }
 
-export function sessionDate(value: string) {
-  return new Intl.DateTimeFormat("es-CL", {
+const sessionDateFormatter = new Intl.DateTimeFormat("es-CL", {
     dateStyle: "medium",
     timeStyle: "short",
     timeZone: "America/Santiago",
-  }).format(new Date(asUtcInstant(value)));
+});
+
+export function sessionDate(value: string) {
+  return sessionDateFormatter.format(new Date(asUtcInstant(value)));
 }
 
 export async function getAccountSessions(userId: string, cookieName: string) {

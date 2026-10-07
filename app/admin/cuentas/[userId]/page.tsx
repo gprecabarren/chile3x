@@ -11,6 +11,7 @@ import { AdminPageHeading, AdminShell } from "../../_components";
 import { AdminPasswordField } from "../AdminPasswordField";
 import { formatRegionName } from "@/app/locations";
 import { creationSourceLabel } from "@/lib/creation-provenance";
+import { hasUnlimitedEscortListings } from "@/lib/profile-limits";
 
 export const dynamic = "force-dynamic";
 
@@ -120,7 +121,7 @@ export default async function AdminAccountDetailsPage({ params, searchParams }: 
     <AdminPageHeading eyebrow="FICHA DE CUENTA" title={accountName} description={`Administra los datos, contraseña y anuncios de ${account.email}. Los cambios se realizan sin necesidad de conocer la contraseña actual.`} backHref={returnTo}>
       {!isProtectedAdmin && account.isActive && <Link prefetch={false} className="button button-primary" href={`${detailBaseHref}/crear-perfil?return_to=${encodeURIComponent(returnTo)}`}>Crear anuncio para esta cuenta</Link>}
     </AdminPageHeading>
-    <p className="admin-profile-rule-note">Regla de publicación: una cuenta puede tener <strong>un Escort activo</strong> y varios anuncios de Agencia o Arriendo. Los anuncios en papelera se revisan y restauran solo desde administración.</p>
+    <p className="admin-profile-rule-note">{hasUnlimitedEscortListings(account) ? <>Excepción autorizada para esta cuenta: <strong>anuncios Escort sin límite de cantidad</strong> y varios anuncios de Agencia o Arriendo. Se mantienen todas las validaciones y revisiones.</> : <>Regla de publicación: una cuenta puede tener <strong>un Escort activo</strong> y varios anuncios de Agencia o Arriendo.</>} Los anuncios en papelera se revisan y restauran solo desde administración.</p>
     {query.notice && notices[query.notice] && <p className="admin-success" role="status">{notices[query.notice]}</p>}
     <section className="admin-account-detail-summary"><div className="admin-account-detail-status"><span>Estado efectivo</span><strong className={`account-status ${account.isActive ? "account-status-approved" : "account-status-rejected"}`}>{account.isActive ? "Activa" : "Deshabilitada"}</strong></div><dl><div><dt>Tipo de cuenta</dt><dd>{account.role === "admin" ? "Administrativa protegida" : accountRoleLabel}</dd></div><div><dt>Origen de la cuenta</dt><dd>{account.role === "admin" && account.creationSource === "unknown" ? "Acceso administrativo GitHub" : creationSourceLabel(account.creationSource, account.createdByAdminLogin)}</dd></div><div><dt>Anuncios asociados</dt><dd>{ownedProfiles.length} anuncio{ownedProfiles.length === 1 ? "" : "s"}</dd></div><div><dt>Deshabilitada por la persona</dt><dd>{account.selfDisabledAt ? new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(account.selfDisabledAt)) : "No"}</dd></div><div><dt>Bloqueo administrativo</dt><dd>{account.adminDisabledAt ? new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(account.adminDisabledAt)) : "No"}</dd></div></dl></section>
     {!account.isActive && !isProtectedAdmin && <p className="form-alert" role="status">La cuenta está deshabilitada. Sus anuncios permanecen conservados, pero no son públicos y no se pueden crear ni aprobar publicaciones hasta reactivarla.</p>}

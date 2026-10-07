@@ -2,6 +2,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db";
 import { listingPeriods, profileDetails, profileServices, profileTags as profileTagRows, profiles, users } from "@/db/schema";
 import { createAdminNotification } from "@/lib/admin-notifications";
+import { hasUnlimitedEscortListings } from "@/lib/profile-limits";
 import {
   additionalServices,
   compactText,
@@ -398,13 +399,16 @@ async function replaceProfileCollections(profileId: string, submission: ProfileS
 export async function createProfile(ownerId: string, submission: ProfileSubmission, options: { adminCreator?: { id: string; githubLogin: string } } = {}) {
   const db = await getDb();
   if (submission.type === "escort") {
-    const [existingEscort] = await db.select({ id: profiles.id }).from(profiles).where(and(
-      eq(profiles.ownerId, ownerId),
-      eq(profiles.type, "escort"),
-      isNull(profiles.trashedAt),
-    )).limit(1);
-    if (existingEscort) {
-      throw new ProfileValidationError("Esta cuenta ya tiene un anuncio Escort activo. Puede tener varios anuncios de Agencia o Arriendo, pero solo un Escort fuera de la papelera.");
+    const [owner] = await db.select({ id: users.id, email: users.email }).from(users).where(eq(users.id, ownerId)).limit(1);
+    if (!owner || !hasUnlimitedEscortListings(owner)) {
+      const [existingEscort] = await db.select({ id: profiles.id }).from(profiles).where(and(
+        eq(profiles.ownerId, ownerId),
+        eq(profiles.type, "escort"),
+        isNull(profiles.trashedAt),
+      )).limit(1);
+      if (existingEscort) {
+        throw new ProfileValidationError("Esta cuenta ya tiene un anuncio Escort activo. Puede tener varios anuncios de Agencia o Arriendo, pero solo un Escort fuera de la papelera.");
+      }
     }
   }
   const id = `prf_${crypto.randomUUID()}`;

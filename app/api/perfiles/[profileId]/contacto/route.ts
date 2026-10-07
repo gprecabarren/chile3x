@@ -5,15 +5,10 @@ import { publicProfileCondition } from "@/lib/public-profile-visibility";
 import { profileContactEvents, profiles } from "@/db/schema";
 import { assertSameOrigin, createOpaqueToken, getCurrentUser } from "@/lib/auth";
 import { describeUserAgent, sessionContextFromRequest } from "@/lib/session-context";
+import { chileanDay } from "@/lib/chile-day";
 
 const VIEWER_COOKIE = "chile3x_profile_viewer";
 const kinds = new Set(["whatsapp", "telegram", "call", "email", "instagram", "arsmate", "onlyfans", "videocall"]);
-function chileanDay() {
-  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/Santiago", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
-  const value = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
-  return `${value.year}-${value.month}-${value.day}`;
-}
-
 export async function POST(request: NextRequest, { params }: { params: Promise<{ profileId: string }> }) {
   try { assertSameOrigin(request); } catch { return new Response(null, { status: 403 }); }
   const payload = await request.json().catch(() => null) as { kind?: string } | null;

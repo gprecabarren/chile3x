@@ -1,8 +1,9 @@
 import { and, eq, isNull, isNotNull } from "drizzle-orm";
 import { getDb } from "@/db";
-import { adminAuditLogs, profileMedia, profileStatuses, profileVerificationFiles, profileReportEvidence, profileReports, profiles } from "@/db/schema";
+import { adminAuditLogs, profileMedia, profileStatuses, profileVerificationFiles, profileReportEvidence, profileReports, profiles, users } from "@/db/schema";
 import type { AccountUser, AdminUser } from "@/lib/auth";
 import { recordOperationalEvent } from "@/lib/operations";
+import { hasUnlimitedEscortListings } from "@/lib/profile-limits";
 
 export type ProfileTrashResult = "ok" | "not_found" | "already_trashed" | "not_trashed" | "escort_conflict" | "storage_cleanup_failed";
 
@@ -41,10 +42,13 @@ export async function restoreProfile(profileId: string, admin: AdminUser): Promi
   if (!profile) return "not_found";
   if (!profile.trashedAt) return "not_trashed";
   if (profile.type === "escort") {
-    const [other] = await db.select({ id: profiles.id }).from(profiles).where(and(
-      eq(profiles.ownerId, profile.ownerId), eq(profiles.type, "escort"), isNull(profiles.trashedAt),
-    )).limit(1);
-    if (other) return "escort_conflict";
+    const [owner] = await db.select({ id: users.id, email: users.email }).from(users).where(eq(users.id, profile.ownerId)).limit(1);
+    if (!owner || !hasUnlimitedEscortListings(owner)) {
+      const [other] = await db.select({ id: profiles.id }).from(profiles).where(and(
+        eq(profiles.ownerId, profile.ownerId), eq(profiles.type, "escort"), isNull(profiles.trashedAt),
+      )).limit(1);
+      if (other) return "escort_conflict";
+    }
   }
   const now = new Date().toISOString();
   try {

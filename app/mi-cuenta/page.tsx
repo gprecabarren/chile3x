@@ -10,6 +10,7 @@ import { AccountHeading, AccountShell } from "./_components";
 import { AgencyMemberships } from "./AgencyMemberships";
 import { profilePublicPath } from "@/lib/profile";
 import { formatRegionName } from "@/app/locations";
+import { hasUnlimitedEscortListings } from "@/lib/profile-limits";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +51,7 @@ export default async function AccountHome({ searchParams }: { searchParams: Prom
 
   return <AccountShell user={user}><div className="account-content">
     <AccountHeading eyebrow="PANEL DE ANUNCIANTE" title="Tus anuncios" description="Guarda borradores, actualiza la información y envía cada anuncio a revisión manual antes de publicarlo."><Link className="button button-primary" href="/mi-cuenta/nuevo-perfil">Crear anuncio</Link></AccountHeading>
-    <p className="account-profile-rule-note">Puedes publicar <strong>un anuncio Escort activo</strong> y varios de Agencia o Arriendo. Si eliminas un anuncio, pasa a la papelera del equipo: ya no podrás verlo ni restaurarlo tú. Un Escort eliminado deja libre el cupo para crear otro.</p>
+    <p className="account-profile-rule-note">{hasUnlimitedEscortListings(user) ? <>Tu cuenta tiene autorización para crear <strong>anuncios Escort sin límite de cantidad</strong> y varios de Agencia o Arriendo. Cada anuncio mantiene su revisión y validaciones.</> : <>Puedes publicar <strong>un anuncio Escort activo</strong> y varios de Agencia o Arriendo. Un Escort eliminado deja libre el cupo para crear otro.</>} Si eliminas un anuncio, pasa a la papelera del equipo: ya no podrás verlo ni restaurarlo tú.</p>
     {params.notice && <p className="account-success" role="status">{messages[params.notice] ?? messages.error}</p>}
     <section className="account-telegram-entry" aria-labelledby="account-telegram-entry-title">
       <div><p className="eyebrow">COMUNIDAD CHILE3X</p><h2 id="account-telegram-entry-title">Telegram y acceso a Miembros</h2><p>Entra a la comunidad pública, vincula tu identidad de Telegram y solicita tu invitación individual al espacio privado de Miembros.</p></div>

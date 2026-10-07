@@ -4,6 +4,9 @@ import handler from "vinext/server/app-router-entry";
 import { hasPrivateSession, isCacheableDocument, preventPrivateCaching, publicCacheKey, PUBLIC_PAGE_CACHE_SECONDS } from "./public-cache";
 import type { TelegramQueueMessage } from "../lib/telegram";
 import { handleTelegramQueue, handleTelegramScheduled, handleTelegramWebhook, isTelegramWebhookPath } from "./telegram";
+import { cityDirectory } from "../app/locations";
+
+const availableCitySlugs = new Set(cityDirectory.map(city => city.citySlug));
 
 function withSecurityHeaders(response: Response, pathname = "") {
   const headers = new Headers(response.headers);
@@ -89,7 +92,7 @@ const worker = {
       }, allowedWidths));
     }
 
-    const cacheKey = publicCacheKey(request, env.CF_VERSION_METADATA?.id);
+    const cacheKey = publicCacheKey(request, env.CF_VERSION_METADATA?.id, availableCitySlugs);
     const cache = cacheKey ? (caches as CacheStorage & { default: Cache }).default : null;
 
     if (cache && cacheKey) {

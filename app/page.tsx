@@ -107,6 +107,11 @@ export default async function Home() {
       <PublicHeader coverageHref="#cobertura" />
 
       <section className="hero" id="explorar">
+        <picture className="hero-backdrop">
+          <source media="(max-width: 620px)" srcSet="/assets/hero-night-silhouette-mobile-20261007.webp" width={512} height={768} />
+          {/* Decorative artwork uses a device-specific crop, never a CSS stretch. */}
+          <img src="/assets/hero-night-silhouette-desktop-20261007.webp" alt="" aria-hidden="true" width={1600} height={640} fetchPriority="low" decoding="async" />
+        </picture>
         <div className="hero-copy">
           <p className="eyebrow">DIRECTORIO ADULTO · TODO CHILE</p>
           <h1>Directorio adulto por ciudad <em>en Chile.</em></h1>

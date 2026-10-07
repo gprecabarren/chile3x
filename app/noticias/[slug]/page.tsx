@@ -63,17 +63,17 @@ export default async function NewsArticlePage({ params }: Props) {
       </header>
       {cover && <figure className="news-article-cover"><Image src={`/noticias/media/${cover.id}`} alt={post.title} fill priority unoptimized sizes="100vw" /></figure>}
       <article className="news-article-content" dangerouslySetInnerHTML={{ __html: post.contentHtml }} />
-      <footer>
-        <h2>Continúa en Chile3X</h2>
+      <section className="news-article-next" aria-labelledby="news-article-next-title">
+        <h2 id="news-article-next-title">Continúa en Chile3X</h2>
         <p>Consulta el directorio por ciudad, revisa las preguntas frecuentes o crea una cuenta para preparar una publicación.</p>
-        <div>
+        <nav className="news-article-next-links" aria-label="Continúa en Chile3X">
           <Link className="button button-primary" href="/escorts">Directorio nacional</Link>
           <Link className="button button-outline" href="/escorts/concepcion">Concepción</Link>
           <Link className="button button-outline" href="/escorts/vina-del-mar">Viña del Mar</Link>
           <Link className="button button-outline" href="/faq">Preguntas frecuentes</Link>
           <Link className="button button-outline" href="/registro">Crear cuenta</Link>
-        </div>
-      </footer>
+        </nav>
+      </section>
     </main>
   </DirectoryShell>;
 }

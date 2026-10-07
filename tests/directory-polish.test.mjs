@@ -31,11 +31,12 @@ test("local guide counts the current visible results and omits its count at zero
   assert.doesNotMatch(directory, /Esta página muestra 12|Todavía no hay publicaciones visibles para esta búsqueda/);
 });
 
-test("coverage card stays compact without a hero image or overlay", () => {
+test("coverage card stays compact and the previously rejected hero asset stays removed", () => {
   assert.match(css, /\.hero-card \{[^}]*max-width: 380px;[^}]*padding: 24px/);
   assert.match(css, /\.coverage-stats \{[^}]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(css, /@media \(max-width: 860px\) \{[\s\S]*?\.hero-card \{[^}]*padding: 20px/);
-  assert.doesNotMatch(css, /home-hero-background|\.hero::before/);
+  assert.doesNotMatch(css, /home-hero-background/);
+  assert.match(css, /\.hero::before \{[^}]*pointer-events: none;/);
 });
 
 test("profile-side reads run concurrently after loading the listing", () => {

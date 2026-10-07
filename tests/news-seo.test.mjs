@@ -25,6 +25,19 @@ test("news dates are timezone explicit and omit missing or invalid values", () =
   assert.equal(newsIsoDate("invalid"), null);
 });
 
+test("article continuation uses its own layout, not the site's global footer grid", async () => {
+  const [page, css] = await Promise.all([source("app/noticias/[slug]/page.tsx"), source("app/globals.css")]);
+  assert.doesNotMatch(page, /<footer[\s>]/);
+  assert.match(page, /<section className="news-article-next" aria-labelledby="news-article-next-title">/);
+  assert.match(page, /<h2 id="news-article-next-title">Continúa en Chile3X<\/h2>/);
+  assert.match(page, /<nav className="news-article-next-links" aria-label="Continúa en Chile3X">/);
+  const links = page.slice(page.indexOf('<nav className="news-article-next-links"'), page.indexOf('</nav>', page.indexOf('<nav className="news-article-next-links"')));
+  assert.equal((links.match(/<Link /g) ?? []).length, 5);
+  assert.match(css, /\.news-article-next-links \{ display: flex; flex-wrap: wrap;/);
+  assert.match(css, /\.news-article-next-links \{ display: grid; grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(css, /\.news-article-next-links \.button-primary \{ grid-column: 1 \/ -1;/);
+});
+
 test("news sitemap omits drafts and noindex without retrieving HTML or cover joins", async () => {
   const news = await source("lib/news.ts");
   const query = news.slice(news.indexOf("export async function getPublicNewsSitemapRows"));
@@ -51,6 +64,15 @@ test("coverage illustration is confined to the card with fixed dimensions and PN
   assert.match(home, /image\/webp/);
   assert.match(home, /chile-coverage-panorama-20261007.png" alt="" width=\{768\} height=\{256\}/);
   for (const extension of ["png", "webp"]) assert.ok((await readFile(new URL(`../public/assets/chile-coverage-panorama-20261007.${extension}`, import.meta.url))).length < 50_000);
+});
+
+test("home backdrop is decorative, lightweight and has a distinct mobile crop", async () => {
+  const home = await source("app/page.tsx");
+  assert.match(home, /<picture className="hero-backdrop">/);
+  assert.match(home, /media="\(max-width: 620px\)" srcSet="\/assets\/hero-night-silhouette-mobile-20261007.webp" width=\{512\} height=\{768\}/);
+  assert.match(home, /hero-night-silhouette-desktop-20261007.webp" alt="" aria-hidden="true" width=\{1600\} height=\{640\} fetchPriority="low" decoding="async"/);
+  assert.equal((home.match(/<h1[\s>]/g) ?? []).length, 1);
+  for (const variant of ["desktop", "mobile"]) assert.ok((await readFile(new URL(`../public/assets/hero-night-silhouette-${variant}-20261007.webp`, import.meta.url))).length < 50_000);
 });
 
 test("published guide contains both flows and honest restrictions, with crawlable internal links", async () => {

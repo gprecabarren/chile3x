@@ -618,7 +618,9 @@ footer span { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid #272
 .news-article-byline { margin-top: 18px; }
 .news-article .news-article-byline time { color: inherit; font-size: inherit; font-weight: 600; text-transform: none; }
 .news-article-content { overflow-wrap: anywhere; }
-.news-article-content blockquote > ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 24px; padding-left: 22px; }
+.news-article > header h1 { font-size: clamp(34px, 5vw, 60px); line-height: 1.1; text-wrap: balance; }
+.news-article-content blockquote > ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 24px; padding-left: 0; }
+.news-article-content blockquote > ol > li::marker { content: ""; }
 .news-article-content blockquote > ol > li { min-width: 0; padding: 10px 12px; border: 1px solid #394157; border-radius: 8px; font-size: 14px; line-height: 1.65; }
 .news-article-content blockquote > ol strong { display: block; color: #ff9ca2; }
 @media (max-width: 620px) { .news-article-content blockquote > ol { grid-template-columns: 1fr; } .news-article-content blockquote { padding: 16px; } }

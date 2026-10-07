@@ -147,6 +147,8 @@ h1 em, h2 em { color: #ee3d45; font-style: italic; }
 .coverage-stat strong { color: white; font-family: Georgia, serif; font-size: 36px; font-weight: 400; line-height: 1; }
 .coverage-stat span { color: #c4c7d4; font-size: 12px; line-height: 1.4; }
 .hero-card .card-action { margin-top: 6px; }
+.coverage-panorama { display: block; width: 100%; margin: -5px 0 10px; }
+.coverage-panorama img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 1; }
 .card-action { width: 100%; }
 
 .section { padding: 106px max(28px, calc((100vw - 1184px) / 2)); }
@@ -610,6 +612,16 @@ footer span { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid #272
 @media (max-width: 620px) { .about-hero, .about-free, .about-trust, .about-roadmap { padding-right: 20px; padding-left: 20px; }.about-intro, .about-differences, .about-how, .about-available, .about-contact { width: min(100% - 40px, 1184px); }.about-hero-copy h1 { font-size: clamp(43px, 13vw, 60px); }.about-hero-copy > p:not(.eyebrow) { font-size: 16px; }.about-hero-copy > p.about-launch-note { font-size: 12px; }.about-hero-actions .button, .about-contact-actions .button { width: 100%; }.about-hero-panel { padding: 21px; box-shadow: 8px 9px 0 rgba(182,27,35,.32); }.about-hero-panel dl div { grid-template-columns: 98px minmax(0, 1fr); }.about-intro { padding: 72px 0 66px; }.about-differences { padding-bottom: 70px; }.about-differences-grid, .about-how ol, .about-roadmap-list { grid-template-columns: 1fr; }.about-differences-grid article, .about-how li, .about-roadmap-list article { min-height: 0; }.about-differences-grid span, .about-how li > span { margin-bottom: 24px; }.about-free { padding-top: 66px; padding-bottom: 66px; }.about-free-actions { align-items: flex-start; flex-direction: column; }.about-free aside { min-height: 190px; padding: 25px; }.about-free aside strong { font-size: 67px; }.about-how { padding: 76px 0; }.about-how nav { display: grid; grid-template-columns: 1fr; width: 100%; }.about-trust { gap: 21px; }.about-roadmap-list article { padding: 21px; }.about-available-links > a { padding-right: 48px; }.about-contact { padding-top: 67px; }.about-contact aside { padding: 20px; } }
 
 /* Navegación y directorio en pantallas pequeñas. */
+.news-breadcrumbs, .news-article-byline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; color: #aeb8c8; font-size: 12px; line-height: 1.6; }
+.news-breadcrumbs { margin-bottom: 20px; }
+.news-breadcrumbs a, .news-article-byline a { color: #ff9ca2; }
+.news-article-byline { margin-top: 18px; }
+.news-article .news-article-byline time { color: inherit; font-size: inherit; font-weight: 600; text-transform: none; }
+.news-article-content { overflow-wrap: anywhere; }
+.news-article-content blockquote > ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 24px; padding-left: 22px; }
+.news-article-content blockquote > ol > li { min-width: 0; padding: 10px 12px; border: 1px solid #394157; border-radius: 8px; font-size: 14px; line-height: 1.65; }
+.news-article-content blockquote > ol strong { display: block; color: #ff9ca2; }
+@media (max-width: 620px) { .news-article-content blockquote > ol { grid-template-columns: 1fr; } .news-article-content blockquote { padding: 16px; } }
 .mobile-public-menu { display: none; }
 .mobile-public-quick-links { display: none; }
 .account-legal-links { position: relative; }
@@ -1079,6 +1091,7 @@ select:disabled { opacity: .68; }
   .public-header .public-header-actions { order: 5; flex-basis: 100%; width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
   .public-header .public-header-actions.is-signed-in { grid-template-columns: minmax(0, 1fr); }
   .public-header .mobile-public-quick-links { order: 6; width: 100%; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; padding: 5px 0 0; border-top: 1px solid #242c3d; }
+  .public-header .mobile-public-quick-links.is-signed-out { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .mobile-public-quick-links a { min-width: 0; min-height: 36px; display: flex; align-items: center; justify-content: center; padding: 4px 2px; color: #d8ddea; font-size: 12px; font-weight: 600; letter-spacing: 0; line-height: 1.2; text-align: center; text-decoration: none; }
   .mobile-public-quick-links .mobile-directory-regions { grid-column: auto; color: #fff; }
   .mobile-public-quick-links a:hover { color: #ff7c84; }
@@ -1102,6 +1115,7 @@ select:disabled { opacity: .68; }
 
 @media (max-width: 480px) {
   .public-header .mobile-public-quick-links { grid-template-columns: 1.3fr .8fr 1fr; }
+  .public-header .mobile-public-quick-links.is-signed-out { grid-template-columns: 1.3fr 1fr; }
   .mobile-public-quick-links .mobile-directory-secondary { display: none; }
   .mobile-menu-panel > .mobile-menu-directory-extra { display: grid; }
 }
@@ -1813,9 +1827,10 @@ input[type="submit"] { text-transform: none !important; letter-spacing: .015em; 
 .face-privacy-controls input { width: 100%; min-width: 0; min-height: 24px; padding: 0; accent-color: #ed4857; }
 .face-privacy-controls > button { grid-column: 1 / -1; }
 .staged-profile-photo { padding: 16px; border: 1px solid #495b74; border-radius: 8px; }
-.public-navigation .public-login-link, .mobile-public-quick-links .public-login-link { border: 1px solid #8d343b; border-radius: 8px; color: #fff; background: #3a131b; box-shadow: inset 0 1px 0 #ffffff0d; }
+.public-navigation .public-login-link, .mobile-menu-account-entry .public-login-link { border: 1px solid #8d343b; border-radius: 8px; color: #fff; background: #3a131b; box-shadow: inset 0 1px 0 #ffffff0d; }
 .public-navigation .public-login-link { padding: 7px 10px; }
-.mobile-public-quick-links .public-login-link { padding: 8px 10px; }
+.mobile-menu-panel > .mobile-menu-account-entry { grid-column: 1 / -1; }
+.mobile-menu-account-entry .public-login-link { min-height: 44px; display: flex; align-items: center; justify-content: center; padding: 10px 14px; font-size: 14px; font-weight: 800; }
 .public-login-link:hover, .public-login-link:focus-visible { background: #6a1923; border-color: #f2666e; outline-offset: 3px; }
 @media (min-width: 1441px) {
   .public-header:not(.has-session) .public-navigation-stack .public-navigation { gap: 12px; }

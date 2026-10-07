@@ -58,6 +58,10 @@ export function PublicMobileMenu({ hasUserSession = false, hasAdminSession = fal
       </button>
       {open && (
         <div id="public-mobile-navigation" className="mobile-menu-panel" role="navigation" aria-label="Navegación principal">
+          {!hasUserSession && !hasAdminSession && <div className="mobile-menu-account-entry">
+            <p>MI CUENTA</p>
+            <Link className="public-login-link" href="/ingresar" onClick={closeMenu}>Iniciar sesión</Link>
+          </div>}
           <div className="mobile-menu-directory-extra">
             <p>DIRECTORIO</p>
             <Link href="/agencias" onClick={closeMenu}>Agencias</Link>

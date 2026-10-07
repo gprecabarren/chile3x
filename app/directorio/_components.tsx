@@ -110,12 +110,12 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
             detail: sessionSecondary,
           } : null}
         />
-        <nav className="mobile-public-quick-links" aria-label="Accesos rápidos">
+        <nav className={`mobile-public-quick-links${hasAnySession ? "" : " is-signed-out"}`} aria-label="Accesos rápidos">
           <Link className="mobile-directory-regions" href={coverageHref}><span className="mobile-quick-label-full">Regiones y ciudades</span><span className="mobile-quick-label-short">Regiones</span></Link>
           <Link href="/escorts">Escorts</Link>
           <Link className="mobile-directory-secondary" href="/agencias">Agencias</Link>
           <Link className="mobile-directory-secondary" href="/arriendos">Arriendos</Link>
-          <Link className={!hasAnySession ? "public-login-link" : undefined} href={sessionAccountHref}>{sessionAccountLabel}</Link>
+          {hasAnySession && <Link href={sessionAccountHref}>{sessionAccountLabel}</Link>}
         </nav>
         <div className={`public-header-actions${hasAnySession ? " is-signed-in" : ""}`} aria-label="Acciones de cuenta">
           {!hasAnySession && <Link className="button button-outline" href="/registro">Registrarse</Link>}
@@ -294,7 +294,7 @@ export function SeoContent({ city, region, count }: { city: string; region: stri
     valparaiso: "En Valparaíso la guía separa Los Andes, Quillota, Valparaíso y Viña del Mar para mantener una intención local clara.",
     ohiggins: "La cobertura de O’Higgins enlaza Rancagua y San Fernando sin reemplazar la búsqueda específica de cada ciudad.",
     maule: "En el Maule puedes pasar entre Curicó, Linares y Talca manteniendo filtros y páginas locales independientes.",
-    biobio: "La guía del Biobío conecta Concepción y Los Ángeles mediante rutas locales diferenciadas.",
+    biobio: "Puedes explorar Concepción y Los Ángeles por separado dentro del Biobío. La ciudad y el sector que aparecen en cada ficha son los declarados por la persona anunciante; comprueba esos datos antes de contactarla.",
     "la-araucania": "En La Araucanía puedes comparar la disponibilidad publicada en Pucón y Temuco desde sus páginas propias.",
     "los-lagos": "La cobertura de Los Lagos organiza Castro, Osorno y Puerto Montt como destinos locales separados.",
     aysen: "La cobertura de Aysén se incorporará cuando existan ciudades y publicaciones habilitadas para esa región.",
@@ -318,6 +318,7 @@ export function SeoContent({ city, region, count }: { city: string; region: stri
         <Link href="/faq">Preguntas frecuentes</Link>
         <Link href="/reglas-de-publicacion">Reglas de publicación</Link>
         <Link href="/noticias">Noticias y guías</Link>
+        <Link href="/noticias/como-funciona-chile3x-crear-cuenta-publicar-anuncio">Cómo crear una cuenta y publicar un anuncio</Link>
       </nav>
     </section>
   );

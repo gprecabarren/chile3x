@@ -125,6 +125,11 @@ export default async function Home() {
         </div>
         <aside className="hero-card" aria-label="Cobertura territorial de Chile3X">
           <h2>Encuentra por territorio.</h2>
+          <picture className="coverage-panorama">
+            <source srcSet="/assets/chile-coverage-panorama-20261007.webp" type="image/webp" />
+            {/* Fixed dimensions reserve space for this decorative artwork. */}
+            <img src="/assets/chile-coverage-panorama-20261007.png" alt="" width={768} height={256} decoding="async" />
+          </picture>
           <div className="coverage-stats">
             <div className="coverage-stat">
               <strong>{regions.length}</strong>

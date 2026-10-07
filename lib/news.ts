@@ -1,4 +1,5 @@
 import { and, desc, eq, ne } from "drizzle-orm";
+import { cache } from "react";
 import { getDb } from "@/db";
 import { newsMedia, newsPosts } from "@/db/schema";
 
@@ -40,4 +41,10 @@ export function safeNewsCanonicalUrl(value: string) {
 }
 export async function uniqueNewsSlug(value: string, currentId?: string) { const db = await getDb(); const base = newsSlug(value); let candidate = base; let suffix = 2; while (true) { const conditions = [eq(newsPosts.slug, candidate), ...(currentId ? [ne(newsPosts.id, currentId)] : [])]; const row = await db.select({ id: newsPosts.id }).from(newsPosts).where(and(...conditions)).limit(1); if (!row.length) return candidate; candidate = `${base}-${suffix++}`; } }
 export async function listNews(includeDrafts = false) { const rows = await (await getDb()).select({ post: newsPosts, cover: newsMedia }).from(newsPosts).leftJoin(newsMedia, eq(newsPosts.coverMediaId, newsMedia.id)).where(includeDrafts ? undefined : eq(newsPosts.status, "published")).orderBy(desc(newsPosts.publishedAt), desc(newsPosts.createdAt)); return rows; }
-export async function getNewsBySlug(slug: string, includeDrafts = false) { const [row] = await (await getDb()).select({ post: newsPosts, cover: newsMedia }).from(newsPosts).leftJoin(newsMedia, eq(newsPosts.coverMediaId, newsMedia.id)).where(and(eq(newsPosts.slug, slug), ...(includeDrafts ? [] : [eq(newsPosts.status, "published")]))).limit(1); return row ?? null; }
+export const getNewsBySlug = cache(async (slug: string, includeDrafts = false) => { const [row] = await (await getDb()).select({ post: newsPosts, cover: newsMedia }).from(newsPosts).leftJoin(newsMedia, eq(newsPosts.coverMediaId, newsMedia.id)).where(and(eq(newsPosts.slug, slug), ...(includeDrafts ? [] : [eq(newsPosts.status, "published")]))).limit(1); return row ?? null; });
+
+// The sitemap needs URLs and real modification dates, never article bodies or media.
+export async function getPublicNewsSitemapRows() {
+  return (await getDb()).select({ slug: newsPosts.slug, canonicalUrl: newsPosts.canonicalUrl, updatedAt: newsPosts.updatedAt })
+    .from(newsPosts).where(and(eq(newsPosts.status, "published"), eq(newsPosts.noindex, false)));
+}

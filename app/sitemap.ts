@@ -2,13 +2,14 @@ import type { MetadataRoute } from "next";
 import { cityDirectory } from "@/app/locations";
 import { getPublicProfileSitemapRows } from "@/lib/directory";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
-import { listNews } from "@/lib/news";
+import { getPublicNewsSitemapRows } from "@/lib/news";
+import { newsCanonicalUrl, newsIsoDate } from "@/lib/news-seo";
 import { profilePublicPath } from "@/lib/profile";
 
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [profiles, settings, news] = await Promise.all([getPublicProfileSitemapRows(), getSiteSettings(), listNews()]);
+  const [profiles, settings, news] = await Promise.all([getPublicProfileSitemapRows(), getSiteSettings(), getPublicNewsSitemapRows()]);
   const siteUrl = siteBaseUrl(settings.site_url);
   return [
     { url: siteUrl, changeFrequency: "weekly", priority: 1 },
@@ -26,6 +27,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/reglas-de-publicacion`, changeFrequency: "yearly", priority: 0.3 },
     ...cityDirectory.map((city) => ({ url: `${siteUrl}/escorts/${city.citySlug}`, changeFrequency: "daily" as const, priority: 0.8 })),
     ...profiles.map((profile) => ({ url: `${siteUrl}${profilePublicPath(profile)}`, lastModified: new Date(profile.updatedAt), changeFrequency: "weekly" as const, priority: 0.6 })),
-    ...news.map(({ post }) => ({ url: `${siteUrl}/noticias/${post.slug}`, lastModified: new Date(post.updatedAt), changeFrequency: "monthly" as const, priority: 0.6 })),
+    ...Array.from(new Map(news.map((post) => [newsCanonicalUrl(post.slug, post.canonicalUrl), post])).entries()).map(([url, post]) => {
+      const updatedAt = newsIsoDate(post.updatedAt);
+      return { url, ...(updatedAt ? { lastModified: new Date(updatedAt) } : {}), changeFrequency: "monthly" as const, priority: 0.6 };
+    }),
   ];
 }

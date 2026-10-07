@@ -107,11 +107,6 @@ export default async function Home() {
       <PublicHeader coverageHref="#cobertura" />
 
       <section className="hero" id="explorar">
-        <picture className="home-hero-background">
-          <source media="(max-width: 900px)" srcSet="/home-silhouette-mobile.webp" />
-          {/* Decorative, anonymous silhouette; never presented as an advertiser. */}
-          <img src="/home-silhouette-desktop.webp" alt="" width="1440" height="960" fetchPriority="high" decoding="async" />
-        </picture>
         <div className="hero-copy">
           <p className="eyebrow">DIRECTORIO ADULTO · TODO CHILE</p>
           <h1>Directorio adulto por ciudad <em>en Chile.</em></h1>
@@ -129,17 +124,17 @@ export default async function Home() {
           </div>
         </div>
         <aside className="hero-card" aria-label="Cobertura territorial de Chile3X">
-          <p className="card-kicker">COBERTURA INICIAL</p>
           <h2>Encuentra por territorio.</h2>
-          <div className="coverage-stat">
-            <strong>16</strong>
-            <span>regiones de Chile</span>
+          <div className="coverage-stats">
+            <div className="coverage-stat">
+              <strong>{regions.length}</strong>
+              <span>regiones de Chile</span>
+            </div>
+            <div className="coverage-stat">
+              <strong>{cityTotal}</strong>
+              <span>ciudades y comunas disponibles</span>
+            </div>
           </div>
-          <div className="coverage-stat">
-            <strong>{cityTotal}</strong>
-            <span>ciudades y comunas disponibles</span>
-          </div>
-          <p className="hero-card-note">Desde Arica hasta Punta Arenas.</p>
           <a className="button button-primary card-action" href="#cobertura">Explorar cobertura</a>
         </aside>
       </section>

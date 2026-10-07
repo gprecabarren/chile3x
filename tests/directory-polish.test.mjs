@@ -25,6 +25,19 @@ test("listing hover is desktop-only, lightweight and respects reduced motion", (
   assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.public-profile-card:hover[^}]*transform: none/);
 });
 
+test("local guide counts the current visible results and omits its count at zero", () => {
+  assert.match(cityPage, /<SeoContent city=\{city\.city\} region=\{city\.region\} count=\{profiles\.length\} \/>/);
+  assert.match(directory, /count > 0 \? `Esta página muestra \$\{count\} \$\{count === 1 \? "publicación visible" : "publicaciones visibles"\}\. ` : null/);
+  assert.doesNotMatch(directory, /Esta página muestra 12|Todavía no hay publicaciones visibles para esta búsqueda/);
+});
+
+test("coverage card stays compact without a hero image or overlay", () => {
+  assert.match(css, /\.hero-card \{[^}]*max-width: 380px;[^}]*padding: 24px/);
+  assert.match(css, /\.coverage-stats \{[^}]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(css, /@media \(max-width: 860px\) \{[\s\S]*?\.hero-card \{[^}]*padding: 20px/);
+  assert.doesNotMatch(css, /home-hero-background|\.hero::before/);
+});
+
 test("profile-side reads run concurrently after loading the listing", () => {
   assert.match(profile, /const \[relatedProfiles, stories, approvedReviewsPage,[\s\S]*?engagement\] = await Promise\.all\(\[/);
   assert.match(profile, /relatedProfileIds\.length \? getPublicProfiles/);

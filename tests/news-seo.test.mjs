@@ -47,15 +47,21 @@ test("news sitemap omits drafts and noindex without retrieving HTML or cover joi
   assert.match(news, /getNewsBySlug = cache\(async/);
 });
 
-test("mobile login is first in hamburger while the desktop link and signed-in shortcut remain", async () => {
+test("mobile login matches menu links and restores the third shortcut without changing desktop login", async () => {
   const [menu, header, css] = await Promise.all([source("app/directorio/PublicMobileMenu.tsx"), source("app/directorio/_components.tsx"), source("app/globals.css")]);
   assert.ok(menu.indexOf('className="mobile-menu-account-entry"') < menu.indexOf('className="mobile-menu-directory-extra"'));
   assert.match(menu, /!hasUserSession && !hasAdminSession/);
-  assert.match(menu, /href="\/ingresar" onClick=\{closeMenu\}/);
-  const mobile = header.slice(header.indexOf('<nav className={`mobile-public-quick-links'));
-  assert.match(mobile, /hasAnySession && <Link href=\{sessionAccountHref\}/);
+  assert.match(menu, /<Link href="\/ingresar" onClick=\{closeMenu\}>Iniciar sesión<\/Link>/);
+  assert.doesNotMatch(menu, /public-login-link/);
+  const start = header.indexOf('<nav className="mobile-public-quick-links"');
+  const mobile = header.slice(start, header.indexOf('</nav>', start));
+  assert.match(mobile, /<Link href=\{sessionAccountHref\}>\{sessionAccountLabel\}<\/Link>/);
+  assert.doesNotMatch(mobile, /hasAnySession &&/);
   assert.doesNotMatch(mobile, /className=\{!hasAnySession \? "public-login-link"/);
-  assert.match(css, /mobile-public-quick-links.is-signed-out \{ grid-template-columns: 1.3fr 1fr/);
+  assert.doesNotMatch(css, /mobile-public-quick-links.is-signed-out|mobile-menu-account-entry \.public-login-link/);
+  assert.match(css, /mobile-public-quick-links \{ grid-template-columns: 1.3fr .8fr 1fr/);
+  assert.match(header, /className=\{!hasAnySession \? "public-login-link" : undefined\}/);
+  assert.match(css, /\.public-navigation \.public-login-link \{ border: 1px solid #8d343b/);
 });
 
 test("coverage illustration is confined to the card with fixed dimensions and PNG fallback", async () => {

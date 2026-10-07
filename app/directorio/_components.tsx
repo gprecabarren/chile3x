@@ -110,12 +110,12 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
             detail: sessionSecondary,
           } : null}
         />
-        <nav className={`mobile-public-quick-links${hasAnySession ? "" : " is-signed-out"}`} aria-label="Accesos rápidos">
+        <nav className="mobile-public-quick-links" aria-label="Accesos rápidos">
           <Link className="mobile-directory-regions" href={coverageHref}><span className="mobile-quick-label-full">Regiones y ciudades</span><span className="mobile-quick-label-short">Regiones</span></Link>
           <Link href="/escorts">Escorts</Link>
           <Link className="mobile-directory-secondary" href="/agencias">Agencias</Link>
           <Link className="mobile-directory-secondary" href="/arriendos">Arriendos</Link>
-          {hasAnySession && <Link href={sessionAccountHref}>{sessionAccountLabel}</Link>}
+          <Link href={sessionAccountHref}>{sessionAccountLabel}</Link>
         </nav>
         <div className={`public-header-actions${hasAnySession ? " is-signed-in" : ""}`} aria-label="Acciones de cuenta">
           {!hasAnySession && <Link className="button button-outline" href="/registro">Registrarse</Link>}

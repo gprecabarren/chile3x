@@ -3,6 +3,7 @@ import { getDb } from "@/db";
 import { listingPeriods, profileDetails, profileServices, profileTags as profileTagRows, profiles, users } from "@/db/schema";
 import { createAdminNotification } from "@/lib/admin-notifications";
 import { hasUnlimitedEscortListings } from "@/lib/profile-limits";
+import { profileMetadataForType } from "@/lib/profile-type-metadata";
 import {
   additionalServices,
   compactText,
@@ -224,6 +225,7 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
 
   const priceValues = ["price_30_min", "price_60_min", "price_moment", "price_night"] as const;
   const prices = Object.fromEntries(priceValues.flatMap((field) => {
+    if (typeValue !== "escort") return [];
     const raw = compactText(formData.get(field), 14);
     const value = optionalPositiveInteger(formData.get(field));
     if (raw && (value === null || value === 0)) {
@@ -239,27 +241,27 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
 
   const telegram = normalizeTelegram(compactText(formData.get("contact_telegram"), 80));
 
-  const age = compactText(formData.get("age"), 2);
+  const age = typeValue === "escort" ? compactText(formData.get("age"), 2) : "";
   if (age && (!/^[0-9]{2,3}$/.test(age) || Number(age) < 18)) {
     throw new ProfileValidationError("La edad debe ser de al menos 18 años.");
   }
 
-  const website = requiredUrl(compactText(formData.get("website"), 180), "El sitio web");
-  const facebookUrl = requiredUrl(compactText(formData.get("facebook_url"), 180), "Facebook", "facebook.com");
-  const twitterUrl = requiredUrl(compactText(formData.get("twitter_url"), 180), "Twitter/X", ["x.com", "twitter.com"]);
+  const website = typeValue === "agency" ? requiredUrl(compactText(formData.get("website"), 180), "El sitio web") : "";
+  const facebookUrl = typeValue === "agency" ? requiredUrl(compactText(formData.get("facebook_url"), 180), "Facebook", "facebook.com") : "";
+  const twitterUrl = typeValue === "agency" ? requiredUrl(compactText(formData.get("twitter_url"), 180), "Twitter/X", ["x.com", "twitter.com"]) : "";
   const instagramUrl = normalizePlatformUsername(compactText(formData.get("instagram_url"), 64), "Instagram", "www.instagram.com");
-  const arsmateUrl = normalizePlatformUsername(compactText(formData.get("arsmate_url"), 64), "Arsmate", "arsmate.com");
-  const onlyfansUrl = normalizePlatformUsername(compactText(formData.get("onlyfans_url"), 64), "OnlyFans", "onlyfans.com");
-  const languages = listFromForm(formData.getAll("languages"), spokenLanguages).join(", ");
+  const arsmateUrl = typeValue !== "rental" ? normalizePlatformUsername(compactText(formData.get("arsmate_url"), 64), "Arsmate", "arsmate.com") : "";
+  const onlyfansUrl = typeValue !== "rental" ? normalizePlatformUsername(compactText(formData.get("onlyfans_url"), 64), "OnlyFans", "onlyfans.com") : "";
+  const languages = typeValue === "escort" ? listFromForm(formData.getAll("languages"), spokenLanguages).join(", ") : "";
   const availabilityError = validateAvailability(formData);
   if (availabilityError) throw new ProfileValidationError(availabilityError);
   const availability = serializeAvailability(formData);
-  const travelCity = compactText(formData.get("travel_city"), 120);
+  const travelCity = typeValue === "escort" ? compactText(formData.get("travel_city"), 120) : "";
   const travelStart = compactText(formData.get("travel_start"), 10);
   const travelEnd = compactText(formData.get("travel_end"), 10);
   const travelNote = compactText(formData.get("travel_note"), 180);
   const allowedTravelCities = new Set([...citiesByRegion.values()].flat());
-  if ([travelCity, travelStart, travelEnd].some(Boolean) && !(travelCity && travelStart && travelEnd)) {
+  if (typeValue === "escort" && [travelCity, travelStart, travelEnd].some(Boolean) && !(travelCity && travelStart && travelEnd)) {
     throw new ProfileValidationError("Para publicar un viaje indica ciudad, fecha de inicio y fecha de término.");
   }
   if (travelCity && (!allowedTravelCities.has(travelCity) || !/^\d{4}-\d{2}-\d{2}$/.test(travelStart) || !/^\d{4}-\d{2}-\d{2}$/.test(travelEnd) || travelStart > travelEnd)) {
@@ -272,6 +274,8 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
 
   const metadata = Object.fromEntries(
     metadataFields
+      .filter((field) => typeValue === "escort" || !["artist_name", "gender", "age", "nationality", "skin_color", "languages", "height_cm", "weight_kg", "measurements", "hair_color", "body_type", "bust_size"].includes(field))
+      .filter((field) => typeValue !== "rental" || !["agency_years", "website", "facebook_url", "twitter_url", "arsmate_url", "onlyfans_url", "promotions", "contact_methods"].includes(field))
       .map((field) => [field, compactText(formData.get(field), field === "promotions" ? 500 : 180)] as const)
       .filter(([, value]) => value),
   );
@@ -316,11 +320,11 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
       schedule: null,
       priceAmount: typeValue === "escort" ? null : generalPrice,
       currency: formData.get("currency") === "USD" ? "USD" : "CLP",
-      metadata: JSON.stringify(metadata),
+      metadata: JSON.stringify(profileMetadataForType(typeValue, metadata)),
     },
     tags,
-    servicesIncluded: listFromForm(formData.getAll("services_included"), includedServices),
-    servicesAdditional: listFromForm(formData.getAll("services_additional"), additionalServices),
+    servicesIncluded: typeValue === "rental" ? [] : listFromForm(formData.getAll("services_included"), includedServices),
+    servicesAdditional: typeValue === "rental" ? [] : listFromForm(formData.getAll("services_additional"), additionalServices),
     intent,
   };
 }

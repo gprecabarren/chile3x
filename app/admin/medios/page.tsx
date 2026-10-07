@@ -11,6 +11,8 @@ import { profilePublicPath } from "@/lib/profile";
 import { AdminPageHeading, AdminShell } from "../_components";
 import { AdminPagination, pageHref, readAdminPage } from "../pagination";
 import { AdminMediaImageProcessing } from "./AdminMediaImageProcessing";
+import { ApproveAllProfileMedia } from "./ApproveAllProfileMedia";
+import { bulkMediaMessages } from "@/lib/media-bulk-review";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +28,7 @@ const notices: Record<string, string> = {
 };
 
 type SearchParams = {
+  media_notice?: string;
   notice?: string;
   perfil?: string;
   cuenta?: string;
@@ -380,6 +383,7 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
       backHref={backHref}
     />
     {params.notice && notices[params.notice] && <p className="admin-success" role="status">{notices[params.notice]}</p>}
+    {params.media_notice && bulkMediaMessages[params.media_notice] && <p className="admin-success" role="status">{bulkMediaMessages[params.media_notice]}</p>}
     <nav className="admin-media-tabs" aria-label="Tipo de medios a moderar">
       <Link prefetch={false} className={view === "public" ? "is-active" : undefined} href={mediaHref(publicTabParams)}>Galerías públicas{pendingPublic > 0 && <b>{pendingPublic}</b>}</Link>
       <Link prefetch={false} className={view === "exclusive" ? "is-active" : undefined} href={mediaHref(exclusiveTabParams)}>Contenido exclusivo{pendingExclusive > 0 && <b>{pendingExclusive}</b>}</Link>
@@ -410,6 +414,7 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
           const accountHref = `/admin/cuentas/${encodeURIComponent(group.ownerId)}?return_to=${encodeURIComponent(currentHref)}`;
           return <section className="admin-media-profile-group" key={group.id}>
             <header><div><p className="eyebrow">ANUNCIO</p><h2>{group.name}</h2><span><Link prefetch={false} className="admin-media-owner-link" href={accountHref}>{group.ownerUsername ? `@${group.ownerUsername}` : "Abrir cuenta propietaria"}</Link> · <a href={`mailto:${group.ownerEmail}`}>{group.ownerEmail}</a> · {listingStatusLabel(group.status)} · {group.items.length} archivo{group.items.length === 1 ? "" : "s"}{pending > 0 ? ` · ${pending} pendiente${pending === 1 ? "" : "s"}` : ""}</span></div><div><Link prefetch={false} className="button button-public-preview" href={profileHref} target="_blank">Ver anuncio público</Link><Link prefetch={false} className="button button-outline" href={`/admin/anuncios-publicaciones?q=${encodeURIComponent(group.name)}&return_to=${encodeURIComponent(currentHref)}`}>Abrir moderación</Link></div></header>
+            <ApproveAllProfileMedia profileId={group.id} files={group.items.map(item => item.media)} returnTo={currentHref} />
             {profilePhoto.length > 0 && <section><h3>Foto de perfil</h3><div className="admin-media-grid">{profilePhoto.map((item) => <PublicMediaCard key={item.media.id} media={item.media} profileName={group.name} returnTo={currentHref} />)}</div></section>}
             {gallery.length > 0 && <section><h3>Galería pública</h3><div className="admin-media-grid">{gallery.map((item) => <PublicMediaCard key={item.media.id} media={item.media} profileName={group.name} returnTo={currentHref} />)}</div></section>}
           </section>;
@@ -437,7 +442,7 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
           return <section className="admin-media-profile-group admin-media-account-group" key={group.id}>
             <header><div><p className="eyebrow">CUENTA CON MEDIOS</p><h2>@{group.username ?? group.name ?? "usuario"}</h2><span><a href={`mailto:${group.email}`}>{group.email}</a> · {allItems.length} archivo{allItems.length === 1 ? "" : "s"} · {images} foto{images === 1 ? "" : "s"} · {videos} video{videos === 1 ? "" : "s"}{pending ? ` · ${pending} pendiente${pending === 1 ? "" : "s"}` : ""}</span></div><div><Link prefetch={false} className="button button-outline" href={accountHref}>Abrir cuenta</Link><Link prefetch={false} className="button button-public-preview" href={focused ? mediaHref(accountTabParams) : mediaHref(focusParams)}>{focused ? "Ver todas las cuentas" : "Ver medios de la cuenta"}</Link></div></header>
             {focused && <>
-              {group.publicGroups.map((entry) => <section key={entry.id}><h3>Galería pública · {entry.name}</h3><div className="admin-media-grid">{entry.items.map((item) => <PublicMediaCard key={item.media.id} media={item.media} profileName={entry.name} returnTo={currentHref} />)}</div></section>)}
+              {group.publicGroups.map((entry) => <section key={entry.id}><h3>Galería pública · {entry.name}</h3><ApproveAllProfileMedia profileId={entry.id} files={entry.items.map(item => item.media)} returnTo={currentHref} /><div className="admin-media-grid">{entry.items.map((item) => <PublicMediaCard key={item.media.id} media={item.media} profileName={entry.name} returnTo={currentHref} />)}</div></section>)}
               {group.exclusiveGroups.map((entry) => <section key={entry.id}><h3>Contenido exclusivo</h3><div className="admin-media-grid">{entry.items.map((item) => <ExclusiveMediaCard key={item.media.id} media={item.media} ownerUsername={entry.ownerUsername} returnTo={currentHref} />)}</div></section>)}
             </>}
           </section>;

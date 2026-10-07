@@ -75,9 +75,10 @@ test("image processing is optional, previewed and scoped to media moderators", a
   assert.match(adminList, /media\.mediaType === "image" && <AdminMediaImageProcessing/);
 });
 
-test("face detection WebAssembly is allowed only on the editing pages", async () => {
+test("face detection WebAssembly is scoped to editing and session documents, never JavaScript eval", async () => {
   const worker = await source("worker/index.ts");
   assert.match(worker, /pathname === "\/admin\/medios"/);
   assert.match(worker, /wasmPermission = faceBlurPage \? " 'wasm-unsafe-eval'" : ""/);
+  assert.match(worker, /withSecurityHeaders\(await handler.fetch\(request, env, ctx\), url.pathname, hasPrivateSession\(request\)\)/);
   assert.doesNotMatch(worker, /'unsafe-eval'/);
 });

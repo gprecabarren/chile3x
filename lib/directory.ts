@@ -6,6 +6,7 @@ import { getDb } from "@/db";
 import { accountPresence, agencyMembers, blockedProfiles, profileDetails, profileMedia, profileServices, profileTags, profiles, profileViews } from "@/db/schema";
 import { getApprovedMediaForProfiles } from "@/lib/media";
 import { publicProfileCondition } from "@/lib/public-profile-visibility";
+import { profileMetadataForType } from "@/lib/profile-type-metadata";
 import {
   additionalServices,
   bodyTypes,
@@ -260,11 +261,11 @@ export async function getPublicProfiles(options: PublicProfileOptions = {}) {
       schedule: details?.schedule ?? null,
       priceAmount: details?.priceAmount ?? null,
       currency: details?.currency ?? "CLP",
-      metadata: readMetadata(details?.metadata),
+      metadata: profileMetadataForType(profile.type, readMetadata(details?.metadata)),
     },
     tags: tagMap.get(profile.id) ?? [],
-    servicesIncluded: includedMap.get(profile.id) ?? [],
-    servicesAdditional: additionalMap.get(profile.id) ?? [],
+    servicesIncluded: profile.type === "rental" ? [] : includedMap.get(profile.id) ?? [],
+    servicesAdditional: profile.type === "rental" ? [] : additionalMap.get(profile.id) ?? [],
     media: (mediaByProfile.get(profile.id) ?? []).map((media) => ({ id: media.id, url: `/media/${media.id}`, altText: media.altText, mediaType: media.mediaType, contentType: media.contentType, isProfilePhoto: media.isProfilePhoto })),
     agencyIds: agencyMap.get(profile.id) ?? [],
     memberIds: memberMap.get(profile.id) ?? [],

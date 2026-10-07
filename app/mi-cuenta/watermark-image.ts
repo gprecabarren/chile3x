@@ -1,10 +1,13 @@
 "use client";
 
+import { validPrivacyRegions, type FacePrivacyRegion } from "@/lib/face-privacy";
+
 export type GalleryImageTransformOptions = {
   maxBytes: number;
   maxDimension: number;
   applyWatermark: boolean;
   blurFaces: boolean;
+  faceRegions?: readonly FacePrivacyRegion[];
   onProgress?: (message: string) => void;
 };
 
@@ -62,20 +65,32 @@ async function getFaceDetector() {
       };
       const fileset = await vision.FilesetResolver.forVisionTasks(mediaPipeWasmUrl);
       return vision.FaceDetector.createFromOptions(fileset, { baseOptions: { modelAssetPath: mediaPipeFaceModelUrl }, runningMode: "IMAGE", minDetectionConfidence: 0.5 });
-    })();
+    })().catch(error => { faceDetectorPromise = null; throw error; });
   }
   return faceDetectorPromise;
 }
 
-function blurDetectedFaces(context: CanvasRenderingContext2D, source: CanvasImageSource, boxes: FaceBox[], scaleX: number, scaleY: number) {
+function blurDetectedFaces(context: CanvasRenderingContext2D, boxes: FaceBox[], scaleX: number, scaleY: number, rounded = true) {
   for (const box of boxes) {
     const width = Math.max(1, box.width * scaleX); const height = Math.max(1, box.height * scaleY);
     const centerX = (box.originX + box.width / 2) * scaleX; const centerY = (box.originY + box.height / 2) * scaleY;
     const padding = Math.max(5, Math.round(Math.max(width, height) * 0.13));
+    const left = Math.max(0, Math.floor(centerX - width / 2 - padding));
+    const top = Math.max(0, Math.floor(centerY - height / 2 - padding));
+    const right = Math.min(context.canvas.width, Math.ceil(centerX + width / 2 + padding));
+    const bottom = Math.min(context.canvas.height, Math.ceil(centerY + height / 2 + padding));
+    if (right <= left || bottom <= top) continue;
+    // Canvas filter is not supported reliably on Safari/iOS. A tiny, smoothed
+    // raster permanently removes fine detail in the saved file on every browser.
+    const privacy = document.createElement("canvas"); privacy.width = 4; privacy.height = 4;
+    const privacyContext = privacy.getContext("2d");
+    if (!privacyContext) throw new Error("Tu navegador no pudo aplicar el difuminado. La imagen no se guardó.");
+    privacyContext.drawImage(context.canvas, left, top, right - left, bottom - top, 0, 0, 4, 4);
     context.save(); context.beginPath();
-    context.ellipse(centerX, centerY, width / 2 + padding, height / 2 + padding, 0, 0, Math.PI * 2);
-    context.clip(); context.filter = `blur(${Math.max(13, Math.round(Math.max(width, height) * 0.16))}px)`;
-    context.drawImage(source, 0, 0, context.canvas.width, context.canvas.height); context.restore();
+    if (rounded) context.ellipse(centerX, centerY, width / 2 + padding, height / 2 + padding, 0, 0, Math.PI * 2);
+    else context.rect(left, top, right - left, bottom - top);
+    context.clip(); context.imageSmoothingEnabled = true; context.imageSmoothingQuality = "high";
+    context.drawImage(privacy, left, top, right - left, bottom - top); context.restore();
   }
 }
 
@@ -102,17 +117,29 @@ export async function prepareGalleryImage(file: File, options: GalleryImageTrans
     context.drawImage(source, 0, 0, width, height);
     let facesBlurred = 0;
     if (options.blurFaces) {
+      const manual = options.faceRegions ?? [];
+      if (!validPrivacyRegions(manual)) throw new Error("Las zonas de difuminado no son válidas. La imagen no se guardó.");
+      if (manual.length) {
+        blurDetectedFaces(context, manual.map(region => ({ originX: region.x * width, originY: region.y * height, width: region.width * width, height: region.height * height })), 1, 1, false);
+        facesBlurred = manual.length;
+      } else {
       options.onProgress?.("Detectando rostros…");
+      let boxes: FaceBox[];
+      let timeout: ReturnType<typeof setTimeout> | undefined;
       try {
-        const result = (await getFaceDetector()).detect(source);
-        const boxes = (result.detections ?? []).flatMap((detection) => detection.boundingBox ? [detection.boundingBox] : []);
-        if (boxes.length) {
-          blurDetectedFaces(context, source, boxes, width / sourceImage.naturalWidth, height / sourceImage.naturalHeight);
-          facesBlurred = boxes.length; options.onProgress?.(`${facesBlurred} rostro${facesBlurred === 1 ? "" : "s"} difuminado${facesBlurred === 1 ? "" : "s"}.`);
-        } else options.onProgress?.("No se detectaron rostros.");
+        const detector = await Promise.race([getFaceDetector(), new Promise<never>((_, reject) => {
+          timeout = setTimeout(() => reject(new Error("Detector timeout")), 20_000);
+        })]);
+        const result = detector.detect(canvas);
+        boxes = (result.detections ?? []).flatMap((detection) => detection.boundingBox ? [detection.boundingBox] : []);
       } catch {
-        throw new Error("No se pudo detectar rostros en este navegador. Desactiva el difuminado o intenta con otra imagen.");
+        throw new Error("No se pudo cargar el detector. La foto no se subió: marca zonas con el difuminado manual e inténtalo nuevamente.");
+      } finally { if (timeout) clearTimeout(timeout); }
+      if (!boxes.length) throw new Error("No se detectaron rostros. La foto no se subió: marca las zonas con el difuminado manual y vuelve a intentarlo.");
+      blurDetectedFaces(context, boxes, 1, 1);
+      facesBlurred = boxes.length;
       }
+      options.onProgress?.(`${facesBlurred} zona${facesBlurred === 1 ? "" : "s"} difuminada${facesBlurred === 1 ? "" : "s"}.`);
     }
     if (options.applyWatermark) { options.onProgress?.("Aplicando marca de agua Chile3X…"); await drawWatermark(context, file, width, height); }
     options.onProgress?.("Optimizando imagen…");

@@ -42,11 +42,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const formData = await request.formData();
   const status = formData.get("status");
   const verificationStatus = formData.get("verification_status");
-  const healthReviewStatus = formData.get("health_review_status");
+  const requestedHealthReviewStatus = formData.get("health_review_status");
   const featuredInput = formData.get("is_featured");
   const { profileId } = await params;
 
-  if (typeof status !== "string" || typeof verificationStatus !== "string" || typeof healthReviewStatus !== "string" || !allowedStatuses.has(status) || !allowedVerification.has(verificationStatus) || !allowedHealthReview.has(healthReviewStatus)) {
+  if (typeof status !== "string" || typeof verificationStatus !== "string" || !allowedStatuses.has(status) || !allowedVerification.has(verificationStatus)) {
     return new Response("Estado no válido.", { status: 400 });
   }
 
@@ -66,6 +66,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     trashedAt: profiles.trashedAt,
   }).from(profiles).innerJoin(users, eq(profiles.ownerId, users.id)).where(eq(profiles.id, profileId)).limit(1);
   if (!existingProfile) return new Response("Perfil no encontrado.", { status: 404 });
+  const healthReviewStatus = existingProfile.type === "escort" ? requestedHealthReviewStatus : "not_requested";
+  if (typeof healthReviewStatus !== "string" || !allowedHealthReview.has(healthReviewStatus)) return new Response("Estado de revisión médica no válido.", { status: 400 });
   if (existingProfile.trashedAt) return new Response("El anuncio está en la papelera. Restáuralo antes de cambiar su estado.", { status: 409 });
   if (status === "approved" && !existingProfile.ownerIsActive) {
     const destination = new URL(safeReturnTo(formData.get("return_to")) ?? "/admin/anuncios-publicaciones", request.url);

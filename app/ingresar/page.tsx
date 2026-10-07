@@ -35,7 +35,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const params = await searchParams;
   const returnTo = safeAccountReturnTo(params.return_to ?? null);
   const settings = await getSiteSettings();
-  return <main className="auth-page"><section className="auth-card">
+  return <main className="auth-page"><section className="auth-card auth-split-card">
+    <div className="auth-intro">
     <Link className="auth-brand" href="/"><OfficialChile3xLogo priority /></Link>
     <p className="eyebrow">CUENTA DE ANUNCIANTE</p><h1>Vuelve a tu panel.</h1><p>Gestiona tus anuncios, actualiza cada publicación y consulta su estado de revisión.</p>
     {params.error && <p className="form-alert" role="alert">{messages[params.error] ?? messages.invalid}</p>}
@@ -43,6 +44,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     {params.reset === "1" && <p className="auth-success" role="status">Tu contraseña fue actualizada. Ya puedes iniciar sesión.</p>}
     {params.closed === "1" && <p className="auth-success" role="status">Tu sesión fue cerrada correctamente.</p>}
     {params.closed === "admin" && <p className="auth-success" role="status">La sesión de administrador fue cerrada correctamente.</p>}
+    </div><div className="auth-entry">
     <div className="auth-provider-list">
       {settings.google_oauth_client_id && <GoogleSignInButton clientId={settings.google_oauth_client_id} intent="login" returnTo={returnTo} />}
       <AppleSignInButton enabled={settings.apple_sign_in_status === "enabled"} intent="login" returnTo={returnTo} />
@@ -51,5 +53,6 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     <form action="/api/auth/login" method="post" className="auth-form"><input name="return_to" type="hidden" value={returnTo} /><label>Correo electrónico<input name="email" type="email" required maxLength={160} autoComplete="email" placeholder="Ej. valentina@correo.cl" /></label><label>Contraseña<input name="password" type="password" required autoComplete="current-password" placeholder="Tu contraseña" /></label><AuthTurnstile action={TURNSTILE_AUTH_LOGIN_ACTION} /><button className="button button-primary" type="submit">Ingresar</button></form>
     <p className="auth-switch"><Link href="/recuperar-clave">Olvidé mi contraseña</Link></p>
     <p className="auth-switch">¿Aún no publicas? <Link href={`/registro?return_to=${encodeURIComponent(returnTo)}`}>Crear cuenta</Link></p>
+    </div>
   </section></main>;
 }

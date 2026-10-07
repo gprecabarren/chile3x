@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db";
-import { profiles } from "@/db/schema";
+import { profileMedia, profiles } from "@/db/schema";
 import { DirectoryShell, PortalContactIcon, ProfileCard } from "@/app/directorio/_components";
 import { ProfileStoryTrigger, StoryRail } from "@/app/historias/StoryRail";
 import { ProfileViewTracker } from "../ProfileViewTracker";
@@ -28,10 +28,12 @@ import { ProfileVerificationBadge } from "../ProfileVerificationBadge";
 import { ProfileCityAlertPanel } from "../ProfileCityAlertPanel";
 import { getActiveProfileCityAlerts, getProfileAlertCities } from "@/lib/profile-city-alerts";
 import { InternalChatButton } from "../InternalChatButton";
+import { ApproveAllProfileMedia } from "@/app/admin/medios/ApproveAllProfileMedia";
+import { bulkMediaMessages, MAX_BULK_MEDIA } from "@/lib/media-bulk-review";
 
 export const dynamic = "force-dynamic";
 
-type ProfilePageProps = { params: Promise<{ slug: string }>; searchParams: Promise<{ return_to?: string }> };
+type ProfilePageProps = { params: Promise<{ slug: string }>; searchParams: Promise<{ return_to?: string; media_notice?: string }> };
 
 function profileTypeLabel(type: PublicProfile["type"]) {
   return type === "escort" ? "Escort" : type === "agency" ? "Agencia" : "Arriendo";
@@ -131,6 +133,9 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   const adminReturnTo = requestedReturnTo.startsWith("/admin/") ? safeAdminReturnTo(requestedReturnTo) : "/admin/anuncios-publicaciones";
   const previewPath = `${profilePublicPath(profile)}?return_to=${encodeURIComponent(adminReturnTo)}`;
   const isAdminPreview = Boolean(admin) && profile.status !== "approved";
+  const reviewableMedia = adminHasCapability(admin, "media.moderate")
+    ? await (await getDb()).select().from(profileMedia).where(and(eq(profileMedia.profileId, profile.id), eq(profileMedia.visibility, "public"))).limit(MAX_BULK_MEDIA + 1)
+    : [];
   const relatedProfileIds = profile.type === "agency" ? profile.memberIds : profile.agencyIds;
   const facts = metadataFacts(profile).filter((item): item is [string, string] => Boolean(item[1]));
   const tags = getProfileDisplayTags(profile);
@@ -145,10 +150,10 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   ] as const;
   const socialButtons = [
     ["instagram", contacts.instagram, "Instagram", "contact-instagram"],
-    ["arsmate", contacts.arsmate, "Arsmate", "contact-arsmate"],
-    ["onlyfans", contacts.onlyfans, "OnlyFans", "contact-onlyfans"],
+    ["arsmate", profile.type !== "rental" ? contacts.arsmate : null, "Arsmate", "contact-arsmate"],
+    ["onlyfans", profile.type !== "rental" ? contacts.onlyfans : null, "OnlyFans", "contact-onlyfans"],
   ] as const;
-  const videoCallHref = profile.servicesIncluded.includes("Videollamada") && contacts.whatsapp
+  const videoCallHref = profile.type === "escort" && profile.servicesIncluded.includes("Videollamada") && contacts.whatsapp
     ? contacts.whatsapp.replace(/text=[^&]*/, `text=${encodeURIComponent(`Hola ${profile.displayName}, vi que ofreces videollamada en Chile3X y quisiera consultar.`)}`)
     : null;
   const prices = readProfilePrices(profile.details).map((price) => ({
@@ -185,8 +190,9 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
     <DirectoryShell>
       {profile.status === "approved" && !profile.isDemo && <ProfileViewTracker profileId={profile.id} />}
       {profile.status === "approved" && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(schema) }} />}
-      {admin && <section className="admin-profile-review-bar"><Link className="admin-profile-back-link" href={adminReturnTo}>← Volver a perfiles</Link><div><p>{isAdminPreview ? "VISTA DE MODERACIÓN" : "ADMINISTRACIÓN DEL AVISO"}</p><h2>{isAdminPreview ? "Este aviso no es público todavía" : "Gestiona este aviso publicado"}</h2><span>Revísalo como lo ve el público y actualiza su estado, verificación o prioridad en el inicio. Los documentos privados nunca aparecen en la ficha pública.</span><Link className="admin-profile-media-link" href={`/admin/medios?perfil=${encodeURIComponent(profile.id)}`}>Revisar fotos y videos de este anuncio</Link></div><form action={`/api/admin/profiles/${profile.id}/status`} method="post" className="admin-profile-review-form"><input type="hidden" name="return_to" value={previewPath} /><label>Publicación<select name="status" defaultValue={profile.status}><option value="draft">Borrador</option><option value="pending">En revisión</option><option value="approved">Aprobar y publicar</option><option value="paused">Pausado</option><option value="rejected">Requiere cambios</option><option value="expired">Vencido</option></select></label><label>Perfil verificado<select name="verification_status" defaultValue={profile.verificationStatus}><option value="unreviewed">No verificado</option><option value="in_review">Verificación en curso</option><option value="reviewed">Verificado ✓</option></select></label><label>Revisión médica<select name="health_review_status" defaultValue={profile.healthReviewStatus}><option value="not_requested">No solicitada</option><option value="in_review">En revisión</option><option value="reviewed">Revisada</option></select></label><label className="admin-featured-toggle"><input name="is_featured" type="checkbox" defaultChecked={profile.isFeatured} />Destacar en el inicio</label><button className="button button-primary" type="submit">Guardar decisión</button></form></section>}
+      {admin && <section className="admin-profile-review-bar"><Link className="admin-profile-back-link" href={adminReturnTo}>← Volver a perfiles</Link><div><p>{isAdminPreview ? "VISTA DE MODERACIÓN" : "ADMINISTRACIÓN DEL AVISO"}</p><h2>{isAdminPreview ? "Este aviso no es público todavía" : "Gestiona este aviso publicado"}</h2><span>Revísalo como lo ve el público y actualiza su estado, verificación o prioridad en el inicio. Los documentos privados nunca aparecen en la ficha pública.</span><Link className="admin-profile-media-link" href={`/admin/medios?perfil=${encodeURIComponent(profile.id)}`}>Revisar fotos y videos de este anuncio</Link></div><form action={`/api/admin/profiles/${profile.id}/status`} method="post" className="admin-profile-review-form"><input type="hidden" name="return_to" value={previewPath} /><label>Publicación<select name="status" defaultValue={profile.status}><option value="draft">Borrador</option><option value="pending">En revisión</option><option value="approved">Aprobar y publicar</option><option value="paused">Pausado</option><option value="rejected">Requiere cambios</option><option value="expired">Vencido</option></select></label><label>Perfil verificado<select name="verification_status" defaultValue={profile.verificationStatus}><option value="unreviewed">No verificado</option><option value="in_review">Verificación en curso</option><option value="reviewed">Verificado ✓</option></select></label>{profile.type === "escort" && <label>Revisión médica<select name="health_review_status" defaultValue={profile.healthReviewStatus}><option value="not_requested">No solicitada</option><option value="in_review">En revisión</option><option value="reviewed">Revisada</option></select></label>}<label className="admin-featured-toggle"><input name="is_featured" type="checkbox" defaultChecked={profile.isFeatured} />Destacar en el inicio</label><button className="button button-primary" type="submit">Guardar decisión</button></form></section>}
       {adminHasCapability(admin, "profiles.recycle") && <details className="admin-profile-trash-bar profile-trash-control is-destructive"><summary>🗑 Enviar este anuncio a la papelera</summary><form action={`/api/admin/profiles/${profile.id}/papelera`} method="post"><input type="hidden" name="action" value="trash" /><input type="hidden" name="return_to" value="/admin/anuncios-publicaciones/papelera" /><p>La ficha dejará de ser pública y sus datos quedarán disponibles en la papelera administrativa.</p><label>Escribe PAPELERA<input name="confirmation" required autoComplete="off" /></label><button className="button button-danger" type="submit">Confirmar envío</button></form></details>}
+      {adminHasCapability(admin, "media.moderate") && <section className="profile-bulk-media-review">{query.media_notice && bulkMediaMessages[query.media_notice] && <p className="admin-notice" role="status">{bulkMediaMessages[query.media_notice]}</p>}<ApproveAllProfileMedia profileId={profile.id} files={reviewableMedia} returnTo={previewPath} /></section>}
       {admin && verificationDocuments.length > 0 && <section className="admin-private-documents"><strong>Documentos privados de verificación</strong>{verificationDocuments.map((document) => <a key={document.kind} href={`/api/perfiles/${profile.id}/documentos/${document.kind}`}>{document.kind === "identity" ? "Descargar carnet" : "Descargar examen médico"}</a>)}</section>}
       <section className="profile-page-shell">
         <div className={`profile-page-visual${coverImage ? " has-image" : ""}`}>{coverImage ? <Image className="profile-page-cover" src={coverImage.url} alt={coverImage.altText ?? `Foto de ${profile.displayName}`} fill priority unoptimized sizes="(max-width: 900px) 100vw, 45vw" /> : <span>{profile.displayName.slice(0, 1)}</span>}{stories.length > 0 && <span className="profile-story-photo-marker" aria-hidden="true" />}</div>
@@ -221,7 +227,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           {(availability.length > 0 || profile.details.schedule) && <section className="profile-detail-section availability-detail-section"><div className="availability-detail-heading"><div><h2>Disponibilidad</h2>{availabilityStatus && <p className={availabilityStatus.isOpen ? "availability-open" : "availability-closed"}>{availabilityStatus.text}</p>}</div>{availabilityStatus && <span aria-hidden="true" className={availabilityStatus.isOpen ? "availability-status-dot is-open" : "availability-status-dot"} />}</div>{availability.length > 0 ? <dl className="availability-list">{availability.map((day) => <div key={day.key}><dt>{day.label}</dt><dd>{day.opensAt} – {day.closesAt}</dd></div>)}</dl> : <p>{profile.details.schedule}</p>}</section>}
           {travel && <section className="profile-detail-section travel-agenda-public"><p className="eyebrow">AGENDA DE VIAJES</p><h2>Próxima visita a {travel.city}</h2><p><strong>{new Intl.DateTimeFormat("es-CL", { day: "numeric", month: "long" }).format(new Date(`${travel.start}T12:00:00Z`))}</strong> al <strong>{new Intl.DateTimeFormat("es-CL", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${travel.end}T12:00:00Z`))}</strong></p>{travel.note && <p>{travel.note}</p>}<small>Información referencial: el aviso continúa publicado en {profile.city}.</small></section>}
           {facts.length > 0 && <section className="profile-detail-section"><h2>{profile.type === "rental" ? "Características" : "Información del perfil"}</h2><dl className="profile-facts">{facts.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></section>}
-          {(profile.servicesIncluded.length > 0 || profile.servicesAdditional.length > 0) && <section className="profile-detail-section service-detail-section"><h2>Servicios</h2><p className="service-filter-hint">Selecciona un servicio para ver resultados inicialmente en {profile.city}; después puedes ajustar los filtros.</p><div>{profile.servicesIncluded.length > 0 && <article><h3>Incluidos</h3><ul>{profile.servicesIncluded.map((item) => <li key={item}><Link href={serviceFilterPath(profile, "included", item)}>{item}</Link></li>)}</ul></article>}{profile.servicesAdditional.length > 0 && <article><h3>Adicionales</h3><ul>{profile.servicesAdditional.map((item) => <li key={item}><Link href={serviceFilterPath(profile, "additional", item)}>{item}</Link></li>)}</ul></article>}</div></section>}
+          {profile.type !== "rental" && (profile.servicesIncluded.length > 0 || profile.servicesAdditional.length > 0) && <section className="profile-detail-section service-detail-section"><h2>Servicios</h2><p className="service-filter-hint">Selecciona un servicio para ver resultados inicialmente en {profile.city}; después puedes ajustar los filtros.</p><div>{profile.servicesIncluded.length > 0 && <article><h3>Incluidos</h3><ul>{profile.servicesIncluded.map((item) => <li key={item}><Link href={serviceFilterPath(profile, "included", item)}>{item}</Link></li>)}</ul></article>}{profile.servicesAdditional.length > 0 && <article><h3>Adicionales</h3><ul>{profile.servicesAdditional.map((item) => <li key={item}><Link href={serviceFilterPath(profile, "additional", item)}>{item}</Link></li>)}</ul></article>}</div></section>}
         </div>
         <aside className="profile-detail-aside"><p className="eyebrow">UBICACIÓN</p><h2>{profile.city}</h2>{profile.details.referenceLocation && <p>{profile.details.referenceLocation}</p>}<Link className="button button-outline" href={getCityPath(profile.city)}>Ver más en {profile.city}</Link></aside>
       </section>

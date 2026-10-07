@@ -179,6 +179,10 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
         setUnderageNotice(true);
       }
     }}>
+      <div className="profile-form-actions profile-form-actions-top">
+        <button className="button button-outline" name="intent" type="submit" value="draft">Guardar borrador</button>
+        <button className="button button-primary" name="intent" type="submit" value="submit">{submitLabel}</button>
+      </div>
       <section className="profile-form-section">
         <div className="profile-form-section-heading">
           <p>01 · TIPO DE PUBLICACIÓN</p>
@@ -384,7 +388,7 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
 
       <section className="profile-form-section">
         <div className="profile-form-section-heading">
-          <p>05 · CONTACTO, REDES Y SERVICIOS</p>
+          <p>{type === "rental" ? "05 · CONTACTO Y REDES" : "05 · CONTACTO, REDES Y SERVICIOS"}</p>
           <h2>Cómo te pueden encontrar</h2>
         </div>
         <p className="profile-form-help">Completa solo los medios que deseas mostrar. Debes dejar al menos un método de contacto o red social pública. Si un anuncio ya está publicado y cambias únicamente WhatsApp, teléfono, correo o redes, el cambio se aplica de inmediato. Cualquier modificación en los demás datos vuelve a revisión.</p>
@@ -401,8 +405,8 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
           <legend>Redes y plataformas</legend>
           <div className="form-grid form-grid-three">
             {type !== "agency" && <label>Usuario de Instagram (opcional)<input name="instagram_url" maxLength={64} defaultValue={socialUsername(metadataValue(initial, "instagram_url"))} placeholder="nombredeusuario" /><small>Se enlazará a instagram.com/tuusuario.</small></label>}
-            <label>Usuario de Arsmate (opcional)<input name="arsmate_url" maxLength={64} defaultValue={socialUsername(metadataValue(initial, "arsmate_url"))} placeholder="nombredeusuario" /><small>Se enlazará a arsmate.com/tuusuario.</small></label>
-            <label>Usuario de OnlyFans (opcional)<input name="onlyfans_url" maxLength={64} defaultValue={socialUsername(metadataValue(initial, "onlyfans_url"))} placeholder="nombredeusuario" /><small>Se enlazará a onlyfans.com/tuusuario.</small></label>
+            {type !== "rental" && <><label>Usuario de Arsmate (opcional)<input name="arsmate_url" maxLength={64} defaultValue={socialUsername(metadataValue(initial, "arsmate_url"))} placeholder="nombredeusuario" /><small>Se enlazará a arsmate.com/tuusuario.</small></label>
+            <label>Usuario de OnlyFans (opcional)<input name="onlyfans_url" maxLength={64} defaultValue={socialUsername(metadataValue(initial, "onlyfans_url"))} placeholder="nombredeusuario" /><small>Se enlazará a onlyfans.com/tuusuario.</small></label></>}
           </div>
         </fieldset>
         {type === "escort" && <fieldset>
@@ -414,7 +418,7 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
             })}
           </div>
         </fieldset>}
-        <div className="service-columns">
+        {type !== "rental" && <div className="service-columns">
           <fieldset>
             <legend>Servicios incluidos (opcional)</legend>
             <div className="check-grid">
@@ -427,12 +431,12 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
               {additionalServices.map((service) => <label key={service}><input name="services_additional" type="checkbox" value={service} defaultChecked={initial?.servicesAdditional.includes(service)} />{service}</label>)}
             </div>
           </fieldset>
-        </div>
+        </div>}
       </section>
 
       <section className="profile-media-notice" aria-label="Estado de carga de fotos y videos">
         <strong>Galería y videos</strong>
-        <p>{adminAssisted ? "Al crear el anuncio pasarás directamente a la carga de la foto principal, hasta 10 fotos y hasta 3 videos. El material que subas como administrador se aprobará al instante; el anuncio se publica desde moderación." : "Guarda el perfil y luego administra hasta 10 fotos y 3 videos desde la edición. Cada imagen puede pesar hasta 5 MB y los archivos pasan por revisión antes de verse públicamente. Si eres escort, después de guardar podrás adjuntar por separado tu carnet o examen médico privado (JPG, PNG, WebP o PDF de hasta 15 MB)."}</p>
+        <p>{adminAssisted ? "Al crear el anuncio pasarás directamente a la carga de la foto principal, hasta 10 fotos y hasta 3 videos. El material que subas como administrador se aprobará al instante; el anuncio se publica desde moderación." : <>Guarda el perfil y luego administra hasta 10 fotos y 3 videos desde la edición. Cada imagen puede pesar hasta 5 MB y los archivos pasan por revisión antes de verse públicamente.{type === "escort" && " Después de guardar podrás adjuntar por separado tu carnet o examen médico privado (JPG, PNG, WebP o PDF de hasta 15 MB)."}</>}</p>
       </section>
 
       <div className="profile-form-actions">

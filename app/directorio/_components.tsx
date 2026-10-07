@@ -82,7 +82,7 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
               <Link href="/novedades">Novedades</Link>
               <Link href="/faq">FAQ</Link>
               <Link href="/contacto">Contacto</Link>
-              <Link href={sessionAccountHref}>{sessionAccountLabel}</Link>
+              <Link className={!hasAnySession ? "public-login-link" : undefined} href={sessionAccountHref}>{sessionAccountLabel}</Link>
             </div>
           </nav>
           <PortalContactLinks placement="header" />
@@ -115,7 +115,7 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
           <Link href="/escorts">Escorts</Link>
           <Link className="mobile-directory-secondary" href="/agencias">Agencias</Link>
           <Link className="mobile-directory-secondary" href="/arriendos">Arriendos</Link>
-          <Link href={sessionAccountHref}>{sessionAccountLabel}</Link>
+          <Link className={!hasAnySession ? "public-login-link" : undefined} href={sessionAccountHref}>{sessionAccountLabel}</Link>
         </nav>
         <div className={`public-header-actions${hasAnySession ? " is-signed-in" : ""}`} aria-label="Acciones de cuenta">
           {!hasAnySession && <Link className="button button-outline" href="/registro">Registrarse</Link>}

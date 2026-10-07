@@ -107,6 +107,11 @@ export default async function Home() {
       <PublicHeader coverageHref="#cobertura" />
 
       <section className="hero" id="explorar">
+        <picture className="home-hero-background">
+          <source media="(max-width: 900px)" srcSet="/home-silhouette-mobile.webp" />
+          {/* Decorative, anonymous silhouette; never presented as an advertiser. */}
+          <img src="/home-silhouette-desktop.webp" alt="" width="1440" height="960" fetchPriority="high" decoding="async" />
+        </picture>
         <div className="hero-copy">
           <p className="eyebrow">DIRECTORIO ADULTO · TODO CHILE</p>
           <h1>Directorio adulto por ciudad <em>en Chile.</em></h1>

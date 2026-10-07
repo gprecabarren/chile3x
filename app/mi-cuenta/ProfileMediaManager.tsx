@@ -3,10 +3,12 @@
 import Image from "next/image";
 import { useRef, useState } from "react";
 import { prepareGalleryImage } from "./watermark-image";
+import { FacePrivacyEditor } from "./FacePrivacyEditor";
+import type { FacePrivacyRegion } from "@/lib/face-privacy";
 
 type MediaItem = { id: string; url: string; mediaType: "image" | "video"; contentType: string; moderationStatus: "pending" | "approved" | "rejected"; visibility: "public" | "exclusive"; isProfilePhoto: boolean; byteSize: number };
 type Quota = { bytes: number; level: "ok" | "warning" | "blocked"; message: string };
-type Candidate = { id: string; file: File; image: boolean; blurFaces: boolean; watermark: boolean; status: "ready" | "processing" | "uploading" | "completed" | "failed"; detail: string };
+type Candidate = { id: string; file: File; image: boolean; blurFaces: boolean; watermark: boolean; faceRegions: FacePrivacyRegion[]; status: "ready" | "processing" | "uploading" | "completed" | "failed"; detail: string };
 type MediaSettings = { watermarkEnabled: boolean; faceBlurEnabled: boolean };
 
 const statusLabel = { pending: "En revisión", approved: "Publicada", rejected: "Rechazada" };
@@ -28,6 +30,8 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
   const mediaApi = adminMode ? `/api/admin/profiles/${profileId}/media` : `/api/perfiles/${profileId}/media`;
   const [notice, setNotice] = useState(""); const [isBusy, setIsBusy] = useState(false); const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [photoWatermark, setPhotoWatermark] = useState(false); const [photoBlurFaces, setPhotoBlurFaces] = useState(false);
+  const [stagedPhoto, setStagedPhoto] = useState<File | null>(null);
+  const [photoRegions, setPhotoRegions] = useState<FacePrivacyRegion[]>([]);
   const galleryInputRef = useRef<HTMLInputElement>(null); const profilePhotoInputRef = useRef<HTMLInputElement>(null);
   const updateCandidate = (id: string, patch: Partial<Candidate>) => setCandidates((current) => current.map((candidate) => candidate.id === id ? { ...candidate, ...patch } : candidate));
 
@@ -44,6 +48,7 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
     if (image && (uploadKind === "gallery" || (adminMode && (applyWatermark || blurFaces)))) {
       prepared = (await prepareGalleryImage(file, {
         maxBytes: 4_900_000, maxDimension: 2200, applyWatermark, blurFaces,
+        faceRegions: candidate?.faceRegions ?? photoRegions,
         onProgress: (detail) => { if (candidate) updateCandidate(candidate.id, { status: "processing", detail }); },
       })).file;
     }
@@ -57,10 +62,20 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
   }
 
   async function uploadProfilePhoto(files: FileList | null) {
-    const file = files?.[0]; if (!file || isBusy) return; setIsBusy(true); setNotice("");
+    const file = files?.[0]; if (!file || isBusy) return;
+    if (adminMode && photoBlurFaces) { setStagedPhoto(file); setPhotoRegions([]); setNotice("Foto seleccionada. Puedes marcar zonas manuales antes de procesarla."); if (profilePhotoInputRef.current) profilePhotoInputRef.current.value = ""; return; }
+    setIsBusy(true); setNotice("");
     try { await uploadOne(file, "profile_photo"); setNotice(adminMode ? "Foto principal aprobada. Se mostrará cuando el anuncio esté publicado." : "La nueva foto de perfil quedó enviada a revisión. La foto vigente se mantiene hasta que el equipo apruebe el reemplazo."); }
     catch (cause) { setNotice(cause instanceof Error ? cause.message : "No se pudo subir el archivo."); }
     finally { if (profilePhotoInputRef.current) profilePhotoInputRef.current.value = ""; setIsBusy(false); }
+  }
+
+  async function uploadStagedPhoto() {
+    if (!stagedPhoto || isBusy) return;
+    setIsBusy(true); setNotice("");
+    try { await uploadOne(stagedPhoto, "profile_photo"); setStagedPhoto(null); setPhotoRegions([]); setNotice("Foto principal procesada y aprobada."); }
+    catch (cause) { setNotice(cause instanceof Error ? cause.message : "No se pudo procesar la foto."); }
+    finally { setIsBusy(false); }
   }
 
   async function chooseGallery(files: FileList | null) {
@@ -76,7 +91,7 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
       if (video && file.size > 8_000_000) { setNotice(`No se agregó ${file.name}: cada video debe pesar 8 MB o menos.`); continue; }
       if (image && nextImageCount >= 10) { setNotice("Ya alcanzaste el máximo de 10 fotos de galería. Elimina una foto antes de agregar otra."); continue; }
       if (video && nextVideoCount >= 3) { setNotice("Ya alcanzaste el máximo de 3 videos de galería. Elimina un video antes de agregar otro."); continue; }
-      selected.push({ id: candidateId(file, index), file, image, blurFaces: false, watermark: false, status: "ready", detail: image ? "Lista para procesar." : "Video sin modificaciones." });
+      selected.push({ id: candidateId(file, index), file, image, blurFaces: false, watermark: false, faceRegions: [], status: "ready", detail: image ? "Lista para procesar." : "Video sin modificaciones." });
       if (image) nextImageCount += 1; else nextVideoCount += 1;
     }
     setCandidates((current) => [...current.filter((candidate) => candidate.status !== "completed"), ...selected]);
@@ -112,9 +127,10 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
     <div className="profile-media-manager-heading"><div><p className="eyebrow">MEDIOS DEL ANUNCIO</p><h2>Fotos y videos</h2><span>{adminMode ? "Puedes subir foto principal y galería para esta cuenta. Los archivos que cargues como administrador se aprueban inmediatamente; los que suba la persona usuaria mantienen su revisión habitual." : "Separa tu foto principal de la galería pública. Todo material llega primero a revisión. El contenido exclusivo se administra desde la sección Contenido de tu cuenta."}</span></div><strong>{images.length}/10 fotos<br />{videos.length}/3 videos</strong></div>
     <p className={`media-quota media-quota-${quota.level}`}><b>Uso de R2: {formatBytes(quota.bytes)}</b>{quota.message}</p>{notice && <p className="media-manager-notice" role="status">{notice}</p>}
     <div className="profile-photo-manager"><div><p className="eyebrow">FOTO PRINCIPAL</p><h3>Foto de perfil</h3><span>{adminMode ? "Es la imagen prioritaria en el directorio. Marca de agua y difuminado son opcionales para esta foto." : "Es la imagen prioritaria en el directorio y al abrir el aviso. Se revisa por separado y no lleva marca de agua ni difuminado."}</span>{adminMode && <div className="admin-photo-processing-options"><label><input type="checkbox" checked={photoWatermark} disabled={isBusy} onChange={(event) => setPhotoWatermark(event.target.checked)} />Marca de agua</label><label><input type="checkbox" checked={photoBlurFaces} disabled={isBusy} onChange={(event) => setPhotoBlurFaces(event.target.checked)} />Difuminar rostros</label></div>}</div><label className="button button-outline">{isBusy ? "Procesando…" : "Cambiar foto de perfil"}<input ref={profilePhotoInputRef} type="file" accept="image/jpeg,image/png,image/webp" disabled={isBusy || quota.level === "blocked"} onChange={(event) => uploadProfilePhoto(event.target.files)} /></label></div>
+    {stagedPhoto && <section className="staged-profile-photo"><p>Revisa las zonas antes de procesar la foto principal. Sin zonas manuales, se usa la detección automática.</p>{photoBlurFaces && <FacePrivacyEditor file={stagedPhoto} regions={photoRegions} onChange={setPhotoRegions} disabled={isBusy} />}<div className="face-privacy-actions"><button type="button" className="button button-primary" disabled={isBusy} onClick={uploadStagedPhoto}>Procesar y aprobar foto principal</button><button type="button" className="button button-outline" disabled={isBusy} onClick={() => { setStagedPhoto(null); setPhotoRegions([]); }}>Cancelar foto seleccionada</button></div></section>}
     {profilePhotos.length > 0 && <div className="profile-photo-preview-list">{profilePhotos.map((item) => <article key={item.id}><div className="media-owner-preview"><Image src={item.url} alt="Vista previa de foto de perfil" fill unoptimized sizes="120px" /></div><div><span className={`media-status media-status-${item.moderationStatus}`}>{statusLabel[item.moderationStatus]}</span><small>Foto principal · {formatBytes(item.byteSize)}</small><button type="button" onClick={() => remove(item.id)} disabled={isBusy}>Eliminar</button></div></article>)}</div>}
     <section className="profile-public-gallery-manager"><div><p className="eyebrow">GALERÍA PÚBLICA</p><h3>Fotos y videos del anuncio</h3><p>{adminMode ? "Marca de agua y difuminado son opcionales e independientes en cada foto. Los videos no se procesan." : <>Las fotos de esta galería {mediaSettings.watermarkEnabled ? "reciben una marca Chile3X sutil" : "se subirán sin marca de agua"}. {mediaSettings.faceBlurEnabled ? "Puedes decidir por cada foto si quieres difuminar rostros antes de enviarla." : "El difuminado facial está desactivado temporalmente por el equipo."}</>}</p></div><label className="button button-primary">{isBusy ? "Procesando…" : "Elegir archivos"}<input ref={galleryInputRef} type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple disabled={!canChoose} onChange={(event) => chooseGallery(event.target.files)} /></label><small>Fotos JPEG, PNG o WebP: hasta 5 MB. Videos MP4 o WebM: hasta 8 MB y 10 segundos.</small>
-      {pendingCandidates.length > 0 && <div className="gallery-upload-candidates" aria-live="polite"><div><strong>Archivos seleccionados</strong><span>Revisa cada foto antes de subirla.</span></div>{pendingCandidates.map((candidate) => <article key={candidate.id}><div><strong>{candidate.file.name}</strong><small>{candidate.image ? "Foto" : "Video"} · {formatBytes(candidate.file.size)}</small></div>{candidate.image && adminMode && <label className="gallery-face-blur-option"><input type="checkbox" checked={candidate.watermark} disabled={isBusy || candidate.status === "processing" || candidate.status === "uploading"} onChange={(event) => updateCandidate(candidate.id, { watermark: event.target.checked, detail: "Lista para procesar." })} />Marca de agua</label>}{candidate.image && (adminMode || mediaSettings.faceBlurEnabled) && <label className="gallery-face-blur-option"><input type="checkbox" checked={candidate.blurFaces} disabled={isBusy || candidate.status === "processing" || candidate.status === "uploading"} onChange={(event) => updateCandidate(candidate.id, { blurFaces: event.target.checked, detail: "Lista para procesar." })} />Difuminar rostros</label>}<span className={`gallery-upload-status is-${candidate.status}`}>{candidate.detail}</span><button type="button" className="gallery-candidate-remove" disabled={isBusy || candidate.status === "processing" || candidate.status === "uploading"} onClick={() => setCandidates((current) => current.filter((item) => item.id !== candidate.id))}>Quitar</button></article>)}<button className="button button-primary" type="button" disabled={isBusy} onClick={uploadCandidates}>{isBusy ? "Procesando archivos…" : adminMode ? "Procesar y aprobar archivos" : "Procesar y enviar a revisión"}</button></div>}
+      {pendingCandidates.length > 0 && <div className="gallery-upload-candidates" aria-live="polite"><div><strong>Archivos seleccionados</strong><span>Revisa cada foto antes de subirla.</span></div>{pendingCandidates.map((candidate) => <article key={candidate.id}><div><strong>{candidate.file.name}</strong><small>{candidate.image ? "Foto" : "Video"} · {formatBytes(candidate.file.size)}</small></div>{candidate.image && adminMode && <label className="gallery-face-blur-option"><input type="checkbox" checked={candidate.watermark} disabled={isBusy || candidate.status === "processing" || candidate.status === "uploading"} onChange={(event) => updateCandidate(candidate.id, { watermark: event.target.checked, detail: "Lista para procesar." })} />Marca de agua</label>}{candidate.image && (adminMode || mediaSettings.faceBlurEnabled) && <label className="gallery-face-blur-option"><input type="checkbox" checked={candidate.blurFaces} disabled={isBusy || candidate.status === "processing" || candidate.status === "uploading"} onChange={(event) => updateCandidate(candidate.id, { blurFaces: event.target.checked, detail: "Lista para procesar." })} />Difuminar rostros</label>}<span className={`gallery-upload-status is-${candidate.status}`}>{candidate.detail}</span>{candidate.image && candidate.blurFaces && <FacePrivacyEditor file={candidate.file} regions={candidate.faceRegions} disabled={isBusy} onChange={regions => updateCandidate(candidate.id, { faceRegions: regions, status: "ready", detail: regions.length ? "Zonas manuales listas para procesar." : "Se usará detección automática." })} />}<button type="button" className="gallery-candidate-remove" disabled={isBusy || candidate.status === "processing" || candidate.status === "uploading"} onClick={() => setCandidates((current) => current.filter((item) => item.id !== candidate.id))}>Quitar</button></article>)}<button className="button button-primary" type="button" disabled={isBusy} onClick={uploadCandidates}>{isBusy ? "Procesando archivos…" : adminMode ? "Procesar y aprobar archivos" : "Procesar y enviar a revisión"}</button></div>}
       {galleryMedia.length > 0 ? <div className="media-owner-grid">{galleryMedia.map((item, index) => <article key={item.id}><div className="media-owner-preview">{item.mediaType === "image" ? <Image src={item.url} alt={`Vista previa de foto ${index + 1}`} fill unoptimized sizes="(max-width: 620px) 50vw, 180px" /> : <video controls preload="metadata"><source src={item.url} type={item.contentType} /></video>}</div><div><span className={`media-status media-status-${item.moderationStatus}`}>{statusLabel[item.moderationStatus]}</span><small>{item.mediaType === "video" ? "Video · " : "Foto · "}{formatBytes(item.byteSize)}</small><button type="button" onClick={() => remove(item.id)} disabled={isBusy}>Eliminar</button></div></article>)}</div> : <p className="profile-media-empty">Aún no has agregado fotos o videos a la galería pública.</p>}
     </section>
   </section>;

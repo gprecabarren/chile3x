@@ -8,11 +8,15 @@ import { cityDirectory } from "../app/locations";
 
 const availableCitySlugs = new Set(cityDirectory.map(city => city.citySlug));
 
-function withSecurityHeaders(response: Response, pathname = "") {
+function withSecurityHeaders(response: Response, pathname = "", privateDocument = false) {
   const headers = new Headers(response.headers);
   const faceBlurPage = pathname === "/admin/medios"
     || /^\/admin\/cuentas\/[^/]+\/perfiles\/[^/]+\/medios$/.test(pathname)
-    || /^\/mi-cuenta\/[^/]+\/editar$/.test(pathname);
+    || /^\/mi-cuenta\/[^/]+\/editar$/.test(pathname)
+    || privateDocument;
+  // SPA navigation retains the original document's CSP. A signed-in visitor
+  // may open Home first and then the media editor without a full page reload.
+  // Permit only WASM compilation on session documents; JavaScript eval stays blocked.
   const wasmPermission = faceBlurPage ? " 'wasm-unsafe-eval'" : "";
   headers.set("strict-transport-security", "max-age=63072000; includeSubDomains; preload");
   headers.set("x-content-type-options", "nosniff");
@@ -105,7 +109,7 @@ const worker = {
       }
     }
 
-    const response = withSecurityHeaders(await handler.fetch(request, env, ctx), url.pathname);
+    const response = withSecurityHeaders(await handler.fetch(request, env, ctx), url.pathname, hasPrivateSession(request));
     if (!cache || !cacheKey || !isCacheableDocument(response)) {
       const isDocument = /text\/(?:html|x-component)/i.test(response.headers.get("content-type") ?? "");
       return hasPrivateSession(request) || isDocument || url.pathname.startsWith("/api/auth/")

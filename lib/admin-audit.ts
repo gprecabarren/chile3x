@@ -20,6 +20,7 @@ export const ADMIN_AUDIT_CATEGORIES = {
 } as const;
 
 export const ADMIN_AUDIT_ACTIONS = {
+  "media.public_bulk_approve": "Aprobó varios archivos de un anuncio",
   "admin.login": "Inició sesión",
   "admin.logout": "Cerró sesión",
   "admin.grant_create": "Autorizó un administrador",

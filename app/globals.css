@@ -478,6 +478,18 @@ footer span { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid #272
 }
 
 /* Legal, safety and profile-contact additions */
+.age-gate-card {
+  max-height: calc(100dvh - 44px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.age-gate-card .age-gate-beta-note {
+  max-width: 38ch;
+  margin: 16px auto 0;
+  color: #aeb5c3;
+  font-size: 12px;
+  line-height: 1.5;
+}
 .home-legal-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 13px; }.home-legal-links a { color: #e1e3e9; text-decoration: underline; text-underline-offset: 3px; }
 .age-gate { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; padding: 22px; background: rgba(3, 4, 8, .92); backdrop-filter: blur(7px); }.age-gate-card { width: min(100%, 520px); min-width: 0; padding: 43px; border: 1px solid #4b5266; box-shadow: 0 25px 90px rgba(0,0,0,.6); text-align: center; background: linear-gradient(145deg, #181d2f, #090b12); }.age-gate-mark { display: inline-grid; width: 54px; height: 54px; margin-bottom: 19px; place-items: center; border: 2px solid #ef4b53; border-radius: 50%; color: #fff; font-size: 16px; font-weight: 900; }.age-gate-card h2 { max-width: 100%; margin: 8px 0 15px; overflow-wrap: anywhere; color: #fff; font-size: clamp(37px, 8vw, 52px); }.age-gate-card > p:not(.eyebrow) { margin: 0 auto; color: #c6cbd6; font-size: 14px; line-height: 1.65; }.age-gate-actions { display: grid; gap: 10px; margin: 29px 0 20px; }.age-gate-actions .button { width: 100%; min-width: 0; white-space: normal; }.age-gate-card small { display: block; max-width: 100%; overflow-wrap: anywhere; color: #969daf; font-size: 10px; line-height: 1.5; }.age-gate-card small a { color: #e4e6ed; text-decoration: underline; }
 .privacy-consent { position: fixed; z-index: 900; right: 22px; bottom: 22px; width: min(100% - 44px, 530px); padding: 24px; border: 1px solid #4a5065; border-top: 3px solid #ef4e57; border-radius: var(--radius-lg); color: #e9ecf4; background: linear-gradient(145deg, #1b2032, #0c0f19); box-shadow: 0 24px 80px rgba(0, 0, 0, .52); }.privacy-consent .eyebrow { margin-bottom: 8px; }.privacy-consent h2 { margin: 0 0 10px; color: #fff; font-size: 31px; line-height: 1; }.privacy-consent > div:first-child > p:last-child { margin: 0; color: #c1c7d5; font-size: 12px; line-height: 1.6; }.privacy-consent-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-top: 19px; }.privacy-consent-actions .button { min-height: 39px; padding: 9px 12px; font-size: 9px; }.privacy-consent-actions > a { color: #ffd6d9; font-size: 11px; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; }.privacy-consent-actions > a:hover { color: #fff; }

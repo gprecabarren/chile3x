@@ -4,6 +4,22 @@ import test from "node:test";
 
 const source = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
+test("the age gate adds a subtle beta notice without replacing its age or legal information", async () => {
+  const [gate, styles] = await Promise.all([
+    source("app/AgeGate.tsx"),
+    source("app/globals.css"),
+  ]);
+  assert.match(gate, /Confirma tu edad/);
+  assert.match(gate, /Este sitio contiene un directorio destinado exclusivamente a personas mayores de 18 años\. Al continuar declaras tener la edad legal para acceder a este contenido en Chile\./);
+  assert.match(gate, /className="age-gate-beta-note">Sitio operativo en fase beta\. Seguimos construyendo y mejorando\.<\/small>[\s\S]*className="age-gate-actions"/);
+  assert.match(gate, /Soy mayor de 18 años/);
+  assert.match(gate, /Salir del sitio/);
+  for (const link of ["/terminos", "/privacidad", "/reglas-de-publicacion"]) {
+    assert.ok(gate.includes(`href="${link}"`));
+  }
+  assert.match(styles, /\.age-gate-card\s*\{\s*max-height: calc\(100dvh - 44px\);\s*overflow-y: auto;/);
+});
+
 test("anonymous visitors do not receive the editorial-news note in Novedades", async () => {
   const page = await source("app/novedades/page.tsx");
   assert.match(page, /const hasSession = Boolean\(currentUser \|\| currentAdmin\)/);

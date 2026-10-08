@@ -217,7 +217,7 @@ export function ProfileCard({ profile }: { profile: PublicProfile }) {
   return (
     <article className="public-profile-card">
       <Link href={profileHref} className={`public-profile-visual ${toneFor(profile.slug)}${coverImage ? " has-image" : ""}`} aria-label={`Ver perfil de ${profile.displayName}`}>
-        {coverImage ? <Image className="public-profile-image" src={coverImage.url} alt={coverImage.altText ?? `Foto de ${profile.displayName}`} fill unoptimized sizes="(max-width: 360px) 100vw, (max-width: 720px) 50vw, (max-width: 1040px) 33vw, 25vw" /> : <span className="public-profile-initial">{profile.displayName.slice(0, 1)}</span>}
+        {coverImage ? <Image className="public-profile-image" src={coverImage.url} alt={coverImage.altText ?? `Foto de ${profile.displayName}`} fill unoptimized sizes="(max-width: 360px) 100vw, (max-width: 720px) 50vw, (max-width: 1040px) 33vw, 25vw" style={{ objectFit: "scale-down" }} /> : <span className="public-profile-initial">{profile.displayName.slice(0, 1)}</span>}
         <span className="public-type-label">{typeLabel[profile.type]}</span>
         {tierTag && <span className={`public-card-tier-badge ${tierTag.toLowerCase()}`}>{tierTag}</span>}
         {detailTags.length > 0 && <span className="public-card-detail-badges" aria-label={`Etiquetas: ${detailTags.join(", ")}`}>{detailTags.map((tag) => <span key={tag} className={`public-card-badge ${tag.toLowerCase().replaceAll(" ", "-")}`}>{tag}</span>)}</span>}

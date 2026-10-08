@@ -25,6 +25,9 @@ test('photos avoid cropping, enlargement and cover stretching, retaining full-ph
   assert.match(css,/\.profile-page-cover, \.profile-media-grid img \{ object-fit: scale-down; \}/);
   assert.match(css,/align-self: start; width: 100%; min-height: 0; aspect-ratio: 4 \/ 5/);
   assert.match(await source('app/perfil/[slug]/page.tsx'),/Ver foto completa/);
+  // vinext Image(fill) emits inline object-fit:cover unless explicitly set.
+  assert.equal(((await source('app/perfil/[slug]/page.tsx')).match(/style=\{\{ objectFit: "scale-down" \}\}/g)??[]).length,2);
+  assert.match(await source('app/directorio/_components.tsx'),/style=\{\{ objectFit: "scale-down" \}\}/);
 });
 
 test('watermark is large, monochrome, centered and optional for owners and administrators',async()=>{

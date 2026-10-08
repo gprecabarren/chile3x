@@ -4,6 +4,7 @@ import { accountTokens, authSessions, users } from "@/db/schema";
 import { createOpaqueToken, sha256 } from "@/lib/auth";
 import { recordOperationalEvent } from "@/lib/operations";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
+import { isReservedTestEmail } from "@/lib/test-email";
 
 export type AccountTokenPurpose = "verify_email" | "reset_password";
 
@@ -94,6 +95,7 @@ async function sendWithAppsScript(message: AccountEmailMessage, relayUrl?: strin
 }
 
 export async function sendPortalEmail({ email, displayName, subject, heading, message, action, note, kind = "portal_notification" }: PortalEmailNotification) {
+  if (isReservedTestEmail(email)) return false;
   const startedAt = performance.now();
   const finish = async (delivered: boolean, provider: string | null, detail: string) => {
     await recordOperationalEvent({

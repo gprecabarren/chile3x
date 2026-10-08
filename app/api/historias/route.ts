@@ -4,7 +4,7 @@ import { getDb } from "@/db";
 import { profileStatuses, profiles } from "@/db/schema";
 import { assertSameOrigin, getCurrentUser, safeAccountReturnTo } from "@/lib/auth";
 import { compactText, longText } from "@/lib/profile";
-import { detectImageType, extensionForImageType } from "@/lib/media";
+import { detectImageType, extensionForImageType, getMediaUsage, MEDIA_HARD_LIMIT_BYTES } from "@/lib/media";
 import { purgeExpiredImageStories } from "@/lib/stories";
 import { MAX_STORY_IMAGE_BYTES, MAX_STORY_TEXT_LENGTH, storyExpiresAt } from "@/lib/story-data";
 
@@ -53,10 +53,10 @@ export async function POST(request: NextRequest) {
     if (!imageType) return response(request, formData, "story_error", 400);
   }
 
-  await purgeExpiredImageStories();
   const db = await getDb();
-  const [profile] = await db.select({ id: profiles.id }).from(profiles).where(and(eq(profiles.id, profileId), eq(profiles.ownerId, user.id), eq(profiles.status, "approved"), isNull(profiles.trashedAt))).limit(1);
+  const [profile] = await db.select({ id: profiles.id }).from(profiles).where(and(eq(profiles.id, profileId), eq(profiles.ownerId, user.id), eq(profiles.status, "approved"), isNull(profiles.trashedAt), isNull(profiles.ownerHiddenAt))).limit(1);
   if (!profile) return response(request, formData, "story_error", 403);
+  if (hasImage) await purgeExpiredImageStories();
 
   const activeStories = await db.select({ id: profileStatuses.id }).from(profileStatuses).where(and(eq(profileStatuses.profileId, profile.id), eq(profileStatuses.storyType, storyType), gt(profileStatuses.expiresAt, new Date().toISOString()))).limit(5);
   if (activeStories.length >= 5) return response(request, formData, "story_limit", 409);
@@ -64,13 +64,27 @@ export async function POST(request: NextRequest) {
   const id = `story_${crypto.randomUUID()}`;
   let r2Key: string | null = null;
   if (imageData && imageType) {
+    const usage = await getMediaUsage();
+    if (usage.bytes + imageData.byteLength > MEDIA_HARD_LIMIT_BYTES) return acceptsJson(request) ? NextResponse.json({ error: "No se pueden subir más imágenes: se alcanzó el margen de almacenamiento del sitio." }, { status: 413 }) : response(request, formData, "story_error", 413);
     const { env } = await import("cloudflare:workers");
     if (!env.MEDIA) return response(request, formData, "story_error", 503);
     r2Key = `stories/${profile.id}/${id}.${extensionForImageType(imageType)}`;
     await env.MEDIA.put(r2Key, imageData, { httpMetadata: { contentType: imageType, cacheControl: "private, no-store" }, customMetadata: { category: "story", profileId: profile.id } });
   }
   try {
-    await db.insert(profileStatuses).values({ id, profileId: profile.id, body, storyType, r2Key, contentType: imageType, byteSize: imageData?.byteLength ?? 0, expiresAt: storyExpiresAt() });
+    const { env } = await import("cloudflare:workers");
+    // The count and insert share one statement: simultaneous requests cannot
+    // exceed five active stories of the same type for a publication.
+    const now = new Date().toISOString();
+    const inserted = await env.DB!.prepare(`INSERT INTO profile_statuses (id, profile_id, body, story_type, r2_key, content_type, byte_size, created_at, expires_at)
+      SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE
+      (SELECT count(*) FROM profile_statuses WHERE profile_id = ? AND story_type = ? AND expires_at > ?) < 5
+      AND EXISTS (SELECT 1 FROM profiles WHERE id = ? AND owner_id = ? AND status = 'approved' AND trashed_at IS NULL AND owner_hidden_at IS NULL)`)
+      .bind(id, profile.id, body, storyType, r2Key, imageType, imageData?.byteLength ?? 0, now, storyExpiresAt(), profile.id, storyType, now, profile.id, user.id).run();
+    if (!inserted.meta.changes) {
+      if (r2Key) await env.MEDIA?.delete(r2Key);
+      return response(request, formData, "story_limit", 409);
+    }
   } catch (error) {
     if (r2Key) {
       const { env } = await import("cloudflare:workers");

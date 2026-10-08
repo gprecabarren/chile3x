@@ -1,3 +1,5 @@
+import { DirectoryStoryLayout } from "@/app/historias/StoryRail";
+import { getActiveStories } from "@/lib/stories";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
@@ -24,13 +26,16 @@ export default async function RentalsPage({ searchParams }: { searchParams: Prom
   const preferredCity = getCityBySlug(getPreferredCitySlug(await cookies()))?.city;
   const { profiles, page, hasNext, outOfRange } = await getPublicProfilePage(filters, { viewerId: viewer?.id, preferredCity, page: readDirectoryPage(query) });
   if (outOfRange) notFound();
+  const stories = await getActiveStories({ viewerId: viewer?.id, profileIds: profiles.map((profile) => profile.id) });
   return <DirectoryShell kind="rental" selectedCity={filters.city ?? preferredCity}>
     <section className="directory-hero"><p className="eyebrow">DIRECTORIO DE ARRIENDOS</p><h1>Arriendos para escorts en <em>Chile.</em></h1><p>Explora opciones publicadas por ciudad, con ubicación referencial, características y servicios incluidos.</p></section>
     <section className="directory-content">
-      <DirectoryFilters key={JSON.stringify(filters)} action="/arriendos" filters={filters} showEscortFilters={false} />
+      <DirectoryStoryLayout stories={stories}>
+      <DirectoryFilters key={JSON.stringify(filters)} action="/arriendos" filters={filters} showEscortFilters={false} showServices={false} />
       <div id="resultados" className="directory-results-heading"><div><p className="eyebrow">ARRIENDOS</p><h2>{profiles.length} arriendo{profiles.length === 1 ? "" : "s"}{hasNext || page > 1 ? " en esta página" : ` visible${profiles.length === 1 ? "" : "s"}`}</h2></div></div>
       <ProfileGrid profiles={profiles} emptyMessage="Todavía no hay arriendos visibles con esos filtros." />
       <DirectoryPagination path="/arriendos" query={query} page={page} hasNext={hasNext} />
+      </DirectoryStoryLayout>
       <section className="directory-seo-summary"><p className="eyebrow">DIRECTORIO POR CIUDAD</p><h2>Arriendos para escorts, con información clara</h2><p>Compara arriendos publicados en Chile3X por ciudad y revisa sus características antes de contactar directamente a quien publica. Los acuerdos se realizan fuera de la plataforma.</p><Link href="/escorts">Explorar escorts en Chile</Link></section>
     </section>
   </DirectoryShell>;

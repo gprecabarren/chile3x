@@ -358,7 +358,16 @@ const getPublicProfileForRouteCached = cache(async function getPublicProfileForR
 ) {
   const decoded = decodeURIComponent(segment);
   if (decoded.startsWith("@")) {
-    return (await getPublicProfiles({ includeUnapproved, viewerId, includeAssociations: true, handle: decoded.slice(1).toLowerCase() }))[0] ?? null;
+    const handle = decoded.slice(1).toLowerCase();
+    const current = (await getPublicProfiles({ includeUnapproved, viewerId, includeAssociations: true, handle }))[0];
+    if (current) return current;
+    // The seed's old @handle equals its immutable slug. Preserve old links
+    // only for known test listings; the page redirects to the current handle.
+    if (handle.endsWith("-demo")) {
+      const legacy = (await getPublicProfiles({ includeUnapproved, viewerId, includeAssociations: true, slug: handle }))[0];
+      if (legacy?.isDemo) return legacy;
+    }
+    return null;
   }
   return (await getPublicProfiles({ includeUnapproved, viewerId, includeAssociations: true, slug: decoded }))[0] ?? null;
 });
@@ -381,7 +390,7 @@ const getPublicProfileSeoForRouteCached = cache(async function getPublicProfileS
   }
 
   const profileCondition = decoded.startsWith("@")
-    ? eq(profiles.handle, decoded.slice(1).toLowerCase())
+    ? or(eq(profiles.handle, decoded.slice(1).toLowerCase()), and(eq(profiles.isDemo, true), eq(profiles.slug, decoded.slice(1).toLowerCase())))
     : eq(profiles.slug, decoded);
   const [row] = await (await getDb()).select({
     slug: profiles.slug,

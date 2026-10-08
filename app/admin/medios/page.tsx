@@ -52,6 +52,10 @@ function listingStatusLabel(status: string) {
   return ({ approved: "Publicado", draft: "Borrador", expired: "Vencido", paused: "Pausado", pending: "En revisión", rejected: "Requiere cambios" } as Record<string, string>)[status] ?? status;
 }
 
+function pendingFilesLabel(total: number) {
+  return total === 1 ? "1 archivo pendiente" : `${total} archivos pendientes`;
+}
+
 function mediaHref(params: URLSearchParams, page = 1) {
   return pageHref("/admin/medios", params, page);
 }
@@ -142,8 +146,8 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
     fileType ? eq(exclusiveContentMedia.mediaType, fileType) : undefined,
   );
   const [pendingPublicRows, pendingExclusiveRows] = await Promise.all([
-    db.select({ total: count() }).from(profileMedia).where(and(or(eq(profileMedia.visibility, "public"), eq(profileMedia.isProfilePhoto, true)), eq(profileMedia.moderationStatus, "pending"))),
-    db.select({ total: count() }).from(exclusiveContentMedia).where(eq(exclusiveContentMedia.moderationStatus, "pending")),
+    db.select({ total: count() }).from(profileMedia).innerJoin(profiles, eq(profileMedia.profileId, profiles.id)).where(and(or(eq(profileMedia.visibility, "public"), eq(profileMedia.isProfilePhoto, true)), eq(profileMedia.moderationStatus, "pending"), selectedProfileId ? eq(profileMedia.profileId, selectedProfileId) : undefined, selectedOwnerId ? eq(profiles.ownerId, selectedOwnerId) : undefined)),
+    db.select({ total: count() }).from(exclusiveContentMedia).innerJoin(exclusiveContentCollections, eq(exclusiveContentMedia.collectionId, exclusiveContentCollections.id)).where(and(eq(exclusiveContentMedia.moderationStatus, "pending"), selectedProfileId ? eq(exclusiveContentCollections.profileId, selectedProfileId) : undefined, selectedOwnerId ? eq(exclusiveContentCollections.ownerId, selectedOwnerId) : undefined)),
   ]);
 
   type PublicRow = {
@@ -374,6 +378,8 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
   accountTabParams.delete("perfil");
   const allPublicParams = new URLSearchParams(publicTabParams);
   allPublicParams.delete("perfil");
+  const clearParams = new URLSearchParams(listParams);
+  for (const key of ["estado", "archivo", "q", "page"]) clearParams.delete(key);
 
   return <AdminShell user={admin}><div className="admin-content">
     <AdminPageHeading
@@ -385,22 +391,25 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
     {params.notice && notices[params.notice] && <p className="admin-success" role="status">{notices[params.notice]}</p>}
     {params.media_notice && bulkMediaMessages[params.media_notice] && <p className="admin-success" role="status">{bulkMediaMessages[params.media_notice]}</p>}
     <nav className="admin-media-tabs" aria-label="Tipo de medios a moderar">
-      <Link prefetch={false} className={view === "public" ? "is-active" : undefined} href={mediaHref(publicTabParams)}>Galerías públicas{pendingPublic > 0 && <b>{pendingPublic}</b>}</Link>
-      <Link prefetch={false} className={view === "exclusive" ? "is-active" : undefined} href={mediaHref(exclusiveTabParams)}>Contenido exclusivo{pendingExclusive > 0 && <b>{pendingExclusive}</b>}</Link>
+      <Link prefetch={false} className={view === "public" ? "is-active" : undefined} href={mediaHref(publicTabParams)}>Galerías públicas{pendingPublic > 0 && <b aria-label={pendingFilesLabel(pendingPublic)}>{pendingPublic}</b>}</Link>
+      <Link prefetch={false} className={view === "exclusive" ? "is-active" : undefined} href={mediaHref(exclusiveTabParams)}>Contenido exclusivo{pendingExclusive > 0 && <b aria-label={pendingFilesLabel(pendingExclusive)}>{pendingExclusive}</b>}</Link>
       <Link prefetch={false} className={view === "accounts" ? "is-active" : undefined} href={mediaHref(accountTabParams)}>Medios por cuenta</Link>
       {selectedProfileId && <Link prefetch={false} href={mediaHref(allPublicParams)}>Ver todos los anuncios</Link>}
     </nav>
     <form className="admin-media-filters" method="get">
       <input name="tipo" type="hidden" value={view} />
+      {selectedProfileId && <input name="perfil" type="hidden" value={selectedProfileId} />}
+      {selectedOwnerId && view === "accounts" && <input name="cuenta" type="hidden" value={selectedOwnerId} />}
+      {requestedReturnTo.startsWith("/admin/") && <input name="return_to" type="hidden" value={backHref} />}
       {view === "accounts" && <label>Buscar cuenta<input name="q" type="search" defaultValue={params.q ?? ""} placeholder="Correo, usuario o nombre" /></label>}
       <label>Estado<select name="estado" defaultValue={status}><option value="">Todos</option><option value="pending">En revisión</option><option value="approved">Aprobados</option><option value="rejected">Rechazados</option></select></label>
       <label>Tipo de archivo<select name="archivo" defaultValue={fileType}><option value="">Fotos y videos</option><option value="image">Solo fotos</option><option value="video">Solo videos</option></select></label>
       <button className="button button-primary" type="submit">Aplicar filtros</button>
-      {(accountQuery || status || fileType || selectedOwnerId) && <Link prefetch={false} className="button button-outline" href={`/admin/medios?tipo=${view}`}>Limpiar</Link>}
+      {(accountQuery || status || fileType) && <Link prefetch={false} className="button button-outline" href={mediaHref(clearParams)}>Limpiar filtros</Link>}
     </form>
     <section className={`admin-media-quota admin-media-quota-${quota.level}`}>
-      <div><p>ALMACENAMIENTO R2</p><h2>{formatMediaBytes(usage.bytes)} registrados</h2><span>{usage.files} archivos · margen interno configurado: 8 GB</span></div>
-      <strong>{pendingPublic + pendingExclusive} pendientes</strong>
+      <div><p>ALMACENAMIENTO R2 · TOTAL DEL SITIO</p><h2>{formatMediaBytes(usage.bytes)} registrados</h2><span>{usage.files} archivos en todo el sitio · margen interno configurado: 8 GB</span></div>
+      <strong>{pendingPublic + pendingExclusive} {pendingPublic + pendingExclusive === 1 ? "pendiente" : "pendientes"}{selectedProfileId ? " en este anuncio" : selectedOwnerId ? " en esta cuenta" : " en el sitio"}</strong>
       <small>{quota.message}</small>
     </section>
     {total === 0

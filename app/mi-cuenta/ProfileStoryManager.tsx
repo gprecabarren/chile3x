@@ -30,7 +30,7 @@ export function ProfileStoryManager({ profileId, profileName, stories }: { profi
     try {
       const result = await fetch("/api/historias", { method: "POST", body: data, headers: { Accept: "application/json" } });
       const payload = await result.json().catch(() => ({})) as { error?: string; notice?: string };
-      if (!result.ok) throw new Error(payload.error ?? "No se pudo publicar la historia.");
+      if (!result.ok) throw new Error(payload.error ?? (payload.notice === "story_limit" ? "Ya tienes 5 historias activas de este tipo. Elimina una o espera a que expire." : "No se pudo publicar la historia. Revisa que el anuncio siga publicado."));
       form.reset();
       setNotice("Historia publicada. Será visible durante 24 horas.");
       router.refresh();
@@ -42,7 +42,7 @@ export function ProfileStoryManager({ profileId, profileName, stories }: { profi
   }
 
   return <section className="profile-story-manager" id="historias">
-    <div><p className="eyebrow">ACTUALIZACIONES · 24 HORAS</p><h2>Historias de {profileName}</h2><p>Cada publicación tiene sus propias historias. Puedes tener hasta 5 de texto y 5 de imagen. Las imágenes se eliminan de R2 y de la base de datos al cumplir 24 horas.</p></div>
+    <div><p className="eyebrow">ACTUALIZACIONES · 24 HORAS</p><h2>Historias de {profileName}</h2><p>Cada publicación tiene sus propias historias: hasta 5 de texto y 5 de imagen. Dejan de ser visibles al cumplir 24 horas; las imágenes vencidas se eliminan del almacenamiento cuando se publican nuevas imágenes.</p></div>
     {notice && <p className="media-manager-notice" role="status">{notice}</p>}
     <div className="profile-story-manager-forms">
       <form ref={textForm} onSubmit={(event) => publish(event, "text")}><input name="profile_id" type="hidden" value={profileId} /><input name="return_to" type="hidden" value={returnTo} /><label>Historia de texto <small>{textCount}/5 activas · máximo {MAX_STORY_TEXT_LENGTH} caracteres</small><textarea name="body" minLength={2} maxLength={MAX_STORY_TEXT_LENGTH} required rows={3} placeholder="Ej. Disponible hoy hasta las 22:00" /></label><button className="button button-primary" type="submit" disabled={busy !== null || textCount >= 5}>{busy === "text" ? "Publicando…" : "Publicar texto"}</button></form>

@@ -518,6 +518,20 @@ Cuando se active Apple, comprobar además que el Services ID, dominio, retorno y
 - `d1a1262` — carga administrativa directa de fotos y videos, procesamiento opcional de imágenes por foto, origen verificable y filtros para cuentas y anuncios, junto con migraciones 0034/0035 y pruebas de regresión.
 - `79215ff` — permiso CSP acotado para WebAssembly del difuminado facial, sin habilitar evaluación dinámica de JavaScript.
 
+## Revisión de medios, filtros e historias — 8 de octubre de 2026
+
+Las fotos de portada y galería se muestran completas, sin ampliar artificialmente el archivo ni estirar su proporción. La preparación conserva el original cuando no hay efectos ni necesidad de reducirlo; el aviso de resolución distingue una fuente pequeña de un problema de presentación. La marca de agua opcional se aplica en el navegador, centrada, grande y monocromática, sin contratar procesamiento de imágenes. Una fuente de 476 × 663 px no recupera detalle perdido: se necesita volver a subir el original para mejorar su nitidez.
+
+Los filtros rápidos y avanzados comparten un solo formulario y una sola construcción de búsqueda. Online y Verificados usan los colores de sus insignias. La disponibilidad permite seleccionar o desmarcar los siete días sin sobrescribir las horas. En moderación, las insignias cuentan pendientes del anuncio/cuenta seleccionados; la cifra de almacenamiento sigue siendo global y está etiquetada como tal.
+
+Las historias se acotan a los anuncios mostrados por la consulta del directorio (ciudad, filtros y página). Las fotografías van en la franja superior; la actividad de texto usa una pestaña móvil y un lateral de escritorio. Dentro de cada anuncio el visor recorre las historias desde la más antigua, comienza por la primera no vista y coloca los grupos completamente vistos después de los pendientes. El visor permite pausar, espera a que cargue la foto y cierra al caducar. El máximo de cinco historias activas por tipo se valida de forma atómica en D1; los archivos privados no se usan como miniaturas públicas.
+
+Las 27 fichas ficticias pueden tener cuentas normales para QA, pero conservan el marcador interno de prueba, aviso público y `noindex`; no representan servicios reales ni verificaciones auténticas. `scripts/prepare-test-accounts.mjs` solo prepara un plan revisable, respaldo, reversión y accesos privados en `tmp/`. Nunca aplicar ese plan sin revisar los 27 IDs de las migraciones iniciales. Los correos `.invalid` no reciben correo y no permiten recuperación por email. Los accesos no deben entrar en Git, el sitemap ni los archivos públicos.
+
+La selección destacada del Home muestra hasta seis escorts reales aprobadas. Prioriza el destacado manual, luego las visitas registradas en los últimos 30 días y, en empate, la actualización más reciente; no es una rotación aleatoria ni una prioridad automática por VIP/Premium/Bronze. Solo si no hay ninguna escort real elegible se utiliza el respaldo de fichas ficticias. La consulta usa un conjunto acotado de candidatos, no todos los anuncios del sitio.
+
+Verificación previa: 131 pruebas automatizadas, compilación, tipado, lint, carga de portada con marca de agua en el formulario local, autorización/bloqueo del chat, concurrencia de historias, filtros combinados y revisión responsive en Chrome. La emulación no reemplaza la comprobación en un teléfono físico. No se alteraron planes ni límites gratuitos de Cloudflare.
+
 ## Límites y decisiones pendientes
 
 - Los pagos, cobros, suscripciones automatizadas y venta interna de contenido no están habilitados. La biblioteca exclusiva funciona como control de acceso manual otorgado por el anunciante.

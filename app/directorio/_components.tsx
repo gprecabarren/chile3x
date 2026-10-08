@@ -229,6 +229,7 @@ export function ProfileCard({ profile }: { profile: PublicProfile }) {
             <h3><Link href={profileHref}>{profile.displayName}</Link>{profile.verificationStatus === "reviewed" && profile.type === "escort" && <span className="verified-sticker" title="Perfil comprobado" aria-label="Perfil comprobado">✓</span>}</h3>
             {profile.isOnline && <span className="profile-online-badge"><i aria-hidden="true" />Online</span>}
             {profile.handle && <small className="public-profile-handle">@{profile.handle}</small>}
+            {profile.isDemo && <small className="profile-test-caption">Ficha de prueba · sin servicio real</small>}
             <p><Link href={getCityPath(profile.city)}>{profile.city}</Link>{subtitle && ` · ${subtitle}`}</p>
           </div>
         </div>
@@ -270,8 +271,8 @@ export function CityProfileSections({ city, profiles, selectedCategory, paginate
     { id: "vip", title: "VIP", description: "Perfiles de élite con máxima visibilidad.", profiles: escorts.filter((profile) => profile.tier === "vip"), tier: "vip" },
     { id: "premium", title: "Premium", description: "Perfiles con visibilidad intermedia y presentación destacada.", profiles: escorts.filter((profile) => profile.tier === "premium"), tier: "premium" },
     { id: "bronze", title: "Bronze", description: "Perfiles con visibilidad estándar en el directorio.", profiles: escorts.filter((profile) => profile.tier === "bronze"), tier: "bronze" },
-    { id: "agency", title: "Agencias", description: "Agencias visibles en la ciudad", profiles: profiles.filter((profile) => profile.type === "agency") },
     { id: "masajes", title: "Masajes", description: "Escorts con la etiqueta Masajes; también aparecen en su categoría de visibilidad", profiles: escorts.filter((profile) => profile.tags.includes("masajes")) },
+    { id: "agency", title: "Agencias", description: "Agencias visibles en la ciudad", profiles: profiles.filter((profile) => profile.type === "agency") },
     { id: "rental", title: "Arriendos", description: "Arriendos visibles en la ciudad", profiles: profiles.filter((profile) => profile.type === "rental") },
   ];
 

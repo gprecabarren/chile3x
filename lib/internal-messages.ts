@@ -128,9 +128,9 @@ export async function getMessagePage(conversationId: string, userId: string, bef
 
 export async function startMessageConversation(profileId: string, visitorUserId: string) {
   const db = await getDb();
-  const [profile] = await db.select({ id: profiles.id, ownerUserId: profiles.ownerId, isDemo: profiles.isDemo })
+  const [profile] = await db.select({ id: profiles.id, ownerUserId: profiles.ownerId })
     .from(profiles).where(and(eq(profiles.id, profileId), publicProfileCondition)).limit(1);
-  if (!profile || profile.isDemo || profile.ownerUserId === visitorUserId) return null;
+  if (!profile || profile.ownerUserId === visitorUserId) return null;
   const now = new Date().toISOString();
   const id = `message_conversation_${crypto.randomUUID()}`;
   await db.insert(messageConversations).values({

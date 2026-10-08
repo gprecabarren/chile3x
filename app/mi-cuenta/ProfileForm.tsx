@@ -291,6 +291,10 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
         <fieldset className="availability-editor">
           <legend>Horarios de disponibilidad (opcional)</legend>
           <p>Activa solo los días en que atiendes. En el perfil se indicará claramente si está disponible ahora, usando la hora de Chile.</p>
+          <button className="button button-outline availability-toggle-all" type="button" aria-pressed={enabledAvailabilityDays.size === availabilityDays.length} onClick={() => setEnabledAvailabilityDays((current) => current.size === availabilityDays.length ? new Set() : new Set(availabilityDays.map((day) => day.key)))}>
+            {enabledAvailabilityDays.size === availabilityDays.length ? "Desmarcar todos los días" : "Seleccionar todos los días"}
+          </button>
+          <small>Las horas elegidas se conservan. Completa el horario de cada día activado.</small>
           <div className="availability-editor-grid">
             {availabilityDays.map((day) => {
               const entry = savedAvailability.get(day.key);

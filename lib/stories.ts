@@ -97,6 +97,7 @@ export async function getActiveStories(scope: StoryScope = {}) {
       inArray(profileMedia.profileId, profileIds),
       eq(profileMedia.mediaType, "image"),
       eq(profileMedia.moderationStatus, "approved"),
+      eq(profileMedia.visibility, "public"),
     )).orderBy(desc(profileMedia.isProfilePhoto), asc(profileMedia.sortOrder)) : [];
     const profileImages = new Map<string, string>();
     for (const media of mediaRows) {

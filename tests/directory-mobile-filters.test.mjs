@@ -9,7 +9,7 @@ const [component, css] = await Promise.all([
 
 test("mobile directory search collapses its existing fields but retains nested advanced filters", () => {
   assert.match(component, /<h2>Encuentra con más precisión<\/h2>/);
-  assert.match(component, /Elige una región o ciudad y afina características y servicios/);
+  assert.match(component, /Elige una región o ciudad y combina nombre, categoría, edad y características/);
   assert.match(component, /aria-expanded=\{showMobileFilters\} aria-controls="directory-filter-controls"/);
   assert.match(component, /<div id="directory-filter-controls" className=\{`filter-mobile-body/);
   assert.match(component, /<details className="filter-more-options" open=\{hasAdvancedFilters\}>/);

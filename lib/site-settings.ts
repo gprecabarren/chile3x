@@ -27,7 +27,7 @@ export const siteSettingDefaults = {
   whatsapp_panel_enabled: "enabled",
   whatsapp_button_label: "Ayuda de Chile3X por WhatsApp",
   whatsapp_panel_title: "¿En qué te ayudamos?",
-  whatsapp_panel_description: "Estos contactos son del equipo de Chile3X. No ofrecemos servicios sexuales ni coordinamos citas. Para consultar un anuncio, contacta directamente a su anunciante.",
+  whatsapp_panel_description: "Soporte y marketing de Chile3X. No ofrecemos servicios sexuales ni coordinamos citas. Para consultar un anuncio, contacta a su anunciante.",
   whatsapp_extra_contacts: JSON.stringify([{ id: "marketing", label: "Marketing digital", description: "Orientación para publicar y promocionar tus anuncios en Chile3X.", phone: "56950561538", message: "Hola, quisiera orientación de marketing digital para publicar y promocionar mis anuncios en Chile3X.", enabled: true }]),
   contact_telegram: "",
   contact_instagram: "",

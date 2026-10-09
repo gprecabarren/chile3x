@@ -6,7 +6,7 @@ import { getCurrentAdmin, getCurrentUser, getSessionCookieName, getUserSessionCo
 import { getCityPath, getProfileDisplayTags, type PublicProfile } from "@/lib/directory";
 import { profilePublicPath, readProfilePrices, type Tier } from "@/lib/profile";
 import { getPortalContacts } from "@/lib/site-contacts";
-import { publicWhatsappContacts, type WhatsappPlacement } from "@/lib/portal-whatsapp";
+import { publicWhatsappContacts, WHATSAPP_TEXT_LIMITS, type WhatsappPlacement } from "@/lib/portal-whatsapp";
 import { FloatingWhatsappMenu } from "@/app/FloatingWhatsappMenu";
 import { PortalWhatsappLink } from "@/app/PortalWhatsappLink";
 import { getSiteSettings } from "@/lib/site-settings";
@@ -131,7 +131,7 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
 }
 
 export function DirectoryShell({ children, selectedCity, kind = "escort" }: { children: ReactNode; selectedCity?: string; kind?: "escort" | "agency" | "rental" }) {
-  return <main className="directory-root"><PublicHeader /><DirectoryCityBar selectedCity={selectedCity} kind={kind} />{children}<PublicFooter /><FloatingWhatsappButton /></main>;
+  return <PortalWhatsappScope><main className="directory-root"><PublicHeader /><DirectoryCityBar selectedCity={selectedCity} kind={kind} />{children}<PublicFooter /></main></PortalWhatsappScope>;
 }
 
 export async function PublicFooter() {
@@ -157,7 +157,7 @@ export async function PortalContactLinks({ placement }: { placement: Extract<Wha
   const contacts = getPortalContacts(await getSiteSettings());
   if (contacts.length === 0) return null;
   return <div className={`portal-contact-links portal-contact-links-${placement}`} aria-label="Canales oficiales de Chile3X">{contacts.map((contact) => contact.key === "whatsapp"
-    ? <PortalWhatsappLink key={contact.key} placement={placement} className="portal-contact-link portal-contact-whatsapp" href={contact.href} target="_blank" rel="noopener noreferrer" aria-label={contact.label} title={contact.label}><PortalContactIcon kind="whatsapp" /><span className="sr-only">{contact.label}</span></PortalWhatsappLink>
+    ? <PortalWhatsappLink key={contact.key} placement={placement} openHelpPanel={placement === "header" || placement === "footer"} className="portal-contact-link portal-contact-whatsapp" href={contact.href} target="_blank" rel="noopener noreferrer" aria-label={placement === "header" || placement === "footer" ? "Contactos del equipo por WhatsApp" : contact.label} title={placement === "header" || placement === "footer" ? "Contactos del equipo por WhatsApp" : contact.label}><PortalContactIcon kind="whatsapp" /><span className="sr-only">{contact.label}</span></PortalWhatsappLink>
     : <a key={contact.key} className={`portal-contact-link portal-contact-${contact.key}`} href={contact.href} target={contact.external ? "_blank" : undefined} rel={contact.external ? "noreferrer" : undefined} aria-label={contact.label} title={contact.label}><PortalContactIcon kind={contact.key} /><span className="sr-only">{contact.label}</span></a>)}</div>;
 }
 
@@ -176,12 +176,12 @@ export function PortalContactIcon({ kind }: { kind: "whatsapp" | "telegram" | "i
   return <span className="arsmate-icon" aria-hidden="true">OF</span>;
 }
 
-export async function FloatingWhatsappButton() {
+export async function PortalWhatsappScope({ children }: { children: ReactNode }) {
   const settings = await getSiteSettings();
   const contacts = publicWhatsappContacts(settings);
-  if (settings.whatsapp_panel_enabled !== "enabled" || !contacts.length) return null;
-  return <FloatingWhatsappMenu contacts={contacts} title={settings.whatsapp_panel_title} description={settings.whatsapp_panel_description} buttonLabel={settings.whatsapp_button_label}>
-    <PortalContactIcon kind="whatsapp" />
+  return <FloatingWhatsappMenu contacts={contacts} title={settings.whatsapp_panel_title.slice(0, WHATSAPP_TEXT_LIMITS.title)} description={settings.whatsapp_panel_description.slice(0, WHATSAPP_TEXT_LIMITS.explanation)} buttonLabel={settings.whatsapp_button_label}
+    showFloating={settings.whatsapp_panel_enabled === "enabled"} icon={<PortalContactIcon kind="whatsapp" />}>
+    {children}
   </FloatingWhatsappMenu>;
 }
 

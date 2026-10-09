@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MAX_WHATSAPP_CONTACTS, type WhatsappContact } from "@/lib/portal-whatsapp";
+import { MAX_WHATSAPP_CONTACTS, WHATSAPP_TEXT_LIMITS, type WhatsappContact } from "@/lib/portal-whatsapp";
 
 export function WhatsappSettingsEditor({ initialContacts }: { initialContacts: WhatsappContact[] }) {
   const [contacts, setContacts] = useState(initialContacts);
@@ -16,15 +16,15 @@ export function WhatsappSettingsEditor({ initialContacts }: { initialContacts: W
     });
   }
   return <section className="admin-settings-section whatsapp-settings-section">
-    <div><p>CONTACTOS DEL BOTÓN FLOTANTE</p><h2>Más WhatsApp del equipo</h2><span>Soporte técnico siempre usa el número principal de arriba. Los contactos adicionales solo aparecen en el panel flotante; puedes cambiar su orden o desactivarlos sin perder su configuración ni sus estadísticas.</span></div>
+    <div><p>PANEL COMPARTIDO DE CONTACTOS</p><h2>Más WhatsApp del equipo</h2><span>Soporte técnico siempre usa el número principal de arriba. El botón flotante, el header y el footer abren el mismo panel; puedes cambiar el orden o desactivar contactos sin perder su configuración ni sus estadísticas.</span></div>
     <input type="hidden" name="whatsapp_extra_contacts" value={JSON.stringify(contacts)} readOnly />
     <div className="whatsapp-settings-list">{contacts.map((contact, index) => <article key={contact.id}>
       <header><strong>Contacto {index + 1}</strong><span>{contact.enabled ? "Visible en el panel" : "Oculto al público"}</span></header>
       <div className="admin-settings-grid">
-        <label>Nombre del área<input value={contact.label} maxLength={60} required placeholder="Marketing digital" onChange={event => update(contact.id, { label: event.target.value })} /></label>
+        <label>Nombre del área<input value={contact.label} maxLength={WHATSAPP_TEXT_LIMITS.label} required placeholder="Marketing digital" onChange={event => update(contact.id, { label: event.target.value })} /><small>{contact.label.length}/{WHATSAPP_TEXT_LIMITS.label} caracteres.</small></label>
         <label>Número de WhatsApp<input value={contact.phone} inputMode="tel" maxLength={22} required={contact.enabled} placeholder="+56 9 1234 5678" onChange={event => update(contact.id, { phone: event.target.value })} /><small>Incluye el código del país. Un móvil chileno de 9 dígitos se completa con +56.</small></label>
-        <label className="admin-field-full">Explicación para visitantes<textarea rows={2} value={contact.description} maxLength={240} required onChange={event => update(contact.id, { description: event.target.value })} /></label>
-        <label className="admin-field-full">Mensaje inicial en WhatsApp<textarea rows={2} value={contact.message} maxLength={400} required onChange={event => update(contact.id, { message: event.target.value })} /></label>
+        <label className="admin-field-full">Explicación para visitantes<textarea rows={2} value={contact.description} maxLength={WHATSAPP_TEXT_LIMITS.description} required onChange={event => update(contact.id, { description: event.target.value })} /><small>{contact.description.length}/{WHATSAPP_TEXT_LIMITS.description} caracteres. Mantén la explicación breve.</small></label>
+        <label className="admin-field-full">Mensaje inicial en WhatsApp<textarea rows={2} value={contact.message} maxLength={WHATSAPP_TEXT_LIMITS.message} required onChange={event => update(contact.id, { message: event.target.value })} /><small>Máximo {WHATSAPP_TEXT_LIMITS.message} caracteres; este mensaje no se muestra dentro del panel.</small></label>
         <label>Visibilidad<select value={contact.enabled ? "enabled" : "disabled"} onChange={event => update(contact.id, { enabled: event.target.value === "enabled" })}><option value="enabled">Mostrar contacto</option><option value="disabled">Ocultar contacto</option></select></label>
       </div>
       <div className="whatsapp-settings-actions">

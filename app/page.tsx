@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "@/app/NavigationLink";
-import { FloatingWhatsappButton, PublicFooter, PublicHeader, ProfileGrid } from "./directorio/_components";
+import { PortalWhatsappScope, PublicFooter, PublicHeader, ProfileGrid } from "./directorio/_components";
 import { StoryRail } from "./historias/StoryRail";
 import { cityDirectory, cityTotal, getCityBySlug, getPreferredCitySlug, regions } from "./locations";
 import { RegionJumpSelect } from "./RegionJumpSelect";
@@ -97,7 +97,7 @@ export default async function Home() {
   ]);
   const featuredProfiles = prioritizeProfilesByCity(featuredProfileRows, preferredCity?.city);
   return (
-    <main>
+    <PortalWhatsappScope><main>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(directorySchema) }}
@@ -231,7 +231,6 @@ export default async function Home() {
       </section>
 
       <PublicFooter />
-      <FloatingWhatsappButton />
-    </main>
+    </main></PortalWhatsappScope>
   );
 }

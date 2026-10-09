@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { DatabaseSync } from 'node:sqlite';
 import test from 'node:test';
-import { normalizePortalWhatsappPhone, portalWhatsappHref, validateWhatsappContacts, publicWhatsappContacts, validateWhatsappEvent } from '../lib/portal-whatsapp.ts';
+import { normalizePortalWhatsappPhone, portalWhatsappHref, validateWhatsappContacts, readWhatsappContacts, publicWhatsappContacts, validateWhatsappEvent, WHATSAPP_TEXT_LIMITS } from '../lib/portal-whatsapp.ts';
 const source = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 const marketing = { id: 'marketing', label: 'Marketing digital', description: 'Ayuda para publicar.', phone: '9 5056 1538', message: 'Hola, quiero publicar.', enabled: true };
 
@@ -28,8 +28,22 @@ test('multiple contacts retain identity and order while hidden, invalid and miss
 test('tracking accepts only bounded portal events and cannot mix advertiser contacts or fake direct areas', () => {
   assert.ok(validateWhatsappEvent({action:'panel_open',contactId:'panel',placement:'floating'}));
   assert.ok(validateWhatsappEvent({action:'contact_click',contactId:'support',placement:'header'}));
-  assert.ok(validateWhatsappEvent({action:'contact_click',contactId:'marketing',placement:'floating'}));
-  for (const payload of [null,[],{action:'panel_open',contactId:'panel',placement:'header'},{action:'contact_click',contactId:'marketing',placement:'footer'},{action:'other',contactId:'support',placement:'floating'},{action:'contact_click',contactId:'https://evil.test',placement:'floating'}]) assert.equal(validateWhatsappEvent(payload),null);
+  for (const placement of ['floating','header','footer']) {
+    assert.ok(validateWhatsappEvent({action:'panel_open',contactId:'panel',placement}));
+    assert.ok(validateWhatsappEvent({action:'contact_click',contactId:'marketing',placement}));
+  }
+  for (const payload of [null,[],{action:'panel_open',contactId:'panel',placement:'contact'},{action:'contact_click',contactId:'marketing',placement:'registration'},{action:'other',contactId:'support',placement:'floating'},{action:'contact_click',contactId:'https://evil.test',placement:'floating'}]) assert.equal(validateWhatsappEvent(payload),null);
+});
+
+test('compact text limits reject oversized saves without hiding older saved contacts', () => {
+  for (const field of ['label','description','message']) {
+    assert.ok(validateWhatsappContacts(JSON.stringify([{...marketing,[field]:'x'.repeat(WHATSAPP_TEXT_LIMITS[field])}])));
+    assert.equal(validateWhatsappContacts(JSON.stringify([{...marketing,[field]:'x'.repeat(WHATSAPP_TEXT_LIMITS[field]+1)}])),null);
+  }
+  const legacy = readWhatsappContacts(JSON.stringify([{...marketing,label:'x'.repeat(60),description:'x'.repeat(240)}]));
+  assert.equal(legacy.length,1);
+  assert.equal(legacy[0].label.length,36);
+  assert.equal(legacy[0].description.length,120);
 });
 
 test('portal counters aggregate atomically and remain separate from advertiser events', async () => {
@@ -54,8 +68,13 @@ test('portal settings remain authorized and audited, with separate consented and
   assert.match(route,/validateWhatsappContacts\(input\)/);
   assert.match(route,/recordAdminAudit\(admin/);
   assert.match(menu,/aria-expanded=\{open\}/);
-  assert.match(menu,/event.key !== "Escape"/);
-  assert.match(menu,/removeEventListener\("pointerdown"/);
+  assert.match(menu,/event.key === "Escape"/);
+  assert.match(menu,/removeEventListener\("keydown"/);
+  assert.match(menu,/createPortal\(/);
+  assert.match(menu,/aria-modal="true"/);
+  assert.match(menu,/event.key === "Tab"/);
+  assert.match(menu,/href="\/escorts"/);
+  assert.doesNotMatch(menu,/Escribir por WhatsApp/);
   assert.match(link,/keepalive: true/);
   assert.match(link,/trackAnalyticsEvent\(action/);
   assert.match(link,/contact_area: area, contact_placement: placement/);
@@ -64,5 +83,10 @@ test('portal settings remain authorized and audited, with separate consented and
   assert.match(analytics,/!hasAnalyticsConsent\(\)/);
   assert.match(editor,/key=\{contact.id\}/);
   assert.match(editor,/\+ Agregar WhatsApp/);
-  assert.match(css,/\.portal-whatsapp-panel[^}]*max-height: calc\(100dvh/);
+  assert.match(css,/\.portal-whatsapp-panel[^}]*max-height: min\(78dvh/);
+  assert.match(css,/\.portal-whatsapp-backdrop[^}]*z-index: 850/);
+  assert.match(css,/\.portal-whatsapp-options[^}]*min-height: 0[^}]*overflow-y: auto/);
+  assert.match(css,/\.portal-whatsapp-options[^}]*grid-auto-rows: max-content/);
+  const components = await source('app/directorio/_components.tsx');
+  assert.match(components,/openHelpPanel=\{placement === "header" \|\| placement === "footer"\}/);
 });

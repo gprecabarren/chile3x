@@ -1,8 +1,9 @@
 "use client";
 
-import type { ComponentProps } from "react";
+import { useContext, type ComponentProps } from "react";
 import type { WhatsappPlacement } from "@/lib/portal-whatsapp";
 import { trackAnalyticsEvent } from "./AnalyticsEvent";
+import { WhatsappMenuContext } from "./WhatsappMenuContext";
 
 // Internal anonymous counters are independent of optional, consented Google
 // measurement. Neither path receives numbers, messages or personal labels.
@@ -19,9 +20,14 @@ export function recordPortalWhatsapp(action: "panel_open" | "contact_click", con
   } catch { /* Optional measurement must never block the panel or contact. */ }
 }
 
-export function PortalWhatsappLink({ placement, contactId = "support", ...props }: ComponentProps<"a"> & { placement: WhatsappPlacement; contactId?: string }) {
-  return <a {...props} onClick={event => {
+export function PortalWhatsappLink({ placement, contactId = "support", openHelpPanel = false, ...props }: ComponentProps<"a"> & { placement: WhatsappPlacement; contactId?: string; openHelpPanel?: boolean }) {
+  const menu = useContext(WhatsappMenuContext);
+  return <a {...props} aria-haspopup={openHelpPanel && menu ? "dialog" : undefined} aria-expanded={openHelpPanel && menu ? menu.isOpen : undefined} onClick={event => {
     props.onClick?.(event);
+    if (!event.defaultPrevented && openHelpPanel && (placement === "header" || placement === "footer") && menu?.openMenu(placement, event.currentTarget)) {
+      event.preventDefault();
+      return;
+    }
     if (!event.defaultPrevented) recordPortalWhatsapp("contact_click", contactId, placement);
   }} />;
 }

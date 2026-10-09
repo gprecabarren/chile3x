@@ -8,7 +8,7 @@ import { validatePublicationRules } from "@/lib/publication-rules";
 import { recordAdminAudit } from "@/lib/admin-audit";
 import { adminHasCapability } from "@/lib/admin-permissions";
 import { normalizeTelegramCommunityUrl, TELEGRAM_CONFIG_ID } from "@/lib/telegram";
-import { normalizePortalWhatsappPhone, validateWhatsappContacts } from "@/lib/portal-whatsapp";
+import { normalizePortalWhatsappPhone, validateWhatsappContacts, WHATSAPP_TEXT_LIMITS } from "@/lib/portal-whatsapp";
 
 const allowedSettings = {
   listing_open: new Set(["closed", "waitlist", "open"]),
@@ -80,8 +80,8 @@ export async function POST(request: NextRequest) {
     ["google_site_verification", 180], ["google_analytics_id", 20], ["google_oauth_client_id", 180], ["contact_whatsapp", 22],
     ["contact_telegram", 180], ["contact_instagram", 180], ["contact_email", 180],
     ["apple_services_id", 180], ["apple_team_id", 10], ["apple_key_id", 10], ["apple_primary_app_id", 180],
-    ["contact_whatsapp_label", 60], ["contact_whatsapp_description", 240], ["contact_whatsapp_message", 400],
-    ["whatsapp_button_label", 80], ["whatsapp_panel_title", 80], ["whatsapp_panel_description", 320],
+    ["contact_whatsapp_label", WHATSAPP_TEXT_LIMITS.label], ["contact_whatsapp_description", WHATSAPP_TEXT_LIMITS.description], ["contact_whatsapp_message", WHATSAPP_TEXT_LIMITS.message],
+    ["whatsapp_button_label", WHATSAPP_TEXT_LIMITS.button], ["whatsapp_panel_title", WHATSAPP_TEXT_LIMITS.title], ["whatsapp_panel_description", WHATSAPP_TEXT_LIMITS.explanation],
   ] as const;
   const values: Record<string, string> = {};
   for (const [key, maximum] of optionalText) {

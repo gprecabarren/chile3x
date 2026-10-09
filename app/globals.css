@@ -1619,7 +1619,7 @@ input[type="submit"] { text-transform: none !important; letter-spacing: .015em; 
 .admin-media-processing-preview small { color: #c8d5e7; font-size: 11px; line-height: 1.45; }
 .admin-photo-processing-options { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 12px; }
 .admin-photo-processing-options label { display: inline-flex; align-items: center; gap: 7px; color: #d7e0ed; font-size: 12px; }
-.admin-photo-processing-options input { accent-color: #d8404a; }
+.admin-photo-processing-options input { position: static; width: 15px; height: 15px; clip: auto; accent-color: #d8404a; }
 
 /* El buscador conserva el mismo HTML en PC y móvil; solo se compacta su interfaz móvil. */
 .filter-mobile-toggle { display: none; }
@@ -2059,4 +2059,42 @@ input[type="submit"] { text-transform: none !important; letter-spacing: .015em; 
   .portal-whatsapp-panel { max-height: calc(100dvh - 24px); overflow-y: auto; }
   .portal-whatsapp-panel > header { position: sticky; top: 0; background: #151c27; }
   .portal-whatsapp-options { flex: 0 0 auto; overflow-y: visible; }
+}
+
+/* Private upload screens: complete photos, bounded cards and on-demand editing. */
+.availability-bulk-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 12px 0; }
+.availability-bulk-actions .button { margin: 0; }
+.availability-bulk-actions .button[aria-pressed="true"] { border-color: #7ad69a; background: #162b21; }
+.profile-media-manager { scroll-margin-top: 220px; }
+.profile-public-gallery-manager > .gallery-upload-candidates { grid-column: 1 / -1; min-width: 0; }
+.profile-media-manager .media-owner-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); }
+.profile-media-manager .media-owner-preview { height: 220px; min-height: 0; }
+.profile-media-manager .media-owner-preview img { object-fit: contain; }
+.admin-media-preview img { object-fit: contain; }
+.media-owner-preview > a { position: absolute; inset: 0; display: block; }
+.media-owner-open { grid-column: 1 / -1; min-height: 32px; display: inline-flex; align-items: center; color: #b5d5ff; font-size: 11px; text-decoration: underline; }
+.selected-photo-preview { grid-column: 1 / -1; min-width: 0; padding-top: 10px; border-top: 1px solid #344154; }
+.selected-photo-preview > a { display: grid; width: min(100%, 260px); gap: 8px; color: #c2d9fa; font-size: 12px; text-decoration: underline; }
+.selected-photo-preview img { display: block; max-width: 100%; width: auto; height: 180px; max-height: 180px; object-fit: contain; object-position: left center; border-radius: 8px; background: #080b12; }
+.selected-photo-preview > p, .photo-crop-editor > p { color: #bdc8da; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.photo-selection-actions { display: flex !important; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.photo-selection-actions .button { min-height: 40px; padding: 10px 12px; white-space: normal; }
+.selected-photo-filename { display: block; color: #e9eef8; font-size: 13px; overflow-wrap: anywhere; }
+.photo-crop-editor { grid-column: 1 / -1; min-width: 0; padding: 14px; border: 1px solid #445069; border-radius: 10px; background: #0b101b; }
+.photo-crop-editor canvas { display: block; max-width: 100%; width: auto; height: auto; max-height: 340px; margin: 12px auto; object-fit: contain; background: #05070c; }
+.photo-crop-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.photo-crop-controls label { min-width: 0; display: grid; gap: 6px; color: #d8e2f1; font-size: 12px; }
+.photo-crop-controls select { width: 100%; min-width: 0; min-height: 40px; background: #151e2e; color: #fff; border: 1px solid #47546c; border-radius: 6px; padding: 8px; }
+.photo-crop-controls input[type="range"] { width: 100%; min-width: 0; min-height: 30px; accent-color: #ef555e; }
+.photo-crop-editor small { color: #a9bbd2; font-size: 12px; }
+.profile-media-manager .gallery-upload-candidates article strong { white-space: normal; overflow-wrap: anywhere; }
+@media (max-width: 620px) {
+  .availability-bulk-actions { align-items: stretch; }
+  .availability-bulk-actions .button { flex: 1 1 160px; }
+  .gallery-upload-candidates { padding: 12px; }
+  .gallery-upload-candidates article { grid-template-columns: minmax(0, 1fr); }
+  .gallery-face-blur-option { white-space: normal; }
+  .photo-crop-controls { grid-template-columns: minmax(0, 1fr); }
+  .photo-selection-actions .button { flex: 1 1 150px; }
+  .profile-media-manager { scroll-margin-top: 250px; }
 }

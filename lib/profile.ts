@@ -166,6 +166,10 @@ function isTime(value: string | null | undefined) {
   return true;
 }
 
+function isClosingTime(value: string | null | undefined) {
+  return value === "24:00" || isTime(value);
+}
+
 function timeAsMinutes(value: string) {
   const [hours, minutes] = value.split(":").map(Number);
   return hours * 60 + minutes;
@@ -184,7 +188,7 @@ export function validateAvailability(formData: FormData) {
     if (formData.get(`availability_${day.key}_enabled`) !== "on") continue;
     const opensAt = compactText(formData.get(`availability_${day.key}_opens`), 5);
     const closesAt = compactText(formData.get(`availability_${day.key}_closes`), 5);
-    if (!isTime(opensAt) || !isTime(closesAt)) return `Selecciona una hora de inicio y término para ${day.label}.`;
+    if (!isTime(opensAt) || !isClosingTime(closesAt)) return `Selecciona una hora de inicio y término para ${day.label}.`;
     if (timeAsMinutes(opensAt) >= timeAsMinutes(closesAt)) return `En ${day.label}, la hora de término debe ser posterior a la hora de inicio.`;
   }
   return null;
@@ -201,7 +205,7 @@ export function readAvailability(value: string | null | undefined): Availability
 
   return availabilityDays.flatMap((day) => {
     const [opensAt, closesAt] = (ranges.get(day.key) ?? "").split("-");
-    if (!isTime(opensAt) || !isTime(closesAt) || timeAsMinutes(opensAt) >= timeAsMinutes(closesAt)) {
+    if (!isTime(opensAt) || !isClosingTime(closesAt) || timeAsMinutes(opensAt) >= timeAsMinutes(closesAt)) {
       return [];
     }
     return [{ ...day, opensAt, closesAt }];
@@ -213,7 +217,7 @@ export function serializeAvailability(formData: FormData) {
     if (formData.get(`availability_${day.key}_enabled`) !== "on") return [];
     const opensAt = compactText(formData.get(`availability_${day.key}_opens`), 5);
     const closesAt = compactText(formData.get(`availability_${day.key}_closes`), 5);
-    if (!isTime(opensAt) || !isTime(closesAt) || timeAsMinutes(opensAt) >= timeAsMinutes(closesAt)) return [];
+    if (!isTime(opensAt) || !isClosingTime(closesAt) || timeAsMinutes(opensAt) >= timeAsMinutes(closesAt)) return [];
     return [`${day.key}=${opensAt}-${closesAt}`];
   }).join("|");
 }
@@ -236,7 +240,7 @@ export function getAvailabilityStatus(entries: AvailabilityEntry[], date = new D
   const today = entries.find((entry) => entry.key === currentKey);
 
   if (today && currentMinutes >= timeAsMinutes(today.opensAt) && currentMinutes < timeAsMinutes(today.closesAt)) {
-    return { isOpen: true, text: `Disponible ahora · hasta las ${today.closesAt}` };
+    return { isOpen: true, text: today.opensAt === "00:00" && today.closesAt === "24:00" ? "Disponible ahora · 24 horas" : `Disponible ahora · hasta las ${today.closesAt === "24:00" ? "medianoche" : today.closesAt}` };
   }
 
   const currentIndex = availabilityDays.findIndex((day) => day.key === currentKey);

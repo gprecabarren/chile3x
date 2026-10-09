@@ -49,7 +49,7 @@ test('all-days is a non-submit toggle that does not overwrite stored hour inputs
   const code = await source('app/mi-cuenta/ProfileForm.tsx');
   assert.match(code, /availability-toggle-all" type="button"/);
   assert.match(code, /current.size === availabilityDays.length \? new Set\(\) : new Set/);
-  assert.match(code, /defaultValue=\{entry\?\.opensAt/);
+  assert.match(code, /value=\{availabilityHours\[day.key\]\.opens/);
   const sections = await source('app/directorio/_components.tsx');
   assert.ok(sections.indexOf('id: "masajes"') < sections.indexOf('id: "agency"'));
 });

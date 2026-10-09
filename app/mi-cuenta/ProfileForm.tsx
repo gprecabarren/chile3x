@@ -96,6 +96,9 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
   const [city, setCity] = useState(initial?.city ?? availableCities[0] ?? "");
   const savedAvailability = useMemo(() => new Map(readAvailability(metadataValue(initial, "availability")).map((item) => [item.key, item])), [initial]);
   const [enabledAvailabilityDays, setEnabledAvailabilityDays] = useState(() => new Set(savedAvailability.keys()));
+  const [availabilityHours, setAvailabilityHours] = useState<Record<string, { opens: string; closes: string }>>(() => Object.fromEntries(availabilityDays.map(day => [day.key, { opens: savedAvailability.get(day.key)?.opensAt ?? "", closes: savedAvailability.get(day.key)?.closesAt ?? "" }])));
+  const previousAvailabilityHours = useRef<Record<string, { opens: string; closes: string }>>({});
+  const allSelectedHours = enabledAvailabilityDays.size > 0 && [...enabledAvailabilityDays].every(key => availabilityHours[key]?.opens === "00:00" && availabilityHours[key]?.closes === "24:00");
   const [selectedProfileTags, setSelectedProfileTags] = useState<string[]>(initial?.tags ?? []);
   const [underageNotice, setUnderageNotice] = useState(false);
   const typeLocked = Boolean(initial);
@@ -126,6 +129,7 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
       if (savedCity) setCity(savedCity);
       setSelectedProfileTags((saved.tags ?? []).filter((tag) => profileTags.some((allowedTag) => allowedTag === tag)));
       setEnabledAvailabilityDays(new Set(availabilityDays.filter((day) => saved[`availability_${day.key}_enabled`]?.includes("on")).map((day) => day.key)));
+      setAvailabilityHours(Object.fromEntries(availabilityDays.map(day => [day.key, { opens: saved[`availability_${day.key}_opens`]?.[0] ?? "", closes: saved[`availability_${day.key}_closes`]?.[0] ?? "" }])));
       const form = formRef.current;
       if (!form) return;
       for (const [name, values] of Object.entries(saved)) {
@@ -167,6 +171,12 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
       if (tag === "trans") return [...current.filter((item) => item !== "milf"), tag];
       return [...current, tag];
     });
+  }
+
+  function toggleAllHours() {
+    if (!enabledAvailabilityDays.size) return;
+    if (!allSelectedHours) previousAvailabilityHours.current = { ...availabilityHours };
+    setAvailabilityHours(current => Object.fromEntries(availabilityDays.map(day => [day.key, !enabledAvailabilityDays.has(day.key) ? current[day.key] : allSelectedHours ? previousAvailabilityHours.current[day.key] ?? { opens: "", closes: "" } : { opens: "00:00", closes: "24:00" }])));
   }
 
   return (
@@ -291,13 +301,13 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
         <fieldset className="availability-editor">
           <legend>Horarios de disponibilidad (opcional)</legend>
           <p>Activa solo los días en que atiendes. En el perfil se indicará claramente si está disponible ahora, usando la hora de Chile.</p>
-          <button className="button button-outline availability-toggle-all" type="button" aria-pressed={enabledAvailabilityDays.size === availabilityDays.length} onClick={() => setEnabledAvailabilityDays((current) => current.size === availabilityDays.length ? new Set() : new Set(availabilityDays.map((day) => day.key)))}>
+          <div className="availability-bulk-actions"><button className="button button-outline availability-toggle-all" type="button" aria-pressed={enabledAvailabilityDays.size === availabilityDays.length} onClick={() => setEnabledAvailabilityDays((current) => current.size === availabilityDays.length ? new Set() : new Set(availabilityDays.map((day) => day.key)))}>
             {enabledAvailabilityDays.size === availabilityDays.length ? "Desmarcar todos los días" : "Seleccionar todos los días"}
           </button>
-          <small>Las horas elegidas se conservan. Completa el horario de cada día activado.</small>
+          <button className="button button-outline" type="button" aria-pressed={allSelectedHours} disabled={!enabledAvailabilityDays.size} onClick={toggleAllHours}>{allSelectedHours ? "Restaurar horas anteriores" : "24 horas en días seleccionados"}</button></div>
+          <small>Selecciona todos los días y luego 24 horas para atención 24/7. El botón de horas solo modifica los días activados; puedes restaurar el horario anterior.</small>
           <div className="availability-editor-grid">
             {availabilityDays.map((day) => {
-              const entry = savedAvailability.get(day.key);
               const enabled = enabledAvailabilityDays.has(day.key);
               return <div className={`availability-editor-row${enabled ? " is-enabled" : ""}`} key={day.key}>
                 <label className="availability-day-toggle"><input name={`availability_${day.key}_enabled`} type="checkbox" checked={enabled} onChange={() => setEnabledAvailabilityDays((current) => {
@@ -305,8 +315,8 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
                   if (next.has(day.key)) next.delete(day.key); else next.add(day.key);
                   return next;
                 })} />{day.label}</label>
-                <label>Desde<select name={`availability_${day.key}_opens`} disabled={!enabled} defaultValue={entry?.opensAt ?? ""} required={enabled}><option value="">Hora</option>{availabilityTimeOptions.map((time) => <option key={time.value} value={time.value}>{time.label}</option>)}</select></label>
-                <label>Hasta<select name={`availability_${day.key}_closes`} disabled={!enabled} defaultValue={entry?.closesAt ?? ""} required={enabled}><option value="">Hora</option>{availabilityTimeOptions.map((time) => <option key={time.value} value={time.value}>{time.label}</option>)}</select></label>
+                <label>Desde<select name={`availability_${day.key}_opens`} disabled={!enabled} value={availabilityHours[day.key].opens} onChange={event => setAvailabilityHours(current => ({ ...current, [day.key]: { ...current[day.key], opens: event.target.value } }))} required={enabled}><option value="">Hora</option>{availabilityTimeOptions.map((time) => <option key={time.value} value={time.value}>{time.label}</option>)}</select></label>
+                <label>Hasta<select name={`availability_${day.key}_closes`} disabled={!enabled} value={availabilityHours[day.key].closes} onChange={event => setAvailabilityHours(current => ({ ...current, [day.key]: { ...current[day.key], closes: event.target.value } }))} required={enabled}><option value="">Hora</option>{availabilityTimeOptions.map((time) => <option key={time.value} value={time.value}>{time.label}</option>)}<option value="24:00">Medianoche · fin del día</option></select></label>
               </div>;
             })}
           </div>

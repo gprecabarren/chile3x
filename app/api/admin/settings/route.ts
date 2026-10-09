@@ -8,6 +8,7 @@ import { validatePublicationRules } from "@/lib/publication-rules";
 import { recordAdminAudit } from "@/lib/admin-audit";
 import { adminHasCapability } from "@/lib/admin-permissions";
 import { normalizeTelegramCommunityUrl, TELEGRAM_CONFIG_ID } from "@/lib/telegram";
+import { normalizePortalWhatsappPhone, validateWhatsappContacts } from "@/lib/portal-whatsapp";
 
 const allowedSettings = {
   listing_open: new Set(["closed", "waitlist", "open"]),
@@ -18,6 +19,7 @@ const allowedSettings = {
   profile_gallery_watermark_enabled: new Set(["enabled", "disabled"]),
   profile_gallery_face_blur_enabled: new Set(["enabled", "disabled"]),
   apple_sign_in_status: new Set(["enabled", "disabled"]),
+  whatsapp_panel_enabled: new Set(["enabled", "disabled"]),
 };
 
 function readText(formData: FormData, key: string, maximum: number) {
@@ -78,6 +80,8 @@ export async function POST(request: NextRequest) {
     ["google_site_verification", 180], ["google_analytics_id", 20], ["google_oauth_client_id", 180], ["contact_whatsapp", 22],
     ["contact_telegram", 180], ["contact_instagram", 180], ["contact_email", 180],
     ["apple_services_id", 180], ["apple_team_id", 10], ["apple_key_id", 10], ["apple_primary_app_id", 180],
+    ["contact_whatsapp_label", 60], ["contact_whatsapp_description", 240], ["contact_whatsapp_message", 400],
+    ["whatsapp_button_label", 80], ["whatsapp_panel_title", 80], ["whatsapp_panel_description", 320],
   ] as const;
   const values: Record<string, string> = {};
   for (const [key, maximum] of optionalText) {
@@ -103,7 +107,22 @@ export async function POST(request: NextRequest) {
       return new Response("No fue posible verificar los secretos de Apple.", { status: 503 });
     }
   }
-  if (values.contact_whatsapp && !/^\+?[\d\s()-]{8,22}$/.test(values.contact_whatsapp)) return new Response("El WhatsApp de contacto no tiene un formato válido.", { status: 400 });
+  if (Object.hasOwn(values, "contact_whatsapp")) {
+    const phone = normalizePortalWhatsappPhone(values.contact_whatsapp);
+    if (phone === null) return new Response("El WhatsApp de soporte no tiene un formato válido. Incluye el código del país.", { status: 400 });
+    values.contact_whatsapp = phone;
+    const row = rows.find(item => item.key === "contact_whatsapp");
+    if (row) row.value = phone;
+  }
+  for (const key of ["contact_whatsapp_label", "contact_whatsapp_description", "contact_whatsapp_message", "whatsapp_button_label", "whatsapp_panel_title", "whatsapp_panel_description"]) {
+    if (Object.hasOwn(values, key) && !values[key]) return new Response("Completa los textos de contacto y del panel flotante.", { status: 400 });
+  }
+  if (formData.has("whatsapp_extra_contacts")) {
+    const input = readText(formData, "whatsapp_extra_contacts", 16000);
+    const contacts = input === null ? null : validateWhatsappContacts(input);
+    if (contacts === null) return new Response("Revisa los WhatsApp adicionales: nombres, textos, números, identificadores y visibilidad deben ser válidos.", { status: 400 });
+    set("whatsapp_extra_contacts", JSON.stringify(contacts));
+  }
   if (Object.hasOwn(values, "contact_telegram")) {
     const normalizedTelegram = normalizeTelegramCommunityUrl(values.contact_telegram);
     if (normalizedTelegram === null) return new Response("Telegram debe ser un usuario, comunidad o invitación t.me válida.", { status: 400 });

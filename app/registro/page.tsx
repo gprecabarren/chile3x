@@ -5,6 +5,7 @@ import { OfficialChile3xLogo } from "@/app/OfficialChile3xLogo";
 import { RegistrationEmailField } from "@/app/registro/RegistrationEmailField";
 import { safeAccountReturnTo } from "@/lib/auth";
 import { getPortalWhatsappLink } from "@/lib/site-contacts";
+import { PortalWhatsappLink } from "@/app/PortalWhatsappLink";
 import { getSiteSettings } from "@/lib/site-settings";
 import { AuthTurnstile } from "@/app/AuthTurnstile";
 import { cookies } from "next/headers";
@@ -62,7 +63,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
   const loginHref = `/ingresar?return_to=${encodeURIComponent(returnTo)}`;
 
   return <main className="auth-page"><section className="auth-card auth-register-card">
-    {whatsappHref && <a className="button button-outline auth-whatsapp-request auth-whatsapp-request-top" href={whatsappHref} target="_blank" rel="noreferrer">Solicitar creación de cuenta por WhatsApp</a>}
+    {whatsappHref && <PortalWhatsappLink placement="registration" className="button button-outline auth-whatsapp-request auth-whatsapp-request-top" href={whatsappHref} target="_blank" rel="noopener noreferrer">Solicitar creación de cuenta por WhatsApp</PortalWhatsappLink>}
     <div className="auth-register-topbar"><Link className="auth-brand" href="/"><OfficialChile3xLogo priority /></Link><p className="auth-login-shortcut">¿Ya tienes cuenta? <Link href={loginHref}>Ingresar</Link></p></div>
     <p className="eyebrow">CUENTA DE ANUNCIANTE</p>
     <h1>Crea tu cuenta para empezar a publicar.</h1>
@@ -88,7 +89,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
       <AuthTurnstile action={TURNSTILE_AUTH_REGISTER_ACTION} />
       <button className="button button-primary" type="submit">{providerName ? `Crear cuenta con ${providerName}` : "Crear cuenta y verificar correo"}</button>
     </form>
-    {whatsappHref && <a className="button button-outline auth-whatsapp-request" href={whatsappHref} target="_blank" rel="noreferrer">Solicitar creación de cuenta por WhatsApp</a>}
+    {whatsappHref && <PortalWhatsappLink placement="registration" className="button button-outline auth-whatsapp-request" href={whatsappHref} target="_blank" rel="noopener noreferrer">Solicitar creación de cuenta por WhatsApp</PortalWhatsappLink>}
     <p className="auth-switch">¿Ya tienes una cuenta? <Link href={loginHref}>Ingresar</Link></p>
   </section></main>;
 }

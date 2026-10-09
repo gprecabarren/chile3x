@@ -3,6 +3,7 @@ import Link from "next/link";
 import { DirectoryShell, PortalContactIcon, PortalContactLinks } from "@/app/directorio/_components";
 import { getPortalContacts, getPortalTelegramLink, getPortalWhatsappLink } from "@/lib/site-contacts";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
+import { PortalWhatsappLink } from "@/app/PortalWhatsappLink";
 import { safeJsonLd } from "@/lib/json-ld";
 import { publicPageMetadata } from "@/lib/seo";
 
@@ -28,7 +29,7 @@ function formatChileanPhone(value: string) {
 
 export default async function AboutPage() {
   const settings = await getSiteSettings();
-  const whatsappHref = getPortalWhatsappLink(settings.contact_whatsapp, "Hola, quiero conocer más sobre Chile3X.");
+  const whatsappHref = getPortalWhatsappLink(settings.contact_whatsapp, settings.contact_whatsapp_message);
   const telegramHref = getPortalTelegramLink(settings.contact_telegram);
   const siteUrl = siteBaseUrl(settings.site_url);
   const publicContacts = getPortalContacts(settings);
@@ -224,10 +225,10 @@ export default async function AboutPage() {
       </div>
       <aside>
         <p>CONTACTO OFICIAL</p>
-        {whatsappHref && <a className="about-contact-number" href={whatsappHref} target="_blank" rel="noreferrer"><PortalContactIcon kind="whatsapp" /><span><small>WhatsApp</small><strong>{formatChileanPhone(settings.contact_whatsapp)}</strong></span></a>}
+        {whatsappHref && <PortalWhatsappLink placement="about" className="about-contact-number" href={whatsappHref} target="_blank" rel="noopener noreferrer"><PortalContactIcon kind="whatsapp" /><span><small>{settings.contact_whatsapp_label}</small><strong>{formatChileanPhone(settings.contact_whatsapp)}</strong></span></PortalWhatsappLink>}
         {settings.contact_email.trim() && <a className="about-contact-number" href={`mailto:${settings.contact_email.trim()}`}><PortalContactIcon kind="email" /><span><small>Correo</small><strong>{settings.contact_email.trim()}</strong></span></a>}
         {!whatsappHref && !settings.contact_email.trim() && <p className="about-contact-empty">Los canales oficiales se habilitarán desde Administración.</p>}
-        <PortalContactLinks placement="footer" />
+        <PortalContactLinks placement="about" />
       </aside>
     </section>
   </DirectoryShell>;

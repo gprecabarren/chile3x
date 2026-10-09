@@ -5,7 +5,10 @@ import type { ReactNode } from "react";
 import { getCurrentAdmin, getCurrentUser, getSessionCookieName, getUserSessionCookieName, type AccountUser } from "@/lib/auth";
 import { getCityPath, getProfileDisplayTags, type PublicProfile } from "@/lib/directory";
 import { profilePublicPath, readProfilePrices, type Tier } from "@/lib/profile";
-import { getPortalContacts, getPortalWhatsappLink } from "@/lib/site-contacts";
+import { getPortalContacts } from "@/lib/site-contacts";
+import { publicWhatsappContacts, type WhatsappPlacement } from "@/lib/portal-whatsapp";
+import { FloatingWhatsappMenu } from "@/app/FloatingWhatsappMenu";
+import { PortalWhatsappLink } from "@/app/PortalWhatsappLink";
 import { getSiteSettings } from "@/lib/site-settings";
 import { formatRegionName, getRegionByTitle } from "@/app/locations";
 import { PublicMobileMenu } from "./PublicMobileMenu";
@@ -150,10 +153,12 @@ export async function PublicFooter() {
   );
 }
 
-export async function PortalContactLinks({ placement }: { placement: "header" | "footer" }) {
+export async function PortalContactLinks({ placement }: { placement: Extract<WhatsappPlacement, "header" | "footer" | "contact" | "about"> }) {
   const contacts = getPortalContacts(await getSiteSettings());
   if (contacts.length === 0) return null;
-  return <div className={`portal-contact-links portal-contact-links-${placement}`} aria-label="Canales oficiales de Chile3X">{contacts.map((contact) => <a key={contact.key} className={`portal-contact-link portal-contact-${contact.key}`} href={contact.href} target={contact.external ? "_blank" : undefined} rel={contact.external ? "noreferrer" : undefined} aria-label={contact.label} title={contact.label}><PortalContactIcon kind={contact.key} /><span className="sr-only">{contact.label}</span></a>)}</div>;
+  return <div className={`portal-contact-links portal-contact-links-${placement}`} aria-label="Canales oficiales de Chile3X">{contacts.map((contact) => contact.key === "whatsapp"
+    ? <PortalWhatsappLink key={contact.key} placement={placement} className="portal-contact-link portal-contact-whatsapp" href={contact.href} target="_blank" rel="noopener noreferrer" aria-label={contact.label} title={contact.label}><PortalContactIcon kind="whatsapp" /><span className="sr-only">{contact.label}</span></PortalWhatsappLink>
+    : <a key={contact.key} className={`portal-contact-link portal-contact-${contact.key}`} href={contact.href} target={contact.external ? "_blank" : undefined} rel={contact.external ? "noreferrer" : undefined} aria-label={contact.label} title={contact.label}><PortalContactIcon kind={contact.key} /><span className="sr-only">{contact.label}</span></a>)}</div>;
 }
 
 export function PortalContactIcon({ kind }: { kind: "whatsapp" | "telegram" | "instagram" | "email" | "call" | "arsmate" | "onlyfans" | "videocall" }) {
@@ -173,11 +178,11 @@ export function PortalContactIcon({ kind }: { kind: "whatsapp" | "telegram" | "i
 
 export async function FloatingWhatsappButton() {
   const settings = await getSiteSettings();
-  const href = getPortalWhatsappLink(settings.contact_whatsapp);
-  if (!href) return null;
-  return <a className="floating-whatsapp" href={href} target="_blank" rel="noreferrer" aria-label="Escribir al WhatsApp de Chile3X" title="WhatsApp de Chile3X">
+  const contacts = publicWhatsappContacts(settings);
+  if (settings.whatsapp_panel_enabled !== "enabled" || !contacts.length) return null;
+  return <FloatingWhatsappMenu contacts={contacts} title={settings.whatsapp_panel_title} description={settings.whatsapp_panel_description} buttonLabel={settings.whatsapp_button_label}>
     <PortalContactIcon kind="whatsapp" />
-  </a>;
+  </FloatingWhatsappMenu>;
 }
 
 export function OadBadge() {

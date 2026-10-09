@@ -14,6 +14,7 @@ import { adminHasCapability } from "@/lib/admin-permissions";
 import { AdminPageHeading, AdminShell } from "../_components";
 import { AdminPagination, readAdminPage } from "../pagination";
 import { countryName } from "@/lib/session-context";
+import { PortalWhatsappStats } from "@/app/admin/PortalWhatsappStats";
 
 export const dynamic = "force-dynamic";
 const PAGE_SIZE = 20;
@@ -265,8 +266,9 @@ export default async function AdminActivityPage({ searchParams }: { searchParams
         <nav>{notification.actorUserId && <Link href={`/admin/cuentas/${encodeURIComponent(notification.actorUserId)}`}>Ver cuenta</Link>}{notification.profileId && <Link href={`/admin/anuncios-publicaciones?q=${encodeURIComponent(notification.profileName ?? notification.profileId)}`}>Ver anuncio</Link>}{!notification.readAt && <form action="/api/admin/notificaciones" method="post"><input type="hidden" name="notification_id" value={notification.id} /><input type="hidden" name="return_to" value="/admin/actividad?notice=notifications_read" /><button type="submit">Marcar leída</button></form>}</nav>
       </article>)}</div> : <p className="admin-media-empty">No hay notificaciones que coincidan con estos filtros.</p>}
     </details>
+    <PortalWhatsappStats />
     <details className="admin-whatsapp-clicks" open>
-      <summary><span><strong>Clics únicos en WhatsApp</strong><small>Últimos 50 registros diarios por anuncio y navegador</small></span><b>{whatsappClicks.length}</b></summary>
+      <summary><span><strong>Clics únicos en WhatsApp de anunciantes</strong><small>Últimos 50 registros diarios por anuncio y navegador · separados del soporte del sitio</small></span><b>{whatsappClicks.length}</b></summary>
       <p>La cuenta, ubicación aproximada, dispositivo y ruta solo se agregan cuando la persona aceptó la medición. Sin ese permiso se conserva únicamente un identificador opaco para el conteo diario; nunca se guarda la IP en este registro.</p>
       {whatsappClicks.length ? <div className="admin-whatsapp-click-list">{whatsappClicks.map((click) => <article key={click.id}>
         <div><strong>{click.profileName}</strong><Link href={`/admin/anuncios-publicaciones?q=${encodeURIComponent(click.profileName)}`}>Abrir anuncio</Link></div>

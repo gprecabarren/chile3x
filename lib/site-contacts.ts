@@ -1,4 +1,5 @@
 import type { SiteSettings } from "@/lib/site-settings";
+import { portalWhatsappHref } from "@/lib/portal-whatsapp";
 
 export type PortalContact = {
   key: "whatsapp" | "telegram" | "instagram" | "email";
@@ -6,10 +7,6 @@ export type PortalContact = {
   href: string;
   external: boolean;
 };
-
-function digits(value: string) {
-  return value.replace(/\D/g, "");
-}
 
 function instagramUrl(value: string) {
   const trimmed = value.trim();
@@ -42,17 +39,16 @@ function mailto(value: string) {
 }
 
 export function getPortalWhatsappLink(value: string, message = "Hola, quiero comunicarme con Chile3X.") {
-  const number = digits(value);
-  return /^\d{8,15}$/.test(number) ? `https://wa.me/${number}?text=${encodeURIComponent(message)}` : null;
+  return portalWhatsappHref(value, message);
 }
 
 export function getPortalContacts(settings: SiteSettings): PortalContact[] {
-  const whatsapp = getPortalWhatsappLink(settings.contact_whatsapp);
+  const whatsapp = getPortalWhatsappLink(settings.contact_whatsapp, settings.contact_whatsapp_message);
   const telegram = getPortalTelegramLink(settings.contact_telegram);
   const instagram = instagramUrl(settings.contact_instagram);
   const email = mailto(settings.contact_email);
   return [
-    whatsapp ? { key: "whatsapp" as const, label: "WhatsApp", href: whatsapp, external: true } : null,
+    whatsapp ? { key: "whatsapp" as const, label: `${settings.contact_whatsapp_label} por WhatsApp`, href: whatsapp, external: true } : null,
     telegram ? { key: "telegram" as const, label: "Telegram", href: telegram, external: true } : null,
     instagram ? { key: "instagram" as const, label: "Instagram", href: instagram, external: true } : null,
     email ? { key: "email" as const, label: "Correo", href: email, external: false } : null,

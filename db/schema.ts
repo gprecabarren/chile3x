@@ -459,6 +459,18 @@ export const profileViews = sqliteTable("profile_views", {
   index("profile_views_profile_day_idx").on(table.profileId, table.viewedOn),
 ]);
 
+// Portal help is independent of advertiser contacts. Daily aggregates only:
+// no visitor/account identifiers, cookies, IPs, locations or browsing paths.
+export const portalWhatsappEvents = sqliteTable("portal_whatsapp_events", {
+  id: text("id").primaryKey(),
+  recordedOn: text("recorded_on").notNull(),
+  contactId: text("contact_id").notNull(),
+  contactLabel: text("contact_label").notNull(),
+  action: text("action", { enum: ["panel_open", "contact_click"] }).notNull(),
+  placement: text("placement", { enum: ["floating", "header", "footer", "contact", "about", "registration"] }).notNull(),
+  hits: integer("hits").notNull().default(1),
+}, table => [index("portal_whatsapp_events_day_idx").on(table.recordedOn)]);
+
 export const profileContactEvents = sqliteTable("profile_contact_events", {
   id: text("id").primaryKey(),
   profileId: text("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),

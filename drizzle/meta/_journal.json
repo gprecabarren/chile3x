@@ -281,6 +281,13 @@
       "when": 1791341400000,
       "tag": "0039_scoped_escort_exception",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "6",
+      "when": 1791547200000,
+      "tag": "0040_portal_whatsapp",
+      "breakpoints": true
     }
   ]
 }

@@ -4,6 +4,7 @@ import { getDb } from "@/db";
 import { exclusiveContentMedia } from "@/db/schema";
 import { assertSameOrigin, getCurrentUser, hasTesterAutoApproval } from "@/lib/auth";
 import { getOrCreateExclusiveContentCollection } from "@/lib/exclusive-content";
+import { validatePreparedVideo } from "@/lib/video-validation";
 import {
   detectImageType,
   detectVideoType,
@@ -41,6 +42,10 @@ export async function POST(request: NextRequest) {
   const mediaType = imageType ? "image" as const : "video" as const;
   const contentType = imageType ?? videoType!;
   if (entry.size > (mediaType === "image" ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES)) return error(mediaType === "image" ? "Cada imagen debe pesar menos de 5 MB." : "Cada video debe pesar menos de 8 MB.");
+  if (videoType) {
+    try { await validatePreparedVideo(data, videoType); }
+    catch (cause) { return error(cause instanceof Error ? cause.message : "No se pudo validar el video."); }
+  }
 
   const db = await getDb();
   const collection = await getOrCreateExclusiveContentCollection(user.id);

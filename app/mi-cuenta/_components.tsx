@@ -5,15 +5,19 @@ import { OfficialChile3xLogo } from "@/app/OfficialChile3xLogo";
 import { AccountMobileNavigation } from "./AccountMobileNavigation";
 import { PresenceHeartbeat } from "@/app/PresenceHeartbeat";
 import { countUnreadMessages } from "@/lib/internal-messages";
+import { countPendingReceivedReviews } from "@/lib/profile-interactions";
+import { emailVerificationDeadline, emailVerificationState } from "@/lib/email-verification-policy";
+import { EmailVerificationNotice } from "@/app/EmailVerificationNotice";
+import { MessageNotifications, PendingReviewsNotice, UnreadMessagesBadge, UnreadMessagesNotice } from "@/app/MessageNotifications";
 
-function AccountNavigation({ user, unreadMessages }: { user: AccountUser; unreadMessages: number }) {
+function AccountNavigation({ user }: { user: AccountUser }) {
   return <nav aria-label="Navegación de cuenta">
     <Link href="/mi-cuenta">Mis anuncios</Link>
-    <Link className="account-messages-link" href="/mi-cuenta/mensajes">Mensajes{unreadMessages > 0 && <b aria-label={`${unreadMessages} mensajes sin leer`}>{unreadMessages > 99 ? "99+" : unreadMessages}</b>}</Link>
+    <Link className="account-messages-link" href="/mi-cuenta/mensajes">Mensajes<UnreadMessagesBadge /></Link>
     <Link href="/mi-cuenta/contenido">Mi contenido</Link>
     <Link href="/mi-cuenta/datos-personales">Mis datos</Link>
     <Link href="/mi-cuenta/favoritos">Favoritos</Link>
-    <Link href="/mi-cuenta/comentarios">Comentarios</Link>
+    <Link className="account-messages-link" href="/mi-cuenta/comentarios">Comentarios<UnreadMessagesBadge reviews /></Link>
     <Link href="/mi-cuenta/reportes">Mis reportes</Link>
     <Link href="/mi-cuenta/telegram">Telegram y Miembros</Link>
     {user.role === "tester" && <Link href="/mi-cuenta/pruebas">Mis pruebas</Link>}
@@ -31,21 +35,24 @@ function AccountNavigation({ user, unreadMessages }: { user: AccountUser; unread
 }
 
 export async function AccountShell({ user, children }: { user: AccountUser; children: ReactNode }) {
-  const unreadMessages = await countUnreadMessages(user.id);
+  const [unreadMessages, pendingReviews] = await Promise.all([countUnreadMessages(user.id), countPendingReceivedReviews(user.id)]);
   return (
-    <main className="account-root">
+    <MessageNotifications initialUnread={unreadMessages} initialPendingReviews={pendingReviews}><main className="account-root">
       <header className="account-header">
         <Link href="/" className="account-brand"><OfficialChile3xLogo priority /><small>MI CUENTA</small></Link>
-        <div className="account-desktop-navigation"><AccountNavigation user={user} unreadMessages={unreadMessages} /></div>
+        <div className="account-desktop-navigation"><AccountNavigation user={user} /></div>
         <div className="account-user">
-          <span>{user.displayName ?? "Cuenta Chile3X"}{user.username ? ` · @${user.username}` : ""}</span>
+          <span>{user.username ? `@${user.username}` : user.displayName ?? "Cuenta Chile3X"}</span>
           <form action="/api/auth/session/logout" method="post"><button type="submit" title="Cerrar la sesión de esta cuenta">Cerrar sesión</button></form>
         </div>
-      <AccountMobileNavigation><AccountNavigation user={user} unreadMessages={unreadMessages} /></AccountMobileNavigation>
+      <AccountMobileNavigation><AccountNavigation user={user} /></AccountMobileNavigation>
       </header>
       <PresenceHeartbeat />
+      {emailVerificationState(user) === "grace" && <EmailVerificationNotice deadline={emailVerificationDeadline(user)} />}
+      <UnreadMessagesNotice />
+      <PendingReviewsNotice />
       {children}
-    </main>
+    </main></MessageNotifications>
   );
 }
 

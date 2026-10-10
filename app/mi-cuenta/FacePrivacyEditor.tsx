@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type PointerEvent } from "react";
-import { MAX_PRIVACY_REGIONS, type FacePrivacyRegion } from "@/lib/face-privacy";
+import { MAX_PRIVACY_REGIONS, privacyRegionAtPoint, type FacePrivacyRegion } from "@/lib/face-privacy";
 
 export function FacePrivacyEditor({ file, regions, onChange, disabled = false }: {
   file: File; regions: FacePrivacyRegion[]; onChange: (regions: FacePrivacyRegion[]) => void; disabled?: boolean;
@@ -25,9 +25,9 @@ export function FacePrivacyEditor({ file, regions, onChange, disabled = false }:
   }
   return <details className="face-privacy-editor">
     <summary>Difuminado manual (opcional)</summary>
-    <p>Marca las zonas que quieres ocultar arrastrando sobre la foto. En teclado, añade una zona y ajusta sus controles. Si marcas zonas, se usan en lugar de la detección automática.</p>
+    <p>Toca o haz clic sobre cada cara, tatuaje o detalle que quieras ocultar. También puedes arrastrar para dibujar una zona. Ajusta su posición y tamaño con los controles de abajo. Hasta {MAX_PRIVACY_REGIONS} zonas; las zonas manuales sustituyen la detección automática.</p>
     <div className="face-privacy-image" onPointerDown={event => {
-      if (disabled || regions.length >= MAX_PRIVACY_REGIONS || event.button !== 0) return;
+      if (disabled || regions.length >= MAX_PRIVACY_REGIONS || event.button !== 0 || !event.isPrimary || start.current) return;
       event.preventDefault(); start.current = { ...point(event), pointerId: event.pointerId }; event.currentTarget.setPointerCapture(event.pointerId);
     }} onPointerMove={event => {
       const origin = start.current; if (!origin || origin.pointerId !== event.pointerId) return;
@@ -35,7 +35,10 @@ export function FacePrivacyEditor({ file, regions, onChange, disabled = false }:
     }} onPointerUp={event => {
       const origin = start.current; if (!origin || origin.pointerId !== event.pointerId) return;
       const end = point(event); const region = { x: Math.min(origin.x, end.x), y: Math.min(origin.y, end.y), width: Math.abs(end.x - origin.x), height: Math.abs(end.y - origin.y) };
-      if (!disabled && region.width >= .01 && region.height >= .01) onChange([...regions, region]);
+      if (!disabled && regions.length < MAX_PRIVACY_REGIONS) {
+        if (region.width >= .01 && region.height >= .01) onChange([...regions, region]);
+        else if (region.width < .025 && region.height < .025) onChange([...regions, privacyRegionAtPoint(end.x, end.y)]);
+      }
       start.current = null; setDraft(null); event.currentTarget.releasePointerCapture(event.pointerId);
     }} onPointerCancel={() => { start.current = null; setDraft(null); }}>
       {/* Local object URL: deliberately neither uploaded nor sent to an image optimizer. */}

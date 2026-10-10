@@ -15,6 +15,10 @@ import { PublicMobileMenu } from "./PublicMobileMenu";
 import { ADMIN_ACCESS_LABELS } from "@/lib/admin-permissions";
 import { PresenceHeartbeat } from "@/app/PresenceHeartbeat";
 import { DirectoryCityBar } from "./DirectoryCityBar";
+import { countUnreadMessages } from "@/lib/internal-messages";
+import { MessageNotifications, PendingReviewsNotice, UnreadMessagesNotice } from "@/app/MessageNotifications";
+import { countPendingReceivedReviews } from "@/lib/profile-interactions";
+import { PublicNavigationLink as NavLink } from "./PublicNavigationLink";
 
 const typeLabel = {
   escort: "Escort",
@@ -38,7 +42,7 @@ type PublicHeaderProps = {
 };
 
 function publicSessionLabel(user: AccountUser) {
-  return user.displayName?.trim() || (user.username ? `@${user.username}` : user.email);
+  return user.username ? `@${user.username}` : user.displayName?.trim() || "Cuenta Chile3X";
 }
 
 export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeaderProps = {}) {
@@ -54,6 +58,7 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
     hasPotentialAdminSession ? getCurrentAdmin() : Promise.resolve(null),
   ]);
   const hasUserSession = Boolean(currentUser);
+  const [unreadMessages, pendingReviews] = currentUser ? await Promise.all([countUnreadMessages(currentUser.id), countPendingReceivedReviews(currentUser.id)]) : [0, 0];
   const hasAdminSession = Boolean(currentAdmin);
   const sessionUser = currentUser ?? currentAdmin;
   const sessionAccountHref = currentUser ? "/mi-cuenta" : currentAdmin ? "/admin" : "/ingresar";
@@ -64,7 +69,7 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
     : sessionUser ? publicSessionLabel(sessionUser) : "";
   const sessionSecondary = currentAdmin
     ? "Panel administrativo"
-    : sessionUser ? `${sessionUser.username ? `@${sessionUser.username} · ` : ""}${sessionUser.email}` : "";
+    : sessionUser ? "Panel de usuario" : "";
 
   return (
     <>
@@ -74,18 +79,18 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
         <div className="public-navigation-stack">
           <nav className="public-navigation" aria-label="Navegación principal">
             <div className="public-navigation-group public-navigation-directory" aria-label="Directorio">
-              <Link href="/#cobertura">Regiones y ciudades</Link>
-              <Link href="/escorts">Escorts</Link>
-              <Link href="/agencias">Agencias</Link>
-              <Link href="/arriendos">Arriendos</Link>
+              <NavLink href="/#cobertura">Regiones y ciudades</NavLink>
+              <NavLink href="/escorts">Escorts</NavLink>
+              <NavLink href="/agencias">Agencias</NavLink>
+              <NavLink href="/arriendos">Arriendos</NavLink>
             </div>
             <div className="public-navigation-group public-navigation-site" aria-label="Información y cuenta">
-              <Link href="/quienes-somos">Quiénes somos</Link>
-              <Link href="/noticias">Noticias</Link>
-              <Link href="/novedades">Novedades</Link>
-              <Link href="/faq">FAQ</Link>
-              <Link href="/contacto">Contacto</Link>
-              <Link className={!hasAnySession ? "public-login-link" : undefined} href={sessionAccountHref}>{sessionAccountLabel}</Link>
+              <NavLink href="/quienes-somos">Quiénes somos</NavLink>
+              <NavLink href="/noticias">Noticias</NavLink>
+              <NavLink href="/novedades">Novedades</NavLink>
+              <NavLink href="/faq">FAQ</NavLink>
+              <NavLink href="/contacto">Contacto</NavLink>
+              <NavLink className={!hasAnySession ? "public-login-link" : undefined} href={sessionAccountHref}>{sessionAccountLabel}</NavLink>
             </div>
           </nav>
           <PortalContactLinks placement="header" />
@@ -114,11 +119,11 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
           } : null}
         />
         <nav className="mobile-public-quick-links" aria-label="Accesos rápidos">
-          <Link className="mobile-directory-regions" href={coverageHref}><span className="mobile-quick-label-full">Regiones y ciudades</span><span className="mobile-quick-label-short">Regiones</span></Link>
-          <Link href="/escorts">Escorts</Link>
-          <Link className="mobile-directory-secondary" href="/agencias">Agencias</Link>
-          <Link className="mobile-directory-secondary" href="/arriendos">Arriendos</Link>
-          <Link href={sessionAccountHref}>{sessionAccountLabel}</Link>
+          <NavLink className="mobile-directory-regions" href={coverageHref}><span className="mobile-quick-label-full">Regiones y ciudades</span><span className="mobile-quick-label-short">Regiones</span></NavLink>
+          <NavLink href="/escorts">Escorts</NavLink>
+          <NavLink className="mobile-directory-secondary" href="/agencias">Agencias</NavLink>
+          <NavLink className="mobile-directory-secondary" href="/arriendos">Arriendos</NavLink>
+          <NavLink href={sessionAccountHref}>{sessionAccountLabel}</NavLink>
         </nav>
         <div className={`public-header-actions${hasAnySession ? " is-signed-in" : ""}`} aria-label="Acciones de cuenta">
           {!hasAnySession && <Link className="button button-outline" href="/registro">Registrarse</Link>}
@@ -126,6 +131,7 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
         </div>
       </header>
       {currentUser && <PresenceHeartbeat />}
+      {currentUser && <MessageNotifications initialUnread={unreadMessages} initialPendingReviews={pendingReviews}><UnreadMessagesNotice variant="public" /><PendingReviewsNotice variant="public" /></MessageNotifications>}
     </>
   );
 }

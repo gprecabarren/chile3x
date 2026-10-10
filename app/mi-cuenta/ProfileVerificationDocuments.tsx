@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { readUploadResponse } from "@/lib/upload-response";
 
 type DocumentKind = "identity" | "medical";
 type DocumentRecord = { kind: DocumentKind; byteSize: number; contentType: string };
@@ -31,7 +32,7 @@ export function ProfileVerificationDocuments({ profileId, initialDocuments }: { 
     body.set("file", file);
     try {
       const response = await fetch(`/api/perfiles/${profileId}/documentos/${kind}`, { method: "POST", body });
-      const payload = await response.json() as { error?: string; document?: DocumentRecord };
+      const payload = await readUploadResponse<{ error?: string; document?: DocumentRecord }>(response, "Cada documento admite hasta 15 MB. Envía un archivo por vez.");
       if (!response.ok || !payload.document) throw new Error(payload.error ?? "No se pudo subir el documento.");
       setDocuments((current) => [...current.filter((item) => item.kind !== kind), payload.document!]);
       setSelected((current) => ({ ...current, [kind]: undefined }));

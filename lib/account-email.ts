@@ -1,10 +1,11 @@
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { accountTokens, authSessions, users } from "@/db/schema";
 import { createOpaqueToken, sha256 } from "@/lib/auth";
 import { recordOperationalEvent } from "@/lib/operations";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { isReservedTestEmail } from "@/lib/test-email";
+import { emailVerificationState } from "@/lib/email-verification-policy";
 
 export type AccountTokenPurpose = "verify_email" | "reset_password";
 
@@ -18,7 +19,8 @@ export async function createAccountToken(userId: string, purpose: AccountTokenPu
   const secret = createOpaqueToken();
   const hours = purpose === "verify_email" ? 24 : 1;
   const expiresAt = new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
-  await db.delete(accountTokens).where(and(eq(accountTokens.userId, userId), eq(accountTokens.purpose, purpose), isNull(accountTokens.usedAt)));
+  // A reminder must not invalidate a still-valid verification link in transit.
+  await db.delete(accountTokens).where(and(eq(accountTokens.userId, userId), eq(accountTokens.purpose, purpose), purpose === "verify_email" ? sql`datetime(${accountTokens.expiresAt}) <= datetime('now')` : isNull(accountTokens.usedAt)));
   await db.insert(accountTokens).values({
     id: tokenId,
     userId,
@@ -148,20 +150,34 @@ export async function sendPortalEmail({ email, displayName, subject, heading, me
   }
 }
 
-export async function sendAccountEmail({ email, displayName, purpose, token }: { email: string; displayName: string | null; purpose: AccountTokenPurpose; token: string }) {
+export async function sendAccountEmail({ email, displayName, purpose, token, blocked = false, exempt = false }: { email: string; displayName: string | null; purpose: AccountTokenPurpose; token: string; blocked?: boolean; exempt?: boolean }) {
   const settings = await getSiteSettings();
   const isVerification = purpose === "verify_email";
   const link = accountLink(isVerification ? "/api/auth/verificar-correo" : "/restablecer-clave", token, siteBaseUrl(settings.site_url));
   return sendPortalEmail({
     email,
     displayName,
-    subject: isVerification ? "Verifica tu correo en Chile3X" : "Restablece tu contraseña de Chile3X",
+    subject: isVerification ? blocked ? "Verifica tu correo para recuperar el acceso a Chile3X" : "Verifica tu correo en Chile3X" : "Restablece tu contraseña de Chile3X",
     heading: isVerification ? "Verifica tu correo" : "Restablece tu contraseña",
-    message: isVerification ? "Confirma tu correo para activar tu cuenta y proteger tus publicaciones." : "Recibimos una solicitud para restablecer tu contraseña.",
+    message: isVerification ? blocked ? "El plazo de 7 días terminó y el acceso a tu cuenta está bloqueado hasta verificar el correo. Tus datos y fotos siguen guardados. Abre el botón Verificar correo y luego vuelve a Mi cuenta. Si el enlace venció, entra al sitio, inicia sesión y elige Reenviar enlace." : exempt ? "Tu cuenta tiene una excepción de acceso autorizada por administración. Verifica este correo para confirmar que te pertenece y proteger tus publicaciones." : "Ya puedes entrar a tu cuenta. Verifica este correo dentro de 7 días desde el registro para mantener el acceso y proteger tus publicaciones." : "Recibimos una solicitud para restablecer tu contraseña.",
     action: { label: isVerification ? "Verificar correo" : "Restablecer contraseña", href: link },
-    note: isVerification ? "El enlace vence en 24 horas." : "El enlace vence en 1 hora. Si no solicitaste este cambio, puedes ignorar este correo.",
+    note: isVerification ? blocked ? "El enlace vence en 24 horas. Tras 31 días de bloqueo continuo, los anuncios pasan a la papelera recuperable de administración; no se eliminan definitivamente." : "El enlace vence en 24 horas. Puedes reenviarlo desde Mi cuenta sin reiniciar el plazo de 7 días." : "El enlace vence en 1 hora. Si no solicitaste este cambio, puedes ignorar este correo.",
     kind: isVerification ? "account_verification" : "password_reset",
   });
+}
+
+export async function requestVerificationEmail(user: { id: string; email: string; displayName: string | null }) {
+  const db = await getDb();
+  const now = new Date().toISOString();
+  // Atomic persistent throttle across requests/isolates, including failed sends.
+  const claimed = await db.update(users).set({ emailVerificationLastSentAt: now }).where(and(
+    eq(users.id, user.id), isNull(users.emailVerifiedAt),
+    sql`(${users.emailVerificationLastSentAt} is null or datetime(${users.emailVerificationLastSentAt}) <= datetime(${now}, '-5 minutes'))`,
+  )).returning({ id: users.id, role: users.role, createdAt: users.createdAt, emailVerifiedAt: users.emailVerifiedAt, emailVerificationDeadline: users.emailVerificationDeadline, emailVerificationExemptAt: users.emailVerificationExemptAt });
+  if (!claimed.length) return false;
+  const token = await createAccountToken(user.id, "verify_email");
+  const state = emailVerificationState(claimed[0]);
+  return sendAccountEmail({ email: user.email, displayName: user.displayName, purpose: "verify_email", token, blocked: state === "blocked", exempt: state === "exempt" });
 }
 
 export async function verifyEmailToken(token: string) {
@@ -177,8 +193,9 @@ export async function verifyEmailToken(token: string) {
   )).limit(1);
   if (!record) return false;
   const now = new Date().toISOString();
-  await db.update(accountTokens).set({ usedAt: now }).where(eq(accountTokens.id, record.id));
-  await db.update(users).set({ emailVerifiedAt: now }).where(eq(users.id, record.userId));
+  const consumed = await db.update(accountTokens).set({ usedAt: now }).where(and(eq(accountTokens.id, record.id), isNull(accountTokens.usedAt), gt(accountTokens.expiresAt, now))).returning({ id: accountTokens.id });
+  if (!consumed.length) return false;
+  await db.update(users).set({ emailVerifiedAt: now, emailVerificationBlockedAt: null }).where(eq(users.id, record.userId));
   return true;
 }
 

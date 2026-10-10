@@ -48,6 +48,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return error("La verificación antispam no fue válida. Vuelve a intentarlo.", 403);
   }
 
-  await db.insert(reviews).values({ id: `rev_${crypto.randomUUID()}`, authorId: user.id, profileId, body, status: "pending" });
-  return NextResponse.json({ message: "Gracias. Tu reseña quedó enviada a moderación antes de publicarse." }, { status: 201 });
+  const review = { id: `rev_${crypto.randomUUID()}`, body, createdAt: new Date().toISOString(), status: "pending" as const };
+  await db.insert(reviews).values({ ...review, authorId: user.id, profileId });
+  return NextResponse.json({ review, message: "Gracias. Tu reseña espera la aprobación del anunciante. Puedes verla y retirarla mientras esté pendiente." }, { status: 201, headers: { "cache-control": "private, no-store", "x-robots-tag": "noindex, nofollow" } });
 }

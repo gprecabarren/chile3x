@@ -58,12 +58,14 @@ export default async function EditProfilePage({ params, searchParams }: { params
         {query.notice === "hidden" && <p className="account-success" role="status">El anuncio quedó oculto del sitio público.</p>}
         {query.notice === "shown" && <p className="account-success" role="status">El anuncio volvió a mostrarse según su estado de moderación.</p>}
         {query.notice === "contacts_saved" && <p className="account-success" role="status">WhatsApp, teléfono, correo y redes fueron actualizados inmediatamente. El anuncio conserva su aprobación.</p>}
+        {query.notice === "submitted" && <ProfileSubmissionConfirmation profileId={profileId} profileType={row.profile.type} />}
+        <ProfileMediaManager profileId={profileId} initialMedia={media.map((item) => ({ id: item.id, url: `/media/${item.id}`, mediaType: item.mediaType, contentType: item.contentType, moderationStatus: item.moderationStatus, visibility: item.visibility, isProfilePhoto: item.isProfilePhoto, byteSize: item.byteSize }))} initialQuota={{ bytes: usage.bytes, ...getMediaQuotaState(usage.bytes) }} mediaSettings={{ watermarkEnabled: settings.profile_gallery_watermark_enabled === "enabled", faceBlurEnabled: settings.profile_gallery_face_blur_enabled === "enabled" }} />
+        {row.profile.type === "escort" && <ProfileVerificationDocuments profileId={profileId} initialDocuments={documents} />}
         <section className="profile-visibility-panel"><div><p className="eyebrow">VISIBILIDAD</p><h2>{row.profile.ownerHiddenAt ? "Tu anuncio está oculto" : "Ocultar este anuncio"}</h2><p>Ocultarlo lo retira del directorio sin borrar sus datos, medios ni estado de revisión. Puedes volver a mostrarlo cuando quieras.</p></div><form action={`/api/perfiles/${profileId}/visibilidad`} method="post"><input name="return_to" type="hidden" value={`/mi-cuenta/${profileId}/editar`} /><input name="action" type="hidden" value={row.profile.ownerHiddenAt ? "show" : "hide"} /><button className="button button-outline" type="submit">{row.profile.ownerHiddenAt ? "Volver a mostrar" : "Ocultar anuncio"}</button></form></section>
         <details className="profile-trash-control is-destructive"><summary>🗑 Eliminar este anuncio</summary><form action={`/api/perfiles/${profileId}/papelera`} method="post"><p>El aviso dejará de verse públicamente y saldrá de tu panel. Solo administración podrá restaurarlo.</p><label>Escribe ELIMINAR<input name="confirmation" required autoComplete="off" /></label><button className="button button-danger" type="submit">Confirmar eliminación</button></form></details>
-        {query.notice === "submitted" && <ProfileSubmissionConfirmation profileId={profileId} profileType={row.profile.type} />}
         <ProfileForm
           action={`/api/perfiles/${profileId}`}
-          submitLabel="Guardar y enviar a revisión"
+          submitLabel="Guardar cambios del anuncio"
           initial={{
             type: row.profile.type,
             handle: row.profile.handle,
@@ -90,8 +92,6 @@ export default async function EditProfilePage({ params, searchParams }: { params
             servicesAdditional: services.filter((item) => item.kind === "additional").map((item) => item.service),
           }}
         />
-        {row.profile.type === "escort" && <ProfileVerificationDocuments profileId={profileId} initialDocuments={documents} />}
-        <ProfileMediaManager profileId={profileId} initialMedia={media.map((item) => ({ id: item.id, url: `/media/${item.id}`, mediaType: item.mediaType, contentType: item.contentType, moderationStatus: item.moderationStatus, visibility: item.visibility, isProfilePhoto: item.isProfilePhoto, byteSize: item.byteSize }))} initialQuota={{ bytes: usage.bytes, ...getMediaQuotaState(usage.bytes) }} mediaSettings={{ watermarkEnabled: settings.profile_gallery_watermark_enabled === "enabled", faceBlurEnabled: settings.profile_gallery_face_blur_enabled === "enabled" }} />
       </div>
     </AccountShell>
   );

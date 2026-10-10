@@ -67,7 +67,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
     <div className="auth-register-topbar"><Link className="auth-brand" href="/"><OfficialChile3xLogo priority /></Link><p className="auth-login-shortcut">¿Ya tienes cuenta? <Link href={loginHref}>Ingresar</Link></p></div>
     <p className="eyebrow">CUENTA DE ANUNCIANTE</p>
     <h1>Crea tu cuenta para empezar a publicar.</h1>
-    <p>{providerIdentity ? `Tu correo ya fue verificado por ${providerName}. Completa los datos restantes para entrar a tu panel.` : "Guarda borradores, envía anuncios a revisión y controla su visibilidad. Antes de entrar te enviaremos un correo de verificación."}</p>
+    <p>{providerIdentity ? `Tu correo ya fue verificado por ${providerName}. Completa los datos restantes para entrar a tu panel.` : "Guarda borradores, envía anuncios a revisión y controla su visibilidad desde el primer día. Tendrás 7 días para verificar tu correo."}</p>
     {params.notice === "account_deleted" && <p className="auth-success" role="status">Tu cuenta y sus datos fueron eliminados. Si quieres volver, puedes crear una cuenta completamente nueva.</p>}
     <div className="auth-provider-list">
       {settings.google_oauth_client_id && <GoogleSignInButton clientId={settings.google_oauth_client_id} intent="register" returnTo={returnTo} />}
@@ -87,7 +87,8 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
       {!providerIdentity && <RegistrationPasswordFields />}
       <RegistrationConsentFields adultConfirmed={saved?.adultConfirmed} legalConfirmed={saved?.legalConfirmed} />
       <AuthTurnstile action={TURNSTILE_AUTH_REGISTER_ACTION} />
-      <button className="button button-primary" type="submit">{providerName ? `Crear cuenta con ${providerName}` : "Crear cuenta y verificar correo"}</button>
+      {!providerName && <p className="auth-registration-note">Entra y prepara tu anuncio al registrarte. Tendrás 7 días para verificar tu correo desde Mi cuenta.</p>}
+      <button className="button button-primary" type="submit">{providerName ? `Crear cuenta con ${providerName}` : "Crear cuenta"}</button>
     </form>
     {whatsappHref && <PortalWhatsappLink placement="registration" className="button button-outline auth-whatsapp-request" href={whatsappHref} target="_blank" rel="noopener noreferrer">Solicitar creación de cuenta por WhatsApp</PortalWhatsappLink>}
     <p className="auth-switch">¿Ya tienes una cuenta? <Link href={loginHref}>Ingresar</Link></p>

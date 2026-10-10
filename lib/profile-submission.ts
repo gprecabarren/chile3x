@@ -317,7 +317,7 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
       contactPhone: optional(contactPhone),
       contactEmail: optional(contactEmail),
       referenceLocation: optional(compactText(formData.get("reference_location"), 120)),
-      schedule: null,
+      schedule: availability ? null : optional(compactText(formData.get("legacy_schedule"), 120)),
       priceAmount: typeValue === "escort" ? null : generalPrice,
       currency: formData.get("currency") === "USD" ? "USD" : "CLP",
       metadata: JSON.stringify(profileMetadataForType(typeValue, metadata)),

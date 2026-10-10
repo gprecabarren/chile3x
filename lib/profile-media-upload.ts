@@ -1,6 +1,7 @@
 import { and, eq, ne } from "drizzle-orm";
 import { getDb } from "@/db";
 import { profileMedia } from "@/db/schema";
+import { validatePreparedVideo } from "@/lib/video-validation";
 import {
   detectImageType, detectVideoType, extensionForImageType, extensionForVideoType,
   getMediaQuotaState, getMediaUsage, getProfileMedia, MAX_IMAGES_PER_PROFILE,
@@ -32,6 +33,10 @@ export async function uploadProfileMedia(input: {
   if (uploadKind === "profile_photo" && mediaType !== "image") throw new ProfileMediaUploadError("La foto de perfil debe ser una imagen JPEG, PNG o WebP.");
   if (file.size > (imageType ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES)) {
     throw new ProfileMediaUploadError(imageType ? "Cada imagen debe pesar menos de 5 MB." : "Cada video debe pesar menos de 8 MB.");
+  }
+  if (videoType) {
+    try { await validatePreparedVideo(data, videoType); }
+    catch (cause) { throw new ProfileMediaUploadError(cause instanceof Error ? cause.message : "No se pudo validar el video."); }
   }
   const existing = await getProfileMedia(profileId);
   const activeMedia = existing.filter((item) => item.visibility === "public");

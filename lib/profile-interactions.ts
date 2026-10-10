@@ -17,6 +17,15 @@ export type PublicReview = {
   authorName: string;
 };
 
+export type OwnPendingReview = { id: string; body: string; createdAt: string; status: "pending" };
+
+export async function getOwnPendingReviews(profileId: string, authorId: string): Promise<OwnPendingReview[]> {
+  const rows = await (await getDb()).select({ id: reviews.id, body: reviews.body, createdAt: reviews.createdAt }).from(reviews)
+    .where(and(eq(reviews.profileId, profileId), eq(reviews.authorId, authorId), eq(reviews.status, "pending")))
+    .orderBy(desc(reviews.createdAt), desc(reviews.id)).limit(50);
+  return rows.map((row) => ({ ...row, status: "pending" }));
+}
+
 export async function getProfileEngagement(profileId: string, viewerId?: string): Promise<ProfileEngagement> {
   const db = await getDb();
   const [favoriteRows, likeRows, favoriteRecord, likeRecord] = await Promise.all([
@@ -35,6 +44,12 @@ export async function getProfileEngagement(profileId: string, viewerId?: string)
 }
 
 export const PUBLIC_REVIEWS_PAGE_SIZE = 10;
+
+export async function countPendingReceivedReviews(ownerId: string) {
+  const [row] = await (await getDb()).select({ total: count() }).from(reviews).innerJoin(profiles, eq(reviews.profileId, profiles.id))
+    .where(and(eq(profiles.ownerId, ownerId), eq(reviews.status, "pending")));
+  return Number(row?.total ?? 0);
+}
 
 export type ApprovedReviewsPage = {
   reviews: PublicReview[];

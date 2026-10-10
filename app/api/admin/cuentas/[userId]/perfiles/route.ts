@@ -36,7 +36,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const profileId = await createProfile(owner.id, submission, { adminCreator: { id: admin.id, githubLogin: admin.githubLogin } });
     await recordAdminAudit(admin, { category: "profiles", action: "profile.create", summary: `Creó el anuncio ${submission.displayName} para ${owner.email}.`, entityType: "profile", entityId: profileId, entityLabel: submission.displayName, after: { ownerId: owner.id, type: submission.type, status: submission.intent === "submit" ? "pending" : "draft", region: submission.region, city: submission.city, handle: submission.handle } });
     const url = new URL(`/admin/cuentas/${encodeURIComponent(owner.id)}/perfiles/${encodeURIComponent(profileId)}/medios`, request.url);
-    url.searchParams.set("notice", "profile_created");
+    url.searchParams.set("notice", submission.intent === "submit" ? "profile_submitted" : "profile_created");
     return NextResponse.redirect(url, 303);
   } catch (error) {
     const url = new URL(`/admin/cuentas/${encodeURIComponent(userId)}/crear-perfil`, request.url);

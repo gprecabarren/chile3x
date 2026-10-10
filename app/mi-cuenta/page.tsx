@@ -11,12 +11,14 @@ import { AgencyMemberships } from "./AgencyMemberships";
 import { profilePublicPath } from "@/lib/profile";
 import { formatRegionName } from "@/app/locations";
 import { hasUnlimitedEscortListings } from "@/lib/profile-limits";
+import { AnalyticsEvent } from "@/app/AnalyticsEvent";
 
 export const dynamic = "force-dynamic";
 
 const statusLabel: Record<string, string> = { approved: "Publicado", draft: "Borrador", expired: "Vencido", paused: "Pausado", pending: "En revisión", rejected: "Requiere cambios" };
 const messages: Record<string, string> = {
   welcome: "Tu cuenta está lista. Puedes comenzar un anuncio cuando quieras.",
+  email_verified: "Tu correo fue verificado. El acceso a tu cuenta ya no tiene plazo provisional.",
   saved: "El borrador fue guardado.",
   submitted: "Tu anuncio fue enviado a revisión manual.",
   paused: "El anuncio quedó pausado.",
@@ -35,7 +37,7 @@ const messages: Record<string, string> = {
   error: "No fue posible completar esa acción. Revisa el estado del anuncio.",
 };
 
-export default async function AccountHome({ searchParams }: { searchParams: Promise<{ notice?: string; session_notice?: string }> }) {
+export default async function AccountHome({ searchParams }: { searchParams: Promise<{ notice?: string; session_notice?: string; created?: string }> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/ingresar?return_to=/mi-cuenta");
   const db = await getDb();
@@ -50,6 +52,7 @@ export default async function AccountHome({ searchParams }: { searchParams: Prom
   const storyCounts = new Map(activeStoryCounts.map((row) => [row.profileId, Number(row.total)]));
 
   return <AccountShell user={user}><div className="account-content">
+    {params.created === "1" && <AnalyticsEvent event="sign_up" parameters={{ method: "email" }} dedupeKey="email" />}
     <AccountHeading eyebrow="PANEL DE ANUNCIANTE" title="Tus anuncios" description="Guarda borradores, actualiza la información y envía cada anuncio a revisión manual antes de publicarlo."><Link className="button button-primary" href="/mi-cuenta/nuevo-perfil">Crear anuncio</Link></AccountHeading>
     <p className="account-profile-rule-note">{hasUnlimitedEscortListings(user) ? <>Tu cuenta tiene autorización para crear <strong>anuncios Escort sin límite de cantidad</strong> y varios de Agencia o Arriendo. Cada anuncio mantiene su revisión y validaciones.</> : <>Puedes publicar <strong>un anuncio Escort activo</strong> y varios de Agencia o Arriendo. Un Escort eliminado deja libre el cupo para crear otro.</>} Si eliminas un anuncio, pasa a la papelera del equipo: ya no podrás verlo ni restaurarlo tú.</p>
     {params.notice && <p className="account-success" role="status">{messages[params.notice] ?? messages.error}</p>}

@@ -56,7 +56,7 @@ test("mobile login appears only in the quick row, not duplicated in the hamburge
   assert.match(menu, /action="\/api\/auth\/logout" method="post"/);
   const start = header.indexOf('<nav className="mobile-public-quick-links"');
   const mobile = header.slice(start, header.indexOf('</nav>', start));
-  assert.match(mobile, /<Link href=\{sessionAccountHref\}>\{sessionAccountLabel\}<\/Link>/);
+  assert.match(mobile, /<NavLink href=\{sessionAccountHref\}>\{sessionAccountLabel\}<\/NavLink>/);
   assert.doesNotMatch(mobile, /hasAnySession &&/);
   assert.doesNotMatch(mobile, /className=\{!hasAnySession \? "public-login-link"/);
   assert.doesNotMatch(css, /mobile-public-quick-links.is-signed-out|mobile-menu-account-entry \.public-login-link/);

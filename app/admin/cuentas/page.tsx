@@ -1,4 +1,4 @@
-import { and, count, desc, eq, isNotNull, isNull, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, isNull, or, sql } from "drizzle-orm";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AccountIdentityFields } from "@/app/account-identity-fields";
@@ -12,6 +12,8 @@ import { AdminPasswordField } from "./AdminPasswordField";
 import { adminCallHref, adminWhatsappHref } from "@/lib/admin-contact";
 import { AdminPagination, pageHref, readAdminPage } from "../pagination";
 import { creationSourceLabel } from "@/lib/creation-provenance";
+import { emailVerificationFilter } from "@/lib/email-verification-admin";
+import { emailVerificationLabel, emailVerificationState, registrationMethodLabel } from "@/lib/email-verification-policy";
 
 export const dynamic = "force-dynamic";
 const PAGE_SIZE = 30;
@@ -25,6 +27,7 @@ type AccountSearchParams = {
   city?: string;
   phone?: string;
   email_status?: string;
+  registration_method?: string;
   document?: string;
   listings?: string;
   listing_status?: string;
@@ -52,7 +55,8 @@ const roleValues = ["admin", "advertiser", "tester", "visitor"] as const;
 const originValues = ["self", "admin", "unknown"] as const;
 const accountStatusValues = ["active", "disabled"] as const;
 const phoneValues = ["with_phone", "without_phone"] as const;
-const emailStatusValues = ["verified", "unverified"] as const;
+const emailStatusValues = ["verified", "unverified", "grace", "blocked", "exempt"] as const;
+const registrationMethodValues = ["password", "google", "apple", "unknown"] as const;
 const documentValues = ["rut", "foreign", "none"] as const;
 const listingValues = ["with_listings", "without_listings", "pending"] as const;
 const listingStatusValues = ["draft", "pending", "approved", "paused", "rejected", "expired"] as const;
@@ -90,6 +94,7 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
     city: cityOptions.includes(params.city ?? "") ? params.city ?? "" : "",
     phone: readOption(params.phone, phoneValues),
     emailStatus: readOption(params.email_status, emailStatusValues),
+    registrationMethod: readOption(params.registration_method, registrationMethodValues),
     document: readOption(params.document, documentValues),
     listings: readOption(params.listings, listingValues),
     listingStatus: readOption(params.listing_status, listingStatusValues),
@@ -108,6 +113,7 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
   if (filters.city) currentQuery.set("city", filters.city);
   if (filters.phone) currentQuery.set("phone", filters.phone);
   if (filters.emailStatus) currentQuery.set("email_status", filters.emailStatus);
+  if (filters.registrationMethod) currentQuery.set("registration_method", filters.registrationMethod);
   if (filters.document) currentQuery.set("document", filters.document);
   if (filters.listings) currentQuery.set("listings", filters.listings);
   if (filters.listingStatus) currentQuery.set("listing_status", filters.listingStatus);
@@ -135,7 +141,8 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
     filters.accountStatus ? eq(users.isActive, filters.accountStatus === "active") : undefined,
     filters.city ? eq(users.city, filters.city) : undefined,
     filters.phone === "with_phone" ? sql<boolean>`trim(coalesce(${users.phone}, '')) <> ''` : filters.phone === "without_phone" ? sql<boolean>`trim(coalesce(${users.phone}, '')) = ''` : undefined,
-    filters.emailStatus === "verified" ? isNotNull(users.emailVerifiedAt) : filters.emailStatus === "unverified" ? isNull(users.emailVerifiedAt) : undefined,
+    emailVerificationFilter(filters.emailStatus),
+    filters.registrationMethod ? eq(users.registrationAuthMethod, filters.registrationMethod as typeof users.$inferSelect.registrationAuthMethod) : undefined,
     filters.document === "none" ? sql<boolean>`trim(coalesce(${users.documentNumber}, '')) = ''` : filters.document === "rut" ? and(eq(users.documentType, "rut"), sql<boolean>`trim(coalesce(${users.documentNumber}, '')) <> ''`) : filters.document === "foreign" ? and(eq(users.documentType, "foreign"), sql<boolean>`trim(coalesce(${users.documentNumber}, '')) <> ''`) : undefined,
     filters.listings === "with_listings" ? hasAnyListing : filters.listings === "without_listings" ? sql<boolean>`not (${hasAnyListing})` : filters.listings === "pending" ? hasPendingListing : undefined,
     filters.listingStatus ? sql<boolean>`exists (select 1 from profiles account_listing where account_listing.owner_id = ${users.id} and account_listing.status = ${filters.listingStatus} and account_listing.trashed_at is null)` : undefined,
@@ -164,6 +171,9 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
     documentNumber: users.documentNumber,
     foreignCountry: users.foreignCountry,
     emailVerifiedAt: users.emailVerifiedAt,
+    emailVerificationDeadline: users.emailVerificationDeadline,
+    emailVerificationExemptAt: users.emailVerificationExemptAt,
+    registrationAuthMethod: users.registrationAuthMethod,
     createdAt: users.createdAt,
     profileCount: count(profiles.id),
     draftProfileCount: sql<number>`coalesce(sum(case when ${profiles.status} = 'draft' then 1 else 0 end), 0)`,
@@ -208,7 +218,8 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
             <label>Origen de la cuenta<select name="origin" defaultValue={filters.origin}><option value="">Todos</option><option value="self">Creada por la persona</option><option value="admin">Creada por administración</option><option value="unknown">Origen anterior sin verificar</option></select></label>
             <label>Ciudad<select name="city" defaultValue={filters.city}><option value="">Todas las ciudades</option>{cityOptions.map((city) => <option value={city} key={city}>{city}</option>)}</select></label>
             <label>Teléfono<select name="phone" defaultValue={filters.phone}><option value="">Cualquiera</option><option value="with_phone">Con teléfono</option><option value="without_phone">Sin teléfono</option></select></label>
-            <label>Correo electrónico<select name="email_status" defaultValue={filters.emailStatus}><option value="">Todos</option><option value="verified">Correo verificado</option><option value="unverified">Correo pendiente de verificar</option></select></label>
+            <label>Correo electrónico<select name="email_status" defaultValue={filters.emailStatus}><option value="">Todos</option><option value="verified">Correo verificado</option><option value="unverified">Sin verificar (todos)</option><option value="grace">En plazo de 7 días</option><option value="blocked">Bloqueadas por correo</option><option value="exempt">Con excepción administrativa</option></select></label>
+            <label>Método de registro<select name="registration_method" defaultValue={filters.registrationMethod}><option value="">Todos</option><option value="password">Correo y contraseña</option><option value="google">Google</option><option value="apple">Apple</option><option value="unknown">Registro anterior sin confirmar</option></select></label>
             <label>Documento<select name="document" defaultValue={filters.document}><option value="">Cualquiera</option><option value="rut">Con RUT chileno</option><option value="foreign">Con documento extranjero</option><option value="none">Sin documento informado</option></select></label>
             <label>Estado del anuncio<select name="listing_status" defaultValue={filters.listingStatus}><option value="">Cualquiera</option><option value="draft">Borrador</option><option value="pending">En revisión</option><option value="approved">Publicado</option><option value="paused">Pausado</option><option value="rejected">Requiere cambios</option><option value="expired">Vencido</option></select></label>
             <label>Tipo de anuncio<select name="listing_type" defaultValue={filters.listingType}><option value="">Cualquiera</option><option value="escort">Escort</option><option value="agency">Agencia</option><option value="rental">Arriendo</option></select></label>
@@ -229,6 +240,7 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
           <header><div><p className="eyebrow">{roleLabel(user.role)}</p><h3>{user.displayName ?? "Sin nombre"}</h3><a href={`mailto:${user.email}`}>{user.email}</a></div><div className="admin-account-state-badges"><span className={`account-status ${user.isActive ? "account-status-approved" : "account-status-rejected"}`}>{user.isActive ? "Activa" : "Deshabilitada"}</span>{user.selfDisabledAt && <span className="account-status account-status-paused">Por la persona</span>}{user.adminDisabledAt && <span className="account-status account-status-rejected">Por administración</span>}</div></header>
           <dl><div><dt>Ciudad</dt><dd>{user.city || "Sin ciudad"}</dd></div><div><dt>Creación</dt><dd>{formattedDate}</dd></div><div><dt>Origen</dt><dd>{creationSourceLabel(user.creationSource, user.createdByAdminLogin)}</dd></div><div><dt>Anuncios asociados</dt><dd>{user.profileCount > 0 ? <Link prefetch={false} className="admin-profile-count-link" href={accountProfilesHref(user.email, detailsHref)}>Ver {user.profileCount} anuncio{user.profileCount === 1 ? "" : "s"}</Link> : "Sin anuncios"}</dd></div></dl>
           {pendingProfileCount > 0 && <Link prefetch={false} className="admin-account-pending-link" href={accountProfilesHref(user.email, detailsHref, "pending")}>{pendingProfileCount} anuncio{pendingProfileCount === 1 ? "" : "s"} pendiente{pendingProfileCount === 1 ? "" : "s"} de revisión</Link>}
+          <p className={emailVerificationState(user) === "blocked" ? "form-alert" : "admin-profile-rule-note"}>{emailVerificationLabel(user)} · Registro: {user.role === "admin" ? "GitHub" : registrationMethodLabel(user.registrationAuthMethod)}</p>
           <div className="admin-account-card-actions"><Link prefetch={false} className="button button-primary" href={detailsHref}>Ver detalles</Link>{user.role !== "admin" && user.isActive && <Link prefetch={false} className="button button-outline" href={`${detailsBaseHref}/crear-perfil?return_to=${encodeURIComponent(currentAccountsHref)}`}>Crear anuncio</Link>}{whatsappHref && <a className="button contact-whatsapp" href={whatsappHref} target="_blank" rel="noreferrer">WhatsApp</a>}{callHref && <a className="button contact-call" href={callHref}>Llamar</a>}{user.role !== "admin" && <form action={`/api/admin/users/${user.id}/estado`} method="post"><input name="next_state" type="hidden" value={user.adminDisabledAt ? "active" : "disabled"} /><input name="return_to" type="hidden" value={currentAccountsHref} /><button className="button button-outline" type="submit">{user.adminDisabledAt ? "Quitar bloqueo administrativo" : "Deshabilitar como administrador"}</button></form>}</div>
         </article>;
       })}{total === 0 && <section className="admin-no-results">No hay cuentas que coincidan con esta combinación de filtros. Prueba quitando uno o más criterios.</section>}</section>

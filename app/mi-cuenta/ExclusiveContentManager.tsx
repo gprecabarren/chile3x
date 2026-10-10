@@ -1,7 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { assertVideoSource, isVideoSource, VIDEO_INPUT_ACCEPT, VIDEO_UPLOAD_RULES } from "@/lib/video-policy";
+import { readUploadResponse } from "@/lib/upload-response";
+import { useEffect, useRef, useState } from "react";
 
 type Media = {
   id: string;
@@ -19,17 +21,6 @@ const statusLabel = { pending: "En revisión", approved: "Publicado", rejected: 
 
 function formatBytes(bytes: number) {
   return bytes < 1_000_000 ? `${Math.round(bytes / 1_000)} KB` : `${(bytes / 1_000_000).toFixed(1)} MB`;
-}
-
-function videoDuration(file: File) {
-  return new Promise<number>((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const video = document.createElement("video");
-    video.preload = "metadata";
-    video.onloadedmetadata = () => { URL.revokeObjectURL(url); resolve(video.duration); };
-    video.onerror = () => { URL.revokeObjectURL(url); reject(new Error("No se pudo leer la duración del video.")); };
-    video.src = url;
-  });
 }
 
 export function ExclusiveContentManager({
@@ -53,6 +44,8 @@ export function ExclusiveContentManager({
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const videoAbort = useRef<AbortController | null>(null);
+  useEffect(() => () => videoAbort.current?.abort(), []);
   const images = media.filter((item) => item.mediaType === "image");
   const videos = media.filter((item) => item.mediaType === "video");
 
@@ -99,18 +92,23 @@ export function ExclusiveContentManager({
       let addedVideos = 0;
       for (const original of Array.from(files)) {
         const isImage = original.type.startsWith("image/");
-        const isVideo = original.type === "video/mp4" || original.type === "video/webm";
-        if (!isImage && !isVideo) throw new Error("Elige imágenes JPEG, PNG o WebP, o videos MP4/WebM.");
+        const isVideo = !isImage && isVideoSource(original);
+        if (!isImage && !isVideo) throw new Error("Elige imágenes JPEG, PNG o WebP, o videos MP4/WebM/MOV.");
         if (isImage && original.size > 5_000_000) throw new Error("Cada imagen debe pesar 5 MB o menos.");
-        if (isVideo && original.size > 8_000_000) throw new Error("Cada video debe pesar 8 MB o menos.");
+        let prepared = original;
         if (isVideo) {
-          const duration = await videoDuration(original);
-          if (videos.length + addedVideos >= 4 || !Number.isFinite(duration) || duration > 10.05) throw new Error("Puedes subir hasta 4 videos de 10 segundos o menos.");
+          assertVideoSource(original.size);
+          if (videos.length + addedVideos >= 4) throw new Error("Puedes subir hasta 4 videos de contenido exclusivo.");
+          const { prepareVideo } = await import("./prepare-video");
+          const controller = new AbortController(); videoAbort.current = controller;
+          const result = await prepareVideo(original, { signal: controller.signal, onProgress: detail => setNotice(`${original.name}: ${detail}`) });
+          videoAbort.current = null;
+          prepared = result.file;
         }
         if (isImage && images.length + addedImages >= 20) throw new Error("Puedes subir hasta 20 imágenes de contenido exclusivo.");
-        const form = new FormData(); form.set("file", original);
+        const form = new FormData(); form.set("file", prepared);
         const response = await fetch("/api/mi-cuenta/contenido/medios", { method: "POST", body: form });
-        const payload = await response.json() as { error?: string; media?: Media; quota?: Quota };
+        const payload = await readUploadResponse<{ error?: string; media?: Media; quota?: Quota }>(response);
         if (!response.ok || !payload.media || !payload.quota) throw new Error(payload.error ?? "No se pudo subir el archivo.");
         setMedia((current) => [...current, payload.media!]); setQuota(payload.quota);
         if (isImage) addedImages += 1;
@@ -135,7 +133,7 @@ export function ExclusiveContentManager({
     <p className={`media-quota media-quota-${quota.level}`}><b>Uso de R2: {formatBytes(quota.bytes)}</b>{quota.message}</p>
     {notice && <p className="media-manager-notice" role="status">{notice}</p>}
     <section className="exclusive-content-link"><div><p className="eyebrow">VÍNCULO PÚBLICO</p><h3>Mostrar al final de un anuncio Escort</h3><p>Solo puedes vincular esta biblioteca a un anuncio Escort de tu cuenta. El público verá la galería bloqueada hasta que autorices su acceso.</p></div><label>Anuncio vinculado<select value={linkedId} disabled={busy} onChange={(event) => updateLink(event.target.value)}><option value="">No mostrar en un anuncio por ahora</option>{escortProfiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.displayName}{profile.handle ? ` (@${profile.handle})` : ""} · {profile.status}</option>)}</select></label></section>
-    <section className="exclusive-content-upload"><div><p className="eyebrow">ARCHIVOS</p><h3>Fotos y videos privados</h3><p>Imágenes JPEG, PNG o WebP de hasta 5 MB. Videos MP4/WebM de hasta 8 MB y 10 segundos. Todo llega a revisión antes de quedar disponible.</p></div><label className="button button-primary">{busy ? "Procesando…" : "Subir contenido"}<input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple disabled={busy || quota.level === "blocked"} onChange={(event) => upload(event.target.files)} /></label></section>
+    <section className="exclusive-content-upload"><div><p className="eyebrow">ARCHIVOS</p><h3>Fotos y videos privados</h3><p>Imágenes JPEG, PNG o WebP de hasta 5 MB. {VIDEO_UPLOAD_RULES} Todo llega a revisión antes de quedar disponible.</p></div><label className="button button-primary">{busy ? "Procesando…" : "Subir contenido"}<input ref={inputRef} type="file" accept={`image/jpeg,image/png,image/webp,${VIDEO_INPUT_ACCEPT}`} multiple disabled={busy || quota.level === "blocked"} onChange={(event) => upload(event.target.files)} /></label></section>
     {media.length > 0 && <div className="media-owner-grid exclusive-content-media-grid">{media.map((item, index) => <article key={item.id}><div className="media-owner-preview">{item.mediaType === "image" ? <Image src={item.url} alt={`Vista previa privada ${index + 1}`} fill unoptimized sizes="180px" /> : <video controls preload="metadata"><source src={item.url} type={item.contentType} /></video>}</div><div><span className={`media-status media-status-${item.moderationStatus}`}>{statusLabel[item.moderationStatus]}</span><small>{item.mediaType === "image" ? "Foto" : "Video"} privado · {formatBytes(item.byteSize)}</small><button type="button" disabled={busy} onClick={() => removeMedia(item.id)}>Eliminar</button></div></article>)}</div>}
     <section className="exclusive-content-access"><div><p className="eyebrow">PERSONAS AUTORIZADAS</p><h3>Dar y quitar acceso</h3><p>Busca por nombre de usuario o correo. Para tu privacidad, después de autorizar a alguien verás solo su nombre de usuario.</p></div><form onSubmit={addAccess}><label>Cuenta del cliente<input value={identifier} onChange={(event) => setIdentifier(event.target.value)} required maxLength={160} autoCapitalize="none" placeholder="Ej. @camila-cl o camila@correo.cl" /></label><button className="button button-primary" disabled={busy}>Autorizar</button></form>{grants.length > 0 ? <div className="exclusive-grant-list">{grants.map((grant) => <article key={grant.userId}><strong>@{grant.username}</strong><button type="button" disabled={busy} onClick={() => removeAccess(grant.userId)}>Quitar acceso</button></article>)}</div> : <p className="profile-media-empty">Aún no has autorizado cuentas. Tus archivos permanecen privados.</p>}</section>
   </section>;

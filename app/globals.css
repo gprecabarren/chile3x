@@ -551,7 +551,6 @@ footer span { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid #272
 .site-header .public-navigation { flex: 1 1 auto; align-items: center; justify-content: flex-end; gap: 12px; margin-left: auto; }
 .site-header .public-navigation-group { display: flex; align-items: center; gap: 14px; white-space: nowrap; }
 .site-header .public-navigation-directory { padding: 8px 12px; border: 1px solid #2e3444; border-radius: 3px; background: linear-gradient(135deg, rgba(30, 35, 53, .8), rgba(12, 14, 23, .8)); box-shadow: inset 3px 0 0 var(--red); }
-.site-header .public-navigation-directory a:first-child { color: #f4f5f8; }
 .site-header .public-navigation-site { gap: 13px; margin-left: 4px; padding: 8px 0 8px 16px; border-left: 1px solid #363b4b; }
 .site-header .public-navigation a { font-size: 11px; }
 
@@ -744,8 +743,8 @@ footer span { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid #272
 .form-grid { min-width: 0; }.form-grid > label { min-width: 0; }.form-grid-full { grid-column: 1 / -1; }
 
 .site-header { position: sticky; top: 0; z-index: 110; }
-.site-header .public-navigation-directory { border: 0; border-bottom: 1px solid #3a2631; border-radius: 0; padding: 8px 3px 9px 12px; background: transparent; box-shadow: inset 3px 0 0 var(--red); }
-.site-header .public-navigation-directory a:first-child { color: #fff; }
+.site-header .public-navigation-directory { border: 0; border-bottom: 1px solid #30303a; border-radius: 0; padding: 8px 3px 9px 0; background: transparent; box-shadow: none; }
+.public-navigation a.is-current, .mobile-public-quick-links a.is-current, .mobile-menu-panel a.is-current { color: #fff; box-shadow: inset 0 -2px #ef464e; }
 
 @media (max-width: 860px) {
   .site-header .portal-contact-links-header { display: flex; order: initial; width: auto; flex: 0 0 auto; gap: 0; }
@@ -2017,8 +2016,24 @@ input[type="submit"] { text-transform: none !important; letter-spacing: .015em; 
 .portal-whatsapp-option-icon svg { width: 18px; height: 18px; }
 .portal-whatsapp-option strong { display: block; overflow-wrap: anywhere; color: #fff; font-size: 14px; line-height: 1.35; }
 .portal-whatsapp-option small { display: block; margin-top: 4px; overflow-wrap: anywhere; color: #b5c8be; font-size: 12px; line-height: 1.45; }
-.portal-whatsapp-directory { flex: 0 0 auto; display: grid; place-items: center; min-height: 44px; margin-top: 10px; padding: 8px 4px 0; border-top: 1px solid #354052; color: #b8ebca; font-size: 12px; font-weight: 700; line-height: 1.4; text-align: center; text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
-.portal-whatsapp-directory:hover { color: #fff; }
+.portal-whatsapp-directory { flex: 0 0 auto; display: grid; place-items: center; min-height: 44px; margin-top: 10px; padding: 8px 4px 0; border-top: 1px solid #354052; color: #ff747b; font-size: 12px; font-weight: 700; line-height: 1.4; text-align: center; text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
+.portal-whatsapp-directory:hover { color: #ff9ba0; }
+.email-verification-notice { display: flex; align-items: center; gap: 18px; justify-content: space-between; margin: 20px auto; width: min(1180px, calc(100% - 32px)); padding: 18px 20px; border: 1px solid #916a36; border-left: 3px solid #e9b867; border-radius: 12px; background: #211c17; color: #f0dbc0; }
+.email-verification-notice > div { min-width: 0; }
+.email-verification-notice strong { display: block; margin-bottom: 6px; font-size: 15px; }
+.email-verification-notice p { margin: 7px 0; font-size: 13px; line-height: 1.5; }
+.email-verification-notice span { font-size: 13px; font-variant-numeric: tabular-nums; }
+.email-verification-notice .button { flex: 0 0 auto; color: #fff; }
+.auth-card .email-verification-notice { width: 100%; flex-direction: column; align-items: stretch; text-align: left; padding: 14px; }
+.email-verification-steps { margin: 18px 0; padding-left: 22px; font-size: 14px; line-height: 1.6; }
+.email-verification-steps li + li { margin-top: 7px; }
+.auth-registration-note { font-size: 13px; line-height: 1.5; }
+@media (max-width: 640px) { .email-verification-notice { flex-direction: column; align-items: stretch; padding: 15px; gap: 12px; } .email-verification-notice .button { text-align: center; white-space: normal; } }
+.admin-account-email-policy .admin-password-form { display: grid; gap: 12px; }
+.admin-account-email-policy .admin-password-form label { display: grid; gap: 8px; font-size: 14px; }
+.admin-account-email-policy .admin-password-form input { width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; color: #f3f4f6; background: #0b0e16; border: 1px solid #495267; border-radius: 8px; }
+.admin-account-email-policy .admin-password-form button { justify-self: start; max-width: 100%; white-space: normal; }
+@media (max-width: 640px) { .admin-account-email-policy .admin-password-form button { width: 100%; } }
 .whatsapp-settings-list { display: grid; gap: 18px; margin: 20px 0; }
 .whatsapp-settings-list > article { padding: 20px; border: 1px solid #344155; border-radius: 12px; background: #0d1420; }
 .whatsapp-settings-list > article > header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
@@ -2088,6 +2103,10 @@ input[type="submit"] { text-transform: none !important; letter-spacing: .015em; 
 .photo-crop-controls input[type="range"] { width: 100%; min-width: 0; min-height: 30px; accent-color: #ef555e; }
 .photo-crop-editor small { color: #a9bbd2; font-size: 12px; }
 .profile-media-manager .gallery-upload-candidates article strong { white-space: normal; overflow-wrap: anywhere; }
+.selected-video-preview { grid-column: 1 / -1; min-width: 0; display: grid; gap: 6px; }
+.selected-video-preview video { display: block; width: min(100%, 380px); max-width: 100%; max-height: 280px; object-fit: contain; background: #080b12; border-radius: 8px; }
+.gallery-upload-candidates .selected-video-preview + .button { justify-self: start; min-height: 40px; }
+.gallery-upload-status { min-width: 0; overflow-wrap: anywhere; }
 @media (max-width: 620px) {
   .availability-bulk-actions { align-items: stretch; }
   .availability-bulk-actions .button { flex: 1 1 160px; }
@@ -2097,4 +2116,63 @@ input[type="submit"] { text-transform: none !important; letter-spacing: .015em; 
   .photo-crop-controls { grid-template-columns: minmax(0, 1fr); }
   .photo-selection-actions .button { flex: 1 1 150px; }
   .profile-media-manager { scroll-margin-top: 250px; }
+}
+
+/* Private notices share one lightweight count refresh; no message text in the header. */
+.unread-messages-notice { width: min(100% - 40px, 1184px); margin: 18px auto 0; display: flex; align-items: center; gap: 14px; padding: 16px 19px; border: 1px solid #63444e; border-radius: 12px; background: #201723; color: #f7edf0; }
+.unread-messages-notice.is-public { margin-bottom: 18px; }
+.unread-messages-notice > div { min-width: 0; flex: 1; display: grid; gap: 4px; }
+.unread-messages-notice strong { font-size: 15px; }
+.unread-messages-notice small { color: #b9aebc; font-size: 12px; }
+.unread-messages-notice > a { flex-shrink: 0; color: #ff9da4; font-size: 13px; font-weight: 700; }
+.unread-messages-icon { display: grid; place-items: center; width: 38px; height: 38px; flex-shrink: 0; border-radius: 10px; background: #482831; font-size: 23px; }
+.unread-messages-notice.is-reviews { border-color: #545067; background: #171a28; }
+.internal-chat-inbox-row { display: grid; grid-template-columns: 52px minmax(0,1fr) auto; gap: 10px; align-items: center; padding: 13px; border-bottom: 1px solid #252e3f; color: inherit; }
+.internal-chat-inbox-row:hover, .internal-chat-inbox-row.is-active { background: #182131; }
+.internal-chat-inbox-row.is-active { box-shadow: inset 3px 0 #e34850; }
+.internal-chat-inbox-copy { padding: 5px 0; }
+.internal-chat-avatar:focus-visible { outline: 2px solid #f3646b; outline-offset: 2px; }
+.internal-chat-sender { display: block; margin-bottom: 7px; color: #efafb4; font-size: 12px; }
+.own-pending-reviews article, .account-comments-list article.is-pending-review { border-style: dashed; background: #141723; }
+.own-pending-reviews p { color: #b5bccb; }
+.own-pending-reviews small { display: block; margin: 10px 0; color: #b6adbd; line-height: 1.5; font-size: 11px; }
+.own-pending-reviews .button { min-height: 40px; padding: 9px 12px; font-size: 12px; }
+.account-comments-list h3 { margin: 10px 0 5px; font-size: 21px; overflow-wrap: anywhere; }
+.account-comments-help { color: #aab3c4; font-size: 13px; line-height: 1.5; }
+.account-review-actions, .account-review-actions form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.account-review-actions { max-width: 260px; }
+.account-review-actions .button { min-height: 40px; padding: 9px 12px; font-size: 12px; }
+.account-sent-reviews-heading { margin-top: 40px; }
+.profile-reviews-management { width: min(100% - 56px,1184px); margin: 20px auto; }
+.media-manager-independent-notice { padding: 12px 14px; border-left: 2px solid #64b68e; color: #b8cfc3; background: #112019; font-size: 12px; line-height: 1.55; }
+.admin-profile-whatsapp-stat { width: min(100% - 56px,1184px); margin: 18px auto; padding: 20px; border: 1px solid #3b5b49; border-radius: 12px; background: #101f18; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px 25px; align-items: center; }
+.admin-profile-whatsapp-stat h2 { margin: 0 0 8px; font-size: 24px; }
+.admin-profile-whatsapp-stat p:not(.eyebrow) { margin: 0; color: #b1c5b9; font-size: 12px; line-height: 1.5; }
+.admin-profile-whatsapp-stat > strong { font-size: 42px; color: #83d1a5; }
+.admin-profile-whatsapp-stat > small { grid-column: 1 / -1; color: #a7c2b2; font-size: 11px; }
+.profile-cover-photo-trigger { position: absolute; inset: 0; cursor: zoom-in; }
+.profile-media-grid a[aria-haspopup="dialog"] { position: absolute; inset: 0; display: block; cursor: zoom-in; }
+.profile-photo-dialog { position: fixed; inset: 0; width: 100%; max-width: none; height: 100%; max-height: none; margin: 0; padding: max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left)); border: 0; background: rgba(5,7,12,.97); color: #fff; overflow: hidden; }
+.profile-photo-dialog::backdrop { background: rgba(0,0,0,.88); }
+.profile-photo-dialog-panel { width: min(100%,1600px); height: 100%; margin: auto; display: flex; flex-direction: column; gap: 10px; }
+.profile-photo-dialog-panel header { display: flex; justify-content: space-between; align-items: center; min-height: 44px; flex-shrink: 0; }
+.profile-photo-dialog-panel header > span { color: #b7c0cf; font-size: 13px; }
+.profile-photo-close, .profile-photo-dialog-panel nav button { min-width: 44px; min-height: 44px; border: 1px solid #4c5364; border-radius: 10px; color: #fff; background: #181e2c; cursor: pointer; }
+.profile-photo-close { font-size: 32px; line-height: 1; }
+.profile-photo-dialog-image { min-height: 0; min-width: 0; flex: 1; position: relative; }
+.profile-photo-dialog-panel nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0; }
+.profile-photo-dialog-panel nav button { padding: 10px 14px; font-size: 13px; }
+.profile-photo-dialog-panel nav button:disabled { opacity: .4; cursor: default; }
+.profile-photo-dialog button:focus-visible { outline: 2px solid #ff7b83; outline-offset: 3px; }
+@media (max-width: 760px) {
+  .unread-messages-notice { width: calc(100% - 32px); padding: 13px; flex-wrap: wrap; gap: 10px; }
+  .unread-messages-notice > div { flex-basis: calc(100% - 50px); }
+  .unread-messages-notice > a { margin-left: 48px; }
+  .unread-messages-notice strong { font-size: 14px; }
+  .account-comments-list article { grid-template-columns: minmax(0,1fr); gap: 12px; }
+  .account-review-actions { max-width: none; }
+  .account-comments-list p { overflow-wrap: anywhere; }
+  .profile-reviews-management { width: calc(100% - 32px); }
+  .admin-profile-whatsapp-stat { width: calc(100% - 32px); padding: 15px; }
+  .admin-profile-whatsapp-stat h2 { font-size: 20px; }
 }

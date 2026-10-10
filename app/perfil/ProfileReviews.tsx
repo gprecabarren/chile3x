@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { trackAnalyticsEvent } from "@/app/AnalyticsEvent";
-import type { PublicReview } from "@/lib/profile-interactions";
+import type { OwnPendingReview, PublicReview } from "@/lib/profile-interactions";
 import { TURNSTILE_PROFILE_REVIEW_ACTION, TURNSTILE_PROFILE_REVIEW_SITEKEY } from "@/lib/turnstile";
 
 type TurnstileApi = { render: (element: HTMLElement, options: { sitekey: string; action: string; callback: (token: string) => void; "expired-callback": () => void; "error-callback": () => void }) => string; reset: (widgetId?: string) => void };
@@ -24,7 +24,7 @@ function ensureTurnstile() {
 
 type ReviewPageResponse = { reviews?: PublicReview[]; total?: number; hasMore?: boolean; error?: string };
 
-export function ProfileReviews({ profileId, profileSlug, signedIn, viewerOwnsProfile, reviews, totalReviews, initialHasMore }: { profileId: string; profileSlug: string; signedIn: boolean; viewerOwnsProfile: boolean; reviews: PublicReview[]; totalReviews: number; initialHasMore: boolean }) {
+export function ProfileReviews({ profileId, profileSlug, signedIn, viewerOwnsProfile, reviews, totalReviews, initialHasMore, ownPendingReviews = [] }: { profileId: string; profileSlug: string; signedIn: boolean; viewerOwnsProfile: boolean; reviews: PublicReview[]; totalReviews: number; initialHasMore: boolean; ownPendingReviews?: OwnPendingReview[] }) {
   const widgetElement = useRef<HTMLDivElement>(null);
   const widgetId = useRef<string | undefined>(undefined);
   const [token, setToken] = useState("");
@@ -32,6 +32,8 @@ export function ProfileReviews({ profileId, profileSlug, signedIn, viewerOwnsPro
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [visibleReviews, setVisibleReviews] = useState(reviews);
+  const [pendingReviews, setPendingReviews] = useState(ownPendingReviews);
+  const [withdrawing, setWithdrawing] = useState<string | null>(null);
   const [reviewPage, setReviewPage] = useState(1);
   const [hasMoreReviews, setHasMoreReviews] = useState(initialHasMore);
   const [loadingMoreReviews, setLoadingMoreReviews] = useState(false);
@@ -57,15 +59,29 @@ export function ProfileReviews({ profileId, profileSlug, signedIn, viewerOwnsPro
       formData.set("body", body);
       formData.set("cf-turnstile-response", token);
       const response = await fetch(`/api/perfiles/${profileId}/resenas`, { method: "POST", body: formData });
-      const payload = await response.json() as { error?: string; message?: string };
+      const payload = await response.json() as { error?: string; message?: string; review?: OwnPendingReview };
       if (!response.ok) throw new Error(payload.error ?? "No se pudo enviar la reseña.");
-      setBody(""); setNotice(payload.message ?? "Tu reseña fue enviada a moderación.");
+      setBody(""); setNotice(payload.message ?? "Tu reseña espera la aprobación del anunciante.");
+      if (payload.review) setPendingReviews(current => [payload.review!, ...current]);
       trackAnalyticsEvent("profile_review_submitted");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "No se pudo enviar la reseña.");
     } finally {
       setToken(""); window.turnstile?.reset(widgetId.current); setBusy(false);
     }
+  }
+
+  async function withdrawReview(id: string) {
+    if (withdrawing) return;
+    setWithdrawing(id); setNotice("");
+    try {
+      const response = await fetch(`/api/mi-cuenta/resenas/${encodeURIComponent(id)}`, { method: "DELETE" });
+      const payload = await response.json() as { error?: string; message?: string };
+      if (!response.ok) throw new Error(payload.error ?? "No se pudo retirar la reseña.");
+      setPendingReviews(current => current.filter(review => review.id !== id));
+      setNotice(payload.message ?? "Reseña retirada.");
+    } catch (error) { setNotice(error instanceof Error ? error.message : "No se pudo retirar la reseña."); }
+    finally { setWithdrawing(null); }
   }
 
   async function loadMoreReviews() {
@@ -89,7 +105,8 @@ export function ProfileReviews({ profileId, profileSlug, signedIn, viewerOwnsPro
     }
   }
 
-  return <section className="profile-reviews" aria-label="Reseñas del perfil"><div className="profile-reviews-heading"><div><p className="eyebrow">RESEÑAS</p><h2>Comentarios de la comunidad</h2><span>Las reseñas se publican solo después de la moderación del equipo.</span></div><strong aria-label={`${totalReviews} reseñas publicadas`}>{totalReviews}</strong></div>
+  return <section className="profile-reviews" aria-label="Reseñas del perfil"><div className="profile-reviews-heading"><div><p className="eyebrow">RESEÑAS</p><h2>Comentarios de la comunidad</h2><span>Las reseñas se publican solo después de la aprobación del anunciante.</span></div><strong aria-label={`${totalReviews} reseñas publicadas`}>{totalReviews}</strong></div>
+    {pendingReviews.length > 0 && <div className="profile-review-list own-pending-reviews" aria-label="Tus reseñas pendientes">{pendingReviews.map(review => <article key={review.id}><strong>Pendiente de aprobación · Vista privada</strong><p>{review.body}</p><small>No es pública. Solo tú, el anunciante y administración pueden consultarla.</small><button className="button button-outline" type="button" onClick={() => withdrawReview(review.id)} disabled={Boolean(withdrawing)}>{withdrawing === review.id ? "Retirando…" : "Eliminar reseña pendiente"}</button></article>)}</div>}
     {visibleReviews.length > 0 ? <><div className="profile-review-list">{visibleReviews.map((review) => <article key={review.id}><strong>{review.authorName}</strong><time dateTime={review.createdAt}>{new Intl.DateTimeFormat("es-CL", { dateStyle: "medium" }).format(new Date(review.createdAt))}</time><p>{review.body}</p></article>)}</div>{hasMoreReviews && <div className="profile-reviews-more"><button className="button button-outline" type="button" onClick={loadMoreReviews} disabled={loadingMoreReviews}>{loadingMoreReviews ? "Cargando reseñas…" : "Ver más reseñas"}</button><span>Mostrando {visibleReviews.length} de {totalReviews}</span></div>}</> : <p className="profile-reviews-empty">Aún no hay reseñas publicadas para este perfil.</p>}
     {signedIn ? viewerOwnsProfile ? <div className="profile-review-login profile-review-owner-notice"><p>Este es tu anuncio. Para mantener reseñas auténticas, no puedes dejarte comentarios a ti mismo.</p></div> : <form className="profile-review-form" onSubmit={submit}><label>Deja una reseña<textarea value={body} onChange={(event) => setBody(event.target.value)} minLength={3} maxLength={700} required rows={4} placeholder="Comparte una experiencia respetuosa y útil." /></label><div ref={widgetElement} className="turnstile-widget" /><button className="button button-primary" type="submit" disabled={busy || !token}>{busy ? "Enviando…" : "Enviar a moderación"}</button></form> : <div className="profile-review-login"><p>Inicia sesión para dejar una reseña. Todas se revisan antes de publicarse.</p><div><Link className="button button-primary" href={`/ingresar?return_to=${encodeURIComponent(returnTo)}`}>Iniciar sesión</Link><Link className="button button-outline" href={`/registro?return_to=${encodeURIComponent(returnTo)}`}>Crear cuenta</Link></div></div>}
     {notice && <p className="profile-review-notice" role="status">{notice}</p>}

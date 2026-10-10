@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { publicProfileCondition } from "@/lib/public-profile-visibility";
@@ -43,6 +43,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }).onConflictDoUpdate({
     target: [profileContactEvents.profileId, profileContactEvents.viewerKey, profileContactEvents.kind, profileContactEvents.clickedOn],
     set: {
+      clickCount: sql`${profileContactEvents.clickCount} + 1`,
       ...(analyticsConsent ? {
         viewerUserId: user?.id ?? null,
         countryCode: context.countryCode,

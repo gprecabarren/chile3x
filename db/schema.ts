@@ -35,8 +35,20 @@ export const users = sqliteTable("users", {
   createdByAdminId: text("created_by_admin_id"),
   createdByAdminLogin: text("created_by_admin_login"),
   emailVerifiedAt: text("email_verified_at"),
+  registrationAuthMethod: text("registration_auth_method", { enum: ["password", "google", "apple", "unknown"] }).notNull().default("unknown"),
+  emailVerificationDeadline: text("email_verification_deadline"),
+  emailVerificationBlockedAt: text("email_verification_blocked_at"),
+  emailVerificationExemptAt: text("email_verification_exempt_at"),
+  emailVerificationExemptBy: text("email_verification_exempt_by"),
+  emailVerificationExemptReason: text("email_verification_exempt_reason"),
+  emailVerificationNoticeAt: text("email_verification_notice_at"),
+  emailVerificationNoticeAttemptAt: text("email_verification_notice_attempt_at"),
+  emailVerificationLastSentAt: text("email_verification_last_sent_at"),
   createdAt,
-}, (table) => [uniqueIndex("users_username_unique").on(table.username)]);
+}, (table) => [uniqueIndex("users_username_unique").on(table.username),
+  index("users_email_verification_due_idx").on(table.emailVerificationDeadline)
+    .where(sql`${table.emailVerifiedAt} is null and ${table.emailVerificationExemptAt} is null and ${table.role} <> 'admin'`),
+]);
 
 export const authSessions = sqliteTable("auth_sessions", {
   id: text("id").primaryKey(),
@@ -365,7 +377,7 @@ export const profiles = sqliteTable("profiles", {
   isDemo: integer("is_demo", { mode: "boolean" }).notNull().default(false),
   ownerHiddenAt: text("owner_hidden_at"),
   trashedAt: text("trashed_at"),
-  trashedByKind: text("trashed_by_kind", { enum: ["self", "admin"] }),
+  trashedByKind: text("trashed_by_kind", { enum: ["self", "admin", "email_verification"] }),
   trashedByActorId: text("trashed_by_actor_id"),
   trashedByAdminLogin: text("trashed_by_admin_login"),
   createdAt,
@@ -478,6 +490,7 @@ export const profileContactEvents = sqliteTable("profile_contact_events", {
   viewerUserId: text("viewer_user_id").references(() => users.id, { onDelete: "set null" }),
   kind: text("kind", { enum: ["whatsapp", "telegram", "call", "email", "instagram", "arsmate", "onlyfans", "videocall"] }).notNull(),
   clickedOn: text("clicked_on").notNull(),
+  clickCount: integer("click_count").notNull().default(1),
   countryCode: text("country_code"),
   region: text("region"),
   city: text("city"),
@@ -627,9 +640,9 @@ export const reviews = sqliteTable("reviews", {
   authorId: text("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   profileId: text("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
   body: text("body").notNull(),
-  status: text("status", { enum: ["pending", "approved", "rejected"] }).notNull().default("pending"),
+  status: text("status", { enum: ["pending", "approved", "rejected", "withdrawn", "removed"] }).notNull().default("pending"),
   createdAt,
-}, (table) => [index("reviews_profile_status_idx").on(table.profileId, table.status)]);
+}, (table) => [index("reviews_profile_status_idx").on(table.profileId, table.status), index("reviews_author_created_idx").on(table.authorId, table.createdAt)]);
 
 export const profileReports = sqliteTable("profile_reports", {
   id: text("id").primaryKey(),

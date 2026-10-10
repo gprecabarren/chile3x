@@ -49,9 +49,10 @@ test("D1 SQL builder retains typed mapping, joins and writes without relational 
 test("shared navigation does not speculatively render every public or account section", async () => {
   const link = await source("app/NavigationLink.tsx");
   assert.match(link, /<Link \{\.\.\.props\} prefetch=\{props\.prefetch \?\? false\}/);
-  for (const path of ["app/page.tsx", "app/directorio/_components.tsx", "app/directorio/PublicMobileMenu.tsx", "app/mi-cuenta/_components.tsx", "app/admin/_components.tsx"]) {
+  for (const path of ["app/page.tsx", "app/directorio/_components.tsx", "app/directorio/PublicNavigationLink.tsx", "app/mi-cuenta/_components.tsx", "app/admin/_components.tsx"]) {
     assert.match(await source(path), /import Link from "@\/app\/NavigationLink"/, path);
   }
+  assert.match(await source("app/directorio/PublicMobileMenu.tsx"), /PublicNavigationLink as Link/);
 });
 
 test("administrator grants are deduplicated only within a render, never cached across requests", async () => {

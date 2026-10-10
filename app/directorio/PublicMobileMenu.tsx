@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "@/app/NavigationLink";
+import { PublicNavigationLink as Link } from "./PublicNavigationLink";
 import { useEffect, useRef, useState } from "react";
 
 type PublicMobileMenuProps = {

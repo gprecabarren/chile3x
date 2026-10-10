@@ -2,7 +2,7 @@ import { and, count, eq, isNull } from "drizzle-orm";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
-import { adminNotifications, exclusiveContentMedia, profileMedia, profiles } from "@/db/schema";
+import { adminNotifications, exclusiveContentMedia, profileMedia, profiles, users } from "@/db/schema";
 import { getCurrentAdmin, getSessionCookieName } from "@/lib/auth";
 import { ADMIN_ACCESS_LABELS, adminHasCapability } from "@/lib/admin-permissions";
 import { getAccountSessions } from "@/lib/session-management";
@@ -10,6 +10,7 @@ import { getOperationalDashboard, readOperationalFilters } from "@/lib/operation
 import { SessionManager } from "@/app/SessionManager";
 import { AdminPageHeading, AdminShell } from "./_components";
 import { OperationalPanel } from "./OperationalPanel";
+import { emailVerificationFilter } from "@/lib/email-verification-admin";
 
 export const dynamic = "force-dynamic";
 
@@ -41,18 +42,20 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
       db.select({ total: count() }).from(profileMedia).where(eq(profileMedia.moderationStatus, "pending")),
       db.select({ total: count() }).from(exclusiveContentMedia).where(eq(exclusiveContentMedia.moderationStatus, "pending")),
       db.select({ total: count() }).from(adminNotifications).where(isNull(adminNotifications.readAt)),
+      db.select({ total: count() }).from(users).where(emailVerificationFilter("blocked")),
     ]);
-  })() : Promise.resolve([[], [], [], [], [], []] as { total: number }[][]);
+  })() : Promise.resolve([[], [], [], [], [], [], []] as { total: number }[][]);
   const [sessions, stats, operational] = await Promise.all([
     getAccountSessions(admin.id, getSessionCookieName()),
     statsPromise,
     canViewOperations ? getOperationalDashboard(filters) : Promise.resolve(null),
   ]);
-  const [[allProfiles], [pendingProfiles], [pausedProfiles], [pendingPublicMedia], [pendingExclusiveMedia], [unreadNotifications]] = stats;
+  const [[allProfiles], [pendingProfiles], [pausedProfiles], [pendingPublicMedia], [pendingExclusiveMedia], [unreadNotifications], [emailBlockedAccounts]] = stats;
 
   const pendingMedia = Number(pendingPublicMedia?.total ?? 0) + Number(pendingExclusiveMedia?.total ?? 0);
 
   const summary = [
+    ...(adminHasCapability(admin, "accounts.manage") ? [{ label: "Bloqueadas por correo", value: emailBlockedAccounts?.total ?? 0, hint: "Cuentas cuyo plazo de verificación terminó. Atiéndelas o autoriza una excepción justificada.", href: "/admin/cuentas?email_status=blocked", action: "Revisar cuentas bloqueadas" }] : []),
     {
       label: "Anuncios registrados",
       value: allProfiles?.total ?? 0,

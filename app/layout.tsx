@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AgeGate } from "./AgeGate";
 import { MaintenanceScreen } from "./MaintenanceScreen";
-import { getCurrentAdmin } from "@/lib/auth";
+import { getCurrentAdmin, getVerificationUser } from "@/lib/auth";
+import { emailVerificationDeadline, emailVerificationState } from "@/lib/email-verification-policy";
+import { EmailVerificationDeadline } from "./EmailVerificationNotice";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { socialCardImage, socialCardImageUrl } from "@/lib/seo";
 import { DeferredClientFeatures } from "./DeferredClientFeatures";
@@ -63,10 +65,10 @@ export default async function RootLayout({
 }>) {
   const settings = await getSiteSettings();
   const maintenanceEnabled = settings.maintenance_mode === "enabled";
-  // Normal public views do not need a session lookup. Only check the admin
-  // cookie when maintenance mode is active, so the public response can stay
-  // light enough for the Workers Free CPU limit.
-  const admin = maintenanceEnabled ? await getCurrentAdmin() : null;
+  // Anonymous views have no user cookie and therefore no session DB lookup.
+  // Administrative sessions are only needed here during maintenance mode.
+  const [admin, user] = await Promise.all([maintenanceEnabled ? getCurrentAdmin() : Promise.resolve(null), getVerificationUser()]);
+  const verificationDeadline = user && ["grace", "blocked"].includes(emailVerificationState(user)) ? emailVerificationDeadline(user) : null;
 
   return (
     <html lang="es">
@@ -77,6 +79,7 @@ export default async function RootLayout({
         {!maintenanceEnabled || admin ? children : <MaintenanceScreen />}
         <AgeGate />
         <DeferredClientFeatures />
+        {verificationDeadline !== null && Number.isFinite(verificationDeadline) && <EmailVerificationDeadline deadline={verificationDeadline} />}
       </body>
     </html>
   );

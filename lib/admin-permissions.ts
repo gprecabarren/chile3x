@@ -27,7 +27,7 @@ export const ADMIN_CAPABILITY_LABELS: Record<AdminCapability, string> = {
   "profiles.moderate": "Revisar y cambiar el estado de anuncios",
   "profiles.recycle": "Enviar anuncios a la papelera, restaurarlos y eliminarlos definitivamente",
   "media.moderate": "Aprobar o rechazar fotos, videos y contenido exclusivo",
-  "reviews.moderate": "Moderar reseñas públicas",
+  "reviews.moderate": "Consultar y eliminar comentarios de anuncios (sin aprobar ni rechazar)",
   "reports.manage": "Atender reportes sobre anuncios",
   "bugs.manage": "Atender reportes enviados por testers",
   "news.manage": "Crear, editar y publicar noticias",

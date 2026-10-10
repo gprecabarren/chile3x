@@ -40,7 +40,7 @@ test("coverage card stays compact and the previously rejected hero asset stays r
 });
 
 test("profile-side reads run concurrently after loading the listing", () => {
-  assert.match(profile, /const \[relatedProfiles, stories, approvedReviewsPage,[\s\S]*?engagement\] = await Promise\.all\(\[/);
+  assert.match(profile, /const \[relatedProfiles, stories, approvedReviewsPage,[\s\S]*?engagement, ownPendingReviews, adminWhatsappStatistics\] = await Promise\.all\(\[/);
   assert.match(profile, /relatedProfileIds\.length \? getPublicProfiles/);
   assert.match(profile, /getProfileEngagement\(profile\.id, viewer\?\.id\) : Promise\.resolve\(null\)/);
 });

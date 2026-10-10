@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { accountAppleIdentities, accountGoogleIdentities, users } from "@/db/schema";
 import { assertSameOrigin, createUserSession, getUserSessionCookieName, getUserSessionDuration, hashPassword, safeAccountReturnTo, sessionCookieOptions } from "@/lib/auth";
-import { createAccountToken, sendAccountEmail } from "@/lib/account-email";
+import { requestVerificationEmail } from "@/lib/account-email";
+import { DAY_MS, EMAIL_GRACE_DAYS } from "@/lib/email-verification-policy";
 import { readAccountIdentity } from "@/lib/account-data";
 import { encodeRegistrationState, registrationStateCookie, registrationStateFromForm } from "@/lib/registration-state";
 import { TURNSTILE_AUTH_REGISTER_ACTION } from "@/lib/turnstile";
@@ -48,6 +49,7 @@ export async function POST(request: NextRequest) {
   let stage = "form_data";
   let formData: FormData | undefined;
   let createdEmail: string | undefined;
+  let createdPasswordSession: string | undefined;
   let googleRegistration = null as Awaited<ReturnType<typeof readGoogleRegistrationIntent>>;
   let appleRegistration = null as Awaited<ReturnType<typeof readAppleRegistrationIntent>>;
   try {
@@ -100,7 +102,13 @@ export async function POST(request: NextRequest) {
       city: identity.city,
       phone: identity.phone || null,
       emailVerifiedAt: providerRegistration ? new Date().toISOString() : null,
+      registrationAuthMethod: appleRegistration ? "apple" : googleRegistration ? "google" : "password",
+      emailVerificationDeadline: providerRegistration ? null : new Date(Date.now() + EMAIL_GRACE_DAYS * DAY_MS).toISOString(),
     });
+    if (!providerRegistration) {
+      createdEmail = email;
+      createdPasswordSession = await createUserSession(userId, request, "password");
+    }
     await createAdminNotification({ kind: "account_registered", actorUserId: userId, summary: "Se registró una nueva cuenta en Chile3X." });
 
     if (appleRegistration) {
@@ -137,30 +145,27 @@ export async function POST(request: NextRequest) {
     }
 
     stage = "send_verification";
-    createdEmail = email;
-    const token = await createAccountToken(userId, "verify_email");
-    const delivered = await sendAccountEmail({ email, displayName, purpose: "verify_email", token });
+    const delivered = await requestVerificationEmail({ id: userId, email, displayName });
     const returnTo = safeAccountReturnTo(getFormString(formData, "return_to"));
-    const url = new URL("/verificar-correo", request.url);
-    url.searchParams.set("email", email);
-    url.searchParams.set("return_to", returnTo);
+    const url = new URL(returnTo, request.url);
+    url.searchParams.set("notice", "welcome");
     url.searchParams.set("created", "1");
-    url.searchParams.set(delivered ? "sent" : "delivery", "1");
+    url.searchParams.set("verification_delivery", delivered ? "sent" : "pending");
     const response = NextResponse.redirect(url, 303);
+    response.cookies.set({ name: getUserSessionCookieName(), value: createdPasswordSession!, ...sessionCookieOptions(getUserSessionDuration()) });
     response.cookies.set(registrationStateCookie, "", { maxAge: 0, path: "/registro" });
     return response;
   } catch (error) {
     console.error("Account registration failed", { stage, error });
     await recordOperationalEvent({ category: "application", eventName: "account.registration", outcome: "failure", detail: "El registro de cuenta no pudo completar una etapa interna.", metadata: { stage } });
-    // If the account was saved, let the user retry sending verification rather
-    // than asking them to register again (which would report a duplicate).
+    // Email delivery/notification failure must not abandon a saved account.
     if (createdEmail && formData && !googleRegistration && !appleRegistration) {
-      const url = new URL("/verificar-correo", request.url);
-      url.searchParams.set("email", createdEmail);
-      url.searchParams.set("return_to", safeAccountReturnTo(getFormString(formData, "return_to")));
+      const url = new URL(createdPasswordSession ? safeAccountReturnTo(getFormString(formData, "return_to")) : "/verificar-correo", request.url);
+      if (!createdPasswordSession) url.searchParams.set("email", createdEmail);
       url.searchParams.set("created", "1");
       url.searchParams.set("delivery", "1");
       const response = NextResponse.redirect(url, 303);
+      if (createdPasswordSession) response.cookies.set({ name: getUserSessionCookieName(), value: createdPasswordSession, ...sessionCookieOptions(getUserSessionDuration()) });
       response.cookies.set(registrationStateCookie, "", { maxAge: 0, path: "/registro" });
       return response;
     }

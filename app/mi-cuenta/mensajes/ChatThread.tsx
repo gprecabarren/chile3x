@@ -23,6 +23,7 @@ export function ChatThread({
   currentRole,
   profileName,
   counterpartLabel,
+  currentUserLabel,
   counterpartAvailable,
   initialMessages,
   initialHasMore,
@@ -34,6 +35,7 @@ export function ChatThread({
   currentRole: "visitor" | "owner";
   profileName: string;
   counterpartLabel: string;
+  currentUserLabel: string;
   counterpartAvailable: boolean;
   initialMessages: MessageRecord[];
   initialHasMore: boolean;
@@ -59,18 +61,25 @@ export function ChatThread({
       body: JSON.stringify({ action }),
     });
     if (!response.ok) throw new Error("No se pudo actualizar la conversación.");
+    if (action === "read") window.dispatchEvent(new CustomEvent("chile3x:messages-read", { detail: { conversationId } }));
   }, [conversationId]);
 
   useEffect(() => {
-    void preference("read");
+    if (document.visibilityState === "visible") void preference("read").catch(() => {});
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [preference]);
 
   useEffect(() => {
+    const controller = new AbortController();
+    let inFlight = false;
     const poll = async () => {
-      const response = await fetch(`/api/mensajes/${encodeURIComponent(conversationId)}`, { cache: "no-store" });
+      if (document.visibilityState !== "visible" || controller.signal.aborted || inFlight) return;
+      inFlight = true;
+      try {
+      const response = await fetch(`/api/mensajes/${encodeURIComponent(conversationId)}`, { cache: "no-store", signal: controller.signal });
       if (!response.ok) return;
       const result = await response.json() as { messages: MessageRecord[]; hasMore: boolean };
+      if (controller.signal.aborted || document.visibilityState !== "visible") return;
       const incoming = result.messages.filter((item) => item.senderRole !== currentRole && !knownIds.current.has(item.id));
       for (const item of result.messages) knownIds.current.add(item.id);
       setMessages((current) => {
@@ -79,20 +88,24 @@ export function ChatThread({
         return [...byId.values()].sort((left, right) => left.createdAt.localeCompare(right.createdAt) || left.id.localeCompare(right.id));
       });
       if (incoming.length) {
-        void preference("read");
+        void preference("read").catch(() => {});
         if (!muted && "Notification" in window && Notification.permission === "granted") {
           new Notification(`Nuevo mensaje sobre ${profileName}`, { body: incoming.at(-1)?.body.slice(0, 120), tag: conversationId });
         }
       }
+      } finally { inFlight = false; }
     };
-    const timer = window.setInterval(() => void poll(), 12_000);
-    return () => window.clearInterval(timer);
+    const onVisible = () => { if (document.visibilityState === "visible") { void preference("read").catch(() => {}); void poll().catch(() => {}); } };
+    const timer = window.setInterval(() => void poll().catch(() => {}), 12_000);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { controller.abort(); window.clearInterval(timer); document.removeEventListener("visibilitychange", onVisible); };
   }, [conversationId, currentRole, muted, preference, profileName]);
 
   async function loadOlder() {
     const oldest = messages[0]?.createdAt;
     if (!oldest || busy) return;
     setBusy(true);
+    try {
     const response = await fetch(`/api/mensajes/${encodeURIComponent(conversationId)}?before=${encodeURIComponent(oldest)}`, { cache: "no-store" });
     const result = await response.json().catch(() => null) as { messages?: MessageRecord[]; hasMore?: boolean } | null;
     if (response.ok && result?.messages) {
@@ -100,7 +113,7 @@ export function ChatThread({
       setMessages((current) => [...result.messages!, ...current]);
       setHasMore(Boolean(result.hasMore));
     }
-    setBusy(false);
+    } catch { setError("No se pudieron cargar los mensajes. Revisa tu conexión."); } finally { setBusy(false); }
   }
 
   async function send(event: FormEvent) {
@@ -108,6 +121,7 @@ export function ChatThread({
     if (!body.trim() || busy || blockedByAnyone) return;
     setBusy(true);
     setError("");
+    try {
     const response = await fetch(`/api/mensajes/${encodeURIComponent(conversationId)}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -123,7 +137,7 @@ export function ChatThread({
       setBody("");
       window.setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }), 0);
     }
-    setBusy(false);
+    } catch { setError("No se pudo enviar. Revisa tu conexión y vuelve a intentarlo."); } finally { setBusy(false); }
   }
 
   async function toggleMute() {
@@ -154,7 +168,7 @@ export function ChatThread({
   const sensitiveWarning = containsSensitiveInformation(body);
   return <section className="internal-chat-thread" aria-label={`Conversación sobre ${profileName}`}>
     <header>
-      <div><span>CONVERSACIÓN PRIVADA</span><h2>{counterpartAvailable ? profileName : counterpartLabel}</h2></div>
+      <div><span>CONVERSACIÓN PRIVADA</span><h2>{counterpartAvailable && currentRole === "visitor" ? profileName : counterpartLabel}</h2></div>
       <div className="internal-chat-controls">
         <button type="button" onClick={enableBrowserNotifications}>Activar avisos</button>
         <button type="button" onClick={toggleMute} disabled={busy}>{muted ? "Reactivar avisos" : "Silenciar"}</button>
@@ -166,6 +180,7 @@ export function ChatThread({
       {hasMore && <button className="internal-chat-load-more" type="button" onClick={loadOlder} disabled={busy}>Cargar mensajes anteriores</button>}
       {messages.length === 0 && <p className="internal-chat-empty">Aún no hay mensajes. Preséntate y menciona que viste este anuncio en Chile3X.</p>}
       {messages.map((message) => <article className={message.senderRole === currentRole ? "is-own" : "is-other"} key={message.id}>
+        <strong className="internal-chat-sender">{message.senderRole === "owner" ? profileName : currentRole === "visitor" ? currentUserLabel : counterpartLabel}</strong>
         <p>{message.body}</p><time dateTime={message.createdAt}>{messageTime(message.createdAt)}</time>
       </article>)}
     </div>

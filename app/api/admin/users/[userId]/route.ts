@@ -8,6 +8,7 @@ import { getDb } from "@/db";
 import { accountTokens, authSessions, users } from "@/db/schema";
 import { recordAdminAudit } from "@/lib/admin-audit";
 import { adminHasCapability } from "@/lib/admin-permissions";
+import { DAY_MS, EMAIL_GRACE_DAYS } from "@/lib/email-verification-policy";
 
 function redirectWithNotice(request: Request, returnTo: string, notice: string) {
   const url = new URL(returnTo, request.url);
@@ -49,10 +50,28 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     birthDate: users.birthDate,
     city: users.city,
     phone: users.phone,
+    emailVerifiedAt: users.emailVerifiedAt,
+    emailVerificationExemptAt: users.emailVerificationExemptAt,
   }).from(users).where(eq(users.id, userId)).limit(1);
 
   if (!target) return redirectWithNotice(request, "/admin/cuentas", "account_missing");
   if (target.id === admin.id || target.role === "admin") return redirectWithNotice(request, returnTo, "account_error");
+
+  if (action === "email_exempt" || action === "email_require") {
+    const reason = formValue(formData, "reason").trim();
+    if (target.emailVerifiedAt || reason.length < 5 || reason.length > 220) return redirectWithNotice(request, returnTo, "account_error");
+    const exempt = action === "email_exempt";
+    const now = new Date().toISOString();
+    const changes = exempt ? { emailVerificationExemptAt: now, emailVerificationExemptBy: admin.id, emailVerificationExemptReason: reason, emailVerificationBlockedAt: null } : {
+      emailVerificationExemptAt: null, emailVerificationExemptBy: null, emailVerificationExemptReason: null,
+      emailVerificationDeadline: new Date(Date.now() + EMAIL_GRACE_DAYS * DAY_MS).toISOString(),
+      emailVerificationBlockedAt: null, emailVerificationNoticeAt: null, emailVerificationNoticeAttemptAt: null,
+    };
+    // An exception never certifies ownership of an email or overrides a ban.
+    await db.update(users).set(changes).where(eq(users.id, target.id));
+    await recordAdminAudit(admin, { category: "accounts", action: exempt ? "account.email_verification_exempt" : "account.email_verification_required", summary: `${exempt ? "Autorizó una excepción" : "Retiró la excepción y otorgó 7 días"} de verificación de correo para ${target.displayName ?? target.email}.`, entityType: "account", entityId: target.id, entityLabel: target.displayName ?? target.email, before: { exemptAt: target.emailVerificationExemptAt }, after: changes, metadata: { reason, emailVerified: false } });
+    return redirectWithNotice(request, returnTo, "email_policy_updated");
+  }
 
   if (action === "send_reset") {
     const token = await createAccountToken(target.id, "reset_password");

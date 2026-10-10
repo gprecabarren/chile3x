@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AccountIdentityFields } from "@/app/account-identity-fields";
 import { getDb } from "@/db";
-import { accountDeletionHistory, profiles, telegramAccountLinks, telegramMemberships, users } from "@/db/schema";
+import { accountAppleIdentities, accountGoogleIdentities, accountDeletionHistory, profiles, telegramAccountLinks, telegramMemberships, users } from "@/db/schema";
 import { getCurrentAdmin, safeAdminReturnTo, sha256 } from "@/lib/auth";
 import { adminHasCapability } from "@/lib/admin-permissions";
 import { profilePublicPath } from "@/lib/profile";
@@ -12,6 +12,7 @@ import { AdminPasswordField } from "../AdminPasswordField";
 import { formatRegionName } from "@/app/locations";
 import { creationSourceLabel } from "@/lib/creation-provenance";
 import { hasUnlimitedEscortListings } from "@/lib/profile-limits";
+import { emailVerificationDeadline, emailVerificationLabel, emailVerificationState, registrationMethodLabel } from "@/lib/email-verification-policy";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,7 @@ const notices: Record<string, string> = {
   reset_delivery_error: "No fue posible entregar el correo. Revisa la configuración de correo antes de intentarlo nuevamente.",
   account_error: "No fue posible realizar esa acción en esta cuenta.",
   status_updated: "El bloqueo administrativo de la cuenta fue actualizado.",
+  email_policy_updated: "La excepción de acceso por correo fue actualizada. El estado real de verificación del correo no cambió.",
   delete_confirmation: "Para eliminar la cuenta debes escribir su correo y ELIMINAR exactamente.",
   delete_error: "No fue posible eliminar permanentemente esa cuenta.",
   telegram_banned: "La identidad fue vetada de la comunidad pública y del espacio de Miembros.",
@@ -75,10 +77,16 @@ export default async function AdminAccountDetailsPage({ params, searchParams }: 
     city: users.city,
     phone: users.phone,
     createdAt: users.createdAt,
+    registrationAuthMethod: users.registrationAuthMethod,
+    emailVerifiedAt: users.emailVerifiedAt,
+    emailVerificationDeadline: users.emailVerificationDeadline,
+    emailVerificationExemptAt: users.emailVerificationExemptAt,
+    emailVerificationExemptReason: users.emailVerificationExemptReason,
+    emailVerificationNoticeAt: users.emailVerificationNoticeAt,
   }).from(users).where(eq(users.id, userId)).limit(1);
   if (!account) redirect("/admin/cuentas?notice=account_missing");
 
-  const [ownedProfiles, deletionHistory, telegramLinks, telegramMembershipRows] = await Promise.all([db.select({
+  const [ownedProfiles, deletionHistory, telegramLinks, telegramMembershipRows, googleLinks, appleLinks] = await Promise.all([db.select({
     id: profiles.id,
     displayName: profiles.displayName,
     type: profiles.type,
@@ -106,7 +114,10 @@ export default async function AdminAccountDetailsPage({ params, searchParams }: 
   }).from(telegramAccountLinks).where(eq(telegramAccountLinks.userId, account.id)).limit(1), db.select({
     status: telegramMemberships.status,
     updatedAt: telegramMemberships.updatedAt,
-  }).from(telegramMemberships).where(eq(telegramMemberships.userId, account.id)).orderBy(desc(telegramMemberships.updatedAt)).limit(1)]);
+  }).from(telegramMemberships).where(eq(telegramMemberships.userId, account.id)).orderBy(desc(telegramMemberships.updatedAt)).limit(1),
+    db.select({ id: accountGoogleIdentities.id }).from(accountGoogleIdentities).where(eq(accountGoogleIdentities.userId, account.id)).limit(1),
+    db.select({ id: accountAppleIdentities.id }).from(accountAppleIdentities).where(eq(accountAppleIdentities.userId, account.id)).limit(1),
+  ]);
 
   const requestedReturnTo = query.return_to ?? "";
   const returnTo = requestedReturnTo.startsWith("/admin/") ? safeAdminReturnTo(requestedReturnTo) : "/admin/cuentas";
@@ -114,6 +125,8 @@ export default async function AdminAccountDetailsPage({ params, searchParams }: 
   const detailHref = `${detailBaseHref}?return_to=${encodeURIComponent(returnTo)}`;
   const accountName = account.displayName ?? account.email;
   const isProtectedAdmin = account.role === "admin";
+  const emailState = emailVerificationState(account);
+  const effectiveAccountStatus = !account.isActive ? "Deshabilitada" : emailState === "blocked" ? "Bloqueada por correo" : "Activa";
   const accountRoleLabel = account.role === "tester" ? "Cuenta de tester" : "Cuenta de anunciante";
   const telegramLink = telegramLinks[0] ?? null;
   const telegramMembership = telegramMembershipRows[0] ?? null;
@@ -123,8 +136,16 @@ export default async function AdminAccountDetailsPage({ params, searchParams }: 
     </AdminPageHeading>
     <p className="admin-profile-rule-note">{hasUnlimitedEscortListings(account) ? <>Excepción autorizada para esta cuenta: <strong>anuncios Escort sin límite de cantidad</strong> y varios anuncios de Agencia o Arriendo. Se mantienen todas las validaciones y revisiones.</> : <>Regla de publicación: una cuenta puede tener <strong>un Escort activo</strong> y varios anuncios de Agencia o Arriendo.</>} Los anuncios en papelera se revisan y restauran solo desde administración.</p>
     {query.notice && notices[query.notice] && <p className="admin-success" role="status">{notices[query.notice]}</p>}
-    <section className="admin-account-detail-summary"><div className="admin-account-detail-status"><span>Estado efectivo</span><strong className={`account-status ${account.isActive ? "account-status-approved" : "account-status-rejected"}`}>{account.isActive ? "Activa" : "Deshabilitada"}</strong></div><dl><div><dt>Tipo de cuenta</dt><dd>{account.role === "admin" ? "Administrativa protegida" : accountRoleLabel}</dd></div><div><dt>Origen de la cuenta</dt><dd>{account.role === "admin" && account.creationSource === "unknown" ? "Acceso administrativo GitHub" : creationSourceLabel(account.creationSource, account.createdByAdminLogin)}</dd></div><div><dt>Anuncios asociados</dt><dd>{ownedProfiles.length} anuncio{ownedProfiles.length === 1 ? "" : "s"}</dd></div><div><dt>Deshabilitada por la persona</dt><dd>{account.selfDisabledAt ? new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(account.selfDisabledAt)) : "No"}</dd></div><div><dt>Bloqueo administrativo</dt><dd>{account.adminDisabledAt ? new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(account.adminDisabledAt)) : "No"}</dd></div></dl></section>
+    <section className="admin-account-detail-summary"><div className="admin-account-detail-status"><span>Estado efectivo</span><strong className={`account-status ${effectiveAccountStatus === "Activa" ? "account-status-approved" : "account-status-rejected"}`}>{effectiveAccountStatus}</strong></div><dl><div><dt>Tipo de cuenta</dt><dd>{account.role === "admin" ? "Administrativa protegida" : accountRoleLabel}</dd></div><div><dt>Origen de la cuenta</dt><dd>{account.role === "admin" && account.creationSource === "unknown" ? "Acceso administrativo GitHub" : creationSourceLabel(account.creationSource, account.createdByAdminLogin)}</dd></div><div><dt>Anuncios asociados</dt><dd>{ownedProfiles.length} anuncio{ownedProfiles.length === 1 ? "" : "s"}</dd></div><div><dt>Deshabilitada por la persona</dt><dd>{account.selfDisabledAt ? new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(account.selfDisabledAt)) : "No"}</dd></div><div><dt>Bloqueo administrativo</dt><dd>{account.adminDisabledAt ? new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(account.adminDisabledAt)) : "No"}</dd></div></dl></section>
     {!account.isActive && !isProtectedAdmin && <p className="form-alert" role="status">La cuenta está deshabilitada. Sus anuncios permanecen conservados, pero no son públicos y no se pueden crear ni aprobar publicaciones hasta reactivarla.</p>}
+    <section className="admin-account-email-policy admin-account-password-actions"><div><p className="eyebrow">CORREO Y ACCESO</p><h2>{emailVerificationLabel(account)}</h2><p>Registro: {isProtectedAdmin ? "GitHub administrativo" : registrationMethodLabel(account.registrationAuthMethod)}.</p>{!isProtectedAdmin && <p>Accesos vinculados: {[googleLinks.length ? "Google" : "", appleLinks.length ? "Apple" : ""].filter(Boolean).join(" y ") || "Ninguno"}. En registros antiguos, vincular un proveedor no demuestra cómo se creó originalmente la cuenta.</p>}</div>
+      {account.emailVerifiedAt ? <p>Correo confirmado el {new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Santiago" }).format(new Date(account.emailVerifiedAt))}.</p> : !isProtectedAdmin && <>
+        <p>{emailState === "blocked" ? "Acceso bloqueado desde" : emailState === "exempt" ? "Plazo original (excepción vigente)" : "Fin del plazo provisional"}: {new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Santiago" }).format(new Date(emailVerificationDeadline(account)))}. Los anuncios solo pasan a papelera tras 31 días de bloqueo continuo; no se borran definitivamente.</p>
+        <p>{account.emailVerificationNoticeAt ? "Recordatorio de bloqueo enviado." : emailState === "blocked" ? "Recordatorio pendiente de envío o reintento automático." : emailState === "exempt" ? "No se bloqueará por correo mientras esta excepción siga vigente." : "El recordatorio se enviará automáticamente al vencer el plazo; los fallos de entrega se reintentan."}</p>
+        {account.emailVerificationExemptAt && <p>Excepción autorizada: {account.emailVerificationExemptReason}. No acredita que el correo pertenezca a la persona.</p>}
+        <form action={`/api/admin/users/${encodeURIComponent(account.id)}`} method="post" className="admin-password-form"><input name="action" type="hidden" value={account.emailVerificationExemptAt ? "email_require" : "email_exempt"} /><input name="return_to" type="hidden" value={detailHref} /><label>Motivo de la decisión (uso excepcional)<input name="reason" required minLength={5} maxLength={220} /></label><button className="button button-outline" type="submit">{account.emailVerificationExemptAt ? "Retirar excepción y dar 7 días" : "Autorizar acceso sin verificar"}</button><small>No retira bloqueos administrativos ni restaura anuncios que ya estén en papelera.</small></form>
+      </>}
+    </section>
     {isProtectedAdmin ? <section className="admin-empty"><h2>Cuenta protegida</h2><p>Para prevenir bloqueos accidentales, desde aquí no se modifica una cuenta administrativa.</p></section> : <div className="admin-account-detail-layout">
       <form action={`/api/admin/users/${encodeURIComponent(account.id)}`} method="post" className="admin-settings-form admin-account-details-form">
         <input name="action" type="hidden" value="save_details" />

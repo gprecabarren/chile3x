@@ -5,6 +5,7 @@ import { getDb } from "@/db";
 import { adminGithubAccess, authSessions, users } from "@/db/schema";
 import type { AdminAccessLevel } from "@/lib/admin-permissions";
 import { sessionContextFromHeaders, sessionContextFromRequest, type SessionAuthMethod } from "@/lib/session-context";
+import { emailVerificationState, type EmailVerificationRecord } from "@/lib/email-verification-policy";
 
 const ADMIN_SESSION_COOKIE = "chile3x_admin_session";
 const USER_SESSION_COOKIE = "chile3x_user_session";
@@ -20,7 +21,7 @@ type RuntimeAuthEnv = {
 
 export type AccountRole = "visitor" | "advertiser" | "tester" | "admin";
 
-export type AccountUser = {
+export type AccountUser = EmailVerificationRecord & {
   id: string;
   email: string;
   username: string | null;
@@ -214,6 +215,10 @@ const getSessionUser = cache(async function getSessionUser(cookieName: string): 
       displayName: users.displayName,
       role: users.role,
       isActive: users.isActive,
+      createdAt: users.createdAt,
+      emailVerifiedAt: users.emailVerifiedAt,
+      emailVerificationDeadline: users.emailVerificationDeadline,
+      emailVerificationExemptAt: users.emailVerificationExemptAt,
       sessionId: authSessions.id,
       sessionIpAddress: authSessions.ipAddress,
       sessionUserAgent: authSessions.userAgent,
@@ -251,6 +256,10 @@ const getSessionUser = cache(async function getSessionUser(cookieName: string): 
     username: record.username,
     displayName: record.displayName,
     role: record.role,
+    createdAt: record.createdAt,
+    emailVerifiedAt: record.emailVerifiedAt,
+    emailVerificationDeadline: record.emailVerificationDeadline,
+    emailVerificationExemptAt: record.emailVerificationExemptAt,
   } as AccountUser;
 });
 
@@ -280,6 +289,12 @@ export const getCurrentAdmin = cache(async function getCurrentAdmin(): Promise<A
 });
 
 export async function getCurrentUser() {
+  const user = await getSessionUser(USER_SESSION_COOKIE);
+  return user && emailVerificationState(user) !== "blocked" ? user : null;
+}
+
+// Restricted identity: ONLY for verification/recovery UI, never normal actions.
+export async function getVerificationUser() {
   return getSessionUser(USER_SESSION_COOKIE);
 }
 

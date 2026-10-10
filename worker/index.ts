@@ -5,6 +5,8 @@ import { hasPrivateSession, isCacheableDocument, preventPrivateCaching, publicCa
 import type { TelegramQueueMessage } from "../lib/telegram";
 import { handleTelegramQueue, handleTelegramScheduled, handleTelegramWebhook, isTelegramWebhookPath } from "./telegram";
 import { cityDirectory } from "../app/locations";
+import { enforceEmailVerification, handleEmailVerificationScheduled } from "./email-verification";
+import { limitMultipartUpload } from "./upload-limits";
 
 const availableCitySlugs = new Set(cityDirectory.map(city => city.citySlug));
 
@@ -24,7 +26,7 @@ function withSecurityHeaders(response: Response, pathname = "", privateDocument 
   // Keep this compatible with Google Identity popups while isolating the
   // top-level page from unrelated cross-origin windows.
   headers.set("cross-origin-opener-policy", "same-origin-allow-popups");
-  headers.set("referrer-policy", "strict-origin-when-cross-origin");
+  headers.set("referrer-policy", pathname === "/api/auth/verificar-correo" ? "no-referrer" : "strict-origin-when-cross-origin");
   headers.set("permissions-policy", "camera=(self), geolocation=(self), microphone=(self)");
   headers.set("content-security-policy", `default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline'${wasmPermission} https://accounts.google.com https://challenges.cloudflare.com https://www.googletagmanager.com https://news.google.com https://cdn.jsdelivr.net https://static.cloudflareinsights.com; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob:; font-src 'self' data:; frame-src https://accounts.google.com https://challenges.cloudflare.com https://www.googletagmanager.com https://news.google.com; connect-src 'self' https://accounts.google.com https://www.googleapis.com https://challenges.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com https://news.google.com https://cdn.jsdelivr.net https://storage.googleapis.com https://cloudflareinsights.com; upgrade-insecure-requests`);
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
@@ -85,6 +87,13 @@ const worker = {
       return probeNotFoundResponse();
     }
 
+    const verificationBlock = await enforceEmailVerification(request, env.DB);
+    if (verificationBlock) return withSecurityHeaders(verificationBlock, url.pathname, true);
+
+    const uploadRequest = await limitMultipartUpload(request);
+    if (uploadRequest instanceof Response) return withSecurityHeaders(uploadRequest, url.pathname, true);
+    request = uploadRequest;
+
     if (url.pathname === "/_vinext/image") {
       const allowedWidths = [...DEFAULT_DEVICE_SIZES, ...DEFAULT_IMAGE_SIZES];
       return withSecurityHeaders(await handleImageOptimization(request, {
@@ -126,7 +135,7 @@ const worker = {
     await handleTelegramQueue(batch, env);
   },
   async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
-    await handleTelegramScheduled(env);
+    await Promise.all([handleTelegramScheduled(env), handleEmailVerificationScheduled(env)]);
   },
 } satisfies ExportedHandler<Env, TelegramQueueMessage>;
 

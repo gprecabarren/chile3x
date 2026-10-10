@@ -151,7 +151,7 @@ test("the public Telegram link is shared by admin configuration, header and foot
   assert.doesNotMatch(directory, /contact\.key !== "telegram"/);
   assert.match(contacts, /contact_telegram/);
   assert.match(contacts, /label: "Telegram"/);
-  assert.match(accountHome, /Abrir Telegram y Miembros/);
+  assert.match(accountHome, /Abrir Telegram/);
   assert.match(accountTelegram, /telegram-user-flow/);
   assert.match(styles, /portal-contact-link:not\(\.portal-contact-whatsapp\):not\(\.portal-contact-telegram\):not\(\.portal-contact-email\)/);
   assert.match(styles, /\.portal-contact-telegram \{ display: inline-grid !important/);

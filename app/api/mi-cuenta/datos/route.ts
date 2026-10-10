@@ -21,6 +21,23 @@ export async function POST(request: NextRequest) {
   const action = formData.get("action");
   const db = await getDb();
 
+  if (action === "change_username") {
+    let username: string;
+    try {
+      username = validateAccountUsername(String(formData.get("username") ?? ""));
+    } catch {
+      return NextResponse.redirect(new URL("/mi-cuenta?notice=username_invalid", request.url), 303);
+    }
+    try {
+      await assertAccountUsernameAvailable(username, user.id);
+      await db.update(users).set({ username }).where(eq(users.id, user.id));
+    } catch (error) {
+      const taken = error instanceof AccountUsernameError || /UNIQUE constraint failed: users.username/.test(String(error));
+      return NextResponse.redirect(new URL(`/mi-cuenta?notice=${taken ? "username_taken" : "username_error"}`, request.url), 303);
+    }
+    return NextResponse.redirect(new URL("/mi-cuenta?notice=username_saved", request.url), 303);
+  }
+
   if (action === "change_password") {
     const password = typeof formData.get("password") === "string" ? String(formData.get("password")) : "";
     const confirmation = typeof formData.get("password_confirmation") === "string" ? String(formData.get("password_confirmation")) : "";

@@ -31,8 +31,8 @@ test("account and admin panels use Manrope with readable action text", () => {
   assert.match(panelCssSource, /\.admin-root,\s*\.account-root \{\s*font-family: var\(--font-panel\)/s);
   assert.match(panelCssSource, /\.admin-root \.button,[\s\S]*?font-size: 14px !important/);
   assert.match(panelCssSource, /\.admin-content > \.admin-stat-grid \+ \.admin-review-alert \{\s*margin-top: 24px/);
-  assert.match(adminLayoutSource, /PANEL_STYLESHEET = "\/assets\/panels-20260923\.css\?v=20260929"/);
-  assert.match(accountLayoutSource, /PANEL_STYLESHEET = "\/assets\/panels-20260923\.css\?v=20260929"/);
+  assert.match(adminLayoutSource, /PANEL_STYLESHEET = "\/assets\/panels-20260923\.css\?v=20261010-account"/);
+  assert.match(accountLayoutSource, /PANEL_STYLESHEET = "\/assets\/panels-20260923\.css\?v=20261010-account"/);
   assert.doesNotMatch(cssSource, /\.admin-root,\s*\.account-root \{\s*font-family: var\(--font-panel\)/s);
 });
 

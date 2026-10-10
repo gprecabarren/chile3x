@@ -48,7 +48,17 @@ export function MessageNotifications({ initialUnread, initialPendingReviews = 0,
 export function UnreadMessagesBadge({ reviews = false }: { reviews?: boolean }) {
   const counts = useContext(UnreadContext);
   const unread = reviews ? counts.pendingReviews : counts.messages;
-  return unread > 0 ? <b aria-label={`${unread} ${reviews ? "comentarios por revisar" : "mensajes sin leer"}`}>{unread > 99 ? "99+" : unread}</b> : null;
+  const label = reviews ? unread === 1 ? "comentario por revisar" : "comentarios por revisar" : unread === 1 ? "mensaje sin leer" : "mensajes sin leer";
+  return unread > 0 ? <b aria-label={`${unread} ${label}`}>{unread > 99 ? "99+" : unread}</b> : null;
+}
+
+/** Shares the existing poll; dashboard cards never start another request loop. */
+export function AccountNotificationCards() {
+  const counts = useContext(UnreadContext);
+  return <>
+    <Link className="account-summary-card" href="/mi-cuenta/mensajes" prefetch={false}><span>Mensajes sin leer</span><strong>{counts.messages}</strong><small>{counts.messages ? "Abrir bandeja privada →" : "Tu bandeja está al día →"}</small></Link>
+    <Link className="account-summary-card" href="/mi-cuenta/comentarios" prefetch={false}><span>Comentarios por revisar</span><strong>{counts.pendingReviews}</strong><small>{counts.pendingReviews ? "Aprobar o rechazar →" : "Ver tus comentarios →"}</small></Link>
+  </>;
 }
 
 export function UnreadMessagesNotice({ variant = "account" }: { variant?: "account" | "public" }) {

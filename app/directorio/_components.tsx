@@ -42,7 +42,7 @@ type PublicHeaderProps = {
 };
 
 function publicSessionLabel(user: AccountUser) {
-  return user.username ? `@${user.username}` : user.displayName?.trim() || "Cuenta Chile3X";
+  return user.role === "admin" ? user.displayName?.trim() || "Administración" : user.email;
 }
 
 export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeaderProps = {}) {

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import type { AccountUser } from "@/lib/auth";
 import { OfficialChile3xLogo } from "@/app/OfficialChile3xLogo";
 import { AccountMobileNavigation } from "./AccountMobileNavigation";
+import { AccountNavigationLink } from "./AccountNavigationLink";
 import { PresenceHeartbeat } from "@/app/PresenceHeartbeat";
 import { countUnreadMessages } from "@/lib/internal-messages";
 import { countPendingReceivedReviews } from "@/lib/profile-interactions";
@@ -12,17 +13,15 @@ import { MessageNotifications, PendingReviewsNotice, UnreadMessagesBadge, Unread
 
 function AccountNavigation({ user }: { user: AccountUser }) {
   return <nav aria-label="Navegación de cuenta">
-    <Link href="/mi-cuenta">Mis anuncios</Link>
-    <Link className="account-messages-link" href="/mi-cuenta/mensajes">Mensajes<UnreadMessagesBadge /></Link>
-    <Link href="/mi-cuenta/contenido">Mi contenido</Link>
-    <Link href="/mi-cuenta/datos-personales">Mis datos</Link>
-    <Link href="/mi-cuenta/favoritos">Favoritos</Link>
-    <Link className="account-messages-link" href="/mi-cuenta/comentarios">Comentarios<UnreadMessagesBadge reviews /></Link>
-    <Link href="/mi-cuenta/reportes">Mis reportes</Link>
-    <Link href="/mi-cuenta/telegram">Telegram y Miembros</Link>
-    {user.role === "tester" && <Link href="/mi-cuenta/pruebas">Mis pruebas</Link>}
-    <Link href="/mi-cuenta/bloqueados">Anuncios ocultos</Link>
-    <Link href="/mi-cuenta/nuevo-perfil">Crear anuncio</Link>
+    <AccountNavigationLink href="/mi-cuenta#mis-anuncios">Mis anuncios</AccountNavigationLink>
+    <AccountNavigationLink className="account-messages-link" href="/mi-cuenta/mensajes">Mensajes<UnreadMessagesBadge /></AccountNavigationLink>
+    <AccountNavigationLink href="/mi-cuenta/contenido">Mi contenido</AccountNavigationLink>
+    <AccountNavigationLink href="/mi-cuenta/datos-personales">Mis datos</AccountNavigationLink>
+    <AccountNavigationLink grouped className="account-messages-link" href="/mi-cuenta/favoritos">Favoritos y comentarios<UnreadMessagesBadge reviews /></AccountNavigationLink>
+    <AccountNavigationLink href="/mi-cuenta/reportes">Mis reportes</AccountNavigationLink>
+    <AccountNavigationLink href="/mi-cuenta/telegram">Telegram</AccountNavigationLink>
+    {user.role === "tester" && <AccountNavigationLink href="/mi-cuenta/pruebas">Mis pruebas</AccountNavigationLink>}
+    <AccountNavigationLink href="/mi-cuenta/bloqueados">Anuncios ocultos</AccountNavigationLink>
     <details className="account-legal-links">
       <summary>Información</summary>
       <div>
@@ -34,7 +33,7 @@ function AccountNavigation({ user }: { user: AccountUser }) {
   </nav>;
 }
 
-export async function AccountShell({ user, children }: { user: AccountUser; children: ReactNode }) {
+export async function AccountShell({ user, children, showActivityNotices = true }: { user: AccountUser; children: ReactNode; showActivityNotices?: boolean }) {
   const [unreadMessages, pendingReviews] = await Promise.all([countUnreadMessages(user.id), countPendingReceivedReviews(user.id)]);
   return (
     <MessageNotifications initialUnread={unreadMessages} initialPendingReviews={pendingReviews}><main className="account-root">
@@ -42,15 +41,15 @@ export async function AccountShell({ user, children }: { user: AccountUser; chil
         <Link href="/" className="account-brand"><OfficialChile3xLogo priority /><small>MI CUENTA</small></Link>
         <div className="account-desktop-navigation"><AccountNavigation user={user} /></div>
         <div className="account-user">
-          <span>{user.username ? `@${user.username}` : user.displayName ?? "Cuenta Chile3X"}</span>
+          <span title={user.email}>{user.role === "admin" ? user.displayName ?? "Administración" : user.email}</span>
           <form action="/api/auth/session/logout" method="post"><button type="submit" title="Cerrar la sesión de esta cuenta">Cerrar sesión</button></form>
         </div>
       <AccountMobileNavigation><AccountNavigation user={user} /></AccountMobileNavigation>
       </header>
       <PresenceHeartbeat />
       {emailVerificationState(user) === "grace" && <EmailVerificationNotice deadline={emailVerificationDeadline(user)} />}
-      <UnreadMessagesNotice />
-      <PendingReviewsNotice />
+      {showActivityNotices && <UnreadMessagesNotice />}
+      {showActivityNotices && <PendingReviewsNotice />}
       {children}
     </main></MessageNotifications>
   );

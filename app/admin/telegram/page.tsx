@@ -145,7 +145,7 @@ export default async function AdminTelegramPage({ searchParams }: { searchParams
       <header><div><p className="eyebrow">MAPA OPERATIVO</p><h2>Cómo funciona la comunidad</h2><p>El acceso público, la identidad del sitio y el espacio privado cumplen funciones distintas. Este es el recorrido completo que verá una persona.</p></div></header>
       <div className="telegram-admin-guide-grid">
         <article><span>1</span><div><h3>Comunidad pública</h3><p>Cualquier visitante entra desde el header o footer. No necesita una cuenta Chile3X y no ve el espacio privado.</p></div></article>
-        <article><span>2</span><div><h3>Vinculación segura</h3><p>Una persona con sesión iniciada abre «Telegram y Miembros», conversa con el bot y confirma su identidad nuevamente en el sitio.</p></div></article>
+        <article><span>2</span><div><h3>Vinculación segura</h3><p>Una persona con sesión iniciada abre «Telegram», conversa con el bot y confirma su identidad nuevamente en el sitio.</p></div></article>
         <article><span>3</span><div><h3>Acceso a Miembros</h3><p>Solo una cuenta activa y con correo verificado recibe una invitación temporal. El reingreso siempre es manual.</p></div></article>
         <article><span>4</span><div><h3>Moderación y Novedades</h3><p>El bot aplica las reglas, registra medidas y alerta a administradores. Las Novedades se sincronizan entre el panel, la web y Telegram.</p></div></article>
       </div>

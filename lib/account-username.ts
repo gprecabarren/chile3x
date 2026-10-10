@@ -18,7 +18,7 @@ export function normalizeAccountUsername(value: string) {
 
 export function validateAccountUsername(value: string) {
   const username = normalizeAccountUsername(value);
-  if (!USERNAME_PATTERN.test(username) || RESERVED_USERNAMES.has(username)) {
+  if (username.length < 3 || username.length > 48 || !USERNAME_PATTERN.test(username) || RESERVED_USERNAMES.has(username)) {
     throw new AccountUsernameError("El nombre de usuario debe tener entre 3 y 48 caracteres: letras minúsculas, números o guiones. No puede ser una palabra reservada.");
   }
   return username;

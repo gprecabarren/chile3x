@@ -1,10 +1,11 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { profiles, reviews, users } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { AccountHeading, AccountShell } from "../_components";
+import { AccountSocialTabs } from "../AccountSocialTabs";
 
 export const dynamic = "force-dynamic";
 const labels = { pending: "Pendiente de aprobación", approved: "Publicado" };
@@ -31,9 +32,10 @@ export default async function AccountCommentsPage({ searchParams }: { searchPara
   received.splice(50); sent.splice(50);
   const notices: Record<string, string> = { approved: "Comentario publicado.", rejected: "Comentario rechazado y retirado.", removed: "Comentario eliminado.", withdrawn: "Tu reseña pendiente fue retirada." };
   return <AccountShell user={user}><div className="account-content">
-    <AccountHeading eyebrow="COMENTARIOS" title="Reseñas de tus anuncios" description="Tú decides qué comentarios recibidos se publican. Los pendientes no son públicos; administración puede consultarlos o eliminarlos, pero no aprobarlos ni rechazarlos." backHref="/mi-cuenta" />
+    <AccountHeading eyebrow="MI CUENTA" title="Favoritos y comentarios" description="Tus anuncios guardados y tus comentarios, reunidos en un solo lugar privado." backHref="/mi-cuenta" />
+    <AccountSocialTabs active="comments" />
     {params.notice && notices[params.notice] && <p className="form-alert" role="status">{notices[params.notice]}</p>}
-    <h2>Comentarios recibidos</h2><p className="account-comments-help">Del más reciente al más antiguo. Los rechazados o eliminados dejan de aparecer.</p>
+    <h2 className="account-section-title">Comentarios recibidos</h2><p className="account-comments-help">Tú decides cuáles se publican en tus anuncios. Los pendientes son privados; los rechazados o eliminados dejan de aparecer. Del más reciente al más antiguo.</p>
     <section className="account-comments-list" aria-label="Comentarios recibidos">{received.length ? received.map(row => <article key={row.id} className={row.status === "pending" ? "is-pending-review" : ""}><div><span className={`account-status account-status-${row.status === "approved" ? "approved" : "pending"}`}>{labels[row.status as keyof typeof labels]}</span><h3>{row.profileName}</h3><small>{row.authorName?.trim() || (row.authorUsername ? `@${row.authorUsername}` : "Usuario de Chile3X")} · {date(row.createdAt)}</small></div><p>{row.body}</p><div className="account-review-actions"><Link href={`/mi-cuenta/${row.profileId}/editar`}>Abrir anuncio</Link><form action={`/api/mi-cuenta/comentarios/${row.id}`} method="post">{row.status === "pending" && <><button className="button button-primary" type="submit" name="action" value="approve">Aprobar</button><button className="button button-outline" type="submit" name="action" value="reject">Rechazar</button></>}<button className="button button-outline" type="submit" name="action" value="delete">Eliminar</button></form></div></article>) : <p className="account-empty">No hay comentarios por revisar ni publicados en tus anuncios.</p>}</section>
     <nav className="admin-review-tabs" aria-label="Paginación de comentarios recibidos">{receivedPage > 1 && <Link href={pageHref(receivedPage - 1, sentPage)} prefetch={false}>Anterior</Link>}{hasMoreReceived && <Link href={pageHref(receivedPage + 1, sentPage)} prefetch={false}>Siguiente</Link>}</nav>
     <h2 className="account-sent-reviews-heading">Reseñas que enviaste</h2><p className="account-comments-help">Puedes retirar tus reseñas mientras estén pendientes.</p>

@@ -1,11 +1,12 @@
-import { and, asc, count, eq, gte, isNull, sql } from "drizzle-orm";
-import Link from "next/link";
+import { and, asc, count, eq, gte, isNull } from "drizzle-orm";
+import Link from "@/app/NavigationLink";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { favorites, profileContactEvents, profileLikes, profiles, profileViews } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { AccountHeading, AccountShell } from "../../_components";
 import { profilePublicPath } from "@/lib/profile";
+import { profileStatisticsCutoff } from "@/lib/profile-statistics-period";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,7 @@ export default async function ProfileStatisticsPage({ params, searchParams }: { 
 
   if (!profile) redirect("/mi-cuenta");
 
-  const since = option.days === null ? null : sql<string>`date('now', ${`-${option.days} days`})`;
+  const since = option.days === null ? null : profileStatisticsCutoff(option.days);
   const conditions = [eq(profileViews.profileId, profile.id), ...(since ? [gte(profileViews.viewedOn, since)] : [])];
   const rows = await db.select({ day: profileViews.viewedOn, total: count() })
     .from(profileViews)

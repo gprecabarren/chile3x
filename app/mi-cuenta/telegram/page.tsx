@@ -48,7 +48,7 @@ export default async function AccountTelegramPage({ searchParams }: { searchPara
   const candidateReady = attempt?.status === "candidate";
 
   return <AccountShell user={user}><div className="account-content telegram-account-page">
-    <AccountHeading eyebrow="COMUNIDAD CHILE3X" title="Telegram y acceso a Miembros" description="Vincula una identidad de Telegram desde esta sesión. El bot nunca te pedirá contraseñas, códigos, documentos ni datos bancarios." />
+    <AccountHeading eyebrow="COMUNIDAD CHILE3X" title="Telegram" description="Accede a la comunidad y al espacio privado de Miembros. El bot nunca te pedirá contraseñas, códigos, documentos ni datos bancarios." />
     {query.notice && notices[query.notice] && <p className={query.notice.includes("error") || query.notice.includes("confirmation") || query.notice === "not_configured" ? "account-error" : "account-success"} role="status">{notices[query.notice]}</p>}
     {configuration.publicCommunityUrl && <section className="telegram-community-callout">
       <div><p className="eyebrow">ACCESO PÚBLICO</p><h2>Comunidad Chile3X</h2><p>Puedes entrar a la comunidad pública sin vincular tu cuenta. El espacio de Miembros se habilita solo después de validar el vínculo.</p></div>

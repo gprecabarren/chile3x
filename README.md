@@ -4,6 +4,16 @@ Chile3X es un directorio nacional para adultos en Chile. Reúne anuncios de Esco
 
 El proyecto está construido para operar en Cloudflare con Workers, D1 y R2, sin depender de WordPress ni de un hosting tradicional.
 
+## Resumen y navegación de Mi cuenta — 10 de octubre de 2026
+
+- Cabecera normal con correo privado en lugar del @ largo; identidad administrativa conservada. Navegación en dos filas en PC, menú desplegable en móvil. Se retira Crear anuncio del menú: permanece dentro de Mis anuncios, cuyo acceso salta directamente a esa sección.
+- Favoritos y comentarios comparten una sección y dos pestañas enlazadas a sus URLs anteriores, conservando avisos, moderación del propietario, retirada de pendientes y marcadores. Favoritos pagina 24 anuncios y solo hidrata esa selección visible, respetando ocultos y cuentas inactivas. Telegram queda con ese nombre en ambos paneles.
+- Mi cuenta empieza con correo, estado de verificación y usuario editable directamente, reutilizando el endpoint autenticado, protección de origen, normalización y comprobación de disponibilidad. Solo cambia el usuario de la cuenta, no el correo, rol ni handles de anuncios. Se corrige la validación del mínimo de tres caracteres también en servidor.
+- Resumen de mensajes sin leer, comentarios recibidos por revisar, favoritos guardados y comentarios enviados. Los contadores dinámicos comparten el sondeo existente, sin otra consulta periódica. En el inicio las tarjetas reemplazan los avisos duplicados; la advertencia de verificación y los avisos en otras secciones se conservan.
+- Anunciantes ven visualizaciones y contactos diarios deduplicados de sus anuncios actuales en 30 días, favoritos y me gusta actuales, medios pendientes y filtros por estado. Cuentas sin anuncios no cargan esos agregados. Tanto el resumen como el detalle usan días de Chile; las interacciones no representan clientes ni mensajes enviados. El contador de pulsaciones brutas de WhatsApp sigue exclusivo de administración.
+- Consultas agregadas por propietario, sin datos de visitantes ni consultas por cada anuncio, excluyendo la papelera. Área privada noindex y sin caché compartida; no cambian URLs públicas, canonical ni sitemap. QA HTTP local con dos cuentas desechables `.invalid`, anuncios de los tres tipos, datos ajenos y de papelera; revisión visual a 1440, 1024, 390 y 360 px, incluidas pestañas, menú, editor de usuario y estado vacío. Capturas en `tmp/qa-account-dashboard-pc.png` y `tmp/qa-account-social-mobile.png`.
+- Publicado con versión `d8c82b04-faa0-405f-9118-923247748d05`, sin migraciones ni nuevos recursos. Compilación, tipos, lint y 168 pruebas correctos. Comprobación de producción de solo lectura: rutas privadas protegidas, estilos idénticos a los probados, inicio anónimo con canonical conservado y acceso noindex. Las cuentas locales de QA se limpiaron; la prueba responsive fue en Chrome, no en un iPhone físico.
+
 ## Medios, mensajería y comentarios — 10 de octubre de 2026
 
 - Se corrige el límite predeterminado de 1 MiB de formularios multipart de vinext que rechazaba incluso un video válido de 1,1 MB. El Worker conserva límites específicos por ruta y responde con JSON controlado; los clientes también entienden respuestas 413 de texto, sin mostrar errores de análisis JSON. Los documentos privados conservan su límite independiente de 15 MB.

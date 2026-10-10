@@ -110,6 +110,9 @@ interface Env {
   TELEGRAM_WEBHOOK_SECRET?: string;
   APPLE_PRIVATE_KEY?: string;
   APPLE_TOKEN_ENCRYPTION_KEY?: string;
+  X_OAUTH_CLIENT_ID?: string;
+  X_OAUTH_CLIENT_SECRET?: string;
+  X_OAUTH_ENABLED?: string;
 }
 
 declare module "cloudflare:workers" {

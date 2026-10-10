@@ -9,8 +9,10 @@ import { encryptAppleRefreshToken, exchangeAppleAuthorizationCode, verifyAppleId
 import { ACCOUNT_REACTIVATION_COOKIE, ACCOUNT_REACTIVATION_DURATION_SECONDS, createAccountReactivationIntent } from "@/lib/account-reactivation";
 import { createUserSession, getUserSessionCookieName, getUserSessionDuration, sessionCookieOptions } from "@/lib/auth";
 import { GOOGLE_REGISTRATION_COOKIE } from "@/lib/google-registration";
+import { X_REGISTRATION_COOKIE } from "@/lib/x-oauth";
 import { recordOperationalEvent } from "@/lib/operations";
 import { getSiteSettings } from "@/lib/site-settings";
+import { wasSocialProviderUnlinked } from "@/lib/account-social-access";
 
 function destination(request: Request, intent: "login" | "register", returnTo: string, error?: string, notice?: string) {
   const url = new URL(intent === "register" ? "/registro" : "/ingresar", request.url);
@@ -87,6 +89,7 @@ export async function POST(request: NextRequest) {
         .from(users).where(eq(users.email, identity.email)).limit(1);
       if (byEmail?.role === "admin") return NextResponse.redirect(destination(request, attempt.intent, attempt.returnTo, "apple_admin_email"), 303);
       if (byEmail) {
+        if (await wasSocialProviderUnlinked(byEmail.id, "apple")) return NextResponse.redirect(destination(request, attempt.intent, attempt.returnTo, "apple_unlinked"), 303);
         const [[googleIdentity], [otherAppleIdentity]] = await Promise.all([
           db.select({ id: accountGoogleIdentities.id }).from(accountGoogleIdentities).where(eq(accountGoogleIdentities.userId, byEmail.id)).limit(1),
           db.select({ id: accountAppleIdentities.id }).from(accountAppleIdentities).where(eq(accountAppleIdentities.userId, byEmail.id)).limit(1),
@@ -121,6 +124,7 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.redirect(destination(request, "register", attempt.returnTo, undefined, attempt.intent === "login" ? "new" : undefined), 303);
     response.cookies.set({ name: APPLE_REGISTRATION_COOKIE, value: registration.value, ...sessionCookieOptions(registration.maxAge), path: "/" });
     response.cookies.delete({ name: GOOGLE_REGISTRATION_COOKIE, path: "/" });
+    response.cookies.delete({ name: X_REGISTRATION_COOKIE, path: "/" });
     return response;
   } catch (error) {
     console.error("Apple sign-in failed", { error });

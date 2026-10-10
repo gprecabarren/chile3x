@@ -38,7 +38,7 @@ export async function AccountShell({ user, children, showActivityNotices = true 
   return (
     <MessageNotifications initialUnread={unreadMessages} initialPendingReviews={pendingReviews}><main className="account-root">
       <header className="account-header">
-        <Link href="/" className="account-brand"><OfficialChile3xLogo priority /><small>MI CUENTA</small></Link>
+        <div className="account-brand"><Link href="/" aria-label="Chile3X, inicio"><OfficialChile3xLogo priority /></Link><Link className="account-brand-home" href="/mi-cuenta"><small>MI CUENTA</small></Link></div>
         <div className="account-desktop-navigation"><AccountNavigation user={user} /></div>
         <div className="account-user">
           <Link className="account-home-link" href="/mi-cuenta" title={user.email} aria-label={`Ir a mi cuenta: ${user.email}`}>{user.role === "admin" ? user.displayName ?? "Administración" : user.email}</Link>

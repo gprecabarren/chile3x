@@ -22,9 +22,9 @@ export function ChatThread({
   conversationId,
   currentRole,
   profileName,
-  counterpartLabel,
+  counterpartLabel: initialCounterpartLabel,
   currentUserLabel,
-  counterpartAvailable,
+  counterpartAvailable: initialCounterpartAvailable,
   initialMessages,
   initialHasMore,
   initialMuted,
@@ -44,6 +44,8 @@ export function ChatThread({
   initialBlockedByAnyone: boolean;
 }) {
   const [messages, setMessages] = useState(initialMessages);
+  const [counterpartLabel, setCounterpartLabel] = useState(initialCounterpartLabel);
+  const [counterpartAvailable, setCounterpartAvailable] = useState(initialCounterpartAvailable);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [body, setBody] = useState("");
   const [muted, setMuted] = useState(initialMuted);
@@ -53,6 +55,24 @@ export function ChatThread({
   const [error, setError] = useState("");
   const knownIds = useRef(new Set(initialMessages.map((message) => message.id)));
   const listRef = useRef<HTMLDivElement>(null);
+  const followLatest = useRef(true);
+  const sentMessage = useRef(false);
+  const olderScroll = useRef<{ height: number; top: number } | null>(null);
+
+  // Run after React has committed the bubble, not a timer before the update.
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    if (olderScroll.current) {
+      list.scrollTop = olderScroll.current.top + list.scrollHeight - olderScroll.current.height;
+      olderScroll.current = null;
+      return;
+    }
+    if (!followLatest.current && !sentMessage.current) return;
+    list.scrollTop = list.scrollHeight;
+    if (sentMessage.current) list.lastElementChild?.scrollIntoView({ block: "nearest", behavior: "instant" });
+    sentMessage.current = false;
+  }, [messages]);
 
   const preference = useCallback(async (action: "mute" | "unmute" | "block" | "unblock" | "read") => {
     const response = await fetch(`/api/mensajes/${encodeURIComponent(conversationId)}`, {
@@ -78,8 +98,10 @@ export function ChatThread({
       try {
       const response = await fetch(`/api/mensajes/${encodeURIComponent(conversationId)}`, { cache: "no-store", signal: controller.signal });
       if (!response.ok) return;
-      const result = await response.json() as { messages: MessageRecord[]; hasMore: boolean };
+      const result = await response.json() as { messages: MessageRecord[]; hasMore: boolean; counterpartLabel: string; counterpartAvailable: boolean };
       if (controller.signal.aborted || document.visibilityState !== "visible") return;
+      setCounterpartLabel(result.counterpartLabel);
+      setCounterpartAvailable(result.counterpartAvailable);
       const incoming = result.messages.filter((item) => item.senderRole !== currentRole && !knownIds.current.has(item.id));
       for (const item of result.messages) knownIds.current.add(item.id);
       setMessages((current) => {
@@ -109,6 +131,7 @@ export function ChatThread({
     const response = await fetch(`/api/mensajes/${encodeURIComponent(conversationId)}?before=${encodeURIComponent(oldest)}`, { cache: "no-store" });
     const result = await response.json().catch(() => null) as { messages?: MessageRecord[]; hasMore?: boolean } | null;
     if (response.ok && result?.messages) {
+      if (listRef.current) olderScroll.current = { height: listRef.current.scrollHeight, top: listRef.current.scrollTop };
       for (const message of result.messages) knownIds.current.add(message.id);
       setMessages((current) => [...result.messages!, ...current]);
       setHasMore(Boolean(result.hasMore));
@@ -132,10 +155,11 @@ export function ChatThread({
       setError(errorMessages[result?.error ?? ""] ?? "No se pudo enviar el mensaje.");
       if (result?.error === "blocked") setBlockedByAnyone(true);
     } else {
+      sentMessage.current = true;
+      followLatest.current = true;
       setMessages((current) => [...current, result.message!]);
       knownIds.current.add(result.message.id);
       setBody("");
-      window.setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }), 0);
     }
     } catch { setError("No se pudo enviar. Revisa tu conexión y vuelve a intentarlo."); } finally { setBusy(false); }
   }
@@ -176,7 +200,7 @@ export function ChatThread({
       </div>
     </header>
     <p className="internal-chat-safety"><strong>Cuida tu privacidad:</strong> no envíes contraseñas, códigos, documentos, datos bancarios ni información que no quieras compartir. Chile3X nunca te pedirá esos datos por este chat.</p>
-    <div className="internal-chat-messages" ref={listRef} aria-live="polite">
+    <div className="internal-chat-messages" ref={listRef} aria-live="polite" onScroll={event => { const list = event.currentTarget; followLatest.current = list.scrollHeight - list.scrollTop - list.clientHeight < 80; }}>
       {hasMore && <button className="internal-chat-load-more" type="button" onClick={loadOlder} disabled={busy}>Cargar mensajes anteriores</button>}
       {messages.length === 0 && <p className="internal-chat-empty">Aún no hay mensajes. Preséntate y menciona que viste este anuncio en Chile3X.</p>}
       {messages.map((message) => <article className={message.senderRole === currentRole ? "is-own" : "is-other"} key={message.id}>

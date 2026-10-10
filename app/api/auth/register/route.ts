@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { accountAppleIdentities, accountGoogleIdentities, users } from "@/db/schema";
+import { accountAppleIdentities, accountAuthEvents, accountGoogleIdentities, accountXIdentities, xRegistrationIntents, users } from "@/db/schema";
 import { assertSameOrigin, createUserSession, getUserSessionCookieName, getUserSessionDuration, hashPassword, safeAccountReturnTo, sessionCookieOptions } from "@/lib/auth";
 import { requestVerificationEmail } from "@/lib/account-email";
 import { DAY_MS, EMAIL_GRACE_DAYS } from "@/lib/email-verification-policy";
@@ -16,6 +16,8 @@ import { consumeGoogleRegistrationIntent, GOOGLE_REGISTRATION_COOKIE, readGoogle
 import { recordOperationalEvent } from "@/lib/operations";
 import { APPLE_REGISTRATION_COOKIE, consumeAppleRegistrationIntent, readAppleRegistrationIntent } from "@/lib/apple-registration";
 import { createAdminNotification } from "@/lib/admin-notifications";
+import { readXRegistrationIntent } from "@/lib/x-auth";
+import { X_REGISTRATION_COOKIE } from "@/lib/x-oauth";
 
 function redirectWithError(request: Request, error: string, formData?: FormData) {
   const url = new URL("/registro", request.url);
@@ -52,11 +54,15 @@ export async function POST(request: NextRequest) {
   let createdPasswordSession: string | undefined;
   let googleRegistration = null as Awaited<ReturnType<typeof readGoogleRegistrationIntent>>;
   let appleRegistration = null as Awaited<ReturnType<typeof readAppleRegistrationIntent>>;
+  let xRegistration = null as Awaited<ReturnType<typeof readXRegistrationIntent>>;
   try {
     formData = await request.formData();
     googleRegistration = await readGoogleRegistrationIntent(request.cookies.get(GOOGLE_REGISTRATION_COOKIE)?.value);
     appleRegistration = await readAppleRegistrationIntent(request.cookies.get(APPLE_REGISTRATION_COOKIE)?.value);
-    const providerRegistration = appleRegistration ?? googleRegistration;
+    xRegistration = await readXRegistrationIntent(request.cookies.get(X_REGISTRATION_COOKIE)?.value);
+    if ([googleRegistration, appleRegistration, xRegistration].filter(Boolean).length > 1) return redirectWithError(request, "server", formData);
+    const providerRegistration = xRegistration ?? appleRegistration ?? googleRegistration;
+    const providerEmailVerified = Boolean(providerRegistration?.email);
     if (!await verifyTurnstile(request, formData.get("cf-turnstile-response"), TURNSTILE_AUTH_REGISTER_ACTION)) return redirectWithError(request, "antispam", formData);
     const displayName = getFormString(formData, "display_name").trim().slice(0, 80);
     const email = (providerRegistration?.email ?? getFormString(formData, "email")).trim().toLowerCase().slice(0, 160);
@@ -85,14 +91,14 @@ export async function POST(request: NextRequest) {
     const userId = `usr_${crypto.randomUUID()}`;
     const username = await generateUniqueAccountUsername(displayName);
     stage = "create_user";
-    await db.insert(users).values({
+    const userValues = {
       id: userId,
       email,
       username,
       displayName,
       passwordHash: providerRegistration ? null : await hashPassword(password),
-      role: "visitor",
-      creationSource: "self",
+      role: "visitor" as const,
+      creationSource: "self" as const,
       firstName: identity.firstName || null,
       lastName: null,
       documentType: identity.documentType,
@@ -101,15 +107,35 @@ export async function POST(request: NextRequest) {
       birthDate: identity.birthDate,
       city: identity.city,
       phone: identity.phone || null,
-      emailVerifiedAt: providerRegistration ? new Date().toISOString() : null,
-      registrationAuthMethod: appleRegistration ? "apple" : googleRegistration ? "google" : "password",
-      emailVerificationDeadline: providerRegistration ? null : new Date(Date.now() + EMAIL_GRACE_DAYS * DAY_MS).toISOString(),
-    });
+      emailVerifiedAt: providerEmailVerified ? new Date().toISOString() : null,
+      registrationAuthMethod: xRegistration ? "x" as const : appleRegistration ? "apple" as const : googleRegistration ? "google" as const : "password" as const,
+      emailVerificationDeadline: providerEmailVerified ? null : new Date(Date.now() + EMAIL_GRACE_DAYS * DAY_MS).toISOString(),
+    };
+    if (xRegistration) {
+      await db.batch([
+        db.insert(users).values(userValues),
+        db.insert(accountXIdentities).values({ id: `x_identity_${crypto.randomUUID()}`, userId, xSubject: xRegistration.subject, xUsername: xRegistration.username }),
+        db.delete(xRegistrationIntents).where(eq(xRegistrationIntents.id, xRegistration.id)),
+        db.insert(accountAuthEvents).values({ id: `auth_event_${crypto.randomUUID()}`, userId, provider: "x", action: "linked", createdAt: new Date().toISOString() }),
+      ]);
+      createdEmail = email;
+      createdPasswordSession = await createUserSession(userId, request, "x");
+      if (!providerEmailVerified) await requestVerificationEmail({ id: userId, email, displayName });
+    } else await db.insert(users).values(userValues);
     if (!providerRegistration) {
       createdEmail = email;
       createdPasswordSession = await createUserSession(userId, request, "password");
     }
     await createAdminNotification({ kind: "account_registered", actorUserId: userId, summary: "Se registró una nueva cuenta en Chile3X." });
+    if (xRegistration) {
+      const response = NextResponse.redirect(new URL(safeAccountReturnTo(getFormString(formData, "return_to")), request.url), 303);
+      response.cookies.set({ name: getUserSessionCookieName(), value: createdPasswordSession!, ...sessionCookieOptions(getUserSessionDuration()) });
+      response.cookies.delete({ name: X_REGISTRATION_COOKIE, path: "/" });
+      response.cookies.delete({ name: GOOGLE_REGISTRATION_COOKIE, path: "/" });
+      response.cookies.delete({ name: APPLE_REGISTRATION_COOKIE, path: "/" });
+      response.cookies.set(registrationStateCookie, "", { maxAge: 0, path: "/registro" });
+      return response;
+    }
 
     if (appleRegistration) {
       await db.insert(accountAppleIdentities).values({
@@ -125,6 +151,7 @@ export async function POST(request: NextRequest) {
       response.cookies.delete({ name: APPLE_REGISTRATION_COOKIE, path: "/" });
       response.cookies.delete({ name: GOOGLE_REGISTRATION_COOKIE, path: "/" });
       response.cookies.set(registrationStateCookie, "", { maxAge: 0, path: "/registro" });
+      response.cookies.delete({ name: X_REGISTRATION_COOKIE, path: "/" });
       return response;
     }
 
@@ -141,6 +168,7 @@ export async function POST(request: NextRequest) {
       response.cookies.delete({ name: GOOGLE_REGISTRATION_COOKIE, path: "/" });
       response.cookies.delete({ name: APPLE_REGISTRATION_COOKIE, path: "/" });
       response.cookies.set(registrationStateCookie, "", { maxAge: 0, path: "/registro" });
+      response.cookies.delete({ name: X_REGISTRATION_COOKIE, path: "/" });
       return response;
     }
 
@@ -167,6 +195,7 @@ export async function POST(request: NextRequest) {
       const response = NextResponse.redirect(url, 303);
       if (createdPasswordSession) response.cookies.set({ name: getUserSessionCookieName(), value: createdPasswordSession, ...sessionCookieOptions(getUserSessionDuration()) });
       response.cookies.set(registrationStateCookie, "", { maxAge: 0, path: "/registro" });
+      response.cookies.delete({ name: X_REGISTRATION_COOKIE, path: "/" });
       return response;
     }
     return redirectWithError(request, "server", formData);

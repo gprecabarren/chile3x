@@ -8,6 +8,8 @@ import { privatePageMetadata } from "@/lib/seo";
 import { GoogleSignInButton } from "@/app/GoogleSignInButton";
 import { getSiteSettings } from "@/lib/site-settings";
 import { AppleSignInButton } from "@/app/AppleSignInButton";
+import { XSignInButton } from "@/app/XSignInButton";
+import { getXAuthConfig } from "@/lib/x-auth";
 
 export const metadata: Metadata = privatePageMetadata({
   title: "Ingresar",
@@ -29,12 +31,22 @@ const messages: Record<string, string> = {
   apple_conflict_google: "Ese correo ya está registrado con Google. Ingresa usando Google para evitar identidades duplicadas.",
   apple_conflict: "Ese correo ya está vinculado a otra cuenta de Apple.",
   apple_server: "Apple no está disponible temporalmente. Inténtalo nuevamente más tarde.",
+  apple_unlinked: "Desvinculaste Apple de esta cuenta. Ingresa con correo y contraseña.",
+  admin_email: "Las cuentas administrativas ingresan únicamente mediante GitHub.",
+  x_unavailable: "El acceso con X todavía no está habilitado.",
+  x_state: "La solicitud de X venció o no corresponde a este navegador. Inténtalo nuevamente.",
+  x_invalid: "X no entregó una respuesta válida. Inténtalo nuevamente.",
+  x_cancelled: "Cancelaste el acceso con X. No se realizó ningún cambio.",
+  x_existing: "Ese correo ya tiene una cuenta. Ingresa con tu método actual y vincula X desde Mis datos.",
+  x_blocked: "Tu cuenta está deshabilitada. Contacta a soporte.",
+  x_server: "X no está disponible temporalmente. Inténtalo nuevamente más tarde.",
 };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; return_to?: string; verified?: string; reset?: string; closed?: string }> }) {
   const params = await searchParams;
   const returnTo = safeAccountReturnTo(params.return_to ?? null);
   const settings = await getSiteSettings();
+  const xEnabled = Boolean(await getXAuthConfig());
   return <main className="auth-page"><section className="auth-card auth-split-card">
     <div className="auth-intro">
     <Link className="auth-brand" href="/"><OfficialChile3xLogo priority /></Link>
@@ -47,6 +59,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     </div><div className="auth-entry">
     <div className="auth-provider-list">
       {settings.google_oauth_client_id && <GoogleSignInButton clientId={settings.google_oauth_client_id} intent="login" returnTo={returnTo} />}
+      <XSignInButton enabled={xEnabled} intent="login" returnTo={returnTo} />
       <AppleSignInButton enabled={settings.apple_sign_in_status === "enabled"} intent="login" returnTo={returnTo} />
     </div>
     <div className="auth-divider"><span>o ingresa con tu contraseña</span></div>

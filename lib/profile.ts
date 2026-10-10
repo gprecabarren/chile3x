@@ -230,7 +230,7 @@ const availabilityFormatter = new Intl.DateTimeFormat("en-US", {
     hourCycle: "h23",
 });
 
-export function getAvailabilityStatus(entries: AvailabilityEntry[], date = new Date()) {
+export function getAvailabilityStatus(entries: AvailabilityEntry[], date = new Date(), nextVerb: "abre" | "atiende" = "abre") {
   if (!entries.length) return null;
   const parts = availabilityFormatter.formatToParts(date);
   const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? "";
@@ -249,7 +249,7 @@ export function getAvailabilityStatus(entries: AvailabilityEntry[], date = new D
     const entry = entries.find((item) => item.key === day.key);
     if (!entry) continue;
     if (offset === 0 && currentMinutes >= timeAsMinutes(entry.opensAt)) continue;
-    return { isOpen: false, text: `No disponible ahora · abre ${offset === 0 ? "hoy" : day.label.toLowerCase()} a las ${entry.opensAt}` };
+    return { isOpen: false, text: `No disponible ahora · ${nextVerb} ${offset === 0 ? "hoy" : day.label.toLowerCase()} a las ${entry.opensAt}` };
   }
   return null;
 }

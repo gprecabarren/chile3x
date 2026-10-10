@@ -7,6 +7,9 @@ import { getCurrentUser } from "@/lib/auth";
 import { AccountHeading, AccountShell } from "../_components";
 import { eq } from "drizzle-orm";
 import { PasswordChangeForm } from "./PasswordChangeForm";
+import { getAccountSocialAccess } from "@/lib/account-social-access";
+import { SocialAccessPanel } from "./SocialAccessPanel";
+import { getXAuthConfig } from "@/lib/x-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -24,9 +27,12 @@ export default async function AccountDetailsPage({ searchParams }: { searchParam
     phone: users.phone,
     email: users.email,
     username: users.username,
+    passwordHash: users.passwordHash,
   }).from(users).where(eq(users.id, user.id)).limit(1);
   if (!record) redirect("/mi-cuenta");
   const { notice } = await searchParams;
+  const socialAccess = await getAccountSocialAccess(user.id);
+  const xEnabled = Boolean(await getXAuthConfig());
 
   return <AccountShell user={user}><div className="account-content">
     <AccountHeading eyebrow="MI CUENTA" title="Tus datos" description="Actualiza tus datos de contacto y documento. El correo y la fecha de nacimiento se mantienen protegidos; solicita una corrección al soporte si fuera necesario." backHref="/mi-cuenta" />
@@ -37,6 +43,11 @@ export default async function AccountDetailsPage({ searchParams }: { searchParam
     {notice === "error" && <p className="form-alert" role="alert">No se pudieron guardar los cambios. Revisa el documento y la ciudad.</p>}
     {notice === "password_saved" && <p className="account-success" role="status">Tu contraseña fue actualizada. Las demás sesiones de esta cuenta se cerraron.</p>}
     {notice === "password_error" && <p className="form-alert" role="alert">Revisa la nueva contraseña y su confirmación.</p>}
+    {notice === "provider_unlinked" && <p className="account-success" role="status">Servicio desvinculado. La verificación del correo se conservó; puedes entrar con contraseña.</p>}
+    {notice === "provider_linked" && <p className="account-success" role="status">X quedó vinculado a tu cuenta. La verificación de tu correo no cambió.</p>}
+    {notice === "password_required" && <p className="form-alert" role="alert">Primero crea una contraseña para no perder el acceso a tu cuenta.</p>}
+    {notice === "unlink_password" && <p className="form-alert" role="alert">La contraseña no coincide. No se realizó ningún cambio.</p>}
+    {notice === "unlink_error" && <p className="form-alert" role="alert">No pudimos desvincular el servicio. Inténtalo nuevamente.</p>}
     {notice === "disable_confirmation" && <p className="form-alert" role="alert">Escribe DESHABILITAR exactamente para confirmar.</p>}
     {notice === "delete_confirmation" && <p className="form-alert" role="alert">Para eliminar la cuenta debes escribir tu correo y ELIMINAR exactamente.</p>}
     {notice === "delete_error" && <p className="form-alert" role="alert">No pudimos eliminar la cuenta. Inténtalo nuevamente o contacta a soporte.</p>}
@@ -47,7 +58,8 @@ export default async function AccountDetailsPage({ searchParams }: { searchParam
       <label>Correo electrónico<input value={record.email} readOnly aria-readonly="true" /><small>El correo no se puede modificar desde aquí.</small></label>
       <div className="account-details-actions"><Link className="button button-outline" href="/mi-cuenta">Cancelar</Link><button className="button button-primary" type="submit">Guardar datos</button></div>
     </form>
-    <section className="account-password-panel"><div><p className="eyebrow">ACCESO</p><h2>Cambiar contraseña</h2><p>Estás dentro de tu cuenta, por lo que puedes definir una clave nueva sin ingresar la anterior ni esperar un correo.</p></div><form action="/api/mi-cuenta/datos" method="post"><input name="action" type="hidden" value="change_password" /><PasswordChangeForm /><button className="button button-primary" type="submit">Actualizar contraseña</button></form></section>
+    <SocialAccessPanel access={socialAccess} hasPassword={Boolean(record.passwordHash)} xEnabled={xEnabled} />
+    <section className="account-password-panel" id="password"><div><p className="eyebrow">ACCESO</p><h2>{record.passwordHash ? "Cambiar contraseña" : "Crear contraseña"}</h2><p>Estás dentro de tu cuenta, por lo que puedes definir una clave nueva sin ingresar la anterior ni esperar un correo.</p></div><form action="/api/mi-cuenta/datos" method="post"><input name="action" type="hidden" value="change_password" /><PasswordChangeForm /><button className="button button-primary" type="submit">{record.passwordHash ? "Actualizar contraseña" : "Crear contraseña"}</button></form></section>
     <section className="account-danger-panel"><div><p className="eyebrow">SEGURIDAD Y CUENTA</p><h2>Deshabilitar o eliminar</h2><p>Deshabilitar es reversible: cierra tus sesiones y oculta tus anuncios sin borrar datos. Eliminar es permanente y borra la cuenta, anuncios, medios, accesos y actividad asociada.</p></div>
       <div className="account-danger-actions">
         <details><summary>Deshabilitar temporalmente</summary><form action="/api/mi-cuenta/estado" method="post"><p>Podrás restablecerla al volver a iniciar sesión. Si Chile3X también aplica un bloqueo, solo la administración podrá retirarlo.</p><label>Escribe DESHABILITAR<input name="confirmation" required autoComplete="off" /></label><button className="button button-outline" type="submit">Deshabilitar mi cuenta</button></form></details>

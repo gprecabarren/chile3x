@@ -19,6 +19,7 @@ import { ProfileReviews } from "../ProfileReviews";
 import { getApprovedReviewsPage, getOwnPendingReviews } from "@/lib/profile-interactions";
 import { getAdminWhatsappStatistics } from "@/lib/profile-contact-statistics";
 import { ProfilePhotoLink, ProfilePhotoViewer } from "../ProfilePhotoViewer";
+import { ProfileGalleryLayout } from "../ProfileGalleryLayout";
 import { getVerificationDocuments } from "@/lib/verification-documents";
 import { getExclusiveContentForProfile } from "@/lib/exclusive-content";
 import { ProfileSafetyActions } from "../ProfileSafetyActions";
@@ -163,7 +164,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
     label: profile.type === "rental" && price.label === "Tarifa informada" ? "Valor mensual" : price.label,
   }));
   const availability = readAvailability(profile.details.metadata.availability);
-  const availabilityStatus = getAvailabilityStatus(availability);
+  const availabilityStatus = getAvailabilityStatus(availability, new Date(), profile.type === "escort" ? "atiende" : "abre");
   const showCityAlerts = profile.status === "approved" && profile.type === "escort" && !profile.isDemo;
   const [relatedProfiles, stories, approvedReviewsPage, verificationDocuments, exclusiveContent, cityAlertCities, activeCityAlerts, viewerOwnsProfile, engagement, ownPendingReviews, adminWhatsappStatistics] = await Promise.all([
     relatedProfileIds.length ? getPublicProfiles({ includeUnapproved: Boolean(admin), viewerId: viewer?.id, profileIds: relatedProfileIds }) : Promise.resolve([]),
@@ -220,15 +221,15 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             </div>
           </section>}
           {profile.isDemo && profile.status === "approved" && !viewerOwnsProfile && <section className="profile-contact-box"><div className="profile-contact-heading"><p className="eyebrow">MENSAJERÍA DE CHILE3X</p><h2>Probar el chat con {profile.displayName}</h2></div><InternalChatButton profileId={profile.id} signedIn={Boolean(viewer)} loginHref={`/ingresar?return_to=${encodeURIComponent(profilePublicPath(profile))}`} /></section>}
-          {engagement && <ProfileEngagementActions profileId={profile.id} profileSlug={profileRouteValue} signedIn={Boolean(viewer)} initialEngagement={engagement} />}
+          {engagement && <ProfileEngagementActions profileId={profile.id} profileSlug={profileRouteValue} displayName={profile.displayName} signedIn={Boolean(viewer)} initialEngagement={engagement} />}
           {profile.status === "approved" && <ProfileSafetyActions profileId={profile.id} profileSlug={profileRouteValue} displayName={profile.displayName} signedIn={Boolean(viewer)} viewerOwnsProfile={viewerOwnsProfile} />}
         </div>
       </section>
       {profile.media.some((media) => media.mediaType === "image" && !media.isProfilePhoto) && <section className="profile-media-gallery" aria-label={`Fotos de ${profile.displayName}`}>
-        <div><p className="eyebrow">GALERÍA</p><h2>Fotos</h2><p>Material publicado después de revisión del equipo del sitio web.</p></div>
-        <div className="profile-media-grid">{profile.media.filter((media) => media.mediaType === "image" && !media.isProfilePhoto).map((media, index) => <figure key={media.id}><ProfilePhotoLink mediaId={media.id} href={media.url} aria-label={`Ver foto ${index + 1} completa de ${profile.displayName}`}><Image src={media.url} alt={media.altText ?? `Foto ${index + 1} de ${profile.displayName}`} fill unoptimized sizes="(max-width: 620px) 100vw, (max-width: 900px) 50vw, 33vw" style={{ objectFit: "scale-down" }} /></ProfilePhotoLink></figure>)}</div>
+        <div><p className="eyebrow">GALERÍA</p><h2>Fotos</h2></div>
+        <ProfileGalleryLayout kind="photos" count={profile.media.filter(media => media.mediaType === "image" && !media.isProfilePhoto).length}><div className="profile-media-grid">{profile.media.filter((media) => media.mediaType === "image" && !media.isProfilePhoto).map((media, index) => <figure key={media.id}><ProfilePhotoLink mediaId={media.id} href={media.url} aria-label={`Ver foto ${index + 1} completa de ${profile.displayName}`}><Image src={media.url} alt={media.altText ?? `Foto ${index + 1} de ${profile.displayName}`} fill unoptimized sizes="(max-width: 620px) 100vw, (max-width: 900px) 50vw, 33vw" style={{ objectFit: "scale-down" }} /></ProfilePhotoLink></figure>)}</div></ProfileGalleryLayout>
       </section>}
-      {profile.media.some((media) => media.mediaType === "video") && <section className="profile-media-gallery profile-video-gallery" aria-label={`Videos de ${profile.displayName}`}><div><p className="eyebrow">VIDEOS</p><h2>Videos cortos</h2><p>Material publicado después de revisión del equipo del sitio web.</p></div><div className="profile-video-grid">{profile.media.filter((media) => media.mediaType === "video").map((media, index) => <figure key={media.id}><video controls preload="metadata" playsInline aria-label={`Video ${index + 1} de ${profile.displayName}`}><source src={media.url} type={media.contentType} />Tu navegador no puede reproducir este video.</video></figure>)}</div></section>}
+      {profile.media.some((media) => media.mediaType === "video") && <section className="profile-media-gallery profile-video-gallery" aria-label={`Videos de ${profile.displayName}`}><div><p className="eyebrow">GALERÍA</p><h2>Videos</h2></div><ProfileGalleryLayout kind="videos" count={profile.media.filter(media => media.mediaType === "video").length}><div className="profile-video-grid">{profile.media.filter((media) => media.mediaType === "video").map((media, index) => <figure key={media.id}><video controls preload="none" playsInline aria-label={`Video ${index + 1} de ${profile.displayName}`}><source src={media.url} type={media.contentType} />Tu navegador no puede reproducir este video.</video></figure>)}</div></ProfileGalleryLayout></section>}
       {exclusiveMedia.length > 0 && <section className={`profile-exclusive-gallery${hasExclusiveAccess ? " is-unlocked" : " is-locked"}`}><div><p className="eyebrow">CONTENIDO EXCLUSIVO</p><h2>{hasExclusiveAccess ? "Contenido desbloqueado" : "Galería privada"}</h2><p>{hasExclusiveAccess ? "Tu cuenta fue autorizada directamente por la persona anunciante." : "Consulta directamente a la persona anunciante para solicitar acceso. Chile3X no procesa este pago."}</p></div><div className="exclusive-media-grid">{exclusiveMedia.map((media, index) => hasExclusiveAccess ? <figure key={media.id}>{media.mediaType === "image" ? <Image src={`/contenido/${media.id}`} alt={`Contenido exclusivo ${index + 1} de ${profile.displayName}`} fill unoptimized sizes="(max-width: 620px) 90vw, 33vw" /> : <video controls playsInline preload="metadata"><source src={`/contenido/${media.id}`} type={media.contentType} /></video>}</figure> : <figure className="exclusive-media-locked" key={media.id}><span aria-hidden="true">🔒</span><strong>Contenido privado</strong></figure>)}</div></section>}
       <div id="historias"><StoryRail stories={stories} profileOnly /></div>
       <section className="profile-detail-layout">

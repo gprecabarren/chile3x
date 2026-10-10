@@ -2,7 +2,7 @@ import { and, eq, ne } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { accountTokens, authSessions, users } from "@/db/schema";
+import { accountAuthEvents, accountTokens, authSessions, users } from "@/db/schema";
 import { readAccountIdentity } from "@/lib/account-data";
 import { assertSameOrigin, getCurrentUser, hashPassword } from "@/lib/auth";
 import { MIN_PASSWORD_LENGTH } from "@/lib/password-policy";
@@ -41,12 +41,16 @@ export async function POST(request: NextRequest) {
   if (action === "change_password") {
     const password = typeof formData.get("password") === "string" ? String(formData.get("password")) : "";
     const confirmation = typeof formData.get("password_confirmation") === "string" ? String(formData.get("password_confirmation")) : "";
-    if (password.length < MIN_PASSWORD_LENGTH || password !== confirmation) {
+    if (password.length < MIN_PASSWORD_LENGTH || password.length > 256 || password !== confirmation) {
       return NextResponse.redirect(new URL("/mi-cuenta/datos-personales?notice=password_error", request.url), 303);
     }
     const sessionToken = (await cookies()).get("chile3x_user_session")?.value;
     const currentSessionId = sessionToken?.split(".")[0];
-    await db.update(users).set({ passwordHash: await hashPassword(password) }).where(eq(users.id, user.id));
+    const [current] = await db.select({ passwordHash: users.passwordHash }).from(users).where(eq(users.id, user.id)).limit(1);
+    await db.batch([
+      db.update(users).set({ passwordHash: await hashPassword(password) }).where(eq(users.id, user.id)),
+      db.insert(accountAuthEvents).values({ id: `auth_event_${crypto.randomUUID()}`, userId: user.id, provider: "password", action: current?.passwordHash ? "password_changed" : "password_created", createdAt: new Date().toISOString() }),
+    ]);
     if (currentSessionId) {
       await db.delete(authSessions).where(and(eq(authSessions.userId, user.id), ne(authSessions.id, currentSessionId)));
     }

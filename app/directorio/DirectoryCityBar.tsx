@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "@/app/NavigationLink";
 import { cityDirectory, regions } from "@/app/locations";
 import { clearPreferredCity, savePreferredCity } from "./location-client";
 
@@ -36,7 +37,7 @@ export function DirectoryCityBar({ selectedCity, kind }: { selectedCity?: string
 
   return <nav className="directory-city-bar" aria-label="Cambiar ciudad del directorio">
     <div className="directory-city-bar-inner">
-      <span className="directory-city-crumb">Directorio <span aria-hidden="true">/</span></span>
+      <div className="directory-city-breadcrumb"><Link href="/" className="directory-home-link">Inicio</Link><span className="directory-city-crumb">Directorio <span aria-hidden="true">/</span></span></div>
       <details ref={menuRef} onKeyDown={(event) => { if (event.key === "Escape") menuRef.current?.removeAttribute("open"); }}>
         <summary aria-label={`Cambiar ciudad, actual: ${selectedCity ?? "todo Chile"}`}><span aria-hidden="true">⌖</span>{selectedCity ?? "Todo Chile"}<span aria-hidden="true">⌄</span></summary>
         <div className="directory-city-popover">

@@ -9,13 +9,13 @@ import { publicPageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = {
   ...publicPageMetadata({
-  title: "Chile3X: nuevo directorio para adultos en Chile",
-  description: "Conoce Chile3X, un directorio chileno emergente para mayores de 18 años: publicaciones gratis durante el lanzamiento, cobertura nacional y revisión manual.",
+  title: "Quiénes somos: directorio de escorts en Chile",
+  description: "Conoce Chile3X, directorio de escorts, agencias y arriendos en Chile para mayores de 18 años. Publicación gratuita en esta etapa, revisión manual y contacto directo.",
   path: "/quienes-somos",
-  socialTitle: "Chile3X: un nuevo directorio para adultos en Chile",
-  socialDescription: "Un proyecto chileno emergente con publicación gratuita durante su lanzamiento, cobertura nacional, revisión manual y contacto directo.",
+  socialTitle: "Quiénes somos: directorio de escorts en Chile | Chile3X",
+  socialDescription: "Conoce nuestro directorio de escorts, agencias y arriendos: publicación gratuita durante el lanzamiento, revisión manual y contacto directo.",
   }),
-  title: { absolute: "Chile3X: nuevo directorio para adultos en Chile" },
+  title: { absolute: "Quiénes somos: directorio de escorts en Chile | Chile3X" },
 };
 
 export const dynamic = "force-dynamic";
@@ -47,9 +47,9 @@ export default async function AboutPage() {
         "@type": "AboutPage",
         "@id": pageId,
         url: `${siteUrl}/quienes-somos`,
-        name: "Chile3X: nuevo directorio para adultos en Chile",
-        headline: "Chile3X, un nuevo directorio para adultos en Chile",
-        description: "Presentación, propuesta, funcionamiento y próximos pasos de Chile3X, un directorio chileno emergente para mayores de 18 años.",
+        name: "Quiénes somos: directorio de escorts en Chile | Chile3X",
+        headline: "Chile3X: un directorio de escorts en Chile, hecho para crecer distinto.",
+        description: "Presentación y funcionamiento de Chile3X, un directorio de escorts, agencias y arriendos en Chile para mayores de 18 años.",
         inLanguage: "es-CL",
         isPartOf: { "@id": websiteId },
         about: { "@id": organizationId },
@@ -73,7 +73,7 @@ export default async function AboutPage() {
         name: "Chile3X",
         alternateName: "Chile 3X",
         url: siteUrl,
-        description: "Directorio chileno emergente para personas adultas, con cobertura nacional, revisión manual de publicaciones y contacto directo entre anunciantes y visitantes.",
+        description: "Directorio de escorts, agencias y arriendos en Chile para mayores de 18 años, con revisión manual y contacto directo entre anunciantes y visitantes.",
         areaServed: { "@type": "Country", name: "Chile" },
         logo: { "@type": "ImageObject", url: `${siteUrl}/chile3x-logo-primary.jpeg` },
         email: settings.contact_email.trim() || undefined,
@@ -104,9 +104,9 @@ export default async function AboutPage() {
     <section className="about-hero">
       <div className="about-hero-copy">
         <p className="eyebrow">DIRECTORIO EMERGENTE · TODO CHILE</p>
-        <h1>Chile3X: un nuevo directorio para adultos en Chile, <em>hecho para crecer distinto.</em></h1>
+        <h1>Chile3X: un directorio de escorts en Chile, <em>hecho para crecer distinto.</em></h1>
         <p>Somos un sitio chileno nuevo para mayores de 18 años. Reunimos anuncios de escorts, damas de compañía, agencias y arriendos en una experiencia nacional, clara y de contacto directo.</p>
-        <p className="about-launch-note"><strong>Etapa de lanzamiento:</strong> crear una cuenta y publicar es gratis, sin tarjeta ni cobros automáticos.</p>
+        <p className="about-launch-note"><strong>Sitio operativo en fase beta:</strong> seguimos mejorándolo. Crear una cuenta y publicar es gratis durante esta etapa, sin tarjeta ni cobros automáticos.</p>
         <div className="about-hero-actions">
           <Link className="button button-primary" href="/registro">Publicar gratis</Link>
           <Link className="button button-outline" href="/escorts">Conocer el directorio</Link>
@@ -142,7 +142,7 @@ export default async function AboutPage() {
         <article><span>01</span><h3>Todo Chile desde el diseño</h3><p>La navegación contempla las 16 regiones, con ciudades y comunas para dar visibilidad fuera de los centros habituales.</p></article>
         <article><span>02</span><h3>Contacto directo</h3><p>Chile3X funciona como directorio: no cobra comisiones por citas, no gestiona reservas y no interviene en acuerdos privados.</p></article>
         <article><span>03</span><h3>Revisión y reglas visibles</h3><p>Cada anuncio enviado pasa por revisión manual. Además, publicamos criterios claros y ofrecemos mecanismos para reportar contenido.</p></article>
-        <article><span>04</span><h3>Control para cada anunciante</h3><p>Las agencias pueden organizar anuncios, pero una cuenta vinculada conserva control y debe aceptar la asociación correspondiente.</p></article>
+        <article><span>04</span><h3>Control desde tu cuenta</h3><p>Gestiona anuncios, fotos y videos, consulta sus estadísticas y recibe mensajes. Cada anunciante decide qué comentarios publicar en su anuncio.</p></article>
       </div>
     </section>
 
@@ -166,10 +166,10 @@ export default async function AboutPage() {
         <h2 id="about-how-title">Del registro a una publicación visible</h2>
       </header>
       <ol>
-        <li><span>1</span><div><h3>Crea tu cuenta</h3><p>Regístrate con correo o Google y completa los datos necesarios para administrar tus anuncios.</p></div></li>
+        <li><span>1</span><div><h3>Crea tu cuenta</h3><p>Usa tu correo o uno de los accesos disponibles y completa tus datos. Si tu correo aún no está verificado, tu panel te indica cómo hacerlo y el plazo restante.</p></div></li>
         <li><span>2</span><div><h3>Elige el tipo de anuncio</h3><p>Prepara una publicación de Escort, Agencia o Arriendo con su ubicación, descripción y medios de contacto.</p></div></li>
         <li><span>3</span><div><h3>Envíala a revisión</h3><p>El equipo comprueba que la ficha cumpla las reglas antes de incorporarla al directorio público.</p></div></li>
-        <li><span>4</span><div><h3>Administra lo publicado</h3><p>Desde tu panel puedes actualizar información, ocultar y volver a mostrar anuncios y gestionar las vinculaciones disponibles.</p></div></li>
+        <li><span>4</span><div><h3>Añade tus medios y administra el anuncio</h3><p>Una vez aprobada la ficha, carga tus fotos y videos desde el panel. Los nuevos medios se revisan por separado, sin ocultar un anuncio ya publicado. También puedes actualizar información, gestionar comentarios y consultar estadísticas.</p></div></li>
       </ol>
       <nav aria-label="Categorías del directorio">
         <Link href="/escorts">Ver escorts</Link>
@@ -198,7 +198,7 @@ export default async function AboutPage() {
       </div>
       <div className="about-roadmap-list">
         <article><strong>Agencias</strong><h3>Más herramientas de gestión</h3><p>Seguiremos mejorando la relación entre agencias, cuentas vinculadas y anuncios para que cada autorización sea comprensible y controlable.</p></article>
-        <article><strong>Acceso</strong><h3>Inicio de sesión con Apple</h3><p>Estamos preparando una alternativa para ingresar y registrarse con una cuenta Apple. Anunciaremos su disponibilidad cuando esté habilitada; por ahora puedes usar correo o Google.</p></article>
+        <article><strong>Experiencia</strong><h3>Un panel más sencillo</h3><p>Seguiremos afinando la publicación de anuncios, los accesos a la cuenta y la gestión de fotos y videos, con especial atención al uso desde el teléfono.</p></article>
         <article><strong>Promoción opcional</strong><h3>Más formas de destacar</h3><p>Evaluamos periodos destacados y otras herramientas promocionales, siempre con condiciones claras antes de habilitar un cobro.</p></article>
         <article><strong>Comunidad</strong><h3>Cobertura y avisos útiles</h3><p>Queremos ampliar la presencia regional, escuchar sugerencias y mantener avisos de estado, seguridad y mejoras a través del sitio y Telegram.</p></article>
       </div>
@@ -220,7 +220,7 @@ export default async function AboutPage() {
       <div>
         <p className="eyebrow">SÉ PARTE DEL COMIENZO</p>
         <h2>Chile3X está empezando. Tu experiencia puede ayudarnos a mejorarlo.</h2>
-        <p>Crea una cuenta gratuita para preparar tu publicación o escríbenos por los canales oficiales si tienes una pregunta, detectas un problema o quieres proponer una mejora.</p>
+        <p>Crea una cuenta gratuita para preparar tu publicación. Nuestros canales oficiales atienden consultas sobre cuentas, anuncios y promoción del sitio; no ofrecen servicios sexuales ni coordinan citas.</p>
         <div className="about-contact-actions"><Link className="button button-primary" href="/registro">Registrarme gratis</Link><Link className="button button-outline" href="/contacto">Contactar al equipo</Link></div>
       </div>
       <aside>

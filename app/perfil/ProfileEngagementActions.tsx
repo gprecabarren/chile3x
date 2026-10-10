@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { trackAnalyticsEvent } from "@/app/AnalyticsEvent";
+import { ProfileShareButton } from "./ProfileShareButton";
 
 type Engagement = {
   favoritesCount: number;
@@ -16,11 +17,13 @@ type Action = "favorite" | "like";
 export function ProfileEngagementActions({
   profileId,
   profileSlug,
+  displayName,
   signedIn,
   initialEngagement,
 }: {
   profileId: string;
   profileSlug: string;
+  displayName: string;
   signedIn: boolean;
   initialEngagement: Engagement;
 }) {
@@ -69,6 +72,7 @@ export function ProfileEngagementActions({
       <button type="button" className={engagement.viewerHasLike ? "is-active" : ""} aria-pressed={engagement.viewerHasLike} disabled={busy !== null} onClick={() => toggle("like")}>
         <span aria-hidden="true">{engagement.viewerHasLike ? "♥" : "♡"}</span>{engagement.viewerHasLike ? "Te gusta" : "Me gusta"}<small>{engagement.likesCount}</small>
       </button>
+      <ProfileShareButton displayName={displayName} profileSlug={profileSlug} />
     </div>
     {notice && <p className="profile-engagement-notice" role="status">{notice}</p>}
     {promptVisible && <div className="profile-engagement-login" role="status">

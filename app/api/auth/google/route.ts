@@ -10,6 +10,8 @@ import { getSiteSettings } from "@/lib/site-settings";
 import { ACCOUNT_REACTIVATION_COOKIE, ACCOUNT_REACTIVATION_DURATION_SECONDS, createAccountReactivationIntent } from "@/lib/account-reactivation";
 import { recordOperationalEvent } from "@/lib/operations";
 import { APPLE_REGISTRATION_COOKIE } from "@/lib/apple-registration";
+import { wasSocialProviderUnlinked } from "@/lib/account-social-access";
+import { X_REGISTRATION_COOKIE } from "@/lib/x-oauth";
 
 function jsonError(error: string, status = 400) {
   return NextResponse.json({ error }, { status, headers: { "cache-control": "no-store" } });
@@ -67,6 +69,7 @@ export async function POST(request: NextRequest) {
         .from(users).where(eq(users.email, identity.email)).limit(1);
       if (byEmail?.role === "admin") return jsonError("Ese correo pertenece al panel administrativo y no puede iniciar una sesión pública.", 409);
       if (byEmail) {
+        if (await wasSocialProviderUnlinked(byEmail.id, "google")) return jsonError("Desvinculaste Google de esta cuenta. Ingresa con tu correo y contraseña.", 409);
         const [[otherGoogleIdentity], [appleIdentity]] = await Promise.all([
           db.select({ id: accountGoogleIdentities.id }).from(accountGoogleIdentities).where(eq(accountGoogleIdentities.userId, byEmail.id)).limit(1),
           db.select({ id: accountAppleIdentities.id }).from(accountAppleIdentities).where(eq(accountAppleIdentities.userId, byEmail.id)).limit(1),
@@ -119,6 +122,7 @@ export async function POST(request: NextRequest) {
       path: "/",
     });
     response.cookies.delete({ name: APPLE_REGISTRATION_COOKIE, path: "/" });
+    response.cookies.delete({ name: X_REGISTRATION_COOKIE, path: "/" });
     response.cookies.delete({ name: GOOGLE_NONCE_COOKIE, path: "/api/auth/google" });
     return response;
   } catch (error) {

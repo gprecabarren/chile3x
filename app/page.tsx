@@ -14,13 +14,13 @@ import { socialCardImage, socialCardImageUrl } from "@/lib/seo";
 import { cookies } from "next/headers";
 
 export const metadata: Metadata = {
-  title: "Chile3X: directorio adulto por ciudad en Chile",
+  title: { absolute: "Escorts en Chile por ciudad | Chile3X" },
   description:
-    "Explora Chile3X, un directorio nacional para adultos con publicaciones revisadas y navegación por ciudad, región, categoría y servicios.",
+    "Explora anuncios de escorts, agencias y arriendos en Chile. Busca por ciudad, región y categoría, y contacta directamente al anunciante. Solo mayores de 18 años.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Chile3X | Directorio adulto por ciudad en Chile",
-    description: "Directorio nacional para adultos con perfiles revisados y cobertura por ciudad, categoría y servicios.",
+    title: "Escorts en Chile por ciudad | Chile3X",
+    description: "Anuncios de escorts, agencias y arriendos por ciudad en Chile. Contacto directo con el anunciante. Solo mayores de 18 años.",
     url: "/",
     locale: "es_CL",
     type: "website",
@@ -29,8 +29,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Chile3X | Directorio adulto por ciudad en Chile",
-    description: "Perfiles revisados y cobertura territorial para personas adultas en Chile.",
+    title: "Escorts en Chile por ciudad | Chile3X",
+    description: "Anuncios de escorts, agencias y arriendos por ciudad en Chile. Solo mayores de 18 años.",
     images: [socialCardImageUrl],
   },
 };
@@ -114,7 +114,7 @@ export default async function Home() {
         </picture>
         <div className="hero-copy">
           <p className="eyebrow">DIRECTORIO ADULTO · TODO CHILE</p>
-          <h1>Directorio adulto por ciudad <em>en Chile.</em></h1>
+          <h1>Escorts y anuncios por ciudad <em>en Chile.</em></h1>
           <p className="hero-text">
             Explora perfiles de escorts y damas de compañía, además de agencias y arriendos para adultos, por región, ciudad, categoría y servicios.
           </p>
@@ -223,9 +223,9 @@ export default async function Home() {
 
       <section className="announce-section" id="anunciate">
         <div>
-          <p className="eyebrow">PRÓXIMAMENTE</p>
+          <p className="eyebrow">PUBLICACIÓN GRATUITA EN ESTA ETAPA</p>
           <h2>¿Quieres aparecer en Chile3X?</h2>
-          <p>La apertura inicial será con revisión manual y publicaciones de cortesía para construir una comunidad segura.</p>
+          <p>Crea tu cuenta y envía tu anuncio a revisión. Publicar es gratis durante el lanzamiento, sin tarjeta ni cobros automáticos.</p>
         </div>
         <a className="button button-light" href={publishHref}>{viewer ? "Publicar anuncio" : admin ? "Administrar anuncios" : "Crear cuenta"}</a>
       </section>

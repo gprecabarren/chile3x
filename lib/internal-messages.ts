@@ -114,7 +114,7 @@ export async function getMessagePage(conversationId: string, userId: string, bef
   if (before && !Number.isNaN(Date.parse(before))) conditions.push(lt(messageMessages.createdAt, before));
   const rows = await db.select({
     id: messageMessages.id,
-    senderUserId: messageMessages.senderUserId,
+    senderUserId: sql<string | null>`case when coalesce((select is_active from users where id = ${messageMessages.senderUserId}), 0) then ${messageMessages.senderUserId} else null end`,
     senderRole: messageMessages.senderRole,
     body: messageMessages.body,
     readAt: messageMessages.readAt,

@@ -56,7 +56,7 @@ const originValues = ["self", "admin", "unknown"] as const;
 const accountStatusValues = ["active", "disabled"] as const;
 const phoneValues = ["with_phone", "without_phone"] as const;
 const emailStatusValues = ["verified", "unverified", "grace", "blocked", "exempt"] as const;
-const registrationMethodValues = ["password", "google", "apple", "unknown"] as const;
+const registrationMethodValues = ["password", "google", "apple", "x", "unknown"] as const;
 const documentValues = ["rut", "foreign", "none"] as const;
 const listingValues = ["with_listings", "without_listings", "pending"] as const;
 const listingStatusValues = ["draft", "pending", "approved", "paused", "rejected", "expired"] as const;
@@ -219,7 +219,7 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
             <label>Ciudad<select name="city" defaultValue={filters.city}><option value="">Todas las ciudades</option>{cityOptions.map((city) => <option value={city} key={city}>{city}</option>)}</select></label>
             <label>Teléfono<select name="phone" defaultValue={filters.phone}><option value="">Cualquiera</option><option value="with_phone">Con teléfono</option><option value="without_phone">Sin teléfono</option></select></label>
             <label>Correo electrónico<select name="email_status" defaultValue={filters.emailStatus}><option value="">Todos</option><option value="verified">Correo verificado</option><option value="unverified">Sin verificar (todos)</option><option value="grace">En plazo de 7 días</option><option value="blocked">Bloqueadas por correo</option><option value="exempt">Con excepción administrativa</option></select></label>
-            <label>Método de registro<select name="registration_method" defaultValue={filters.registrationMethod}><option value="">Todos</option><option value="password">Correo y contraseña</option><option value="google">Google</option><option value="apple">Apple</option><option value="unknown">Registro anterior sin confirmar</option></select></label>
+            <label>Método de registro<select name="registration_method" defaultValue={filters.registrationMethod}><option value="">Todos</option><option value="password">Correo y contraseña</option><option value="google">Google</option><option value="x">X</option><option value="apple">Apple</option><option value="unknown">Registro anterior sin confirmar</option></select></label>
             <label>Documento<select name="document" defaultValue={filters.document}><option value="">Cualquiera</option><option value="rut">Con RUT chileno</option><option value="foreign">Con documento extranjero</option><option value="none">Sin documento informado</option></select></label>
             <label>Estado del anuncio<select name="listing_status" defaultValue={filters.listingStatus}><option value="">Cualquiera</option><option value="draft">Borrador</option><option value="pending">En revisión</option><option value="approved">Publicado</option><option value="paused">Pausado</option><option value="rejected">Requiere cambios</option><option value="expired">Vencido</option></select></label>
             <label>Tipo de anuncio<select name="listing_type" defaultValue={filters.listingType}><option value="">Cualquiera</option><option value="escort">Escort</option><option value="agency">Agencia</option><option value="rental">Arriendo</option></select></label>

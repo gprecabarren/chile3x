@@ -2164,6 +2164,64 @@ input[type="submit"] { text-transform: none !important; letter-spacing: .015em; 
 .profile-photo-dialog-panel nav button { padding: 10px 14px; font-size: 13px; }
 .profile-photo-dialog-panel nav button:disabled { opacity: .4; cursor: default; }
 .profile-photo-dialog button:focus-visible { outline: 2px solid #ff7b83; outline-offset: 3px; }
+.account-brand-home { display: inline-flex; align-items: center; min-height: 44px; }
+.account-social-access { margin: 28px 0; padding: 24px; border: 1px solid #354058; border-radius: 12px; background: #111622; scroll-margin-top: 24px; }
+.account-social-access h2 { margin: 6px 0 10px; font-size: 26px; }
+.account-social-access > p:not(.eyebrow) { color: #b5bdcd; font-size: 13px; line-height: 1.65; }
+.account-access-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 18px 0; border-top: 1px solid #31394b; min-width: 0; }
+.account-access-row > div { display: grid; gap: 5px; }
+.account-access-row small { color: #a6b0c2; font-size: 12px; }
+.account-access-row > a, .account-access-row summary { color: #ff939a; font-size: 13px; cursor: pointer; }
+.account-access-row > details { width: min(100%,400px); margin-left: auto; }
+.account-access-row summary { text-align: right; padding: 10px 0; }
+.account-access-row form { display: grid; gap: 12px; margin-top: 10px; padding: 16px; border: 1px solid #495168; border-radius: 10px; background: #0c111b; }
+.account-access-row form p { margin: 0; color: #bdc5d3; font-size: 12px; line-height: 1.6; }
+.account-access-row label { display: grid; gap: 7px; font-size: 13px; }
+.account-access-row input { min-width: 0; width: 100%; padding: 12px; border: 1px solid #465169; border-radius: 8px; color: #fff; background: #171d29; }
+.account-access-history summary { color: #bac5d5; cursor: pointer; font-size: 13px; padding: 12px 0; }
+.account-access-history ul, .account-access-history-list { list-style: none; padding: 0; }
+.account-access-history li, .account-access-history-list li { display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: space-between; padding: 12px 0; border-top: 1px solid #30384a; font-size: 12px; }
+.account-access-history time, .account-access-history-list time { color: #99a7bb; }
+@media (max-width: 620px) {
+  .account-social-access { padding: 18px; }
+  .account-access-row > details { width: 100%; margin-left: 0; }
+  .account-access-row summary { text-align: left; }
+}
+/* Responsive public galleries keep their server-rendered media and lightbox. */
+.x-signin { margin: 0; width: 100%; }
+.x-signin-button { width: 100%; }
+.x-signin-button > span:first-child { font-size: 25px; }
+.x-signin.is-disabled { opacity: .5; }
+.profile-media-gallery > div:first-child > .eyebrow { color: #ff5964; margin: 0; }
+.profile-gallery-controls { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin: 12px 0; }
+.profile-gallery-controls span { margin-right: 4px; color: #adb7c8; font-size: 12px; }
+.profile-gallery-controls button { min-width: 44px; min-height: 44px; border: 1px solid #414c62; border-radius: 8px; color: #dce2ed; background: #171e2d; cursor: pointer; }
+.profile-gallery-controls button[aria-pressed="true"] { color: #fff; border-color: #d6404a; background: #41202a; }
+.profile-gallery-layout .profile-media-grid, .profile-gallery-layout .profile-video-grid { grid-template-columns: repeat(var(--gallery-columns,3),minmax(0,1fr)); gap: 8px; }
+.profile-gallery-layout .profile-media-grid figure { min-height: 0; aspect-ratio: 2 / 3; }
+.profile-gallery-layout .profile-video-grid video { object-fit: contain; }
+.profile-gallery-controls button { display: inline-grid; place-items: center; }
+@media (max-width: 620px) {
+  .profile-media-gallery { padding: 16px 10px; }
+  .profile-gallery-layout .profile-media-grid, .profile-gallery-layout .profile-video-grid { gap: 6px; }
+  .profile-gallery-controls { margin: 10px 0; }
+}
+.profile-engagement-actions .profile-share { flex-basis: auto; padding-top: 0; }
+.profile-engagement-actions .profile-share-menu { right: 0; left: auto; }
+.profile-page-shell { margin-bottom: 0; padding-bottom: 24px; }
+.directory-city-breadcrumb { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.directory-home-link { color: #ff9298; text-decoration: underline; text-underline-offset: 4px; font-size: 12px; font-weight: 700; padding: 12px 0; }
+.account-brand-home { display: inline-flex; align-items: center; min-height: 44px; }
+@media (min-width: 761px) { .portal-whatsapp-panel { width: min(480px,100%); padding: 20px; } }
+@media (max-width: 620px) {
+  .profile-engagement-actions { flex-wrap: nowrap; gap: 5px; }
+  .profile-engagement-actions > button { gap: 4px; padding: 8px 7px; font-size: 10px; }
+  .profile-engagement-actions .profile-share-trigger { gap: 5px; padding: 8px 7px !important; min-height: 44px; }
+  .profile-engagement-actions > button { min-height: 44px; }
+  .directory-city-breadcrumb { gap: 7px; }
+  .directory-city-crumb span { margin-left: 4px; }
+  .profile-detail-layout { gap: 20px; }
+}
 @media (max-width: 760px) {
   .unread-messages-notice { width: calc(100% - 32px); padding: 13px; flex-wrap: wrap; gap: 10px; }
   .unread-messages-notice > div { flex-basis: calc(100% - 50px); }

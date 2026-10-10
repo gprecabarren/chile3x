@@ -160,6 +160,7 @@ export default function PrivacyPage() {
         <h3>12.2. Inicio de sesión con Google</h3>
         <p>Si eliges continuar con Google, recibimos el identificador estable de tu cuenta de Google, tu correo verificado y el nombre que Google comparte. Usamos el identificador y el correo exclusivamente para comprobar tu identidad, vincular o crear tu cuenta y evitar accesos duplicados; el nombre solo rellena inicialmente campos que puedes editar durante el registro.</p>
         <p>No solicitamos acceso a Gmail, Drive, contactos, archivos ni calendario, y no almacenamos tokens de acceso de Google. El correo queda vinculado y no puede modificarse desde la cuenta. Si abandonas el registro, los datos del intento se eliminan automáticamente al vencer el plazo breve de seguridad.</p>
+        <p>Puedes desvincular un proveedor desde Mis datos después de configurar y confirmar una contraseña. Esto no elimina tu cuenta ni revierte la verificación de tu correo. Conservamos un historial de cambios de acceso, consultable por ti y por administración, para proteger la cuenta.</p>
         <h3>12.3. Inicio de sesión con Apple preparado, aún inactivo</h3>
         <p>Chile3X muestra un botón de Apple deshabilitado mientras no exista una configuración completa de Apple Developer. En ese estado no se abre Apple ni se le envían datos. Si se habilita en el futuro y eliges usarlo, recibiremos el identificador estable, correo verificado y, únicamente en la primera autorización, el nombre que Apple comparta. Esos nombres solo rellenarán campos editables del registro; el correo quedará bloqueado.</p>
         <p>El flujo rechazará un correo ya vinculado a Google o a una identidad administrativa. La autorización de larga duración que Apple entregue se almacenará cifrada y se utilizará únicamente para revocarla cuando corresponda, incluida la eliminación permanente de la cuenta. Chile3X no recibirá tu contraseña de Apple ni acceso a iCloud, fotos, contactos o archivos.</p>
@@ -169,6 +170,9 @@ export default function PrivacyPage() {
         <p>No configuramos el envío a Google de nombres, correos, teléfonos, RUT, direcciones, archivos privados, texto libre ni identificadores internos de perfiles como parámetros de Analytics. Google puede tratar información técnica como dirección IP, navegador, dispositivo y señales de interacción conforme a sus propias condiciones y medidas disponibles.</p>
         <p>Si eliges <strong>“Solo necesarias”</strong>, el sitio seguirá funcionando sin cargar Google Tag Manager ni Google Analytics. Puedes retirar o cambiar tu elección en cualquier momento; el cambio no invalida el tratamiento anterior basado en tu consentimiento.</p>
         <p><a className="text-link" href="/privacidad?medicion=editar#medicion">Cambiar mi elección de medición <span aria-hidden="true">→</span></a></p>
+        <h3>12.5. Inicio de sesión con X preparado, aún inactivo</h3>
+        <p>Mientras el acceso con X esté deshabilitado no se abre ese proveedor ni se le envían datos. Si se habilita y eliges usarlo, recibiremos tu identificador estable, nombre, nombre de usuario y el correo confirmado que X autorice compartir. Si no entrega un correo confirmado, deberás completar y verificar uno mediante el proceso del sitio. El nombre solo rellena campos editables del registro.</p>
+        <p>No solicitamos permiso para publicar, enviar mensajes privados ni acceder a tus mensajes. El token se utiliza únicamente para obtener tu identidad y se solicita su revocación al terminar; no se almacena como credencial permanente. Puedes desvincular X con los mismos controles de contraseña e historial que los demás proveedores.</p>
       </section>
 
       <section id="proveedores">
@@ -179,6 +183,7 @@ export default function PrivacyPage() {
           <li><strong>Google:</strong> autenticación cuando eliges “Continuar con Google”, correo transaccional y, solo con consentimiento, Google Tag Manager y Google Analytics;</li>
           <li><strong>Telegram:</strong> comunidad pública, vinculación voluntaria de cuentas, invitaciones a Miembros, Novedades y moderación mediante el bot;</li>
           <li><strong>Apple:</strong> solo si el proveedor llega a habilitarse y la persona lo elige, autenticación y revocación de la autorización asociada;</li>
+          <li><strong>X:</strong> solo si el acceso llega a habilitarse y lo eliges, autenticación e identidad autorizada para crear o vincular tu cuenta;</li>
           <li><strong>proveedores de navegador, sistema operativo o redes externas:</strong> únicamente cuando la persona utiliza esas aplicaciones o sigue un enlace.</li>
         </ul>
         <p>Estos servicios pueden procesar o respaldar información fuera de Chile. Chile3X procura escoger proveedores reconocidos, limitar los datos enviados, configurar accesos y aplicar salvaguardas contractuales y técnicas razonables. La ubicación de la infraestructura puede cambiar sin que ello signifique una venta de datos.</p>

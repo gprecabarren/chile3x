@@ -8,11 +8,11 @@ import test from 'node:test';
 const pathUrl = path => JSON.stringify(new URL(`../${path}`,import.meta.url).href);
 const fixtureModule = `data:text/javascript,${encodeURIComponent(`
  const state = () => globalThis.__emailRouteQA;
- export const users={}, accountAppleIdentities={},accountGoogleIdentities={};
+ export const users={}, accountAppleIdentities={},accountGoogleIdentities={},accountXIdentities={},accountAuthEvents={},xRegistrationIntents={};
  export const and=(...x)=>x, eq=(...x)=>x;
  export const TURNSTILE_AUTH_LOGIN_ACTION='login', TURNSTILE_AUTH_REGISTER_ACTION='register';
  export const ACCOUNT_REACTIVATION_COOKIE='reactivate', ACCOUNT_REACTIVATION_DURATION_SECONDS=600;
- export const MIN_PASSWORD_LENGTH=10, GOOGLE_REGISTRATION_COOKIE='google', APPLE_REGISTRATION_COOKIE='apple',registrationStateCookie='form';
+ export const MIN_PASSWORD_LENGTH=10, GOOGLE_REGISTRATION_COOKIE='google', APPLE_REGISTRATION_COOKIE='apple',X_REGISTRATION_COOKIE='x',registrationStateCookie='form';
  export const NextRequest=Request;
  export const NextResponse={redirect(url,status){const response=new Response(null,{status,headers:{location:url.toString()}}); response.cookies={set(...args){state().cookies.push(args)},delete(){}};return response;}};
  export function assertSameOrigin(request){if(request.headers.get('origin')!==new URL(request.url).origin)throw Error('origin');}
@@ -27,6 +27,7 @@ const fixtureModule = `data:text/javascript,${encodeURIComponent(`
  export const encodeRegistrationState=()=>'',registrationStateFromForm=()=>({});
  export async function generateUniqueAccountUsername(){return 'local-test';} export async function isReservedAdminEmail(){return false;}
  export async function readGoogleRegistrationIntent(){return null;} export async function readAppleRegistrationIntent(){return null;}
+ export async function readXRegistrationIntent(){return null;}
  export async function consumeGoogleRegistrationIntent(){} export async function consumeAppleRegistrationIntent(){}
  export async function createAdminNotification(){} export async function recordOperationalEvent(){}
  export async function requestVerificationEmail(){if(state().mailThrows)throw Error('isolated delivery failure');return state().delivered;}

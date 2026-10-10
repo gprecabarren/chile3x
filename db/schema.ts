@@ -35,7 +35,7 @@ export const users = sqliteTable("users", {
   createdByAdminId: text("created_by_admin_id"),
   createdByAdminLogin: text("created_by_admin_login"),
   emailVerifiedAt: text("email_verified_at"),
-  registrationAuthMethod: text("registration_auth_method", { enum: ["password", "google", "apple", "unknown"] }).notNull().default("unknown"),
+  registrationAuthMethod: text("registration_auth_method", { enum: ["password", "google", "apple", "x", "unknown"] }).notNull().default("unknown"),
   emailVerificationDeadline: text("email_verification_deadline"),
   emailVerificationBlockedAt: text("email_verification_blocked_at"),
   emailVerificationExemptAt: text("email_verification_exempt_at"),
@@ -54,7 +54,7 @@ export const authSessions = sqliteTable("auth_sessions", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   tokenHash: text("token_hash").notNull().unique(),
-  authMethod: text("auth_method", { enum: ["password", "google", "apple", "github", "reactivation", "unknown"] }).notNull().default("unknown"),
+  authMethod: text("auth_method", { enum: ["password", "google", "apple", "x", "github", "reactivation", "unknown"] }).notNull().default("unknown"),
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),
   countryCode: text("country_code"),
@@ -268,6 +268,46 @@ export const appleRegistrationIntents = sqliteTable("apple_registration_intents"
   uniqueIndex("apple_registration_intent_token_unique").on(table.tokenHash),
   index("apple_registration_intent_expiry_idx").on(table.expiresAt),
 ]);
+
+export const accountAuthEvents = sqliteTable("account_auth_events", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  provider: text("provider", { enum: ["password", "google", "apple", "x"] }).notNull(),
+  action: text("action", { enum: ["linked", "unlinked", "password_created", "password_changed"] }).notNull(),
+  createdAt,
+}, table => [index("account_auth_events_user_created_idx").on(table.userId, table.createdAt)]);
+
+export const accountXIdentities = sqliteTable("account_x_identities", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
+  xSubject: text("x_subject").notNull().unique(),
+  xUsername: text("x_username").notNull(),
+  lastLoginAt: text("last_login_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  createdAt,
+});
+
+export const xAuthAttempts = sqliteTable("x_auth_attempts", {
+  id: text("id").primaryKey(),
+  stateHash: text("state_hash").notNull().unique(),
+  browserHash: text("browser_hash").notNull(),
+  codeVerifier: text("code_verifier").notNull(),
+  intent: text("intent", { enum: ["login", "register", "link"] }).notNull(),
+  userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
+  returnTo: text("return_to").notNull(),
+  expiresAt: text("expires_at").notNull(),
+  createdAt,
+}, table => [index("x_auth_attempts_expiry_idx").on(table.expiresAt)]);
+
+export const xRegistrationIntents = sqliteTable("x_registration_intents", {
+  id: text("id").primaryKey(),
+  tokenHash: text("token_hash").notNull().unique(),
+  xSubject: text("x_subject").notNull(),
+  xUsername: text("x_username").notNull(),
+  email: text("email"),
+  displayName: text("display_name").notNull(),
+  expiresAt: text("expires_at").notNull(),
+  createdAt,
+}, table => [index("x_registration_intents_expiry_idx").on(table.expiresAt)]);
 
 export const adminAuditLogs = sqliteTable("admin_audit_logs", {
   id: text("id").primaryKey(),

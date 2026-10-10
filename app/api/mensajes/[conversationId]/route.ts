@@ -9,7 +9,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const before = request.nextUrl.searchParams.get("before");
   const page = await getMessagePage(conversationId, user.id, before);
   if (!page) return Response.json({ error: "not_found" }, { status: 404 });
-  return Response.json({ messages: page.messages, hasMore: page.hasMore }, { headers: { "cache-control": "no-store" } });
+  return Response.json({ messages: page.messages, hasMore: page.hasMore, counterpartAvailable: Boolean(page.conversation.otherUserActive && page.conversation.profileId), counterpartLabel: page.conversation.otherUserLabel }, { headers: { "cache-control": "no-store" } });
 }
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ conversationId: string }> }) {

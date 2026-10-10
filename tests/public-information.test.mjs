@@ -32,8 +32,8 @@ test("Quiénes somos presents the emerging launch with useful SEO and honest roa
     source("app/globals.css"),
     source("app/sitemap.ts"),
   ]);
-  assert.match(page, /title: "Chile3X: nuevo directorio para adultos en Chile"/);
-  assert.match(page, /publicaciones gratis durante el lanzamiento/);
+  assert.match(page, /title: "Quiénes somos: directorio de escorts en Chile"/);
+  assert.match(page, /Publicación gratuita en esta etapa/);
   assert.match(page, /"@type": "AboutPage"/);
   assert.match(page, /"@type": "Organization"/);
   assert.match(page, /"@type": "BreadcrumbList"/);

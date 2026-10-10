@@ -9,6 +9,7 @@ const authMethodLabels = {
   password: "Correo y contraseña",
   google: "Google",
   apple: "Apple",
+  x: "X",
   github: "GitHub",
   reactivation: "Restablecimiento de cuenta",
   unknown: "Método anterior",

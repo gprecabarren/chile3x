@@ -1,4 +1,27 @@
 /* Estilos cargados únicamente en los paneles de administración y cuenta. */
+.account-brand-home { display: inline-flex; align-items: center; min-height: 44px; }
+.account-social-access { margin: 28px 0; padding: 24px; border: 1px solid #354058; border-radius: 12px; background: #111622; scroll-margin-top: 24px; }
+.account-social-access h2 { margin: 6px 0 10px; font-size: 26px; }
+.account-social-access > p:not(.eyebrow) { color: #b5bdcd; font-size: 13px; line-height: 1.65; }
+.account-access-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 18px 0; border-top: 1px solid #31394b; min-width: 0; }
+.account-access-row > div { display: grid; gap: 5px; }
+.account-access-row small { color: #a6b0c2; font-size: 12px; }
+.account-access-row > a, .account-access-row summary { color: #ff939a; font-size: 13px; cursor: pointer; }
+.account-access-row > details { width: min(100%,400px); margin-left: auto; }
+.account-access-row summary { text-align: right; padding: 10px 0; }
+.account-access-row form { display: grid; gap: 12px; margin-top: 10px; padding: 16px; border: 1px solid #495168; border-radius: 10px; background: #0c111b; }
+.account-access-row form p { margin: 0; color: #bdc5d3; font-size: 12px; line-height: 1.6; }
+.account-access-row label { display: grid; gap: 7px; font-size: 13px; }
+.account-access-row input { min-width: 0; width: 100%; padding: 12px; border: 1px solid #465169; border-radius: 8px; color: #fff; background: #171d29; }
+.account-access-history summary { color: #bac5d5; cursor: pointer; font-size: 13px; padding: 12px 0; }
+.account-access-history ul, .account-access-history-list { list-style: none; padding: 0; }
+.account-access-history li, .account-access-history-list li { display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: space-between; padding: 12px 0; border-top: 1px solid #30384a; font-size: 12px; }
+.account-access-history time, .account-access-history-list time { color: #99a7bb; }
+@media (max-width: 620px) {
+  .account-social-access { padding: 18px; }
+  .account-access-row > details { width: 100%; margin-left: 0; }
+  .account-access-row summary { text-align: left; }
+}
 
 /* Cuenta: identidad, resumen y navegación sin competir por la misma fila. */
 .account-header > .account-user { min-width: 0; max-width: 100%; }

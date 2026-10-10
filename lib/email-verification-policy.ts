@@ -33,7 +33,7 @@ export function emailVerificationTrashDue(user: EmailVerificationRecord, now = D
 }
 
 export function registrationMethodLabel(value: string) {
-  return ({ password: "Correo y contraseña", google: "Google", apple: "Apple", unknown: "Registro anterior sin confirmar" } as Record<string, string>)[value] ?? "Sin confirmar";
+  return ({ password: "Correo y contraseña", google: "Google", apple: "Apple", x: "X", unknown: "Registro anterior sin confirmar" } as Record<string, string>)[value] ?? "Sin confirmar";
 }
 
 export function emailVerificationLabel(user: EmailVerificationRecord) {

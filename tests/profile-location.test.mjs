@@ -34,5 +34,8 @@ test('all listing types share a lazy, accessible, wide map while preserving city
   assert.match(card, /loading="lazy" referrerPolicy="no-referrer"/);
   assert.match(card, /title=\{`Mapa referencial/);
   assert.match(card, /href=\{getCityPath\(city\)\}>Ver más en \{city\}/);
-  assert.match(await source('app/globals.css'), /\.profile-location-map\s*\{[^}]*width: 100%;[^}]*aspect-ratio: 16 \/ 9/);
+  const css = await source('app/globals.css');
+  assert.match(css, /\.profile-location-map\s*\{[^}]*width: 100%;[^}]*aspect-ratio: 2 \/ 1;[^}]*min-height: 150px;[^}]*max-height: 210px/);
+  assert.doesNotMatch(card, /href=\{mapsUrl\}|Abrir mapa referencial/);
+  assert.doesNotMatch(css, /\.profile-location-map-heading\s+a/);
 });

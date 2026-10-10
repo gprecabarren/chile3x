@@ -78,7 +78,9 @@ export default async function AccountHome({ searchParams }: { searchParams: Prom
 
   return <AccountShell user={user} showActivityNotices={false}><div className="account-content account-dashboard-content">
     {params.created === "1" && <AnalyticsEvent event="sign_up" parameters={{ method: "email" }} dedupeKey="email" />}
-    <AccountHeading eyebrow="ÁREA PRIVADA" title="Mi cuenta" description="Tus datos, actividad y anuncios, con los accesos que necesitas a mano." />
+    <AccountHeading eyebrow="ÁREA PRIVADA" title="Mi cuenta" description="Tus datos, actividad y anuncios, con los accesos que necesitas a mano.">
+      <Link className="button button-primary" href="/mi-cuenta/nuevo-perfil">Crear anuncio</Link>
+    </AccountHeading>
     {params.notice && <p className={usernameError ? "form-alert" : "account-success"} role={usernameError ? "alert" : "status"}>{messages[params.notice] ?? messages.error}</p>}
     <AccountIdentityCard user={user} />
     <section className="account-overview" aria-labelledby="account-activity-title">

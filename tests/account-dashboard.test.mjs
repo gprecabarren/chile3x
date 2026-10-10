@@ -14,6 +14,30 @@ test('account navigation groups private social pages and keeps creation in listi
   assert.match(home, /id="mis-anuncios"/); assert.match(home, /Crear anuncio/);
 });
 
+test('account creation is available in the heading and listings, with left-aligned social tabs', async () => {
+  const [home, css] = await Promise.all(['app/mi-cuenta/page.tsx', 'public/assets/panels-20260923.css'].map(source));
+  assert.match(home, /<AccountHeading[^>]*title="Mi cuenta"[^>]*>\s*<Link[^>]*href="\/mi-cuenta\/nuevo-perfil">Crear anuncio<\/Link>\s*<\/AccountHeading>/);
+  assert.equal((home.match(/href="\/mi-cuenta\/nuevo-perfil">Crear anuncio/g) ?? []).length, 2);
+  assert.match(css, /\.account-social-tabs \{[^}]*width: min\(100%, 540px\)[^}]*margin: 0 auto 27px 0;/);
+});
+
+test('email verification stays above every account page independently of activity notices', async () => {
+  const [shell, home, notice] = await Promise.all(['app/mi-cuenta/_components.tsx', 'app/mi-cuenta/page.tsx', 'app/EmailVerificationNotice.tsx'].map(source));
+  assert.match(shell, /emailVerificationState\(user\) === "grace" && <EmailVerificationNotice deadline=\{emailVerificationDeadline\(user\)\}/);
+  assert.ok(shell.indexOf('<EmailVerificationNotice') < shell.indexOf('{children}'));
+  assert.doesNotMatch(shell, /showActivityNotices && <EmailVerificationNotice/);
+  assert.match(notice, /Tiempo restante:/); assert.match(notice, /href="\/verificar-correo"/);
+  assert.match(home, /rows.length > 0 && <section[^>]*aria-labelledby="account-performance-title"/);
+  assert.match(home, /<AccountNotificationCards/);
+});
+
+test('account identity links back to the dashboard and truncates long email addresses', async () => {
+  const [shell, css] = await Promise.all(['app/mi-cuenta/_components.tsx', 'public/assets/panels-20260923.css'].map(source));
+  assert.match(shell, /<Link className="account-home-link" href="\/mi-cuenta" title=\{user.email\} aria-label=/);
+  assert.match(css, /\.account-header \.account-home-link \{[^}]*min-width: 0;[^}]*max-width: 290px;[^}]*overflow: hidden;[^}]*text-overflow: ellipsis;[^}]*white-space: nowrap;/);
+  assert.match(css, /\.account-home-link:focus-visible/);
+});
+
 test('dashboard data is owner-scoped, excludes trash and preserves daily rather than raw clicks', async () => {
   const summary = await source('lib/account-dashboard.ts');
   assert.match(summary, /getCurrentUser\(\)/); assert.match(summary, /Authentication required/);

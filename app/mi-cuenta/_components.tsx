@@ -41,7 +41,7 @@ export async function AccountShell({ user, children, showActivityNotices = true 
         <Link href="/" className="account-brand"><OfficialChile3xLogo priority /><small>MI CUENTA</small></Link>
         <div className="account-desktop-navigation"><AccountNavigation user={user} /></div>
         <div className="account-user">
-          <span title={user.email}>{user.role === "admin" ? user.displayName ?? "Administración" : user.email}</span>
+          <Link className="account-home-link" href="/mi-cuenta" title={user.email} aria-label={`Ir a mi cuenta: ${user.email}`}>{user.role === "admin" ? user.displayName ?? "Administración" : user.email}</Link>
           <form action="/api/auth/session/logout" method="post"><button type="submit" title="Cerrar la sesión de esta cuenta">Cerrar sesión</button></form>
         </div>
       <AccountMobileNavigation><AccountNavigation user={user} /></AccountMobileNavigation>

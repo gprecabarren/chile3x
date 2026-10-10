@@ -173,6 +173,8 @@ export default function PrivacyPage() {
         <h3>12.5. Inicio de sesión con X preparado, aún inactivo</h3>
         <p>Mientras el acceso con X esté deshabilitado no se abre ese proveedor ni se le envían datos. Si se habilita y eliges usarlo, recibiremos tu identificador estable, nombre, nombre de usuario y el correo confirmado que X autorice compartir. Si no entrega un correo confirmado, deberás completar y verificar uno mediante el proceso del sitio. El nombre solo rellena campos editables del registro.</p>
         <p>No solicitamos permiso para publicar, enviar mensajes privados ni acceder a tus mensajes. El token se utiliza únicamente para obtener tu identidad y se solicita su revocación al terminar; no se almacena como credencial permanente. Puedes desvincular X con los mismos controles de contraseña e historial que los demás proveedores.</p>
+        <h3>12.6. Mapas referenciales de Google Maps</h3>
+        <p>Los anuncios incluyen un mapa referencial de su ciudad, que se carga de forma diferida. Solo enviamos el nombre de la ciudad, región y país: no enviamos el nombre del anunciante, su cuenta, dirección, notas de ubicación ni coordenadas privadas. Al cargarse el mapa o abrir Maps, Google puede recibir información técnica del navegador y aplicar sus propias condiciones y política de privacidad. No solicitamos tu ubicación para mostrar estos mapas.</p>
       </section>
 
       <section id="proveedores">
@@ -180,7 +182,7 @@ export default function PrivacyPage() {
         <p>Para operar Chile3X utilizamos proveedores que tratan datos por cuenta del portal o prestan infraestructura bajo sus propios términos:</p>
         <ul>
           <li><strong>Cloudflare:</strong> alojamiento del sitio, base de datos, almacenamiento de archivos, red de entrega, certificados, seguridad y Turnstile para combatir bots;</li>
-          <li><strong>Google:</strong> autenticación cuando eliges “Continuar con Google”, correo transaccional y, solo con consentimiento, Google Tag Manager y Google Analytics;</li>
+          <li><strong>Google:</strong> autenticación cuando eliges “Continuar con Google”, correo transaccional, mapas referenciales de ciudades y, solo con consentimiento, Google Tag Manager y Google Analytics;</li>
           <li><strong>Telegram:</strong> comunidad pública, vinculación voluntaria de cuentas, invitaciones a Miembros, Novedades y moderación mediante el bot;</li>
           <li><strong>Apple:</strong> solo si el proveedor llega a habilitarse y la persona lo elige, autenticación y revocación de la autorización asociada;</li>
           <li><strong>X:</strong> solo si el acceso llega a habilitarse y lo eliges, autenticación e identidad autorizada para crear o vincular tu cuenta;</li>

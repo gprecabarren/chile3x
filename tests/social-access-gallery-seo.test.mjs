@@ -62,11 +62,21 @@ test('chat scroll follows committed messages, preserves older scroll and anonymi
 });
 test('home/about titles include escorts and single branding, preserve About style and correct account home', async () => {
   const home=await source('app/page.tsx'), about=await source('app/quienes-somos/page.tsx');
-  assert.match(home,/absolute: "Escorts en Chile por ciudad \| Chile3X"/);
+  assert.match(home,/absolute: "Directorio de escorts en Chile por ciudad \| Chile3X"/);
+  assert.equal((home.match(/title: "Directorio de escorts en Chile por ciudad \| Chile3X"/g) ?? []).length, 2);
+  assert.match(home, /<h1>Directorio de escorts <em>en Chile por ciudad\.<\/em><\/h1>/);
   assert.match(about,/absolute: "Quiénes somos: directorio de escorts en Chile \| Chile3X"/);
   assert.match(about,/className="about-hero"/); assert.match(about,/Sitio operativo en fase beta/);
   assert.match(await source('app/mi-cuenta/_components.tsx'),/account-brand-home" href="\/mi-cuenta"/);
   for(const path of ['app/ingresar/page.tsx','app/registro/page.tsx']) {
     const code=await source(path); assert.ok(code.indexOf('<GoogleSignInButton') < code.indexOf('<XSignInButton')); assert.ok(code.indexOf('<XSignInButton') < code.indexOf('<AppleSignInButton'));
   }
+});
+
+test('X has a consistent vector icon and an accessible disabled state without enabling OAuth', async () => {
+  const button = await source('app/XSignInButton.tsx');
+  assert.match(button, /<svg aria-hidden="true" viewBox="0 0 24 24"/);
+  assert.match(button, /disabled=\{!enabled\} aria-disabled=\{!enabled\}/);
+  assert.doesNotMatch(button, /𝕏/);
+  assert.match(await source('lib/x-auth.ts'), /x_sign_in_status !== "enabled"/);
 });

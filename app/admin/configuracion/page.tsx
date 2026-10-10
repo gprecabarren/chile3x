@@ -8,6 +8,7 @@ const sections = [
   ["operacion", "Operación", "Apertura de perfiles, moderación, planes y modo mantenimiento."],
   ["seo", "SEO e identidad", "Título, descripción, URL pública e indexación de Google."],
   ["google", "Google y medición", "Search Console y Google Analytics."],
+  ["x", "Inicio con X", "Credenciales, estado y requisitos del acceso con X (Twitter)."],
   ["apple", "Inicio con Apple", "Credenciales, secretos y activación del acceso con Apple."],
   ["contacto", "Contacto y redes", "Soporte principal, WhatsApp del equipo, panel flotante y estadísticas."],
   ["contenido", "FAQ y reglas", "Edita las preguntas frecuentes y las reglas de publicación."],

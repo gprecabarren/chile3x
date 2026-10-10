@@ -58,6 +58,22 @@ export function formatRegionName(title: string) {
   return getRegionByTitle(title)?.displayTitle ?? title;
 }
 
+export function formatCompactRegionName(title: string) {
+  const region = getRegionByTitle(title);
+  return region ? `${region.numeral} región` : title;
+}
+
+// City-level reference only: never send a listing's address, location notes,
+// account identity or coordinates to the external map. No API key or SDK.
+export function getCityReferenceMap(city: string, region: string) {
+  const query = `${city}, ${region}, Chile`;
+  const embed = new URL("https://maps.google.com/maps");
+  embed.search = new URLSearchParams({ q: query, hl: "es", z: "12", output: "embed" }).toString();
+  const link = new URL("https://www.google.com/maps/search/");
+  link.search = new URLSearchParams({ api: "1", query }).toString();
+  return { embedUrl: embed.toString(), mapsUrl: link.toString() };
+}
+
 export function getCityBySlug(citySlug: string) {
   return cityDirectory.find((item) => item.citySlug === citySlug) ?? null;
 }

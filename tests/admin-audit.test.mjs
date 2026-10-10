@@ -13,6 +13,7 @@ const administrativeMutationRoutes = [
   "app/api/admin/reportes/[reportId]/route.ts",
   "app/api/admin/resenas/[reviewId]/route.ts",
   "app/api/admin/settings/route.ts",
+  "app/api/admin/x-settings/route.ts",
   "app/api/admin/users/[userId]/estado/route.ts",
   "app/api/admin/users/[userId]/eliminar/route.ts",
   "app/api/admin/users/[userId]/route.ts",

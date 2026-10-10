@@ -3,14 +3,17 @@ import { getDb } from "@/db";
 import { xAuthAttempts, xRegistrationIntents } from "@/db/schema";
 import { createOpaqueToken, sha256 } from "@/lib/auth";
 import { xCodeChallenge, type XConfig, type XIdentity } from "@/lib/x-oauth";
+import { getSiteSettings } from "@/lib/site-settings";
+import { readXServerCredentials, X_CALLBACK_URL } from "@/lib/x-settings";
 
 export async function getXAuthConfig(): Promise<XConfig | null> {
   try {
-    const { env } = await import("cloudflare:workers");
-    const clientId = env.X_OAUTH_CLIENT_ID?.trim();
-    const clientSecret = env.X_OAUTH_CLIENT_SECRET?.trim();
-    if (env.X_OAUTH_ENABLED !== "true" || !clientId || !clientSecret) return null;
-    return { clientId, clientSecret, redirectUri: "https://chile3x.cl/api/auth/x/callback" };
+    // Disabled by default, including when old Cloudflare credentials exist.
+    // Only an explicitly saved administrator setting can enable the provider.
+    if ((await getSiteSettings()).x_sign_in_status !== "enabled") return null;
+    const { clientId, clientSecret } = await readXServerCredentials();
+    if (!clientId || !clientSecret) return null;
+    return { clientId, clientSecret, redirectUri: X_CALLBACK_URL };
   } catch { return null; }
 }
 

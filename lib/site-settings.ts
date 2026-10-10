@@ -20,6 +20,8 @@ export const siteSettingDefaults = {
   apple_team_id: "",
   apple_key_id: "",
   apple_primary_app_id: "",
+  x_sign_in_status: "disabled",
+  x_oauth_client_id: "",
   contact_whatsapp: "56933365005",
   contact_whatsapp_label: "Soporte técnico",
   contact_whatsapp_description: "Ayuda con cuentas, acceso, anuncios y problemas técnicos del sitio.",

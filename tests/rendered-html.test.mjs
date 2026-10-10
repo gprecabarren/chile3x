@@ -56,9 +56,10 @@ test("server-renders the Chile3X public home", async () => {
   assert.match(contentSecurityPolicy, /script-src[^;]*accounts\.google\.com/);
   assert.match(contentSecurityPolicy, /script-src-attr 'none'/);
   assert.match(contentSecurityPolicy, /frame-src[^;]*accounts\.google\.com/);
+  assert.match(contentSecurityPolicy, /frame-src[^;]*https:\/\/maps\.google\.com/);
 
   const html = await response.text();
-  assert.match(html, /<title>Escorts en Chile por ciudad \| Chile3X<\/title>/i);
+  assert.match(html, /<title>Directorio de escorts en Chile por ciudad \| Chile3X<\/title>/i);
   assert.match(html, /DIRECTORIO ADULTO/);
   assert.match(html, /Este sitio está destinado exclusivamente a personas mayores de edad/);
   assert.match(html, /damas de compañía/i);
@@ -150,6 +151,6 @@ test("cache outages do not prevent the built Worker from rendering", async () =>
   try {
     const response = await render();
     assert.equal(response.status, 200);
-    assert.match(await response.text(), /Escorts y anuncios por ciudad/);
+    assert.match(await response.text(), /Directorio de escorts/);
   } finally { globalThis.caches = original; }
 });

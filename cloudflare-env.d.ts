@@ -113,6 +113,7 @@ interface Env {
   X_OAUTH_CLIENT_ID?: string;
   X_OAUTH_CLIENT_SECRET?: string;
   X_OAUTH_ENABLED?: string;
+  X_SETTINGS_ENCRYPTION_KEY?: string;
 }
 
 declare module "cloudflare:workers" {

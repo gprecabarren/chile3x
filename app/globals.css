@@ -2190,8 +2190,11 @@ input[type="submit"] { text-transform: none !important; letter-spacing: .015em; 
 /* Responsive public galleries keep their server-rendered media and lightbox. */
 .x-signin { margin: 0; width: 100%; }
 .x-signin-button { width: 100%; }
-.x-signin-button > span:first-child { font-size: 25px; }
-.x-signin.is-disabled { opacity: .5; }
+.x-signin-button svg { width: 19px; height: 19px; }
+.x-signin.is-disabled .x-signin-button { color: #adb2bd; border-color: #3c4350; background: #171b24; cursor: not-allowed; opacity: .82; }
+.admin-settings-grid .x-activation-confirmation { display: flex; align-items: flex-start; gap: 10px; }
+.admin-settings-grid .x-activation-confirmation input { width: 18px; min-height: 18px; flex: 0 0 18px; margin-top: 3px; }
+.admin-settings-grid .x-activation-confirmation span { font-size: 12px; line-height: 1.6; }
 .profile-media-gallery > div:first-child > .eyebrow { color: #ff5964; margin: 0; }
 .profile-gallery-controls { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin: 12px 0; }
 .profile-gallery-controls span { margin-right: 4px; color: #adb7c8; font-size: 12px; }
@@ -2212,6 +2215,22 @@ input[type="submit"] { text-transform: none !important; letter-spacing: .015em; 
 .directory-city-breadcrumb { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .directory-home-link { color: #ff9298; text-decoration: underline; text-underline-offset: 4px; font-size: 12px; font-weight: 700; padding: 12px 0; }
 .account-brand-home { display: inline-flex; align-items: center; min-height: 44px; }
+.profile-location-card { min-width: 0; }
+.profile-location-card h2 { margin-bottom: 20px; line-height: 1.2; overflow-wrap: anywhere; }
+.profile-location-card h2 span { font-size: .6em; color: #c1c7d3; white-space: nowrap; font-family: Arial, sans-serif; letter-spacing: 0; }
+.profile-location-note { margin: 0 0 18px; overflow-wrap: anywhere; }
+.profile-location-map-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 10px; }
+.profile-location-map-heading h3 { margin: 0; color: #c6ccd8; font-family: Arial, sans-serif; font-size: 12px; font-weight: 700; }
+.profile-location-map-heading a { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; min-height: 44px; padding: 8px 11px; border: 1px solid #424c60; border-radius: 9px; color: #fff; background: #121826; font-size: 12px; text-decoration: none; }
+.profile-location-map-heading a:hover { border-color: #ff818a; }
+.profile-location-map-heading a:focus-visible { outline: 2px solid #ff818a; outline-offset: 3px; }
+.profile-location-map-heading svg { width: 15px; height: 15px; }
+.profile-location-map { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; min-height: 170px; max-height: 240px; border: 1px solid #414b5e; border-radius: 12px; background: #111724; }
+.profile-location-disclaimer { display: block; margin: 10px 0 5px; color: #aeb6c6; font-size: 11px; line-height: 1.5; }
+.listings-section { padding-bottom: 56px; }
+.listings-section + .directory-section { padding-top: 56px; }
+@media (max-width: 620px) { .listings-section { padding-bottom: 32px; }.listings-section + .directory-section { padding-top: 32px; } }
+@media (min-width: 901px) { .profile-detail-layout { grid-template-columns: minmax(0,1fr) minmax(330px,.55fr); gap: 28px; } }
 @media (min-width: 761px) { .portal-whatsapp-panel { width: min(480px,100%); padding: 20px; } }
 @media (max-width: 620px) {
   .profile-engagement-actions { flex-wrap: nowrap; gap: 5px; }

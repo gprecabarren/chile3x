@@ -4,9 +4,9 @@ Actualizado: 10 de octubre de 2026.
 
 ## Estado publicado
 
-La integración está preparada y el botón aparece entre Google y Apple. Permanece deshabilitada mediante `X_OAUTH_ENABLED=false` hasta validar un inicio de sesión real y la disponibilidad de la API. No se compraron créditos ni se habilitó recarga automática.
+La integración está preparada y el botón aparece entre Google y Apple. Permanece deshabilitada mediante el ajuste `x_sign_in_status=disabled` (también es el valor predeterminado). La sección `/admin/configuracion/x` permite editar el Client ID, reemplazar el Client Secret y guardar el estado. No se compraron créditos ni se habilitó recarga automática.
 
-La aplicación de X tiene permiso de solo lectura, solicitud de correo autorizada y tipo Web App confidencial. Su callback es `https://chile3x.cl/api/auth/x/callback`. Sitio, términos y privacidad apuntan al dominio Chile3X. `X_OAUTH_CLIENT_ID` y `X_OAUTH_CLIENT_SECRET` están guardados exclusivamente como secretos de Cloudflare; no deben copiarse al repositorio, navegador público, registros ni documentación.
+La aplicación de X tiene permiso de solo lectura, solicitud de correo autorizada y tipo Web App confidencial. Su callback fijo es `https://chile3x.cl/api/auth/x/callback`. Sitio, términos y privacidad apuntan al dominio Chile3X. Las credenciales iniciales siguen como secretos de Cloudflare; un reemplazo desde el panel se almacena cifrado en D1 con AES-GCM, una clave privada `X_SETTINGS_ENCRYPTION_KEY` de Cloudflare y contexto específico para X. Ese registro privado está excluido de los ajustes públicos. Nunca se devuelve el secreto o su cifrado al HTML y el formulario vacío conserva la credencial existente.
 
 ## Antes de habilitar
 
@@ -14,7 +14,7 @@ La aplicación de X tiene permiso de solo lectura, solicitud de correo autorizad
 2. Habilitar la bandera durante una prueba controlada con el propietario. Verificar registro nuevo, ingreso posterior, identidad existente, correo ausente/no confirmado y desvinculación. Si falla la consulta de identidad, mantener la bandera deshabilitada.
 3. Confirmar la información de privacidad y la app consentida. La integración no publica, no lee mensajes privados y no solicita permisos de escritura o acceso permanente.
 
-Para cambiar la bandera, usar `npx wrangler secret put X_OAUTH_ENABLED --config wrangler.json` e introducir `true` o `false`. Mantener `--keep-vars` en los despliegues. Nunca poner el Client Secret directamente en argumentos de comandos.
+Para activar, usar `/admin/configuracion/x`, seleccionar Activado y confirmar expresamente la comprobación de requisitos. La bandera antigua `X_OAUTH_ENABLED` ya no controla el proveedor: el ajuste administrativo es la única fuente del estado, y se cierra por defecto si falta configuración. Los cambios se auditan sin secretos e invalidan intentos OAuth y registros pendientes, sin alterar cuentas ni anuncios. Mantener `--keep-vars` en los despliegues y conservar la clave de cifrado; no rotarla sin volver a cifrar las credenciales privadas. Nunca poner el Client Secret directamente en argumentos de comandos.
 
 ## Controles implementados
 

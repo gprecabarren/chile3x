@@ -5,24 +5,29 @@ import { applyPhotoOptionToSelection } from '../lib/gallery-photo-options.ts';
 
 const source = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('every supplemental field is inside one collapsed group, with core fields outside', async () => {
+test('secondary fields share one collapsed group; important optional fields remain visible', async () => {
   const form = await source('app/mi-cuenta/ProfileForm.tsx');
   const start = form.indexOf('<details ref={optionalRef}'), end = form.indexOf('</details>', start);
   const optional = form.slice(start, end), core = form.slice(form.indexOf('<form ref='), start);
   assert.ok(start > 0 && end > start);
   assert.match(optional, /Características opcionales/);
   assert.doesNotMatch(optional.slice(0, optional.indexOf('>')), /\bopen\b/);
-  for (const name of ['handle', 'tier', 'comuna', 'reference_location', 'price_30_min', 'price_60_min', 'price_moment', 'price_night', 'price_amount', 'currency', 'age', 'gender', 'nationality', 'height_cm', 'weight_kg', 'languages', 'travel_city', 'agency_years', 'website', 'instagram_url', 'room_type', 'deposit', 'wifi', 'contact_phone', 'contact_email', 'contact_telegram', 'tags', 'services_included', 'services_additional']) {
+  for (const name of ['price_30_min', 'price_60_min', 'price_moment', 'price_night', 'price_amount', 'currency', 'nationality', 'height_cm', 'weight_kg', 'languages', 'travel_city', 'agency_years', 'website', 'instagram_url', 'room_type', 'deposit', 'wifi', 'contact_phone', 'contact_email', 'contact_telegram', 'services_included', 'services_additional']) {
     assert.ok(optional.includes(`name="${name}"`), `${name} belongs to optional group`);
-    if (name !== 'tier') assert.ok(!core.includes(`name="${name}"`), `${name} must not appear in core`);
+    assert.ok(!core.includes(`name="${name}"`), `${name} must not appear in core`);
   }
-  for (const name of ['type', 'display_name', 'region', 'city', 'short_description', 'description', 'contact_whatsapp']) {
+  for (const name of ['type', 'display_name', 'region', 'city', 'short_description', 'description', 'contact_whatsapp', 'handle', 'tier', 'comuna', 'reference_location', 'tags', 'gender', 'age']) {
     assert.ok(core.includes(`name="${name}"`), `${name} stays in core`);
     assert.ok(!optional.includes(`name="${name}"`));
   }
   assert.doesNotMatch(form, /name="artist_name"|Nombre artista|className="language-selector"/);
   assert.match(form, /onInvalidCapture=[\s\S]*optionalRef.current.open = true/);
   assert.match(form, /sessionStorage.setItem/);
+  assert.match(core, /name="gender" required/);
+  assert.match(core, /name="age" type="number" required min="18" max="99"/);
+  for (const name of ['handle', 'comuna', 'reference_location']) assert.doesNotMatch(core.match(new RegExp(`<input name="${name}"[^>]+>`))?.[0] ?? '', /\brequired\b/);
+  assert.match(optional, /mayor confianza[\s\S]*filtros del directorio/);
+  assert.ok(core.indexOf('Categoría de visibilidad') < core.indexOf('02 · UBICACIÓN'));
   assert.doesNotMatch(await source('lib/profile-submission.ts'), /"artist_name"/);
 });
 

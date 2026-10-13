@@ -4,6 +4,7 @@ import { listingPeriods, profileDetails, profileServices, profileTags as profile
 import { createAdminNotification } from "@/lib/admin-notifications";
 import { hasUnlimitedEscortListings } from "@/lib/profile-limits";
 import { profileMetadataForType } from "@/lib/profile-type-metadata";
+import { profileDemographicsError } from "@/lib/profile-demographics";
 import {
   additionalServices,
   compactText,
@@ -240,10 +241,10 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
 
   const telegram = normalizeTelegram(compactText(formData.get("contact_telegram"), 80));
 
-  const age = typeValue === "escort" ? compactText(formData.get("age"), 2) : "";
-  if (age && (!/^[0-9]{2,3}$/.test(age) || Number(age) < 18)) {
-    throw new ProfileValidationError("La edad debe ser de al menos 18 años.");
-  }
+  const age = compactText(formData.get("age"), 180);
+  const gender = compactText(formData.get("gender"), 180);
+  const demographicsError = profileDemographicsError(typeValue, gender, age, intent === "submit");
+  if (demographicsError) throw new ProfileValidationError(demographicsError);
 
   const website = typeValue === "agency" ? requiredUrl(compactText(formData.get("website"), 180), "El sitio web") : "";
   const facebookUrl = typeValue === "agency" ? requiredUrl(compactText(formData.get("facebook_url"), 180), "Facebook", "facebook.com") : "";

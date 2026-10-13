@@ -29,6 +29,8 @@ import { TrackedContactLink } from "../TrackedContactLink";
 import { safeJsonLd } from "@/lib/json-ld";
 import { socialCardImageUrl } from "@/lib/seo";
 import { formatRegionName } from "@/app/locations";
+import { profileSeoTitle, profileSeoDescription as buildProfileSeoDescription } from "@/lib/profile-seo-content";
+import { profilePublicFacts } from "@/lib/profile-public-facts";
 import { ProfileVerificationBadge } from "../ProfileVerificationBadge";
 import { ProfileCityAlertPanel } from "../ProfileCityAlertPanel";
 import { getActiveProfileCityAlerts, getProfileAlertCities } from "@/lib/profile-city-alerts";
@@ -44,16 +46,8 @@ function profileTypeLabel(type: PublicProfile["type"]) {
   return type === "escort" ? "Escort" : type === "agency" ? "Agencia" : "Arriendo";
 }
 
-function profileSeoTitle(profile: Pick<PublicProfileSeo, "type" | "displayName" | "city">) {
-  if (profile.type === "escort") return `${profile.displayName}, escort en ${profile.city}`;
-  if (profile.type === "agency") return `${profile.displayName}, agencia de escorts en ${profile.city}`;
-  return `${profile.displayName}, arriendo para escorts en ${profile.city}`;
-}
-
 function profileSeoDescription(profile: Pick<PublicProfileSeo, "type" | "displayName" | "city" | "region" | "shortDescription">) {
-  const summary = profile.shortDescription.trim().replace(/\s+/g, " ");
-  const type = profile.type === "escort" ? "escort" : profile.type === "agency" ? "agencia de escorts" : "arriendo para escorts";
-  return `${profile.displayName}: ${type} en ${profile.city}, ${formatRegionName(profile.region)}.${summary ? ` ${summary}` : ""}`.slice(0, 160);
+  return buildProfileSeoDescription(profile, formatRegionName(profile.region));
 }
 
 function phoneDigits(value: string | null) {
@@ -94,24 +88,6 @@ function serviceFilterPath(profile: PublicProfile, kind: "included" | "additiona
   return `${destination}?${params.toString()}`;
 }
 
-function metadataFacts(profile: PublicProfile) {
-  const metadata = profile.details.metadata;
-  if (profile.type === "escort") return [
-    ["Edad", metadata.age ? `${metadata.age} años` : null], ["Género", metadata.gender], ["Nacionalidad", metadata.nationality], ["Idiomas", metadata.languages],
-    ["Color de piel", metadata.skin_color], ["Color de pelo", metadata.hair_color], ["Tipo de cuerpo", metadata.body_type], ["Busto", metadata.bust_size],
-    ["Medidas", metadata.measurements], ["Estatura", metadata.height_cm ? `${metadata.height_cm} cm` : null], ["Peso", metadata.weight_kg ? `${metadata.weight_kg} kg` : null],
-  ];
-  if (profile.type === "agency") return [
-    ["Años en el mercado", metadata.agency_years], ["Sitio web", metadata.website], ["Promociones", metadata.promotions], ["Métodos de contacto", metadata.contact_methods],
-  ];
-  return [
-    ["Tipo de habitación", metadata.room_type], ["Amoblada", metadata.furnished], ["Baño privado", metadata.private_bathroom], ["Ventana al exterior", metadata.exterior_window],
-    ["Tamaño", metadata.room_size ? `${metadata.room_size} m²` : null], ["Gastos comunes", metadata.common_expenses], ["Garantía", metadata.deposit],
-    ["Duración mínima", metadata.minimum_rental], ["Disponibilidad inmediata", metadata.immediate_available], ["Internet/Wi-Fi", metadata.wifi],
-    ["Agua, luz y gas", metadata.utilities_included], ["Uso de cocina", metadata.kitchen], ["Lavadora/secadora", metadata.laundry],
-  ];
-}
-
 export async function generateMetadata({ params }: ProfilePageProps): Promise<Metadata> {
   const { slug } = await params;
   const profile = await getPublicProfileSeoForRoute(slug);
@@ -142,7 +118,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
     ? await (await getDb()).select().from(profileMedia).where(and(eq(profileMedia.profileId, profile.id), eq(profileMedia.visibility, "public"))).limit(MAX_BULK_MEDIA + 1)
     : [];
   const relatedProfileIds = profile.type === "agency" ? profile.memberIds : profile.agencyIds;
-  const facts = metadataFacts(profile).filter((item): item is [string, string] => Boolean(item[1]));
+  const facts = profilePublicFacts(profile.type, profile.details.metadata);
   const tags = getProfileDisplayTags(profile);
   const location = [profile.comuna, profile.city, formatRegionName(profile.region)].filter(Boolean).join(", ");
   const schema = { "@context": "https://schema.org", "@type": profile.type === "agency" ? "Organization" : profile.type === "rental" ? "Accommodation" : "Person", name: profile.displayName, description: profileSeoDescription(profile), address: { "@type": "PostalAddress", addressLocality: profile.city, addressRegion: formatRegionName(profile.region), addressCountry: "CL" } };

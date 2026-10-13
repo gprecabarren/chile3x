@@ -201,7 +201,7 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
       }
     }}>
       <div className="profile-form-actions profile-form-actions-top">
-        <button className="button button-outline" name="intent" type="submit" value="draft">Guardar borrador</button>
+        <button className="button button-outline" name="intent" type="submit" value="draft" formNoValidate>Guardar borrador</button>
         <button className="button button-primary" name="intent" type="submit" value="submit">{submitLabel}</button>
       </div>
       <section className="profile-form-section">
@@ -220,6 +220,23 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
           <label>
             Nombre visible
             <input name="display_name" required minLength={2} maxLength={80} defaultValue={initial?.displayName} placeholder={type === "agency" ? "Ej. Agencia Luna" : type === "rental" ? "Ej. Habitación en Providencia" : "Ej. Valentina Spa"} />
+          </label>
+          {type === "escort" && <div className="tier-form-field">
+            <label>
+              Categoría de visibilidad
+              <select name="tier" defaultValue={initial?.tier ?? "bronze"}>
+                {tiers.map((tier) => <option key={tier} value={tier}>{tierVisibilityOptions[tier]}</option>)}
+              </select>
+              <small>Por lanzamiento, todas las categorías son gratis. Sus valores se definirán más adelante.</small>
+            </label>
+            <div className="tier-form-guide" aria-label="Niveles de visibilidad">
+              {tiers.map((tier) => <span key={tier} className={`tier-form-chip tier-${tier}`}>{tierLabels[tier]}</span>)}
+            </div>
+          </div>}
+          <label>
+            Usuario del anuncio (opcional)
+            <span className="profile-handle-input"><b>@</b><input name="handle" minLength={3} maxLength={41} defaultValue={initial?.handle ?? ""} placeholder={type === "agency" ? "agenciaejemplo" : type === "rental" ? "arriendo-centro" : "tu-nombre"} autoCapitalize="none" autoCorrect="off" /></span>
+            <small>Será parte de tu enlace. Si lo dejas vacío, Chile3X crea uno único basado en el nombre del anuncio.</small>
           </label>
           {type !== "escort" && <input name="tier" type="hidden" value="bronze" />}
         </div>
@@ -243,6 +260,15 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
               {availableCities.length === 0 ? <option value="">Apertura territorial próxima</option> : availableCities.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
           </label>
+          <label>
+            Comuna o barrio (opcional)
+            <input name="comuna" maxLength={80} defaultValue={initial?.comuna} placeholder="Ej. El Golf" />
+          </label>
+          <label>
+            Ubicación referencial (opcional)
+            <input name="reference_location" maxLength={120} defaultValue={initial?.details.referenceLocation} placeholder="Ej. Cerca de Metro Los Leones" />
+            <small>Indica una referencia de la zona, sin publicar tu dirección exacta.</small>
+          </label>
         </div>
       </section>
 
@@ -252,7 +278,11 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
           <h2>Cuenta lo esencial</h2>
         </div>
         <div className="form-grid form-grid-two">
-          <label>
+          {type === "escort" && <>
+            <label>Género (obligatorio)<select name="gender" required defaultValue={metadataValue(initial, "gender")}><option value="">Seleccionar</option>{escortGenders.map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label>Edad (obligatoria)<input name="age" type="number" required min="18" max="99" step="1" inputMode="numeric" defaultValue={metadataValue(initial, "age")} placeholder="Ej. 28" onChange={(event) => setUnderageNotice(Boolean(event.target.value && Number(event.target.value) < 18))} /><small className={underageNotice ? "field-warning" : undefined} role={underageNotice ? "alert" : undefined}>{underageNotice ? "Solo se admiten publicaciones de personas mayores de 18 años." : "Debes tener al menos 18 años. Género y edad son obligatorios para enviar a revisión."}</small></label>
+          </>}
+          <label className="form-grid-full">
             Descripción breve
             <input name="short_description" required maxLength={180} defaultValue={initial?.shortDescription} placeholder="Ej. Atención discreta, con agenda previa" />
           </label>
@@ -261,56 +291,29 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
           Descripción completa
           <textarea name="description" required maxLength={4000} rows={7} defaultValue={initial?.description} placeholder="Ej. Cuenta tu experiencia, modalidad de atención y detalles útiles. No publiques datos personales sensibles." />
         </label>
+        {type === "escort" && <fieldset className="profile-tags-fieldset">
+          <legend>Etiquetas complementarias (opcionales)</legend>
+          <p>Selecciona solo las que correspondan a tu anuncio. Puedes dejarlas sin marcar.</p>
+          <div className="check-grid">
+            {profileTags.map((tag) => {
+              const blocked = (tag === "milf" && selectedProfileTags.includes("trans")) || (tag === "trans" && selectedProfileTags.includes("milf"));
+              return <label key={tag} className={blocked ? "is-blocked" : ""}><input name="tags" type="checkbox" value={tag} checked={selectedProfileTags.includes(tag)} disabled={blocked} onChange={() => toggleProfileTag(tag)} />{titleCase(tag)}</label>;
+            })}
+          </div>
+        </fieldset>}
       </section>
 
       <section className="profile-form-section">
         <div className="profile-form-section-heading"><p>04 · CONTACTO PRINCIPAL</p><h2>Cómo te pueden contactar</h2></div>
         <div className="form-grid form-grid-two">
-          <label>WhatsApp público<input name="contact_whatsapp" required inputMode="numeric" pattern="[0-9]{8,15}" defaultValue={initial?.contactWhatsapp} placeholder="56912345678" /></label>
+          <label>WhatsApp público<input name="contact_whatsapp" required inputMode="numeric" pattern="[0-9]{8,15}" defaultValue={initial?.contactWhatsapp} placeholder="56912345678" aria-describedby="profile-whatsapp-help" /><small id="profile-whatsapp-help">Ingresa el código de país y el número, sin + ni espacios.</small></label>
         </div>
-        <p className="profile-form-help">Ingresa el código de país y el número, sin + ni espacios. Los demás contactos y redes están en Características opcionales.</p>
+        <p className="profile-form-help">Los demás contactos y redes están en Características opcionales.</p>
       </section>
 
       <details ref={optionalRef} className="profile-optional-fields">
-        <summary><span><strong>Características opcionales</strong><small>Personaliza el anuncio solo si lo deseas. No necesitas completar estos campos.</small></span></summary>
+        <summary><span><strong>Características opcionales</strong><small>Te recomendamos completarlas: un anuncio más detallado puede generar mayor confianza y ayudar a que te encuentren en los filtros del directorio. Son opcionales y no garantizan una mejor posición en Google.</small></span></summary>
         <div className="profile-optional-fields-content">
-          <section className="profile-form-section">
-            <div className="profile-form-section-heading"><p>IDENTIDAD Y VISIBILIDAD</p><h2>Personaliza tu anuncio</h2></div>
-            <div className="form-grid form-grid-two">
-              <label>
-                Usuario del anuncio
-                <span className="profile-handle-input"><b>@</b><input name="handle" minLength={3} maxLength={41} defaultValue={initial?.handle ?? ""} placeholder={type === "agency" ? "agenciaejemplo" : type === "rental" ? "arriendo-centro" : "tu-nombre"} autoCapitalize="none" autoCorrect="off" /></span>
-                <small>Será parte de tu enlace. Si lo dejas vacío, Chile3X crea uno único basado en el nombre del anuncio.</small>
-              </label>
-              {type === "escort" ? <div className="tier-form-field">
-                <label>
-                  Categoría de visibilidad
-                  <select name="tier" defaultValue={initial?.tier ?? "bronze"}>
-                    {tiers.map((tier) => <option key={tier} value={tier}>{tierVisibilityOptions[tier]}</option>)}
-                  </select>
-                  <small>Por lanzamiento, todas las categorías son gratis. Sus valores se definirán más adelante.</small>
-                </label>
-                <div className="tier-form-guide" aria-label="Niveles de visibilidad">
-                  {tiers.map((tier) => <span key={tier} className={`tier-form-chip tier-${tier}`}>{tierLabels[tier]}</span>)}
-                </div>
-              </div> : null}
-            </div>
-          </section>
-
-          <section className="profile-form-section">
-            <div className="profile-form-section-heading"><p>UBICACIÓN COMPLEMENTARIA</p><h2>Referencias de la zona</h2></div>
-            <div className="form-grid form-grid-two">
-              <label>
-                Comuna o barrio
-                <input name="comuna" maxLength={80} defaultValue={initial?.comuna} placeholder="Ej. El Golf" />
-              </label>
-            <label className="form-wide-label">
-              Ubicación referencial
-              <input name="reference_location" maxLength={120} defaultValue={initial?.details.referenceLocation} placeholder="Ej. Cerca de Metro Los Leones, sin dirección exacta" />
-            </label>
-            </div>
-          </section>
-
           <section className="profile-form-section">
             <div className="profile-form-section-heading"><p>VALORES Y DISPONIBILIDAD</p><h2>Tarifas y horarios</h2></div>
             <div className="form-grid form-grid-three">
@@ -378,8 +381,6 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
               </div>
               <div className="form-grid form-grid-three">
 
-                <label>Género<select name="gender" defaultValue={metadataValue(initial, "gender")}><option value="">Seleccionar</option>{escortGenders.map((item) => <option key={item}>{item}</option>)}</select></label>
-                <label>Edad<input name="age" type="number" min="18" defaultValue={metadataValue(initial, "age")} placeholder="Ej. 28" onChange={(event) => setUnderageNotice(Boolean(event.target.value && Number(event.target.value) < 18))} />{underageNotice && <small className="field-warning" role="alert">Solo se admiten publicaciones de personas mayores de 18 años.</small>}</label>
                 <label>Nacionalidad<select name="nationality" defaultValue={metadataValue(initial, "nationality")}><option value="">Seleccionar</option>{nationalities.map((item) => <option key={item}>{item}</option>)}</select></label>
                 <label>Color de piel<select name="skin_color" defaultValue={metadataValue(initial, "skin_color")}><option value="">Seleccionar</option>{skinColors.map((item) => <option key={item}>{item}</option>)}</select></label>
 
@@ -467,15 +468,6 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
                 <label>Usuario de OnlyFans<input name="onlyfans_url" maxLength={64} defaultValue={socialUsername(metadataValue(initial, "onlyfans_url"))} placeholder="nombredeusuario" /><small>Se enlazará a onlyfans.com/tuusuario.</small></label></>}
               </div>
             </fieldset>
-            {type === "escort" && <fieldset>
-              <legend>Etiquetas complementarias</legend>
-              <div className="check-grid">
-                {profileTags.map((tag) => {
-                  const blocked = (tag === "milf" && selectedProfileTags.includes("trans")) || (tag === "trans" && selectedProfileTags.includes("milf"));
-                  return <label key={tag} className={blocked ? "is-blocked" : ""}><input name="tags" type="checkbox" value={tag} checked={selectedProfileTags.includes(tag)} disabled={blocked} onChange={() => toggleProfileTag(tag)} />{titleCase(tag)}</label>;
-                })}
-              </div>
-            </fieldset>}
             {type !== "rental" && <div className="service-columns">
               <fieldset>
                 <legend>Servicios incluidos</legend>
@@ -500,7 +492,7 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
       </section>
 
       <div className="profile-form-actions">
-        <button className="button button-outline" name="intent" type="submit" value="draft">Guardar borrador</button>
+        <button className="button button-outline" name="intent" type="submit" value="draft" formNoValidate>Guardar borrador</button>
         <button className="button button-primary" name="intent" type="submit" value="submit">{submitLabel}</button>
       </div>
     </form>

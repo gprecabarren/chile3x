@@ -2133,6 +2133,23 @@ input[type="submit"] { text-transform: none !important; letter-spacing: .015em; 
 .profile-optional-fields > summary::-webkit-details-marker { display: none; }.profile-optional-fields > summary::after { content: "+"; color: #ff8995; font-size: 26px; flex-shrink: 0; }.profile-optional-fields[open] > summary::after { content: "−"; }
 .profile-optional-fields > summary:focus-visible { outline: 2px solid #ff8995; outline-offset: 3px; border-radius: 14px; }.profile-optional-fields > summary > span { display: grid; gap: 6px; min-width: 0; }.profile-optional-fields > summary strong { color: #fff; font-size: 20px; }.profile-optional-fields > summary small { color: #b4bdcd; font-size: 13px; line-height: 1.5; }
 .profile-optional-fields-content { display: grid; gap: 18px; padding: 0 18px 18px; }.profile-optional-fields .profile-form-section { margin: 0; }.profile-optional-fields .form-wide-label { margin-top: 0; }.profile-optional-fields .language-checklist { margin-top: 20px; }
+/* Align fields at the top: helper text must not stretch the label/input gaps
+   of the adjacent field, particularly age, handle and visibility. */
+.profile-form .form-grid { align-items: start; gap: 20px 22px; }
+.profile-form label { align-content: start; line-height: 1.45; }
+.profile-form label > small { font-size: 12px; line-height: 1.5; }
+.profile-form .profile-form-help { margin: 12px 0 0; line-height: 1.55; }
+.profile-form-section-heading { margin-bottom: 22px; }
+.profile-form-section-heading p { margin: 0 0 8px; }
+.profile-form .profile-form-section-heading h2 { line-height: 1.2; }
+.profile-form .form-wide-label { margin-top: 20px; }
+.profile-form .profile-tags-fieldset > p { margin: 0 0 14px; color: #aab1c1; font-size: 12px; line-height: 1.5; }
+.profile-form .profile-tags-fieldset .check-grid label { align-items: center; }
+@media (max-width: 620px) {
+  .profile-form .form-grid { gap: 20px; }
+  .profile-form-section-heading { margin-bottom: 18px; }
+  .profile-form label > small { font-size: 12px; }
+}
 .gallery-global-photo-options { min-width: 0; margin: 16px 0 20px; padding: 16px; border: 1px solid #75414d; border-radius: 12px; background: #171722; }.gallery-global-photo-options legend { padding: 0 6px; color: #fff; font-weight: 700; font-size: 14px; }.gallery-global-photo-options p { margin: 0 0 12px; color: #b4bdcd; font-size: 12px; line-height: 1.5; }.gallery-global-photo-options > div { display: flex; flex-wrap: wrap; gap: 10px; }.gallery-global-photo-options .button { display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 48px; white-space: normal; }.gallery-global-photo-options .button small { font-weight: 400; font-size: 11px; color: #b4bdcd; }.gallery-global-photo-options .button[aria-pressed="true"] { border-color: #e85b72; background: #3b202b; color: #fff; }
 @media (max-width: 620px) { .profile-private-preview-notice { width: min(100% - 24px, 1184px); padding: 14px 16px; }.profile-optional-fields > summary { padding: 18px 16px; }.profile-optional-fields-content { padding: 0 10px 10px; gap: 12px; }.profile-optional-fields .profile-form-section { padding: 18px 14px; }.gallery-global-photo-options .button { width: 100%; } }
 @media (max-width: 620px) { .profile-owner-edit-bar { width: min(100% - 24px, 1184px); margin-top: 16px; padding: 14px 16px; }.profile-owner-edit-bar .button { width: 100%; } }

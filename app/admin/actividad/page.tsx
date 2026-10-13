@@ -124,6 +124,7 @@ function entityHref(type: string, id: string | null, label: string | null, retur
   if (type === "news") return `/admin/noticias?edit=${encodeURIComponent(id)}`;
   if (type === "report" || type === "report_evidence") return "/admin/reportes";
   if (type === "bug_report") return "/admin/bugs";
+  if (type === "exclusive_collection") return "/admin/medios?tipo=exclusive";
   if (type === "public_media" || type === "exclusive_media" || type === "verification_document") return "/admin/medios";
   if (type === "settings") return "/admin/configuracion";
   return null;
@@ -235,7 +236,7 @@ export default async function AdminActivityPage({ searchParams }: { searchParams
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const page = Math.min(requestedPage, totalPages);
   const rows = await db.select().from(adminAuditLogs).where(where)
-    .orderBy(filters.order === "oldest" ? asc(adminAuditLogs.createdAt) : desc(adminAuditLogs.createdAt))
+    .orderBy(filters.order === "oldest" ? asc(sql`datetime(${adminAuditLogs.createdAt})`) : desc(sql`datetime(${adminAuditLogs.createdAt})`), filters.order === "oldest" ? asc(adminAuditLogs.id) : desc(adminAuditLogs.id))
     .limit(PAGE_SIZE).offset((page - 1) * PAGE_SIZE);
 
   const query = new URLSearchParams();
@@ -251,7 +252,7 @@ export default async function AdminActivityPage({ searchParams }: { searchParams
       <p>Hora mostrada en Chile continental. Los eventos nuevos se identifican por la cuenta interna y el usuario de GitHub.</p>
     </section>
     {params.notice === "notifications_read" && <p className="admin-success" role="status">Las notificaciones seleccionadas quedaron marcadas como leídas.</p>}
-    <details className="admin-notification-center" open>
+    <details className="admin-notification-center">
       <summary><span><strong>Notificaciones del sitio</strong><small>Registros, anuncios nuevos y modificaciones hechas por usuarios</small></span><b>{Number(unreadNotifications?.total ?? 0)} nuevas</b></summary>
       <form className="admin-notification-filters" method="get">
         <label>Buscar<input type="search" name="notify_q" defaultValue={notificationFilters.q} placeholder="Cuenta o anuncio" /></label>
@@ -267,7 +268,7 @@ export default async function AdminActivityPage({ searchParams }: { searchParams
       </article>)}</div> : <p className="admin-media-empty">No hay notificaciones que coincidan con estos filtros.</p>}
     </details>
     <PortalWhatsappStats />
-    <details className="admin-whatsapp-clicks" open>
+    <details className="admin-whatsapp-clicks">
       <summary><span><strong>Clics únicos en WhatsApp de anunciantes</strong><small>Últimos 50 registros diarios por anuncio y navegador · separados del soporte del sitio</small></span><b>{whatsappClicks.length}</b></summary>
       <p>La cuenta, ubicación aproximada, dispositivo y ruta solo se agregan cuando la persona aceptó la medición. Sin ese permiso se conserva únicamente un identificador opaco para el conteo diario; nunca se guarda la IP en este registro.</p>
       {whatsappClicks.length ? <div className="admin-whatsapp-click-list">{whatsappClicks.map((click) => <article key={click.id}>
@@ -275,6 +276,7 @@ export default async function AdminActivityPage({ searchParams }: { searchParams
         <dl><div><dt>Persona</dt><dd>{click.viewerUserId ? `${click.viewerName ?? click.viewerUsername ?? "Cuenta Chile3X"}${click.viewerEmail ? ` · ${click.viewerEmail}` : ""}` : "Visitante anónimo"}</dd></div><div><dt>Ubicación aproximada</dt><dd>{[click.city, click.region, countryName(click.countryCode)].filter(Boolean).join(", ") || "No disponible"}</dd></div><div><dt>Dispositivo</dt><dd>{click.deviceType === "mobile" ? "Móvil" : click.deviceType === "tablet" ? "Tablet" : click.deviceType === "desktop" ? "Computador" : "No identificado"}</dd></div><div><dt>Fecha</dt><dd>{activityDate(click.createdAt)}</dd></div>{click.referrerPath && <div><dt>Origen</dt><dd>{click.referrerPath}</dd></div>}</dl>
       </article>)}</div> : <p className="admin-media-empty">Aún no existen clics registrados en WhatsApp.</p>}
     </details>
+    <h2 id="eventos-administrativos" className="admin-audit-heading">Movimientos administrativos</h2>
     <form className="admin-audit-filters" method="get" role="search">
       <label className="admin-audit-search">Buscar<input type="search" name="q" defaultValue={filters.q} placeholder="Administrador, cuenta, anuncio, correo o identificador" /></label>
       <label>Administrador<select name="admin" defaultValue={filters.admin}><option value="">Todos</option>{administrators.map((item) => <option value={item.id} key={item.id}>{item.githubLogin ? `@${item.githubLogin} · ` : ""}{item.name ?? item.email}</option>)}</select></label>

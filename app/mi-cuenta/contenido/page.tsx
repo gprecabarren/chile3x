@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { MediaVideo } from "@/app/MediaVideo";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { getBuyerExclusiveContent, getSellerExclusiveContent } from "@/lib/exclusive-content";
@@ -27,7 +28,7 @@ export default async function AccountContentPage() {
       initialQuota={{ bytes: usage.bytes, ...getMediaQuotaState(usage.bytes) }}
     />
     <section className="buyer-content-library"><div><p className="eyebrow">CONTENIDO RECIBIDO</p><h2>Mi contenido desbloqueado</h2><p>Cuando una cuenta te autoriza, sus archivos aparecen aquí. Aunque su anuncio se pause o deje de estar publicado, tu acceso continúa mientras la persona no lo retire.</p></div>
-      {buyerCollections.length ? <div className="buyer-content-grid">{buyerCollections.map((collection) => <article key={collection.id}><header><span>De la cuenta</span><strong>@{collection.sellerUsername}</strong>{collection.profileName && <small>Anuncio vinculado: {collection.profileName}</small>}</header>{collection.media.length ? <div className="exclusive-media-grid">{collection.media.map((media, index) => <figure key={media.id}>{media.mediaType === "image" ? <Image src={`/contenido/${media.id}`} alt={`Contenido exclusivo ${index + 1} de @${collection.sellerUsername}`} fill unoptimized sizes="(max-width: 620px) 85vw, 33vw" /> : <video controls playsInline preload="metadata"><source src={`/contenido/${media.id}`} type={media.contentType} /></video>}</figure>)}</div> : <p className="profile-media-empty">Esta biblioteca todavía no tiene archivos aprobados.</p>}</article>)}</div> : <p className="profile-media-empty">Todavía no tienes contenido desbloqueado. Cuando una persona te autorice, aparecerá aquí con su nombre de usuario.</p>}
+      {buyerCollections.length ? <div className="buyer-content-grid">{buyerCollections.map((collection) => <article key={collection.id}><header><span>De la cuenta</span><strong>@{collection.sellerUsername}</strong>{collection.profileName && <small>Anuncio vinculado: {collection.profileName}</small>}</header>{collection.media.length ? <div className="exclusive-media-grid">{collection.media.map((media, index) => <figure key={media.id}>{media.mediaType === "image" ? <Image src={`/contenido/${media.id}`} alt={`Contenido exclusivo ${index + 1} de @${collection.sellerUsername}`} fill unoptimized sizes="(max-width: 620px) 85vw, 33vw" /> : <MediaVideo src={`/contenido/${media.id}`} contentType={media.contentType} label="Video exclusivo" />}</figure>)}</div> : <p className="profile-media-empty">Esta biblioteca todavía no tiene archivos aprobados.</p>}</article>)}</div> : <p className="profile-media-empty">Todavía no tienes contenido desbloqueado. Cuando una persona te autorice, aparecerá aquí con su nombre de usuario.</p>}
     </section>
   </div></AccountShell>;
 }

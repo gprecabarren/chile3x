@@ -42,7 +42,8 @@ interface R2Object {
 interface R2ObjectBody extends R2Object { body: ReadableStream; }
 
 interface R2Bucket {
-  get(key: string): Promise<R2ObjectBody | null>;
+  // R2GetOptions.range, verified against Workers types 5.20261013.1.
+  get(key: string, options?: { range?: { offset: number; length?: number } | { offset?: number; length: number } | { suffix: number } | Headers }): Promise<R2ObjectBody | null>;
   put(key: string, value: ArrayBuffer | ReadableStream | string | Blob, options?: { httpMetadata?: R2HTTPMetadata; customMetadata?: Record<string, string>; storageClass?: "Standard" | "InfrequentAccess" }): Promise<R2Object | null>;
   delete(keys: string | string[]): Promise<void>;
   list(options?: { limit?: number; cursor?: string; prefix?: string; include?: ("httpMetadata" | "customMetadata")[] }): Promise<{ objects: R2Object[]; truncated: boolean; cursor?: string }>;

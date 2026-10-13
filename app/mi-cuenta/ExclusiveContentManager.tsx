@@ -1,8 +1,11 @@
 "use client";
 
+import { MediaVideo } from "@/app/MediaVideo";
 import Image from "next/image";
 import { assertVideoSource, isVideoSource, VIDEO_INPUT_ACCEPT, VIDEO_UPLOAD_RULES } from "@/lib/video-policy";
-import { readUploadResponse } from "@/lib/upload-response";
+import { uploadMediaRequest } from "@/lib/upload-response";
+import { MAX_IMAGE_UPLOAD_BYTES, assertImageSource, isImageSource, IMAGE_INPUT_ACCEPT, IMAGE_UPLOAD_RULES } from "@/lib/image-upload-policy";
+import { prepareGalleryImage } from "./watermark-image";
 import { useEffect, useRef, useState } from "react";
 
 type Media = {
@@ -90,12 +93,19 @@ export function ExclusiveContentManager({
     try {
       let addedImages = 0;
       let addedVideos = 0;
+      const failures: string[] = [];
       for (const original of Array.from(files)) {
-        const isImage = original.type.startsWith("image/");
+        try {
+        const isImage = isImageSource(original);
         const isVideo = !isImage && isVideoSource(original);
         if (!isImage && !isVideo) throw new Error("Elige imágenes JPEG, PNG o WebP, o videos MP4/WebM/MOV.");
-        if (isImage && original.size > 5_000_000) throw new Error("Cada imagen debe pesar 5 MB o menos.");
+        if (isImage) assertImageSource(original.size);
         let prepared = original;
+        if (isImage) {
+          if (images.length + addedImages >= 20) throw new Error("Tu biblioteca alcanzó las 20 fotos. Elimina una antes de agregar otra.");
+          const result = await prepareGalleryImage(original, { maxBytes: MAX_IMAGE_UPLOAD_BYTES, maxDimension: 2200, applyWatermark: false, blurFaces: false, onProgress: detail => setNotice(`${original.name}: ${detail}`) });
+          prepared = result.file;
+        }
         if (isVideo) {
           assertVideoSource(original.size);
           if (videos.length + addedVideos >= 4) throw new Error("Puedes subir hasta 4 videos de contenido exclusivo.");
@@ -107,14 +117,15 @@ export function ExclusiveContentManager({
         }
         if (isImage && images.length + addedImages >= 20) throw new Error("Puedes subir hasta 20 imágenes de contenido exclusivo.");
         const form = new FormData(); form.set("file", prepared);
-        const response = await fetch("/api/mi-cuenta/contenido/medios", { method: "POST", body: form });
-        const payload = await readUploadResponse<{ error?: string; media?: Media; quota?: Quota }>(response);
-        if (!response.ok || !payload.media || !payload.quota) throw new Error(payload.error ?? "No se pudo subir el archivo.");
+        const payload = await uploadMediaRequest<{ error?: string; media?: Media; quota?: Quota }>("/api/mi-cuenta/contenido/medios", form);
+        if (!payload.media || !payload.quota) throw new Error("El servidor no confirmó el archivo. Revisa la biblioteca antes de reintentar para evitar duplicados.");
         setMedia((current) => [...current, payload.media!]); setQuota(payload.quota);
         if (isImage) addedImages += 1;
         if (isVideo) addedVideos += 1;
+        } catch (cause) { failures.push(`${original.name}: ${cause instanceof Error ? cause.message : "No se pudo preparar este archivo."}`); }
+        finally { videoAbort.current = null; }
       }
-      setNotice("El material se guardó de forma privada y quedó pendiente de revisión.");
+      setNotice(`${addedImages + addedVideos} archivo(s) enviado(s) a revisión privada.${failures.length ? `\nNo se completaron ${failures.length}:\n${failures.join("\n")}` : " Solo se guardaron las versiones finales."}`);
     } catch (cause) { setNotice(cause instanceof Error ? cause.message : "No se pudo subir el archivo."); } finally { if (inputRef.current) inputRef.current.value = ""; setBusy(false); }
   }
 
@@ -133,8 +144,8 @@ export function ExclusiveContentManager({
     <p className={`media-quota media-quota-${quota.level}`}><b>Uso de R2: {formatBytes(quota.bytes)}</b>{quota.message}</p>
     {notice && <p className="media-manager-notice" role="status">{notice}</p>}
     <section className="exclusive-content-link"><div><p className="eyebrow">VÍNCULO PÚBLICO</p><h3>Mostrar al final de un anuncio Escort</h3><p>Solo puedes vincular esta biblioteca a un anuncio Escort de tu cuenta. El público verá la galería bloqueada hasta que autorices su acceso.</p></div><label>Anuncio vinculado<select value={linkedId} disabled={busy} onChange={(event) => updateLink(event.target.value)}><option value="">No mostrar en un anuncio por ahora</option>{escortProfiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.displayName}{profile.handle ? ` (@${profile.handle})` : ""} · {profile.status}</option>)}</select></label></section>
-    <section className="exclusive-content-upload"><div><p className="eyebrow">ARCHIVOS</p><h3>Fotos y videos privados</h3><p>Imágenes JPEG, PNG o WebP de hasta 5 MB. {VIDEO_UPLOAD_RULES} Todo llega a revisión antes de quedar disponible.</p></div><label className="button button-primary">{busy ? "Procesando…" : "Subir contenido"}<input ref={inputRef} type="file" accept={`image/jpeg,image/png,image/webp,${VIDEO_INPUT_ACCEPT}`} multiple disabled={busy || quota.level === "blocked"} onChange={(event) => upload(event.target.files)} /></label></section>
-    {media.length > 0 && <div className="media-owner-grid exclusive-content-media-grid">{media.map((item, index) => <article key={item.id}><div className="media-owner-preview">{item.mediaType === "image" ? <Image src={item.url} alt={`Vista previa privada ${index + 1}`} fill unoptimized sizes="180px" /> : <video controls preload="metadata"><source src={item.url} type={item.contentType} /></video>}</div><div><span className={`media-status media-status-${item.moderationStatus}`}>{statusLabel[item.moderationStatus]}</span><small>{item.mediaType === "image" ? "Foto" : "Video"} privado · {formatBytes(item.byteSize)}</small><button type="button" disabled={busy} onClick={() => removeMedia(item.id)}>Eliminar</button></div></article>)}</div>}
+    <section className="exclusive-content-upload"><div><p className="eyebrow">ARCHIVOS</p><h3>Fotos y videos privados</h3><p>{IMAGE_UPLOAD_RULES} {VIDEO_UPLOAD_RULES} Todo llega a revisión antes de quedar disponible.</p></div><label className="button button-primary">{busy ? "Procesando…" : "Subir contenido"}<input ref={inputRef} type="file" accept={`${IMAGE_INPUT_ACCEPT},${VIDEO_INPUT_ACCEPT}`} multiple disabled={busy || quota.level === "blocked"} onChange={(event) => upload(event.target.files)} /></label></section>
+    {media.length > 0 && <div className="media-owner-grid exclusive-content-media-grid">{media.map((item, index) => <article key={item.id}><div className="media-owner-preview">{item.mediaType === "image" ? <Image src={item.url} alt={`Vista previa privada ${index + 1}`} fill unoptimized sizes="180px" /> : <MediaVideo src={item.url} contentType={item.contentType} label="Video del anuncio" />}</div><div><span className={`media-status media-status-${item.moderationStatus}`}>{statusLabel[item.moderationStatus]}</span><small>{item.mediaType === "image" ? "Foto" : "Video"} privado · {formatBytes(item.byteSize)}</small><button type="button" disabled={busy} onClick={() => removeMedia(item.id)}>Eliminar</button></div></article>)}</div>}
     <section className="exclusive-content-access"><div><p className="eyebrow">PERSONAS AUTORIZADAS</p><h3>Dar y quitar acceso</h3><p>Busca por nombre de usuario o correo. Para tu privacidad, después de autorizar a alguien verás solo su nombre de usuario.</p></div><form onSubmit={addAccess}><label>Cuenta del cliente<input value={identifier} onChange={(event) => setIdentifier(event.target.value)} required maxLength={160} autoCapitalize="none" placeholder="Ej. @camila-cl o camila@correo.cl" /></label><button className="button button-primary" disabled={busy}>Autorizar</button></form>{grants.length > 0 ? <div className="exclusive-grant-list">{grants.map((grant) => <article key={grant.userId}><strong>@{grant.username}</strong><button type="button" disabled={busy} onClick={() => removeAccess(grant.userId)}>Quitar acceso</button></article>)}</div> : <p className="profile-media-empty">Aún no has autorizado cuentas. Tus archivos permanecen privados.</p>}</section>
   </section>;
 }

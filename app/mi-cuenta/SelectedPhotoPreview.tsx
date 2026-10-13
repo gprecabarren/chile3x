@@ -1,5 +1,7 @@
 "use client";
 
+import { MAX_IMAGE_UPLOAD_BYTES } from "@/lib/image-upload-policy";
+
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import type { FacePrivacyRegion } from "@/lib/face-privacy";
 import { prepareGalleryImage, type GalleryImageTransformResult } from "./watermark-image";
@@ -24,7 +26,7 @@ export function SelectedPhotoPreview({ file, watermark, blurFaces, regions, disa
     if (disabled || processing) return;
     setProcessing(true); onBusyChange(true); setNotice("");
     try {
-      const result = await prepareGalleryImage(file, { maxBytes: 4_900_000, maxDimension: 2200, applyWatermark: watermark, blurFaces, faceRegions: regions, onProgress: setNotice });
+      const result = await prepareGalleryImage(file, { maxBytes: MAX_IMAGE_UPLOAD_BYTES, maxDimension: 2200, applyWatermark: watermark, blurFaces, faceRegions: regions, onProgress: setNotice });
       onPrepared(result); setNotice("Resultado listo. Se subirá exactamente esta foto.");
     } catch (cause) { setNotice(cause instanceof Error ? cause.message : "No se pudo preparar la vista previa. No se subió ningún archivo."); }
     finally { setProcessing(false); onBusyChange(false); }

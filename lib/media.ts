@@ -1,9 +1,10 @@
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/db";
+import { MAX_IMAGE_UPLOAD_BYTES } from "@/lib/image-upload-policy";
 import { exclusiveContentMedia, newsMedia, profileMedia, profileReportEvidence, profileStatuses, profileVerificationFiles, profiles, sponsors, users } from "@/db/schema";
 
 export const MAX_IMAGES_PER_PROFILE = 10;
-export const MAX_IMAGE_BYTES = 5_000_000;
+export const MAX_IMAGE_BYTES = MAX_IMAGE_UPLOAD_BYTES;
 export const MAX_VIDEOS_PER_PROFILE = 3;
 export const MAX_VIDEO_BYTES = 8_000_000;
 export const MAX_PROFILE_MEDIA_BYTES = 45_000_000;

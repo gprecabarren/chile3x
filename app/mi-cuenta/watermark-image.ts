@@ -2,6 +2,7 @@
 
 import { validPrivacyRegions, type FacePrivacyRegion } from "@/lib/face-privacy";
 import { imagePreparationSize, imageQualityWarning } from "@/lib/image-quality";
+import { assertImageSource, imageHeaderType } from "@/lib/image-upload-policy";
 
 export type GalleryImageTransformOptions = {
   maxBytes: number;
@@ -27,22 +28,30 @@ function loadImage(url: string) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new window.Image();
     image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error("No se pudo preparar la imagen."));
+    image.onerror = () => reject(new Error("No se pudo abrir esta foto. Descarga el original desde Fotos/iCloud; si es HEIC, expórtalo como JPEG o PNG y vuelve a seleccionarlo."));
     image.src = url;
   });
 }
 
-function blobFromCanvas(canvas: HTMLCanvasElement, maxBytes: number) {
-  return new Promise<Blob | null>((resolve) => {
-    const qualities = [0.94, 0.9, 0.86]; let index = 0; let fallback: Blob | null = null;
-    const encode = () => canvas.toBlob((blob) => {
-      if (!blob) return resolve(null);
-      fallback = blob;
-      if (blob.size <= maxBytes || index === qualities.length - 1) return resolve(fallback);
-      index += 1; encode();
-    }, "image/jpeg", qualities[index]);
-    encode();
-  });
+export async function blobFromCanvas(canvas: HTMLCanvasElement, maxBytes: number): Promise<Blob> {
+  // Keep quality first. If needed, resize the already-rendered effects together;
+  // never regenerate an unblurred image as a compression fallback.
+  let working = canvas;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    for (const quality of [0.94, 0.88, 0.8]) {
+      const blob = await new Promise<Blob | null>(resolve => working.toBlob(resolve, "image/jpeg", quality));
+      if (!blob) throw new Error("Tu dispositivo no pudo generar la foto. Cierra otras pestañas e inténtalo nuevamente.");
+      if (blob.size <= maxBytes) return blob;
+    }
+    const smaller = document.createElement("canvas");
+    smaller.width = Math.max(1, Math.round(working.width * .8)); smaller.height = Math.max(1, Math.round(working.height * .8));
+    const context = smaller.getContext("2d");
+    if (!context) throw new Error("No se pudo optimizar la foto. El original se conserva.");
+    context.imageSmoothingQuality = "high"; context.drawImage(working, 0, 0, smaller.width, smaller.height);
+    if (working !== canvas) { working.width = 0; working.height = 0; }
+    working = smaller;
+  }
+  throw new Error(`No se pudo ajustar esta foto al límite de ${Math.round(maxBytes / 1_000_000)} MB. Prueba exportando una copia JPEG más pequeña.`);
 }
 
 async function getFaceDetector() {
@@ -104,15 +113,21 @@ function drawWatermark(context: CanvasRenderingContext2D, width: number, height:
 }
 
 export async function prepareGalleryImage(file: File, options: GalleryImageTransformOptions): Promise<GalleryImageTransformResult> {
-  const sourceUrl = URL.createObjectURL(file);
+  assertImageSource(file.size);
+  const type = imageHeaderType(new Uint8Array(await file.slice(0, 16).arrayBuffer()));
+  // Some mobile file pickers omit MIME or use image/jpg. Trust the signature,
+  // not the extension, and give the browser a canonical decoding MIME.
+  const readableFile = type && file.type !== type ? new File([file], file.name, { type, lastModified: file.lastModified }) : file;
+  const sourceUrl = URL.createObjectURL(readableFile);
   try {
     options.onProgress?.("Preparando imagen…");
     const source = await loadImage(sourceUrl); const sourceImage: ImageSource = source;
     const { width, height } = imagePreparationSize(sourceImage.naturalWidth, sourceImage.naturalHeight, options.maxDimension);
     const qualityWarning = imageQualityWarning(sourceImage.naturalWidth, sourceImage.naturalHeight);
     // Preserve the bytes of valid, already-sized photos when no effects were requested.
-    if (!options.applyWatermark && !options.blurFaces && width === sourceImage.naturalWidth && height === sourceImage.naturalHeight && file.size <= options.maxBytes) {
-      return { file, facesBlurred: 0, qualityWarning };
+    if (sourceImage.naturalWidth * sourceImage.naturalHeight > 50_000_000) throw new Error("La foto supera 50 megapíxeles. Exporta una copia más pequeña para editarla en este dispositivo.");
+    if (type && !options.applyWatermark && !options.blurFaces && width === sourceImage.naturalWidth && height === sourceImage.naturalHeight && file.size <= options.maxBytes) {
+      return { file: readableFile, facesBlurred: 0, qualityWarning };
     }
     const canvas = document.createElement("canvas"); canvas.width = width; canvas.height = height;
     const context = canvas.getContext("2d"); if (!context) throw new Error("Tu navegador no pudo preparar la imagen.");

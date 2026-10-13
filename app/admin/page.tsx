@@ -1,8 +1,8 @@
-import { and, count, eq, isNull } from "drizzle-orm";
+import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
-import { adminNotifications, exclusiveContentMedia, profileMedia, profiles, users } from "@/db/schema";
+import { adminAuditLogs, adminNotifications, exclusiveContentMedia, profileMedia, profiles, users } from "@/db/schema";
 import { getCurrentAdmin, getSessionCookieName } from "@/lib/auth";
 import { ADMIN_ACCESS_LABELS, adminHasCapability } from "@/lib/admin-permissions";
 import { getAccountSessions } from "@/lib/session-management";
@@ -11,6 +11,7 @@ import { SessionManager } from "@/app/SessionManager";
 import { AdminPageHeading, AdminShell } from "./_components";
 import { OperationalPanel } from "./OperationalPanel";
 import { emailVerificationFilter } from "@/lib/email-verification-admin";
+import { RecentAdminActivity } from "./RecentAdminActivity";
 
 export const dynamic = "force-dynamic";
 
@@ -45,10 +46,11 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
       db.select({ total: count() }).from(users).where(emailVerificationFilter("blocked")),
     ]);
   })() : Promise.resolve([[], [], [], [], [], [], []] as { total: number }[][]);
-  const [sessions, stats, operational] = await Promise.all([
+  const [sessions, stats, operational, recentActivity] = await Promise.all([
     getAccountSessions(admin.id, getSessionCookieName()),
     statsPromise,
     canViewOperations ? getOperationalDashboard(filters) : Promise.resolve(null),
+    adminHasCapability(admin, "audit.view") ? getDb().then(db => db.select().from(adminAuditLogs).orderBy(desc(sql`datetime(${adminAuditLogs.createdAt})`), desc(adminAuditLogs.id)).limit(10)) : Promise.resolve([]),
   ]);
   const [[allProfiles], [pendingProfiles], [pausedProfiles], [pendingPublicMedia], [pendingExclusiveMedia], [unreadNotifications], [emailBlockedAccounts]] = stats;
 
@@ -127,6 +129,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
           </div>
           <Link prefetch={false} className="button button-primary" href="/admin/medios?estado=pending">Revisar medios</Link>
         </section>}
+        {adminHasCapability(admin, "audit.view") && <RecentAdminActivity entries={recentActivity} />}
         {!canViewSummary && <section className="admin-role-shortcuts" aria-label="Herramientas disponibles">
           <h2>Herramientas disponibles</h2>
           <div>

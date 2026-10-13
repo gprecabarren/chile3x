@@ -21,6 +21,7 @@ export const ADMIN_AUDIT_CATEGORIES = {
 
 export const ADMIN_AUDIT_ACTIONS = {
   "media.public_bulk_approve": "Aprobó varios archivos de un anuncio",
+  "media.exclusive_bulk_approve": "Aprobó varios archivos de contenido exclusivo",
   "admin.login": "Inició sesión",
   "admin.logout": "Cerró sesión",
   "admin.grant_create": "Autorizó un administrador",
@@ -93,6 +94,7 @@ export const ADMIN_AUDIT_ENTITY_TYPES = {
   profile: "Anuncio",
   public_media: "Archivo público",
   exclusive_media: "Contenido exclusivo",
+  exclusive_collection: "Biblioteca de contenido exclusivo",
   review: "Reseña",
   report: "Reporte",
   bug_report: "Reporte de tester",
@@ -165,7 +167,7 @@ export async function recordAdminAudit(actor: AdminUser, input: AdminAuditInput)
     await db.insert(adminAuditLogs).values({
       id: `audit_${crypto.randomUUID()}`,
       actorUserId: actor.id,
-      actorGithubLogin: identity?.githubLogin ?? null,
+      actorGithubLogin: identity?.githubLogin ?? actor.githubLogin,
       actorEmail: actor.email,
       actorName: actor.displayName,
       category: input.category,

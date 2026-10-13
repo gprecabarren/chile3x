@@ -21,8 +21,9 @@ export async function uploadProfileMedia(input: {
   moderationStatus: "pending" | "approved";
 }) {
   const { profileId, file, uploadKind, uploadedBy, moderationStatus } = input;
-  if (file.size === 0 || file.size > Math.max(MAX_IMAGE_BYTES, MAX_VIDEO_BYTES)) {
-    throw new ProfileMediaUploadError("El archivo supera el máximo permitido de 8 MB.");
+  if (file.size === 0) throw new ProfileMediaUploadError("El archivo llegó vacío. Descarga el original en tu dispositivo y vuelve a seleccionarlo.");
+  if (file.size > Math.max(MAX_IMAGE_BYTES, MAX_VIDEO_BYTES)) {
+    throw new ProfileMediaUploadError("El archivo supera el máximo: fotos de hasta 10 MB y videos de hasta 8 MB.");
   }
   const data = await file.arrayBuffer();
   const imageType = detectImageType(data);
@@ -32,7 +33,7 @@ export async function uploadProfileMedia(input: {
   const contentType = imageType ?? videoType!;
   if (uploadKind === "profile_photo" && mediaType !== "image") throw new ProfileMediaUploadError("La foto de perfil debe ser una imagen JPEG, PNG o WebP.");
   if (file.size > (imageType ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES)) {
-    throw new ProfileMediaUploadError(imageType ? "Cada imagen debe pesar menos de 5 MB." : "Cada video debe pesar menos de 8 MB.");
+    throw new ProfileMediaUploadError(imageType ? "Cada imagen debe pesar como máximo 10 MB." : "Cada video debe pesar menos de 8 MB.");
   }
   if (videoType) {
     try { await validatePreparedVideo(data, videoType); }
@@ -53,11 +54,15 @@ export async function uploadProfileMedia(input: {
   const id = `med_${crypto.randomUUID()}`;
   const extension = imageType ? extensionForImageType(imageType) : extensionForVideoType(videoType!);
   const r2Key = `profiles/${profileId}/${id}.${extension}`;
-  await env.MEDIA.put(r2Key, data, {
+  try { await env.MEDIA.put(r2Key, data, {
     httpMetadata: { contentType, contentDisposition: "inline", cacheControl: "private, no-store" },
     customMetadata: { profileId, uploadedBy, moderation: moderationStatus, mediaType, uploadKind },
     storageClass: "Standard",
-  });
+  }); } catch (cause) {
+    const reference = `CARGA-${crypto.randomUUID().slice(0,8)}`;
+    console.error("Media storage write failed", { reference, profileId, cause });
+    throw new ProfileMediaUploadError(`Falló el guardado en el almacenamiento del sitio. Tu archivo no fue registrado. Código de soporte: ${reference}.`, 500);
+  }
   const db = await getDb();
   const sortOrder = activeMedia.reduce((latest, media) => Math.max(latest, media.sortOrder), -1) + 1;
   try {
@@ -70,9 +75,11 @@ export async function uploadProfileMedia(input: {
       ));
     }
   } catch (cause) {
-    await db.delete(profileMedia).where(eq(profileMedia.id, id));
-    await env.MEDIA.delete(r2Key);
-    throw cause;
+    const reference = `CARGA-${crypto.randomUUID().slice(0,8)}`;
+    console.error("Media registration failed", { reference, profileId, cause });
+    try { await db.delete(profileMedia).where(eq(profileMedia.id, id)); await env.MEDIA.delete(r2Key); }
+    catch (cleanupCause) { console.error("Media cleanup failed", { reference, profileId, cleanupCause }); }
+    throw new ProfileMediaUploadError(`Falló el registro de la foto o video en la galería. No se confirmó la carga. Código de soporte: ${reference}.`, 500);
   }
   const totalBytes = usage.bytes + data.byteLength;
   return {

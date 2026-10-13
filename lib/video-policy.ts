@@ -13,8 +13,8 @@ export function isVideoSource(file: Pick<File, "name" | "type">) {
 }
 
 export function assertVideoSource(size: number, duration?: number) {
-  if (!Number.isFinite(size) || size <= 0 || size > MAX_VIDEO_SOURCE_BYTES) throw new Error("El video original debe pesar 50 MB o menos.");
-  if (duration !== undefined && (!Number.isFinite(duration) || duration <= 0 || duration > MAX_VIDEO_SECONDS + VIDEO_DURATION_TOLERANCE)) throw new Error("Los videos deben durar 10 segundos o menos. Recórtalo en Fotos o Galería antes de elegirlo.");
+  if (!Number.isFinite(size) || size <= 0 || size > MAX_VIDEO_SOURCE_BYTES) throw new Error(`El video original debe pesar 50 MB o menos.${Number.isFinite(size) && size > 0 ? ` Este pesa ${(size / 1_000_000).toFixed(1)} MB.` : " El archivo está vacío o no se pudo leer."}`);
+  if (duration !== undefined && (!Number.isFinite(duration) || duration <= 0 || duration > MAX_VIDEO_SECONDS + VIDEO_DURATION_TOLERANCE)) throw new Error(`Los videos deben durar 10 segundos o menos.${Number.isFinite(duration) && duration > 0 ? ` Este dura ${duration.toFixed(2)} segundos.` : " No se pudo leer una duración válida."} Recórtalo en Fotos o Galería antes de elegirlo.`);
 }
 
 export function videoOutputSize(width: number, height: number) {

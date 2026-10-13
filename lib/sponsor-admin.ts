@@ -18,7 +18,7 @@ export async function storeSponsorImage(
   adminId: string,
 ): Promise<StoredSponsorImage | null> {
   if (!(file instanceof File) || file.size === 0) return null;
-  if (file.size > MAX_IMAGE_BYTES) throw new Error("La imagen supera el máximo de 5 MB.");
+  if (file.size > MAX_IMAGE_BYTES) throw new Error("La imagen supera el máximo de 10 MB.");
   const bytes = await file.arrayBuffer();
   const contentType = detectImageType(bytes);
   if (!contentType) throw new Error("La imagen debe ser JPEG, PNG o WebP válida.");

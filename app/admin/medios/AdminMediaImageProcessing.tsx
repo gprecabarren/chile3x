@@ -1,5 +1,8 @@
 "use client";
 
+import { MAX_IMAGE_UPLOAD_BYTES } from "@/lib/image-upload-policy";
+import { uploadMediaRequest } from "@/lib/upload-response";
+
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { prepareGalleryImage } from "@/app/mi-cuenta/watermark-image";
@@ -39,11 +42,11 @@ export function AdminMediaImageProcessing({ mediaId, profileName }: { mediaId: s
     try {
       const source = await originalFile();
       const result = await prepareGalleryImage(source, {
-        maxBytes: 4_900_000, maxDimension: 2200, applyWatermark: watermark, blurFaces: blur,
+        maxBytes: MAX_IMAGE_UPLOAD_BYTES, maxDimension: 2200, applyWatermark: watermark, blurFaces: blur,
         faceRegions,
         onProgress: setMessage,
       });
-      if (result.file.size > 5_000_000) throw new Error("La imagen procesada supera el límite de 5 MB.");
+      if (result.file.size > MAX_IMAGE_UPLOAD_BYTES) throw new Error("La imagen procesada supera el límite de 10 MB.");
       setPreview({ file: result.file, url: URL.createObjectURL(result.file), facesBlurred: result.facesBlurred });
       setMessage("Revisa la vista previa antes de reemplazar la imagen. El difuminado no garantiza anonimato.");
     } catch (error) { setMessage(error instanceof Error ? error.message : "No se pudo preparar la imagen."); }
@@ -55,9 +58,7 @@ export function AdminMediaImageProcessing({ mediaId, profileName }: { mediaId: s
     setBusy(true); setMessage("Guardando imagen procesada…");
     try {
       const data = new FormData(); data.set("file", preview.file); data.set("watermark", watermark ? "yes" : "no"); data.set("blur", blur ? "yes" : "no");
-      const response = await fetch(`/api/admin/media/${encodeURIComponent(mediaId)}/procesar`, { method: "POST", body: data });
-      const payload = await response.json() as { error?: string };
-      if (!response.ok) throw new Error(payload.error ?? "No se pudo guardar la imagen.");
+      await uploadMediaRequest(`/api/admin/media/${encodeURIComponent(mediaId)}/procesar`, data);
       window.location.reload();
     } catch (error) { setMessage(error instanceof Error ? error.message : "No se pudo guardar la imagen."); setBusy(false); }
   }

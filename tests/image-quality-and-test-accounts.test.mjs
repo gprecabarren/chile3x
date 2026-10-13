@@ -35,7 +35,7 @@ test('watermark is large, monochrome, centered and optional for owners and admin
   assert.match(transform,/context\.fillText\(text, width \/ 2, height \/ 2\)/);
   assert.match(transform,/width \* 0\.76/);
   assert.match(transform,/rgba\(255, 255, 255, 0\.28\)/);
-  assert.match(transform,/return \{ file, facesBlurred: 0, qualityWarning \}/);
+  assert.match(transform,/return \{ file: readableFile, facesBlurred: 0, qualityWarning \}/);
   assert.doesNotMatch(transform,/watermarkPositions|globalCompositeOperation|logo-primary/);
   const manager=await source('app/mi-cuenta/ProfileMediaManager.tsx');
   assert.match(manager,/candidate\?\.watermark \?\? photoWatermark/);

@@ -1,5 +1,6 @@
 "use client";
 
+import { MediaVideo } from "@/app/MediaVideo";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { prepareGalleryImage } from "./watermark-image";
@@ -8,7 +9,8 @@ import type { FacePrivacyRegion } from "@/lib/face-privacy";
 import { SelectedPhotoPreview } from "./SelectedPhotoPreview";
 import { SelectedVideoPreview } from "./SelectedVideoPreview";
 import { assertVideoSource, isVideoSource, VIDEO_INPUT_ACCEPT, VIDEO_UPLOAD_RULES } from "@/lib/video-policy";
-import { readUploadResponse } from "@/lib/upload-response";
+import { uploadMediaRequest } from "@/lib/upload-response";
+import { MAX_IMAGE_UPLOAD_BYTES, assertImageSource, IMAGE_INPUT_ACCEPT, IMAGE_UPLOAD_RULES, isImageSource } from "@/lib/image-upload-policy";
 
 type MediaItem = { id: string; url: string; mediaType: "image" | "video"; contentType: string; moderationStatus: "pending" | "approved" | "rejected"; visibility: "public" | "exclusive"; isProfilePhoto: boolean; byteSize: number };
 type Quota = { bytes: number; level: "ok" | "warning" | "blocked"; message: string };
@@ -55,10 +57,10 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
   }
 
   async function uploadOne(file: File, uploadKind: "gallery" | "profile_photo", candidate?: Candidate) {
-    const image = file.type.startsWith("image/"); const video = !image && isVideoSource(file);
+    const image = isImageSource(file); const video = !image && isVideoSource(file);
     if (!image && !video) throw new Error("Elige imágenes JPEG, PNG o WebP, o videos MP4/WebM/MOV.");
     if (uploadKind === "profile_photo" && !image) throw new Error("La foto de perfil debe ser una imagen JPEG, PNG o WebP.");
-    if (image && file.size > 5_000_000) throw new Error("Cada imagen debe pesar 5 MB o menos.");
+    if (image) assertImageSource(file.size);
     let prepared = file;
     if (video && candidate) prepared = await prepareCandidateVideo(candidate);
     const applyWatermark = candidate?.watermark ?? photoWatermark;
@@ -67,7 +69,7 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
     if (image && cached) prepared = cached;
     else if (image) {
       const result = await prepareGalleryImage(file, {
-        maxBytes: 4_900_000, maxDimension: 2200, applyWatermark, blurFaces,
+        maxBytes: MAX_IMAGE_UPLOAD_BYTES, maxDimension: 2200, applyWatermark, blurFaces,
         faceRegions: candidate?.faceRegions ?? photoRegions,
         onProgress: (detail) => { if (candidate) updateCandidate(candidate.id, { status: "processing", detail }); },
       });
@@ -76,16 +78,16 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
     }
     if (candidate) updateCandidate(candidate.id, { status: "uploading", detail: adminMode ? "Subiendo y aprobando…" : "Subiendo a revisión…" });
     const data = new FormData(); data.set("file", prepared); data.set("upload_kind", uploadKind);
-    const response = await fetch(mediaApi, { method: "POST", body: data });
-    const payload = await readUploadResponse<{ error?: string; media?: MediaItem; quota?: Quota }>(response);
-    if (!response.ok || !payload.media || !payload.quota) throw new Error(payload.error ?? "No se pudo subir el archivo.");
+    const payload = await uploadMediaRequest<{ error?: string; media?: MediaItem; quota?: Quota }>(mediaApi, data);
+    if (!payload.media || !payload.quota) throw new Error("El servidor no confirmó el archivo guardado. Revisa la galería antes de reintentar para evitar duplicados.");
     setMedia((current) => [...(uploadKind === "profile_photo" && payload.media!.moderationStatus === "approved" ? current.map((item) => item.isProfilePhoto && item.moderationStatus === "approved" ? { ...item, isProfilePhoto: false } : item) : current), payload.media!]); setQuota(payload.quota);
     if (candidate) updateCandidate(candidate.id, { status: "completed", detail: adminMode ? "Aprobado." : "Enviada a revisión." });
   }
 
   async function uploadProfilePhoto(files: FileList | null) {
     const file = files?.[0]; if (!file || isBusy) return;
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 5_000_000) { setNotice("Elige una foto JPEG, PNG o WebP de hasta 5 MB."); if (profilePhotoInputRef.current) profilePhotoInputRef.current.value = ""; return; }
+    try { if (!isImageSource(file)) throw new Error("Elige una foto JPEG, PNG, WebP o HEIC compatible."); assertImageSource(file.size); }
+    catch (cause) { setNotice(cause instanceof Error ? cause.message : "No se pudo seleccionar la foto."); if (profilePhotoInputRef.current) profilePhotoInputRef.current.value = ""; return; }
     setStagedPhoto(file); setOriginalPhoto(file); setPreparedPhoto(undefined); setPhotoRegions([]); setQualityWarning("");
     setNotice("Foto principal seleccionada. Revisa el resultado y pulsa el botón de enviar; aún no se ha subido.");
     if (profilePhotoInputRef.current) profilePhotoInputRef.current.value = "";
@@ -102,20 +104,22 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
   async function chooseGallery(files: FileList | null) {
     if (!files?.length || isBusy) return; setNotice("");
     const selected: Candidate[] = [];
+    const selectionErrors: string[] = [];
     const currentImageCount = images.length + candidates.filter((candidate) => candidate.status !== "completed" && candidate.image).length;
     const currentVideoCount = videos.length + candidates.filter((candidate) => candidate.status !== "completed" && !candidate.image).length;
     let nextImageCount = currentImageCount; let nextVideoCount = currentVideoCount;
     for (const [index, file] of Array.from(files).entries()) {
-      const image = file.type.startsWith("image/"); const video = !image && isVideoSource(file);
-      if (!image && !video) { setNotice("Solo se agregaron imágenes JPEG, PNG o WebP, y videos MP4/WebM/MOV."); continue; }
-      if (image && file.size > 5_000_000) { setNotice(`No se agregó ${file.name}: cada imagen debe pesar 5 MB o menos.`); continue; }
-      if (video) { try { assertVideoSource(file.size); } catch (cause) { setNotice(`${file.name}: ${cause instanceof Error ? cause.message : "Video demasiado grande."}`); continue; } }
-      if (image && nextImageCount >= 10) { setNotice("Ya alcanzaste el máximo de 10 fotos de galería. Elimina una foto antes de agregar otra."); continue; }
-      if (video && nextVideoCount >= 3) { setNotice("Ya alcanzaste el máximo de 3 videos de galería. Elimina un video antes de agregar otro."); continue; }
-      selected.push({ id: candidateId(file, index), file, originalFile: file, image, blurFaces: false, watermark: !adminMode && mediaSettings.watermarkEnabled, faceRegions: [], status: "ready", detail: image ? "Lista para procesar." : "Pendiente de preparar. El original aún no se subió." });
+      const image = isImageSource(file); const video = !image && isVideoSource(file);
+      if (!image && !video) { selectionErrors.push(`${file.name}: formato no admitido. Elige fotos JPEG, PNG, WebP o HEIC compatible, o videos MP4/WebM/MOV.`); continue; }
+      if (image) { try { assertImageSource(file.size); } catch (cause) { selectionErrors.push(`${file.name}: ${cause instanceof Error ? cause.message : "No se pudo validar la foto."}`); continue; } }
+      if (video) { try { assertVideoSource(file.size); } catch (cause) { selectionErrors.push(`${file.name}: ${cause instanceof Error ? cause.message : "No se pudo validar el video."}`); continue; } }
+      if (image && nextImageCount >= 10) { selectionErrors.push(`${file.name}: ya alcanzaste el máximo de 10 fotos de galería. Quita una foto seleccionada o guardada antes de agregar otra.`); continue; }
+      if (video && nextVideoCount >= 3) { selectionErrors.push(`${file.name}: ya alcanzaste el máximo de 3 videos de galería. Quita un video seleccionado o guardado antes de agregar otro.`); continue; }
+      selected.push({ id: candidateId(file, index), file, originalFile: file, image, blurFaces: false, watermark: !adminMode && mediaSettings.watermarkEnabled, faceRegions: [], status: "ready", detail: image ? "Lista para optimizar. El original aún no se subió." : "Pendiente de preparar. El original aún no se subió." });
       if (image) nextImageCount += 1; else nextVideoCount += 1;
     }
     setCandidates((current) => [...current.filter((candidate) => candidate.status !== "completed"), ...selected]);
+    if (selectionErrors.length) setNotice(`No se seleccionaron estos archivos:\n${selectionErrors.join("\n")}`);
     if (galleryInputRef.current) galleryInputRef.current.value = "";
   }
 
@@ -128,7 +132,7 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
         try { await uploadOne(candidate.file, "gallery", candidate); }
         catch (cause) { failed += 1; updateCandidate(candidate.id, { status: "failed", detail: cause instanceof Error ? cause.message : "No se pudo subir el archivo." }); }
       }
-      setNotice(failed ? `${pending.length - failed} de ${pending.length} archivos enviados. Revisa los errores de los restantes; no se guardaron sus originales.` : adminMode ? "Los archivos quedaron aprobados. El anuncio debe estar publicado para mostrarlos." : "El material se envió a revisión. Solo se guardó la versión final de cada foto y video.");
+      setNotice(failed ? `${pending.length - failed} de ${pending.length} archivos enviados. Cada archivo restante muestra su causa y cómo reintentarlo. No se enviaron originales; si falló la conexión, comprueba la galería antes de repetir.` : adminMode ? "Los archivos quedaron aprobados. El anuncio debe estar publicado para mostrarlos." : "El material se envió a revisión. Solo se guardó la versión final de cada foto y video.");
     } finally { setIsBusy(false); }
   }
 
@@ -150,15 +154,15 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
     <p className={`media-quota media-quota-${quota.level}`}><b>Uso de R2: {formatBytes(quota.bytes)}</b>{quota.message}</p>{notice && <p className="media-manager-notice" role="status">{notice}</p>}
     <p className="media-manager-independent-notice">Las fotos y videos se guardan por separado. Subir, reemplazar o eliminar un archivo no retira un anuncio publicado; solo el material nuevo espera aprobación. No necesitas guardar nuevamente los datos del anuncio.</p>
     {qualityWarning && <p className="photo-quality-warning" role="status">{qualityWarning}</p>}
-    <div className="profile-photo-manager"><div><p className="eyebrow">FOTO PRINCIPAL</p><h3>Foto de perfil</h3><span>Es la imagen prioritaria en el directorio y al abrir el aviso. Puedes recortarla y añadir una marca de agua grande, centrada y sin colores. Sube el archivo original para mantener su calidad.</span><div className="admin-photo-processing-options"><label><input type="checkbox" checked={photoWatermark} disabled={isBusy} onChange={event => { setPhotoWatermark(event.target.checked); setPreparedPhoto(undefined); }} />Marca de agua centrada</label>{(adminMode || mediaSettings.faceBlurEnabled) && <label><input type="checkbox" checked={photoBlurFaces} disabled={isBusy} onChange={event => { setPhotoBlurFaces(event.target.checked); setPreparedPhoto(undefined); }} />Difuminar rostros</label>}</div></div><label className="button button-outline">{isBusy ? "Procesando…" : "Elegir foto de perfil"}<input aria-label="Elegir foto de perfil" ref={profilePhotoInputRef} type="file" accept="image/jpeg,image/png,image/webp" disabled={isBusy || quota.level === "blocked"} onChange={event => uploadProfilePhoto(event.target.files)} /></label></div>
+    <div className="profile-photo-manager"><div><p className="eyebrow">FOTO PRINCIPAL</p><h3>Foto de perfil</h3><span>Es la imagen prioritaria en el directorio y al abrir el aviso. Puedes recortarla y añadir una marca de agua grande, centrada y sin colores. Sube el archivo original para mantener su calidad.</span><div className="admin-photo-processing-options"><label><input type="checkbox" checked={photoWatermark} disabled={isBusy} onChange={event => { setPhotoWatermark(event.target.checked); setPreparedPhoto(undefined); }} />Marca de agua centrada</label>{(adminMode || mediaSettings.faceBlurEnabled) && <label><input type="checkbox" checked={photoBlurFaces} disabled={isBusy} onChange={event => { setPhotoBlurFaces(event.target.checked); setPreparedPhoto(undefined); }} />Difuminar rostros</label>}</div></div><label className="button button-outline">{isBusy ? "Procesando…" : "Elegir foto de perfil"}<input aria-label="Elegir foto de perfil" ref={profilePhotoInputRef} type="file" accept={IMAGE_INPUT_ACCEPT} disabled={isBusy || quota.level === "blocked"} onChange={event => uploadProfilePhoto(event.target.files)} /></label></div>
     {stagedPhoto && <section className="staged-profile-photo"><strong className="selected-photo-filename">{originalPhoto?.name ?? stagedPhoto.name}</strong>
       <SelectedPhotoPreview file={stagedPhoto} watermark={photoWatermark} blurFaces={photoBlurFaces} regions={photoRegions} disabled={isBusy} prepared={preparedPhoto} onBusyChange={setIsBusy} edited={stagedPhoto !== originalPhoto} onPrepared={result => { setPreparedPhoto(result.file); setQualityWarning(result.qualityWarning); }} onEdit={file => { setStagedPhoto(file); setPreparedPhoto(undefined); setPhotoRegions([]); }} onRestore={() => { setStagedPhoto(originalPhoto); setPreparedPhoto(undefined); setPhotoRegions([]); }} />
       {photoBlurFaces && <FacePrivacyEditor file={stagedPhoto} regions={photoRegions} onChange={regions => { setPhotoRegions(regions); setPreparedPhoto(undefined); }} disabled={isBusy} />}
       <div className="face-privacy-actions"><button type="button" className="button button-primary" disabled={isBusy} onClick={uploadStagedPhoto}>{isBusy ? "Procesando…" : adminMode ? "Procesar y aprobar foto principal" : "Enviar foto principal a revisión"}</button><button type="button" className="button button-outline" disabled={isBusy} onClick={() => { setStagedPhoto(null); setOriginalPhoto(null); setPreparedPhoto(undefined); setPhotoRegions([]); }}>Cancelar foto seleccionada</button></div></section>}
     {profilePhotos.length > 0 && <div className="profile-photo-preview-list">{profilePhotos.map(item => <article key={item.id}><div className="media-owner-preview"><a href={item.url} target="_blank" rel="noopener noreferrer" aria-label="Abrir foto principal completa"><Image src={item.url} alt="Vista previa completa de foto de perfil" fill unoptimized sizes="210px" /></a></div><div><span className={`media-status media-status-${item.moderationStatus}`}>{statusLabel[item.moderationStatus]}</span><small>Foto principal · {formatBytes(item.byteSize)}</small><a className="media-owner-open" href={item.url} target="_blank" rel="noopener noreferrer">Ver foto completa</a><button type="button" onClick={() => remove(item.id)} disabled={isBusy}>Eliminar</button></div></article>)}</div>}
-    <section className="profile-public-gallery-manager"><div><p className="eyebrow">GALERÍA PÚBLICA</p><h3>Fotos y videos del anuncio</h3><p>{adminMode ? "Marca de agua y difuminado son opcionales e independientes en cada foto. Los videos se preparan sin estos efectos." : <>Puedes activar o desactivar una marca de agua grande, centrada y sin colores en cada foto. {mediaSettings.faceBlurEnabled ? "Puedes decidir por cada foto si quieres difuminar rostros antes de enviarla." : "El difuminado facial está desactivado temporalmente por el equipo."}</>}</p></div><label className="button button-primary">{isBusy ? "Procesando…" : "Elegir archivos"}<input ref={galleryInputRef} aria-label="Elegir fotos y videos de galería" type="file" accept={`image/jpeg,image/png,image/webp,${VIDEO_INPUT_ACCEPT}`} multiple disabled={!canChoose} onChange={(event) => chooseGallery(event.target.files)} /></label><small>Fotos JPEG, PNG o WebP: hasta 5 MB. {VIDEO_UPLOAD_RULES} Máximo 3 videos por anuncio. Los videos no llevan difuminado ni marca de agua.</small>
+    <section className="profile-public-gallery-manager"><div><p className="eyebrow">GALERÍA PÚBLICA</p><h3>Fotos y videos del anuncio</h3><p>{adminMode ? "Marca de agua y difuminado son opcionales e independientes en cada foto. Los videos se preparan sin estos efectos." : <>Puedes activar o desactivar una marca de agua grande, centrada y sin colores en cada foto. {mediaSettings.faceBlurEnabled ? "Puedes decidir por cada foto si quieres difuminar rostros antes de enviarla." : "El difuminado facial está desactivado temporalmente por el equipo."}</>}</p></div><label className="button button-primary">{isBusy ? "Procesando…" : "Elegir archivos"}<input ref={galleryInputRef} aria-label="Elegir fotos y videos de galería" type="file" accept={`${IMAGE_INPUT_ACCEPT},${VIDEO_INPUT_ACCEPT}`} multiple disabled={!canChoose} onChange={(event) => chooseGallery(event.target.files)} /></label><small>{IMAGE_UPLOAD_RULES} {VIDEO_UPLOAD_RULES} Máximo 3 videos por anuncio. Los videos no llevan difuminado ni marca de agua.</small>
       {pendingCandidates.length > 0 && <div className="gallery-upload-candidates"><div><strong>Archivos seleccionados</strong><span>Conservamos el nombre original. Abre cada foto o revisa el resultado con sus opciones antes de subirla.</span></div>{pendingCandidates.map(candidate => <article key={candidate.id}>
-        <div><strong title={candidate.originalFile.name}>{candidate.originalFile.name}</strong><small>{candidate.image ? "Foto" : "Video"} · {formatBytes(candidate.file.size)}</small></div>
+        <div><strong title={candidate.originalFile.name}>{candidate.originalFile.name}</strong><small>{candidate.image ? "Foto" : "Video"} · {formatBytes(candidate.file.size)}</small>{candidate.image && candidate.prepared && <small>Versión final para subir: {formatBytes(candidate.prepared.size)} · máximo 10 MB</small>}</div>
         {candidate.image && <label className="gallery-face-blur-option"><input type="checkbox" checked={candidate.watermark} disabled={isBusy} onChange={event => updateCandidate(candidate.id, { watermark: event.target.checked, prepared: undefined, detail: "Lista para procesar." })} />Marca de agua centrada</label>}
         {candidate.image && (adminMode || mediaSettings.faceBlurEnabled) && <label className="gallery-face-blur-option"><input type="checkbox" checked={candidate.blurFaces} disabled={isBusy} onChange={event => updateCandidate(candidate.id, { blurFaces: event.target.checked, prepared: undefined, detail: "Lista para procesar." })} />Difuminar rostros</label>}
         <span className={`gallery-upload-status is-${candidate.status}`} role="status">{candidate.detail}</span>
@@ -167,7 +171,7 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
         {candidate.image && candidate.blurFaces && <FacePrivacyEditor file={candidate.file} regions={candidate.faceRegions} disabled={isBusy} onChange={regions => updateCandidate(candidate.id, { faceRegions: regions, prepared: undefined, status: "ready", detail: regions.length ? "Zonas manuales listas para procesar." : "Se usará detección automática." })} />}
         <button type="button" className="gallery-candidate-remove" disabled={isBusy} onClick={() => setCandidates(current => current.filter(item => item.id !== candidate.id))}>Quitar</button>
       </article>)}<button className="button button-primary" type="button" disabled={isBusy} onClick={uploadCandidates}>{isBusy ? "Procesando archivos…" : adminMode ? "Procesar y aprobar archivos" : "Procesar y enviar a revisión"}</button></div>}
-      {galleryMedia.length > 0 ? <div className="media-owner-grid">{galleryMedia.map((item, index) => <article key={item.id}><div className="media-owner-preview">{item.mediaType === "image" ? <a href={item.url} target="_blank" rel="noopener noreferrer" aria-label={`Abrir foto ${index + 1} completa`}><Image src={item.url} alt={`Vista previa completa de foto ${index + 1}`} fill unoptimized sizes="(max-width: 620px) 80vw, 240px" /></a> : <video controls preload="metadata"><source src={item.url} type={item.contentType} /></video>}</div><div><span className={`media-status media-status-${item.moderationStatus}`}>{statusLabel[item.moderationStatus]}</span><small>{item.mediaType === "video" ? "Video · " : "Foto · "}{formatBytes(item.byteSize)}</small>{item.mediaType === "image" && <a className="media-owner-open" href={item.url} target="_blank" rel="noopener noreferrer">Ver foto completa</a>}<button type="button" onClick={() => remove(item.id)} disabled={isBusy}>Eliminar</button></div></article>)}</div> : <p className="profile-media-empty">Aún no has agregado fotos o videos a la galería pública.</p>}
+      {galleryMedia.length > 0 ? <div className="media-owner-grid">{galleryMedia.map((item, index) => <article key={item.id}><div className="media-owner-preview">{item.mediaType === "image" ? <a href={item.url} target="_blank" rel="noopener noreferrer" aria-label={`Abrir foto ${index + 1} completa`}><Image src={item.url} alt={`Vista previa completa de foto ${index + 1}`} fill unoptimized sizes="(max-width: 620px) 80vw, 240px" /></a> : <MediaVideo src={item.url} contentType={item.contentType} label="Video del anuncio" />}</div><div><span className={`media-status media-status-${item.moderationStatus}`}>{statusLabel[item.moderationStatus]}</span><small>{item.mediaType === "video" ? "Video · " : "Foto · "}{formatBytes(item.byteSize)}</small>{item.mediaType === "image" && <a className="media-owner-open" href={item.url} target="_blank" rel="noopener noreferrer">Ver foto completa</a>}<button type="button" onClick={() => remove(item.id)} disabled={isBusy}>Eliminar</button></div></article>)}</div> : <p className="profile-media-empty">Aún no has agregado fotos o videos a la galería pública.</p>}
     </section>
   </section>;
 }

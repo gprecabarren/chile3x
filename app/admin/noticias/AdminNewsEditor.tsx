@@ -1,5 +1,7 @@
 "use client";
 
+import { MAX_IMAGE_UPLOAD_BYTES } from "@/lib/image-upload-policy";
+
 import Image from "next/image";
 import { useRef, useState } from "react";
 
@@ -66,8 +68,8 @@ export function AdminNewsEditor({ initial }: { initial?: Initial }) {
 
   async function upload(file: File | undefined, cover: boolean) {
     if (!file) return;
-    if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size > 5_000_000) {
-      setNotice("La imagen debe ser JPG, PNG o WebP y pesar hasta 5 MB.");
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size > MAX_IMAGE_UPLOAD_BYTES) {
+      setNotice("La imagen debe ser JPG, PNG o WebP y pesar hasta 10 MB.");
       return;
     }
     setBusy(true);

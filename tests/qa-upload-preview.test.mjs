@@ -35,7 +35,7 @@ test('media shortcuts and honest previews apply to every listing without extra s
   assert.match(manager,/prepared: undefined, faceRegions: \[\]/);
   assert.match(preview,/lazy\(\(\) => import\("\.\/PhotoCropEditor"\)\)/);
   assert.match(preview,/URL.revokeObjectURL\(url\)/);assert.match(preview,/onBusyChange\(true\)/);
-  assert.match(crop,/canvas.toBlob/);assert.doesNotMatch(crop,/fetch\(/);
+  assert.match(crop,/blobFromCanvas\(canvas, MAX_IMAGE_UPLOAD_BYTES\)/);assert.doesNotMatch(crop,/fetch\(/);
   assert.match(css,/\.profile-media-manager \.media-owner-preview img \{ object-fit: contain;/);
   assert.match(css,/\.admin-media-preview img \{ object-fit: contain;/);
   assert.match(css,/\.profile-public-gallery-manager > \.gallery-upload-candidates \{ grid-column: 1 \/ -1/);

@@ -1,5 +1,6 @@
 // A bounded snapshot binds the approval to the exact files shown to the reviewer.
 export const MAX_BULK_MEDIA = 20;
+export const MAX_EXCLUSIVE_BULK_MEDIA = 24; // 20 photos and 4 videos per library.
 export type ReviewableMedia = {
   id: string; r2Key: string; byteSize: number; createdAt: string;
   moderationStatus: string; isProfilePhoto: boolean; visibility: string;
@@ -17,11 +18,11 @@ export async function mediaReviewSnapshot(files: readonly ReviewableMedia[]): Pr
   return Promise.all(files.map(async file => ({ id: file.id, version: await mediaReviewVersion(file) })));
 }
 
-export function parseMediaReviewSnapshot(value: FormDataEntryValue | null): MediaReviewSnapshot[] | null {
+export function parseMediaReviewSnapshot(value: FormDataEntryValue | null, limit = MAX_BULK_MEDIA): MediaReviewSnapshot[] | null {
   if (typeof value !== "string" || value.length > 16_000) return null;
   try {
     const entries: unknown = JSON.parse(value);
-    if (!Array.isArray(entries) || !entries.length || entries.length > MAX_BULK_MEDIA) return null;
+    if (!Array.isArray(entries) || !entries.length || entries.length > Math.min(limit, MAX_EXCLUSIVE_BULK_MEDIA)) return null;
     const ids = new Set<string>();
     for (const entry of entries) {
       if (!entry || typeof entry !== "object" || typeof entry.id !== "string" || !/^[\w-]{1,100}$/.test(entry.id)
@@ -43,6 +44,7 @@ export function bulkMediaReturnTo(value: FormDataEntryValue | null, profileId: s
 }
 
 export const bulkMediaMessages: Record<string, string> = {
+  exclusive_approved: "Los archivos exclusivos revisados fueron aprobados. Siguen siendo privados y solo accesibles para cuentas autorizadas.",
   approved: "Los archivos revisados fueron aprobados. El anuncio mantiene su estado de publicación.",
   unchanged: "Estos archivos ya estaban aprobados. No se hicieron cambios.",
   changed: "Algún archivo cambió desde que abriste la página. Revisa los archivos actualizados y vuelve a intentarlo.",

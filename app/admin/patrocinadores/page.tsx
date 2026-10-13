@@ -26,7 +26,7 @@ const errors: Record<string, string> = {
   "group-not-empty": "Primero elimina o mueve las tarjetas que pertenecen a ese grupo.",
   "group-missing": "El grupo seleccionado ya no existe.",
   card: "Revisa los textos y asegúrate de usar un enlace https:// válido.",
-  background: "Cada tarjeta necesita una imagen principal JPEG, PNG o WebP de hasta 5 MB.",
+  background: "Cada tarjeta necesita una imagen principal JPEG, PNG o WebP de hasta 10 MB.",
   upload: "No fue posible guardar las imágenes. Intenta nuevamente.",
   "confirm-card": "Marca la confirmación antes de eliminar el sitio asociado.",
 };

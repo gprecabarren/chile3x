@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
   const admin = await getCurrentAdmin(); if (!admin) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   if (!adminHasCapability(admin, "news.manage")) return NextResponse.json({ error: "No tienes permiso para administrar noticias." }, { status: 403 });
   const form = await request.formData(); const file = form.get("file");
-  if (!(file instanceof File) || file.size === 0 || file.size > MAX_IMAGE_BYTES) return NextResponse.json({ error: "Selecciona una imagen de hasta 5 MB." }, { status: 400 });
+  if (!(file instanceof File) || file.size === 0 || file.size > MAX_IMAGE_BYTES) return NextResponse.json({ error: "Selecciona una imagen de hasta 10 MB." }, { status: 400 });
   const bytes = await file.arrayBuffer(); const contentType = detectImageType(bytes); if (!contentType) return NextResponse.json({ error: "Solo se permiten imágenes JPEG, PNG o WebP válidas." }, { status: 400 });
   const { env } = await import("cloudflare:workers"); if (!env.MEDIA) return NextResponse.json({ error: "R2 no está disponible." }, { status: 503 });
   const id = `news_media_${crypto.randomUUID()}`; const r2Key = `news/${id}.${extensionForImageType(contentType)}`;

@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import test from "node:test";
 import { BufferTarget, EncodedPacket, EncodedVideoPacketSource, Output, WebMOutputFormat } from "mediabunny";
-import { assertVideoSource, isVideoSource, videoOutputSize, MAX_PREPARED_VIDEO_BYTES } from "../lib/video-policy.ts";
+import { assertVideoSource, isVideoSource, videoOutputSize, MAX_PREPARED_VIDEO_BYTES, VIDEO_UPLOAD_RULES } from "../lib/video-policy.ts";
 import { readUploadResponse } from "../lib/upload-response.ts";
 import { limitMultipartUpload, multipartBodyLimit } from "../worker/upload-limits.ts";
 
@@ -17,7 +17,7 @@ test("video source recognizes iPhone MOV/empty MIME, with 50 MB and 15 second bo
   assert.equal(isVideoSource({name:"IMG_1001.MOV",type:""}),true);
   assert.equal(isVideoSource({name:"video",type:"video/quicktime"}),true);
   assert.equal(isVideoSource({name:"foto.jpg",type:"image/jpeg"}),false);
-  assert.equal(MAX_PREPARED_VIDEO_BYTES,10_000_000);
+  assert.equal(MAX_PREPARED_VIDEO_BYTES,12_000_000);
   for(const duration of [10,12,15,15.05]) assert.doesNotThrow(()=>assertVideoSource(50_000_000,duration));
   for(const size of [0,NaN,Infinity,50_000_001]) assert.throws(()=>assertVideoSource(size),/50 MB/);
   for(const duration of [0,NaN,Infinity,15.051]) assert.throws(()=>assertVideoSource(100,duration),/15 segundos/);
@@ -48,9 +48,9 @@ function multipart(path, size, known=true) {
   return new Request(`https://chile3x.cl${path}`,{method:"POST",headers,body,duplex:"half"});
 }
 test("multipart bounds match galleries, exclusive media, documents and ordinary forms",async()=>{
-  assert.equal(multipartBodyLimit("/api/perfiles/qa/media"),10_256_000);
-  assert.equal(multipartBodyLimit("/api/admin/profiles/qa/media"),10_256_000);
-  assert.equal(multipartBodyLimit("/api/mi-cuenta/contenido/medios"),10_256_000);
+  assert.equal(multipartBodyLimit("/api/perfiles/qa/media"),12_256_000);
+  assert.equal(multipartBodyLimit("/api/admin/profiles/qa/media"),12_256_000);
+  assert.equal(multipartBodyLimit("/api/mi-cuenta/contenido/medios"),12_256_000);
   assert.equal(multipartBodyLimit("/api/admin/media/qa/procesar"),10_256_000);
   assert.equal(multipartBodyLimit("/api/admin/noticias/media"),10_256_000);
   assert.equal(multipartBodyLimit("/api/admin/patrocinadores"),20_256_000);
@@ -58,9 +58,9 @@ test("multipart bounds match galleries, exclusive media, documents and ordinary 
   assert.equal(multipartBodyLimit("/api/perfiles/nuevo"),1_048_576);
   const compatible=multipart("/api/perfiles/qa/media",1_700_000);assert.equal(await limitMultipartUpload(compatible),compatible);
   for(const known of [true,false]) {
-    const accepted=await limitMultipartUpload(multipart("/api/perfiles/qa/media",10_064_000,known)); assert.ok(accepted instanceof Request);
-    if(!known) assert.equal((await accepted.arrayBuffer()).byteLength,10_064_000);
-    const response=await limitMultipartUpload(multipart("/api/perfiles/qa/media",10_256_001,known)); assert.equal(response.status,413);assert.match((await response.json()).error,/tamaño/);assert.equal(response.headers.get("cache-control"),"private, no-store");
+    const accepted=await limitMultipartUpload(multipart("/api/perfiles/qa/media",12_064_000,known)); assert.ok(accepted instanceof Request);
+    if(!known) assert.equal((await accepted.arrayBuffer()).byteLength,12_064_000);
+    const response=await limitMultipartUpload(multipart("/api/perfiles/qa/media",12_256_001,known)); assert.equal(response.status,413);assert.match((await response.json()).error,/tamaño/);assert.equal(response.headers.get("cache-control"),"private, no-store");
   }
   const streamed=await limitMultipartUpload(multipart("/api/perfiles/qa/media",1_700_000,false));assert.equal((await streamed.arrayBuffer()).byteLength,1_700_000);
   const document=multipart("/api/perfiles/qa/documentos/identity",14_000_000);assert.equal(await limitMultipartUpload(document),document);
@@ -81,11 +81,11 @@ test("server validates real container duration/codec before any R2 storage", asy
   await assert.rejects(validatePreparedVideo(await webm(16),"video/webm"),/15 segundos/);
   await assert.rejects(validatePreparedVideo(await webm(3,"av1"),"video/webm"),/preparación/);
   await assert.rejects(validatePreparedVideo(new TextEncoder().encode("not a movie").buffer,"video/mp4"),/validar/);
-  await assert.rejects(validatePreparedVideo(new ArrayBuffer(MAX_PREPARED_VIDEO_BYTES+1),"video/mp4"),/10 MB/);
+  await assert.rejects(validatePreparedVideo(new ArrayBuffer(MAX_PREPARED_VIDEO_BYTES+1),"video/mp4"),/12 MB/);
 });
 
 test("video policy is shared by upload preparation, server validation and visible rules",async()=>{
-  const policy=await source("lib/video-policy.ts"); assert.match(policy,/hasta 15 segundos/); assert.match(policy,/versión de hasta 10 MB/);
+  assert.match(VIDEO_UPLOAD_RULES,/hasta 15 segundos/); assert.match(VIDEO_UPLOAD_RULES,/versión final de hasta 12 MB/);
   assert.match(await source("lib/media.ts"),/MAX_VIDEO_BYTES = MAX_PREPARED_VIDEO_BYTES/);
   assert.match(await source("app/mi-cuenta/prepare-video.ts"),/end: Math.min\(duration, MAX_VIDEO_SECONDS\)/);
   for (const path of ["lib/video-policy.ts","lib/video-validation.ts","lib/profile-media-upload.ts","lib/media-upload-form.ts","lib/upload-response.ts","worker/upload-limits.ts","app/mi-cuenta/prepare-video.ts","app/api/mi-cuenta/contenido/medios/route.ts"]) assert.doesNotMatch(await source(path),/8 MB|10 segundos/);

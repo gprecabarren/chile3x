@@ -1,10 +1,10 @@
 import { BufferSource, Input, MP4, WEBM } from "mediabunny";
 import { MAX_PREPARED_VIDEO_BYTES, MAX_VIDEO_SECONDS, VIDEO_DURATION_TOLERANCE } from "./video-policy";
 
-/** Metadata only, on a bounded <=10 MB file. No decoding/transcoding in Workers.
+/** Metadata only, on a bounded final file. No decoding/transcoding in Workers.
  * Inspect real tracks/duration instead of trusting MIME, extension or client. */
 export async function validatePreparedVideo(data: ArrayBuffer, contentType: "video/mp4" | "video/webm") {
-  if (!data.byteLength || data.byteLength > MAX_PREPARED_VIDEO_BYTES) throw new Error("Cada video preparado debe pesar 10 MB o menos.");
+  if (!data.byteLength || data.byteLength > MAX_PREPARED_VIDEO_BYTES) throw new Error(`Cada video preparado debe pesar ${MAX_PREPARED_VIDEO_BYTES / 1_000_000} MB o menos.`);
   const input = new Input({ formats: [contentType === "video/mp4" ? MP4 : WEBM], source: new BufferSource(data) });
   try {
     const tracks = await input.getTracks();

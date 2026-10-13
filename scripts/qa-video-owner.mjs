@@ -25,17 +25,17 @@ const post = async (bytes, name) => {
   return { status: response.status, body: await response.json() };
 };
 const real = readFileSync('outputs/qa-video-15s.mp4');
-// Valid ISO-BMFF free box: exercises the exact final 10 MB boundary without
+// Valid ISO-BMFF free box: exercises the exact final 12 MB boundary without
 // changing the real H.264 footage or generating duplicate storage objects.
-const free = Buffer.alloc(10_000_000 - real.length);
+const free = Buffer.alloc(12_000_000 - real.length);
 assert.ok(free.length >= 8); free.writeUInt32BE(free.length, 0); free.write('free', 4);
-const accepted = await post(Buffer.concat([real, free]), 'local-15s-10mb.mp4');
+const accepted = await post(Buffer.concat([real, free]), 'local-15s-12mb.mp4');
 assert.equal(accepted.status, 201, JSON.stringify(accepted.body));
 const row = db.prepare('SELECT * FROM profile_media WHERE profile_id=?').get(fixtures.profileId);
-assert.equal(row.byte_size, 10_000_000); assert.equal(row.moderation_status, 'pending');
+assert.equal(row.byte_size, 12_000_000); assert.equal(row.moderation_status, 'pending');
 assert.equal(db.prepare('SELECT status FROM profiles WHERE id=?').get(fixtures.profileId).status, 'approved');
 writeFileSync(manifest, JSON.stringify({ mediaId: row.id }));
-const large = await post(new Uint8Array(10_000_001), 'too-large.mp4'); assert.equal(large.status, 400); assert.match(large.body.error, /10 MB/);
+const large = await post(new Uint8Array(12_000_001), 'too-large.mp4'); assert.equal(large.status, 400); assert.match(large.body.error, /12 MB/);
 const long = await post(readFileSync('outputs/qa-video-16s.mp4'), 'too-long.mp4'); assert.equal(long.status, 400); assert.match(long.body.error, /15 segundos/);
 assert.equal(db.prepare('SELECT count(*) AS n FROM profile_media WHERE profile_id=?').get(fixtures.profileId).n, 1);
 db.prepare('UPDATE profile_media SET moderation_status=? WHERE id=? AND profile_id=?').run('approved', row.id, fixtures.profileId);
@@ -53,5 +53,5 @@ db.prepare('UPDATE profiles SET type=? WHERE id=?').run('escort', fixtures.profi
 assert.equal((await fetch(base + `/mi-cuenta/${fixtures.profileId}/editar`, { headers })).status, 200);
 assert.equal((await fetch(base + `/mi-cuenta/${fixtures.profileId}/editar`, { headers: { cookie: foreignCookie } })).status, 404);
 db.close();
-console.log('PASS: real 15-second/10-MB video saved once; oversized and long clips rejected; editing visible and accessible only to the owner across all listing types.');
+console.log('PASS: real 15-second/12-MB video saved once; oversized and long clips rejected; editing visible and accessible only to the owner across all listing types.');
 }

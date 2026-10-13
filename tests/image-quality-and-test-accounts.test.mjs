@@ -32,9 +32,11 @@ test('photos avoid cropping, enlargement and cover stretching, retaining full-ph
 
 test('watermark is large, monochrome, centered and optional for owners and administrators',async()=>{
   const transform=await source('app/mi-cuenta/watermark-image.ts');
-  assert.match(transform,/context\.fillText\(text, width \/ 2, height \/ 2\)/);
-  assert.match(transform,/width \* 0\.76/);
-  assert.match(transform,/rgba\(255, 255, 255, 0\.28\)/);
+  const watermark=await source('lib/media-watermark.ts');
+  assert.match(watermark,/context\.fillText\(text, width \/ 2, height \/ 2\)/);
+  assert.match(watermark,/width \* 0\.76/);
+  assert.match(watermark,/rgba\(255, 255, 255, 0\.28\)/);
+  assert.match(transform,/drawChile3xWatermark\(context, width, height\)/);
   assert.match(transform,/return \{ file: readableFile, facesBlurred: 0, qualityWarning \}/);
   assert.doesNotMatch(transform,/watermarkPositions|globalCompositeOperation|logo-primary/);
   const manager=await source('app/mi-cuenta/ProfileMediaManager.tsx');

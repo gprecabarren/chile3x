@@ -1,6 +1,6 @@
 const MB = 1_000_000;
 export function multipartBodyLimit(path: string) {
-  if (/^\/api\/(?:admin\/profiles|perfiles)\/[^/]+\/media$/.test(path) || path === "/api/mi-cuenta/contenido/medios") return 10 * MB + 256_000;
+  if (/^\/api\/(?:admin\/profiles|perfiles)\/[^/]+\/media$/.test(path) || path === "/api/mi-cuenta/contenido/medios") return 12 * MB + 256_000;
   if (/^\/api\/perfiles\/[^/]+\/reportes$/.test(path)) return 25 * MB + 64_000;
   if (/^\/api\/perfiles\/[^/]+\/documentos\/[^/]+$/.test(path)) return 15 * MB + 64_000;
   if (path === "/api/admin/patrocinadores") return 20 * MB + 256_000; // Main image and optional logo, each up to 10 MB.
@@ -10,7 +10,7 @@ export function multipartBodyLimit(path: string) {
 }
 
 function tooLarge() {
-  return Response.json({ error: "La carga supera el tamaño permitido para esta sección. Revisa los límites indicados en el formulario; cada foto o video de un anuncio admite hasta 10 MB." }, { status: 413, headers: { "cache-control": "private, no-store", "x-robots-tag": "noindex, nofollow" } });
+  return Response.json({ error: "La carga supera el tamaño permitido para esta sección. Revisa los límites indicados en el formulario; cada foto de un anuncio admite hasta 10 MB y cada video hasta 12 MB." }, { status: 413, headers: { "cache-control": "private, no-store", "x-robots-tag": "noindex, nofollow" } });
 }
 
 /** Bound missing-length uploads too; never buffer an unbounded request. Known

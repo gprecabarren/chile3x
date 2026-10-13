@@ -3,6 +3,7 @@
 import { validPrivacyRegions, type FacePrivacyRegion } from "@/lib/face-privacy";
 import { imagePreparationSize, imageQualityWarning } from "@/lib/image-quality";
 import { assertImageSource, imageHeaderType } from "@/lib/image-upload-policy";
+import { drawChile3xWatermark } from "@/lib/media-watermark";
 
 export type GalleryImageTransformOptions = {
   maxBytes: number;
@@ -94,24 +95,6 @@ function blurDetectedFaces(context: CanvasRenderingContext2D, boxes: FaceBox[], 
   }
 }
 
-function drawWatermark(context: CanvasRenderingContext2D, width: number, height: number) {
-  // A neutral wordmark, always centered. No remote assets, colored logo or rotation.
-  const text = "CHILE3X";
-  context.save();
-  let fontSize = Math.min(width * 0.18, height * 0.2);
-  context.font = `800 ${fontSize}px Manrope, Arial, sans-serif`;
-  const measured = context.measureText(text).width;
-  if (measured > width * 0.76) fontSize *= width * 0.76 / measured;
-  context.font = `800 ${fontSize}px Manrope, Arial, sans-serif`;
-  context.textAlign = "center"; context.textBaseline = "middle";
-  context.lineWidth = Math.max(1, fontSize * 0.025);
-  context.strokeStyle = "rgba(0, 0, 0, 0.2)";
-  context.fillStyle = "rgba(255, 255, 255, 0.28)";
-  context.strokeText(text, width / 2, height / 2);
-  context.fillText(text, width / 2, height / 2);
-  context.restore();
-}
-
 export async function prepareGalleryImage(file: File, options: GalleryImageTransformOptions): Promise<GalleryImageTransformResult> {
   assertImageSource(file.size);
   const type = imageHeaderType(new Uint8Array(await file.slice(0, 16).arrayBuffer()));
@@ -160,7 +143,7 @@ export async function prepareGalleryImage(file: File, options: GalleryImageTrans
       }
       options.onProgress?.(`${facesBlurred} zona${facesBlurred === 1 ? "" : "s"} difuminada${facesBlurred === 1 ? "" : "s"}.`);
     }
-    if (options.applyWatermark) { options.onProgress?.("Aplicando marca de agua Chile3X…"); drawWatermark(context, width, height); }
+    if (options.applyWatermark) { options.onProgress?.("Aplicando marca de agua Chile3X…"); drawChile3xWatermark(context, width, height); }
     options.onProgress?.("Optimizando imagen…");
     const blob = await blobFromCanvas(canvas, options.maxBytes); if (!blob) throw new Error("No se pudo generar la imagen para subir.");
     if (blob.size > options.maxBytes) throw new Error("La imagen procesada supera el peso permitido. Elige una foto más liviana; no se subió ningún archivo.");

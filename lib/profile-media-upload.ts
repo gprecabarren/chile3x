@@ -23,7 +23,7 @@ export async function uploadProfileMedia(input: {
   const { profileId, file, uploadKind, uploadedBy, moderationStatus } = input;
   if (file.size === 0) throw new ProfileMediaUploadError("El archivo llegó vacío. Descarga el original en tu dispositivo y vuelve a seleccionarlo.");
   if (file.size > Math.max(MAX_IMAGE_BYTES, MAX_VIDEO_BYTES)) {
-    throw new ProfileMediaUploadError("El archivo supera el máximo: fotos y videos de hasta 10 MB.");
+    throw new ProfileMediaUploadError(`El archivo supera el máximo: fotos de hasta ${MAX_IMAGE_BYTES / 1_000_000} MB y videos de hasta ${MAX_VIDEO_BYTES / 1_000_000} MB.`);
   }
   const data = await file.arrayBuffer();
   const imageType = detectImageType(data);
@@ -33,7 +33,7 @@ export async function uploadProfileMedia(input: {
   const contentType = imageType ?? videoType!;
   if (uploadKind === "profile_photo" && mediaType !== "image") throw new ProfileMediaUploadError("La foto de perfil debe ser una imagen JPEG, PNG o WebP.");
   if (file.size > (imageType ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES)) {
-    throw new ProfileMediaUploadError(imageType ? "Cada imagen debe pesar como máximo 10 MB." : "Cada video debe pesar como máximo 10 MB.");
+    throw new ProfileMediaUploadError(imageType ? `Cada imagen debe pesar como máximo ${MAX_IMAGE_BYTES / 1_000_000} MB.` : `Cada video debe pesar como máximo ${MAX_VIDEO_BYTES / 1_000_000} MB.`);
   }
   if (videoType) {
     try { await validatePreparedVideo(data, videoType); }

@@ -1,5 +1,5 @@
 /** Never expose a proxy's HTML/plain text or a JSON SyntaxError to uploaders. */
-export async function readUploadResponse<T>(response: Response, sizeHelp = "Cada foto o video preparado admite hasta 10 MB. Vuelve a preparar el archivo e inténtalo nuevamente."): Promise<T> {
+export async function readUploadResponse<T>(response: Response, sizeHelp = "Cada foto preparada admite hasta 10 MB y cada video hasta 12 MB. Vuelve a preparar el archivo e inténtalo nuevamente."): Promise<T> {
   if (response.status === 413) throw new Error(`La carga supera el tamaño permitido. ${sizeHelp}`);
   let payload: T & { error?: string };
   try { payload = await response.json(); }

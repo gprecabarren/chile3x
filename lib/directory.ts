@@ -1,4 +1,4 @@
-import { and, count, desc, eq, exists, gte, inArray, isNull, notExists, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, exists, gte, inArray, isNull, notExists, or, sql, type SQL } from "drizzle-orm";
 import { cache } from "react";
 import { chileanDay } from "@/lib/chile-day";
 import { cityDirectory, getCityBySlug, regions } from "@/app/locations";
@@ -56,6 +56,7 @@ export type PublicProfile = {
   handle: string | null;
   type: ProfileType;
   status: "draft" | "pending" | "approved" | "paused" | "rejected" | "expired";
+  isPublic: boolean;
   displayName: string;
   shortDescription: string;
   description: string;
@@ -168,6 +169,10 @@ export function readDirectoryFilters(query: DirectoryQuery, pinned?: { region?: 
 
 type PublicProfileOptions = {
   includeUnapproved?: boolean;
+  // Only the individual profile route supplies the authenticated owner ID.
+  // Never enable this on directory, search, related cards or sitemap queries.
+  previewOwnerId?: string;
+  includePendingMedia?: boolean;
   viewerId?: string;
   type?: ProfileType;
   city?: string;
@@ -180,13 +185,16 @@ type PublicProfileOptions = {
 
 export async function getPublicProfiles(options: PublicProfileOptions = {}) {
   const db = await getDb();
-  const baseQuery = db.select({ profile: profiles, details: profileDetails }).from(profiles)
+  const visibility = options.includeUnapproved || options.previewOwnerId ? publicProfileCondition : sql<boolean>`1`;
+  const baseQuery = db.select({ profile: profiles, details: profileDetails, isPublic: visibility }).from(profiles)
     .leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id));
   if (options.profileIds && options.profileIds.length === 0) return [] as PublicProfile[];
 
   const conditions = [];
   conditions.push(isNull(profiles.trashedAt));
-  if (!options.includeUnapproved) conditions.push(publicProfileCondition);
+  if (!options.includeUnapproved) conditions.push(options.previewOwnerId
+    ? or(publicProfileCondition, eq(profiles.ownerId, options.previewOwnerId))
+    : publicProfileCondition);
   if (options.type) conditions.push(eq(profiles.type, options.type));
   if (options.city) conditions.push(eq(profiles.city, options.city));
   if (options.region) conditions.push(eq(profiles.region, options.region));
@@ -203,8 +211,11 @@ export async function getPublicProfiles(options: PublicProfileOptions = {}) {
   }
 
   const ownerIds = [...new Set(visibleRows.map((row) => row.profile.ownerId))];
+  const previewMediaIds = visibleRows.filter(row => !row.isPublic && (
+    row.profile.ownerId === options.previewOwnerId || options.includeUnapproved && options.includePendingMedia
+  )).map(row => row.profile.id);
   const onlineCutoff = new Date(Date.now() - 3 * 60_000).toISOString();
-  const [tags, services, memberships, mediaByProfile, presenceRows] = await Promise.all([
+  const [tags, services, memberships, mediaByProfile, presenceRows, previewMedia] = await Promise.all([
     db.select().from(profileTags).where(inArray(profileTags.profileId, ids)),
     db.select().from(profileServices).where(inArray(profileServices.profileId, ids)),
     options.includeAssociations
@@ -214,7 +225,14 @@ export async function getPublicProfiles(options: PublicProfileOptions = {}) {
     ownerIds.length
       ? db.select({ userId: accountPresence.userId }).from(accountPresence).where(and(inArray(accountPresence.userId, ownerIds), gte(accountPresence.lastActiveAt, onlineCutoff)))
       : Promise.resolve([]),
+    previewMediaIds.length ? db.select().from(profileMedia).where(and(
+      inArray(profileMedia.profileId, previewMediaIds), eq(profileMedia.visibility, "public"),
+      inArray(profileMedia.moderationStatus, ["approved", "pending"]),
+    )).orderBy(asc(profileMedia.sortOrder), asc(profileMedia.createdAt)) : Promise.resolve([]),
   ]);
+  // The preview can include pending uploads, but never rejected files or
+  // private verification documents. The media route rechecks every request.
+  for (const id of previewMediaIds) mediaByProfile.set(id, previewMedia.filter(media => media.profileId === id));
 
   const tagMap = new Map<string, string[]>();
   const includedMap = new Map<string, string[]>();
@@ -232,12 +250,13 @@ export async function getPublicProfiles(options: PublicProfileOptions = {}) {
     memberMap.set(membership.agencyProfileId, [...(memberMap.get(membership.agencyProfileId) ?? []), membership.memberProfileId]);
   }
 
-  return visibleRows.map(({ profile, details }): PublicProfile => ({
+  return visibleRows.map(({ profile, details, isPublic }): PublicProfile => ({
     id: profile.id,
     slug: profile.slug,
     handle: profile.handle,
     type: profile.type,
     status: profile.status,
+    isPublic: Boolean(isPublic),
     displayName: profile.displayName,
     shortDescription: profile.shortDescription,
     description: profile.description,
@@ -355,21 +374,23 @@ const getPublicProfileForRouteCached = cache(async function getPublicProfileForR
   segment: string,
   includeUnapproved: boolean,
   viewerId?: string,
+  previewOwnerId?: string,
+  includePendingMedia = false,
 ) {
   const decoded = decodeURIComponent(segment);
   if (decoded.startsWith("@")) {
     const handle = decoded.slice(1).toLowerCase();
-    const current = (await getPublicProfiles({ includeUnapproved, viewerId, includeAssociations: true, handle }))[0];
+    const current = (await getPublicProfiles({ includeUnapproved, viewerId, previewOwnerId, includePendingMedia, includeAssociations: true, handle }))[0];
     if (current) return current;
     // The seed's old @handle equals its immutable slug. Preserve old links
     // only for known test listings; the page redirects to the current handle.
     if (handle.endsWith("-demo")) {
-      const legacy = (await getPublicProfiles({ includeUnapproved, viewerId, includeAssociations: true, slug: handle }))[0];
+      const legacy = (await getPublicProfiles({ includeUnapproved, viewerId, previewOwnerId, includePendingMedia, includeAssociations: true, slug: handle }))[0];
       if (legacy?.isDemo) return legacy;
     }
     return null;
   }
-  return (await getPublicProfiles({ includeUnapproved, viewerId, includeAssociations: true, slug: decoded }))[0] ?? null;
+  return (await getPublicProfiles({ includeUnapproved, viewerId, previewOwnerId, includePendingMedia, includeAssociations: true, slug: decoded }))[0] ?? null;
 });
 
 /**
@@ -378,7 +399,7 @@ const getPublicProfileForRouteCached = cache(async function getPublicProfileForR
  * tags and services graph twice during one render.
  */
 export async function getPublicProfileForRoute(segment: string, options: Omit<PublicProfileOptions, "handle" | "slug"> = {}) {
-  return getPublicProfileForRouteCached(segment, Boolean(options.includeUnapproved), options.viewerId);
+  return getPublicProfileForRouteCached(segment, Boolean(options.includeUnapproved), options.viewerId, options.previewOwnerId, Boolean(options.includePendingMedia));
 }
 
 const getPublicProfileSeoForRouteCached = cache(async function getPublicProfileSeoForRouteCached(segment: string): Promise<PublicProfileSeo | null> {

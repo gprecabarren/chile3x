@@ -115,7 +115,7 @@ function metadataFacts(profile: PublicProfile) {
 export async function generateMetadata({ params }: ProfilePageProps): Promise<Metadata> {
   const { slug } = await params;
   const profile = await getPublicProfileSeoForRoute(slug);
-  if (!profile) return {};
+  if (!profile) return { title: "Vista previa privada del anuncio", robots: { index: false, follow: false, noarchive: true } };
   const socialImage = profile.socialImageId ? `/media/${profile.socialImageId}` : socialCardImageUrl;
   return {
     title: profileSeoTitle(profile),
@@ -130,14 +130,14 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
 export default async function PublicProfilePage({ params, searchParams }: ProfilePageProps) {
   const { slug } = await params;
   const [admin, viewer, query] = await Promise.all([getCurrentAdmin(), getCurrentUser(), searchParams]);
-  const profile = await getPublicProfileForRoute(slug, { includeUnapproved: Boolean(admin), viewerId: viewer?.id });
+  const profile = await getPublicProfileForRoute(slug, { includeUnapproved: Boolean(admin), viewerId: viewer?.id, previewOwnerId: viewer?.id, includePendingMedia: adminHasCapability(admin, "media.moderate") });
   if (!profile) notFound();
   if (profile.handle && decodeURIComponent(slug) !== `@${profile.handle}`) redirect(profilePublicPath(profile));
   const profileRouteValue = profile.handle ? `@${profile.handle}` : profile.slug;
   const requestedReturnTo = query.return_to ?? "";
   const adminReturnTo = requestedReturnTo.startsWith("/admin/") ? safeAdminReturnTo(requestedReturnTo) : "/admin/anuncios-publicaciones";
   const previewPath = `${profilePublicPath(profile)}?return_to=${encodeURIComponent(adminReturnTo)}`;
-  const isAdminPreview = Boolean(admin) && profile.status !== "approved";
+  const isAdminPreview = Boolean(admin) && !profile.isPublic;
   const reviewableMedia = adminHasCapability(admin, "media.moderate")
     ? await (await getDb()).select().from(profileMedia).where(and(eq(profileMedia.profileId, profile.id), eq(profileMedia.visibility, "public"))).limit(MAX_BULK_MEDIA + 1)
     : [];
@@ -167,7 +167,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   }));
   const availability = readAvailability(profile.details.metadata.availability);
   const availabilityStatus = getAvailabilityStatus(availability, new Date(), profile.type === "escort" ? "atiende" : "abre");
-  const showCityAlerts = profile.status === "approved" && profile.type === "escort" && !profile.isDemo;
+  const showCityAlerts = profile.isPublic && profile.type === "escort" && !profile.isDemo;
   const [relatedProfiles, stories, approvedReviewsPage, verificationDocuments, exclusiveContent, cityAlertCities, activeCityAlerts, viewerOwnsProfile, engagement, ownPendingReviews, adminWhatsappStatistics] = await Promise.all([
     relatedProfileIds.length ? getPublicProfiles({ includeUnapproved: Boolean(admin), viewerId: viewer?.id, profileIds: relatedProfileIds }) : Promise.resolve([]),
     getActiveStories({ profileId: profile.id }),
@@ -177,7 +177,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
     showCityAlerts ? getProfileAlertCities() : Promise.resolve([]),
     showCityAlerts ? getActiveProfileCityAlerts(profile.id, viewer?.id) : Promise.resolve([]),
     viewer ? (async () => (await (await getDb()).select({ ownerId: profiles.ownerId }).from(profiles).where(eq(profiles.id, profile.id)).limit(1))[0]?.ownerId === viewer.id)() : Promise.resolve(false),
-    profile.status === "approved" ? getProfileEngagement(profile.id, viewer?.id) : Promise.resolve(null),
+    profile.isPublic ? getProfileEngagement(profile.id, viewer?.id) : Promise.resolve(null),
     viewer ? getOwnPendingReviews(profile.id, viewer.id) : Promise.resolve([]),
     admin ? getAdminWhatsappStatistics(profile.id) : Promise.resolve(null),
   ]);
@@ -195,14 +195,15 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
 
   return (
     <ProfilePhotoViewer key={profile.id} photos={profile.media.filter(media => media.mediaType === "image").map((media, index) => ({ id: media.id, url: media.url, alt: media.altText ?? `Foto ${index + 1} de ${profile.displayName}` }))}><DirectoryShell>
-      {profile.status === "approved" && !profile.isDemo && <ProfileViewTracker profileId={profile.id} />}
-      {profile.status === "approved" && !profile.isDemo && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(schema) }} />}
+      {profile.isPublic && !profile.isDemo && <ProfileViewTracker profileId={profile.id} />}
+      {profile.isPublic && !profile.isDemo && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(schema) }} />}
       {admin && <section className="admin-profile-review-bar"><Link className="admin-profile-back-link" href={adminReturnTo}>← Volver a perfiles</Link><div><p>{isAdminPreview ? "VISTA DE MODERACIÓN" : "ADMINISTRACIÓN DEL AVISO"}</p><h2>{isAdminPreview ? "Este aviso no es público todavía" : "Gestiona este aviso publicado"}</h2><span>Revísalo como lo ve el público y actualiza su estado, verificación o prioridad en el inicio. Los documentos privados nunca aparecen en la ficha pública.</span><Link className="admin-profile-media-link" href={`/admin/medios?perfil=${encodeURIComponent(profile.id)}`}>Revisar fotos y videos de este anuncio</Link></div><form action={`/api/admin/profiles/${profile.id}/status`} method="post" className="admin-profile-review-form"><input type="hidden" name="return_to" value={previewPath} /><label>Publicación<select name="status" defaultValue={profile.status}><option value="draft">Borrador</option><option value="pending">En revisión</option><option value="approved">Aprobar y publicar</option><option value="paused">Pausado</option><option value="rejected">Requiere cambios</option><option value="expired">Vencido</option></select></label><label>Perfil verificado<select name="verification_status" defaultValue={profile.verificationStatus}><option value="unreviewed">No verificado</option><option value="in_review">Verificación en curso</option><option value="reviewed">Verificado ✓</option></select></label>{profile.type === "escort" && <label>Revisión médica<select name="health_review_status" defaultValue={profile.healthReviewStatus}><option value="not_requested">No solicitada</option><option value="in_review">En revisión</option><option value="reviewed">Revisada</option></select></label>}<label className="admin-featured-toggle"><input name="is_featured" type="checkbox" defaultChecked={profile.isFeatured} />Destacar en el inicio</label><button className="button button-primary" type="submit">Guardar decisión</button></form></section>}
       {adminHasCapability(admin, "profiles.recycle") && <details className="admin-profile-trash-bar profile-trash-control is-destructive"><summary>🗑 Enviar este anuncio a la papelera</summary><form action={`/api/admin/profiles/${profile.id}/papelera`} method="post"><input type="hidden" name="action" value="trash" /><input type="hidden" name="return_to" value="/admin/anuncios-publicaciones/papelera" /><p>La ficha dejará de ser pública y sus datos quedarán disponibles en la papelera administrativa.</p><label>Escribe PAPELERA<input name="confirmation" required autoComplete="off" /></label><button className="button button-danger" type="submit">Confirmar envío</button></form></details>}
       {admin && adminWhatsappStatistics && <section className="admin-profile-whatsapp-stat" aria-label="Contador privado de WhatsApp"><div><p className="eyebrow">SOLO ADMINISTRACIÓN</p><h2>Clics en WhatsApp del anuncio</h2><p>Pulsaciones registradas; no confirma mensajes enviados ni personas únicas. El histórico anterior al 10 de octubre cuenta una interacción por navegador y día.</p></div><strong>{adminWhatsappStatistics.clicks.toLocaleString("es-CL")}</strong><small>{adminWhatsappStatistics.dailyBrowsers.toLocaleString("es-CL")} contactos únicos diarios acumulados</small></section>}
       {adminHasCapability(admin, "media.moderate") && <section className="profile-bulk-media-review">{query.media_notice && bulkMediaMessages[query.media_notice] && <p className="admin-notice" role="status">{bulkMediaMessages[query.media_notice]}</p>}<ApproveAllProfileMedia profileId={profile.id} files={reviewableMedia} returnTo={previewPath} /></section>}
       {admin && verificationDocuments.length > 0 && <section className="admin-private-documents"><strong>Documentos privados de verificación</strong>{verificationDocuments.map((document) => <a key={document.kind} href={`/api/perfiles/${profile.id}/documentos/${document.kind}`}>{document.kind === "identity" ? "Descargar carnet" : "Descargar examen médico"}</a>)}</section>}
       {viewerOwnsProfile && <aside className="profile-owner-edit-bar" aria-label="Administrar mi anuncio"><div><strong>Este es tu anuncio</strong><span>Edita sus datos, fotos y videos desde tu cuenta.</span></div><Link className="button button-outline" href={`/mi-cuenta/${profile.id}/editar`} prefetch={false}>Editar anuncio</Link></aside>}
+      {!profile.isPublic && <aside className="profile-private-preview-notice" role="status"><strong>Vista previa privada</strong><p>Así se verá tu anuncio al publicarse. Solo tú y administración pueden acceder a esta vista; no aparece en el directorio ni en Google. Las fotos y videos pendientes todavía necesitan aprobación.</p></aside>}
       <section className="profile-page-shell">
         <div className={`profile-page-visual${coverImage ? " has-image" : ""}`}>{coverImage ? <><ProfilePhotoLink className="profile-cover-photo-trigger" mediaId={coverImage.id} href={coverImage.url} aria-label={`Ampliar foto principal de ${profile.displayName}`}><Image className="profile-page-cover" src={coverImage.url} alt={coverImage.altText ?? `Foto de ${profile.displayName}`} fill priority unoptimized sizes="(max-width: 900px) 100vw, 45vw" style={{ objectFit: "scale-down" }} /></ProfilePhotoLink><ProfilePhotoLink className="profile-full-photo-link" mediaId={coverImage.id} href={coverImage.url}>Ver foto completa ⤢</ProfilePhotoLink></> : <span>{profile.displayName.slice(0, 1)}</span>}{stories.length > 0 && <span className="profile-story-photo-marker" aria-hidden="true" />}</div>
         <div className="profile-page-summary">
@@ -215,17 +216,17 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           <p className="profile-page-description">{profile.description}</p>
           {profile.isDemo && <p className="profile-test-notice">Ficha de prueba: no representa un servicio disponible. Los mensajes y comentarios se utilizan para comprobar el funcionamiento de Chile3X.</p>}
           {prices.length > 0 && <section className="profile-price-panel"><p className="eyebrow">VALORES REFERENCIALES</p><div>{prices.map((price) => <article key={price.label}><span>{price.label}</span><strong>${price.amount.toLocaleString("es-CL")} {price.currency}</strong></article>)}</div></section>}
-          {!profile.isDemo && (contactButtons.some(([, href]) => href) || socialButtons.some(([, href]) => href) || (profile.status === "approved" && !viewerOwnsProfile)) && <section className="profile-contact-box">
+          {!profile.isDemo && (contactButtons.some(([, href]) => href) || socialButtons.some(([, href]) => href) || (profile.isPublic && !viewerOwnsProfile)) && <section className="profile-contact-box">
             <div className="profile-contact-heading"><p className="eyebrow">CONTACTO</p><h2>Habla directamente con {profile.displayName}</h2></div>
             <div className="profile-contact-channels">
             {contactButtons.some(([, href]) => href) && <div className="profile-contact-group"><span>Contacto directo</span><div className="profile-contact-actions">{contactButtons.map(([key, href, label, className]) => href && <TrackedContactLink profileId={profile.id} kind={key} key={key} className={`button ${className}`} href={href} target={key === "call" || key === "email" ? undefined : "_blank"} rel={key === "call" || key === "email" ? undefined : "noreferrer"} aria-label={label} title={label}><PortalContactIcon kind={key} /><span className="sr-only">{label}</span></TrackedContactLink>)}{videoCallHref && <TrackedContactLink profileId={profile.id} kind="videocall" className="button contact-videocall" href={videoCallHref} target="_blank" rel="noreferrer"><PortalContactIcon kind="videocall" /><span>Videollamada</span></TrackedContactLink>}</div></div>}
             {socialButtons.some(([, href]) => href) && <div className="profile-contact-group"><span>Redes y plataformas</span><div className="profile-contact-actions">{socialButtons.map(([key, href, label, className]) => href && <TrackedContactLink profileId={profile.id} kind={key} key={key} className={`button ${className}`} href={href} target="_blank" rel="noreferrer" aria-label={label} title={label}><PortalContactIcon kind={key} /><span className="sr-only">{label}</span></TrackedContactLink>)}</div></div>}
-            {profile.status === "approved" && !viewerOwnsProfile && <div className="profile-contact-group profile-internal-chat-group"><span>Mensajería de Chile3X</span><InternalChatButton profileId={profile.id} signedIn={Boolean(viewer)} loginHref={`/ingresar?return_to=${encodeURIComponent(profilePublicPath(profile))}`} /></div>}
+            {profile.isPublic && !viewerOwnsProfile && <div className="profile-contact-group profile-internal-chat-group"><span>Mensajería de Chile3X</span><InternalChatButton profileId={profile.id} signedIn={Boolean(viewer)} loginHref={`/ingresar?return_to=${encodeURIComponent(profilePublicPath(profile))}`} /></div>}
             </div>
           </section>}
-          {profile.isDemo && profile.status === "approved" && !viewerOwnsProfile && <section className="profile-contact-box"><div className="profile-contact-heading"><p className="eyebrow">MENSAJERÍA DE CHILE3X</p><h2>Probar el chat con {profile.displayName}</h2></div><InternalChatButton profileId={profile.id} signedIn={Boolean(viewer)} loginHref={`/ingresar?return_to=${encodeURIComponent(profilePublicPath(profile))}`} /></section>}
+          {profile.isDemo && profile.isPublic && !viewerOwnsProfile && <section className="profile-contact-box"><div className="profile-contact-heading"><p className="eyebrow">MENSAJERÍA DE CHILE3X</p><h2>Probar el chat con {profile.displayName}</h2></div><InternalChatButton profileId={profile.id} signedIn={Boolean(viewer)} loginHref={`/ingresar?return_to=${encodeURIComponent(profilePublicPath(profile))}`} /></section>}
           {engagement && <ProfileEngagementActions profileId={profile.id} profileSlug={profileRouteValue} displayName={profile.displayName} signedIn={Boolean(viewer)} initialEngagement={engagement} />}
-          {profile.status === "approved" && <ProfileSafetyActions profileId={profile.id} profileSlug={profileRouteValue} displayName={profile.displayName} signedIn={Boolean(viewer)} viewerOwnsProfile={viewerOwnsProfile} />}
+          {profile.isPublic && <ProfileSafetyActions profileId={profile.id} profileSlug={profileRouteValue} displayName={profile.displayName} signedIn={Boolean(viewer)} viewerOwnsProfile={viewerOwnsProfile} />}
         </div>
       </section>
       {profile.media.some((media) => media.mediaType === "image" && !media.isProfilePhoto) && <section className="profile-media-gallery" aria-label={`Fotos de ${profile.displayName}`}>
@@ -247,7 +248,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
       {profile.type === "agency" && <section className="profile-association-section"><p className="eyebrow">PERFILES ASOCIADOS</p><h2>Escorts de {profile.displayName}</h2><p>Los perfiles se muestran aquí solo después de aceptar la invitación de la agencia.</p><div className="public-profile-grid">{agencyMembers.map((member) => <ProfileCard profile={member} key={member.id} />)}</div>{agencyMembers.length === 0 && <p className="association-empty">Esta agencia aún no tiene perfiles asociados aprobados.</p>}</section>}
       {profile.type === "escort" && agencyProfiles.length > 0 && <section className="profile-association-section compact"><p className="eyebrow">ASOCIACIONES ACEPTADAS</p><h2>Agencias relacionadas</h2><div className="public-profile-grid">{agencyProfiles.map((agency) => <ProfileCard profile={agency} key={agency.id} />)}</div></section>}
       {(admin || viewerOwnsProfile) && <div className="profile-reviews-management"><Link className="button button-outline" href={admin ? `/admin/resenas?perfil=${encodeURIComponent(profile.id)}` : `/mi-cuenta/comentarios?perfil=${encodeURIComponent(profile.id)}`} prefetch={false}>Gestionar comentarios de este anuncio</Link></div>}
-      {profile.status === "approved" && <ProfileReviews profileId={profile.id} profileSlug={profileRouteValue} signedIn={Boolean(viewer)} viewerOwnsProfile={viewerOwnsProfile} reviews={approvedReviewsPage.reviews} totalReviews={approvedReviewsPage.total} initialHasMore={approvedReviewsPage.hasMore} ownPendingReviews={ownPendingReviews} />}
+      {profile.isPublic && <ProfileReviews profileId={profile.id} profileSlug={profileRouteValue} signedIn={Boolean(viewer)} viewerOwnsProfile={viewerOwnsProfile} reviews={approvedReviewsPage.reviews} totalReviews={approvedReviewsPage.total} initialHasMore={approvedReviewsPage.hasMore} ownPendingReviews={ownPendingReviews} />}
       {showCityAlerts && <ProfileCityAlertPanel profileId={profile.id} profileSlug={profileRouteValue} displayName={profile.displayName} currentCity={profile.city} availableCities={cityAlertCities} signedIn={Boolean(viewer)} viewerOwnsProfile={viewerOwnsProfile} initialAlerts={activeCityAlerts} />}
     </DirectoryShell></ProfilePhotoViewer>
   );

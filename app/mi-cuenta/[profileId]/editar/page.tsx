@@ -11,6 +11,8 @@ import { getVerificationDocuments } from "@/lib/verification-documents";
 import { ProfileVerificationDocuments } from "../../ProfileVerificationDocuments";
 import { ProfileSubmissionConfirmation } from "../../ProfileSubmissionConfirmation";
 import { getSiteSettings } from "@/lib/site-settings";
+import Link from "next/link";
+import { profilePublicPath } from "@/lib/profile";
 
 export const dynamic = "force-dynamic";
 
@@ -53,7 +55,7 @@ export default async function EditProfilePage({ params, searchParams }: { params
   return (
     <AccountShell user={user}>
       <div className="account-content"><a className="page-back-link" href="/mi-cuenta">← Volver a mi cuenta</a>
-        <AccountHeading eyebrow="EDITAR PUBLICACIÓN" title={row.profile.displayName} description="Puedes subir fotos mientras el anuncio está en revisión. Los cambios de información relevante vuelven a revisión; los contactos se actualizan sin retirar un anuncio aprobado."><a className="button button-outline" href="#fotos-y-videos">Fotos y videos</a></AccountHeading>
+        <AccountHeading eyebrow="EDITAR PUBLICACIÓN" title={row.profile.displayName} description="Puedes subir fotos mientras el anuncio está en revisión. Los cambios de información relevante vuelven a revisión; los contactos se actualizan sin retirar un anuncio aprobado."><Link className="button button-public-preview" href={profilePublicPath(row.profile)} target="_blank" prefetch={false}>Previsualizar anuncio</Link><a className="button button-outline" href="#fotos-y-videos">Fotos y videos</a></AccountHeading>
         {query.error && <p className="form-alert" role="alert">{query.message ?? "No se pudieron guardar los cambios. Revisa los campos obligatorios."}</p>}
         {query.notice === "hidden" && <p className="account-success" role="status">El anuncio quedó oculto del sitio público.</p>}
         {query.notice === "shown" && <p className="account-success" role="status">El anuncio volvió a mostrarse según su estado de moderación.</p>}

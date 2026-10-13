@@ -11,6 +11,7 @@ import { SelectedVideoPreview } from "./SelectedVideoPreview";
 import { assertVideoSource, isVideoSource, VIDEO_INPUT_ACCEPT, VIDEO_UPLOAD_RULES } from "@/lib/video-policy";
 import { uploadMediaRequest } from "@/lib/upload-response";
 import { MAX_IMAGE_UPLOAD_BYTES, assertImageSource, IMAGE_INPUT_ACCEPT, IMAGE_UPLOAD_RULES, isImageSource } from "@/lib/image-upload-policy";
+import { applyPhotoOptionToSelection, type GalleryPhotoOption } from "@/lib/gallery-photo-options";
 
 type MediaItem = { id: string; url: string; mediaType: "image" | "video"; contentType: string; moderationStatus: "pending" | "approved" | "rejected"; visibility: "public" | "exclusive"; isProfilePhoto: boolean; byteSize: number };
 type Quota = { bytes: number; level: "ok" | "warning" | "blocked"; message: string };
@@ -36,6 +37,15 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
   const videoAbortRef = useRef<AbortController | null>(null);
   useEffect(() => () => videoAbortRef.current?.abort(), []);
   const updateCandidate = (id: string, patch: Partial<Candidate>) => setCandidates((current) => current.map((candidate) => candidate.id === id ? { ...candidate, ...patch } : candidate));
+
+  function applyToAllPhotos(option: GalleryPhotoOption, enabled: boolean) {
+    if (isBusy) return;
+    setCandidates(current => applyPhotoOptionToSelection(current, option, enabled));
+    if (stagedPhoto) {
+      if (option === "watermark") setPhotoWatermark(enabled); else setPhotoBlurFaces(enabled);
+      setPreparedPhoto(undefined);
+    }
+  }
 
   async function prepareCandidateVideo(candidate: Candidate) {
     if (candidate.prepared) return candidate.prepared;
@@ -148,11 +158,16 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
   const profilePhotos = media.filter((item) => item.isProfilePhoto); const galleryMedia = media.filter((item) => !item.isProfilePhoto && item.visibility === "public");
   const images = galleryMedia.filter((item) => item.mediaType === "image"); const videos = galleryMedia.filter((item) => item.mediaType === "video");
   const canChoose = !isBusy && quota.level !== "blocked" && (images.length < 10 || videos.length < 3); const pendingCandidates = candidates.filter((candidate) => candidate.status !== "completed");
+  const selectedPhotos = pendingCandidates.filter(candidate => candidate.image);
+  const selectedPhotoCount = selectedPhotos.length + (stagedPhoto ? 1 : 0);
+  const watermarkCount = selectedPhotos.filter(candidate => candidate.watermark).length + (stagedPhoto && photoWatermark ? 1 : 0);
+  const blurCount = selectedPhotos.filter(candidate => candidate.blurFaces).length + (stagedPhoto && photoBlurFaces ? 1 : 0);
 
   return <section className="profile-media-manager" id="fotos-y-videos" tabIndex={-1}>
     <div className="profile-media-manager-heading"><div><p className="eyebrow">MEDIOS DEL ANUNCIO</p><h2>Fotos y videos</h2><span>{adminMode ? "Puedes subir foto principal y galería para esta cuenta. Los archivos que cargues como administrador se aprueban inmediatamente; los que suba la persona usuaria mantienen su revisión habitual." : "Separa tu foto principal de la galería pública. Todo material llega primero a revisión. El contenido exclusivo se administra desde la sección Contenido de tu cuenta."}</span></div><strong>{images.length}/10 fotos<br />{videos.length}/3 videos</strong></div>
     <p className={`media-quota media-quota-${quota.level}`}><b>Uso de R2: {formatBytes(quota.bytes)}</b>{quota.message}</p>{notice && <p className="media-manager-notice" role="status">{notice}</p>}
     <p className="media-manager-independent-notice">Las fotos y videos se guardan por separado. Subir, reemplazar o eliminar un archivo no retira un anuncio publicado; solo el material nuevo espera aprobación. No necesitas guardar nuevamente los datos del anuncio.</p>
+    {selectedPhotoCount > 0 && <fieldset className="gallery-global-photo-options"><legend>Opciones para todas las fotos seleccionadas</legend><p>Incluye la foto principal si está seleccionada. No modifica fotos guardadas ni videos; después puedes ajustar cada foto por separado.</p><div><button className="button button-outline" type="button" disabled={isBusy} aria-pressed={watermarkCount === selectedPhotoCount} onClick={() => applyToAllPhotos("watermark", watermarkCount !== selectedPhotoCount)}>{watermarkCount === selectedPhotoCount ? "Quitar marca de agua de todas" : "Marca de agua en todas"}<small>{watermarkCount} de {selectedPhotoCount} activadas</small></button>{(adminMode || mediaSettings.faceBlurEnabled) && <button className="button button-outline" type="button" disabled={isBusy} aria-pressed={blurCount === selectedPhotoCount} onClick={() => applyToAllPhotos("blurFaces", blurCount !== selectedPhotoCount)}>{blurCount === selectedPhotoCount ? "Quitar difuminado de todas" : "Difuminar rostros en todas"}<small>{blurCount} de {selectedPhotoCount} activadas</small></button>}</div></fieldset>}
     {qualityWarning && <p className="photo-quality-warning" role="status">{qualityWarning}</p>}
     <div className="profile-photo-manager"><div><p className="eyebrow">FOTO PRINCIPAL</p><h3>Foto de perfil</h3><span>Es la imagen prioritaria en el directorio y al abrir el aviso. Puedes recortarla y añadir una marca de agua grande, centrada y sin colores. Sube el archivo original para mantener su calidad.</span><div className="admin-photo-processing-options"><label><input type="checkbox" checked={photoWatermark} disabled={isBusy} onChange={event => { setPhotoWatermark(event.target.checked); setPreparedPhoto(undefined); }} />Marca de agua centrada</label>{(adminMode || mediaSettings.faceBlurEnabled) && <label><input type="checkbox" checked={photoBlurFaces} disabled={isBusy} onChange={event => { setPhotoBlurFaces(event.target.checked); setPreparedPhoto(undefined); }} />Difuminar rostros</label>}</div></div><label className="button button-outline">{isBusy ? "Procesando…" : "Elegir foto de perfil"}<input aria-label="Elegir foto de perfil" ref={profilePhotoInputRef} type="file" accept={IMAGE_INPUT_ACCEPT} disabled={isBusy || quota.level === "blocked"} onChange={event => uploadProfilePhoto(event.target.files)} /></label></div>
     {stagedPhoto && <section className="staged-profile-photo"><strong className="selected-photo-filename">{originalPhoto?.name ?? stagedPhoto.name}</strong>

@@ -55,7 +55,6 @@ export type ProfileSubmission = {
 };
 
 const metadataFields = [
-  "artist_name",
   "gender",
   "age",
   "nationality",
@@ -274,7 +273,7 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
 
   const metadata = Object.fromEntries(
     metadataFields
-      .filter((field) => typeValue === "escort" || !["artist_name", "gender", "age", "nationality", "skin_color", "languages", "height_cm", "weight_kg", "measurements", "hair_color", "body_type", "bust_size"].includes(field))
+      .filter((field) => typeValue === "escort" || !["gender", "age", "nationality", "skin_color", "languages", "height_cm", "weight_kg", "measurements", "hair_color", "body_type", "bust_size"].includes(field))
       .filter((field) => typeValue !== "rental" || !["agency_years", "website", "facebook_url", "twitter_url", "arsmate_url", "onlyfans_url", "promotions", "contact_methods"].includes(field))
       .map((field) => [field, compactText(formData.get(field), field === "promotions" ? 500 : 180)] as const)
       .filter(([, value]) => value),

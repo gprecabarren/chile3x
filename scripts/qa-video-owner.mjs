@@ -17,8 +17,8 @@ if (process.argv[2] === 'cleanup') {
   const response = await fetch(base + path + '/' + mediaId, { method: 'DELETE', headers });
   assert.equal(response.status, 200);
   console.log('Removed the local generated video through the normal authorized API.');
-  db.close(); process.exit(0);
-}
+  db.close();
+} else {
 const post = async (bytes, name) => {
   const body = new FormData(); body.set('file', new File([bytes], name, { type: 'video/mp4' }));
   const response = await fetch(base + path, { method: 'POST', headers, body });
@@ -54,3 +54,4 @@ assert.equal((await fetch(base + `/mi-cuenta/${fixtures.profileId}/editar`, { he
 assert.equal((await fetch(base + `/mi-cuenta/${fixtures.profileId}/editar`, { headers: { cookie: foreignCookie } })).status, 404);
 db.close();
 console.log('PASS: real 15-second/10-MB video saved once; oversized and long clips rejected; editing visible and accessible only to the owner across all listing types.');
+}

@@ -85,9 +85,11 @@ test('admin timeline keeps UTC timestamps and the home loads ten entries only fo
   assert.match(await source('app/admin/RecentAdminActivity.tsx'),/actorGithubLogin/);
 });
 
-test('video previews load near viewport, seek a paused frame, and reset on first intentional playback', async () => {
+test('video previews load near viewport at 00:00, remain paused, and reset on first intentional playback', async () => {
   const code=await source('app/MediaVideo.tsx');
-  for (const pattern of [/IntersectionObserver/,/preload="none"/,/playsInline/,/Math.min\(1, video.duration \/ 2\)/,/video.currentTime = 0/,/observer.disconnect\(\)/]) assert.match(code,pattern);
+  for (const pattern of [/IntersectionObserver/,/preload="none"/,/playsInline/,/Math.min\(0.001, video.duration \/ 2\)/,/video.currentTime = 0/,/observer.disconnect\(\)/]) assert.match(code,pattern);
+  assert.doesNotMatch(code,/autoPlay/);
+  const selected=await source('app/mi-cuenta/SelectedVideoPreview.tsx'); assert.match(selected,/Math.min\(0.001, video.duration \/ 2\)/); assert.match(selected,/!previewSought.current && !playbackStarted.current/);
   assert.doesNotMatch(code,/autoPlay|fetch\(|canvas|localStorage/);
   for (const path of ['app/perfil/[slug]/page.tsx','app/admin/medios/page.tsx','app/mi-cuenta/ProfileMediaManager.tsx','app/mi-cuenta/ExclusiveContentManager.tsx','app/mi-cuenta/contenido/page.tsx']) assert.match(await source(path),/<MediaVideo/);
 });

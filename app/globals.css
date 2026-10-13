@@ -2124,6 +2124,9 @@ input[type="submit"] { text-transform: none !important; letter-spacing: .015em; 
 .media-manager-notice { white-space: pre-line; overflow-wrap: anywhere; }
 .gallery-upload-status.is-failed { padding: 9px; border-left: 3px solid #ef555e; color: #ffd5d7; background: #311c26; line-height: 1.5; }
 .media-video-error { color: #ffc9cc; font-size: 12px; line-height: 1.4; padding: 8px; }
+.profile-owner-edit-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 20px; width: min(100% - 56px, 1184px); min-width: 0; margin: 20px auto 0; padding: 16px 20px; border: 1px solid #75414d; border-radius: 12px; background: #20141f; }
+.profile-owner-edit-bar > div { min-width: 0; display: grid; gap: 5px; }.profile-owner-edit-bar strong { color: #fff; font-size: 15px; }.profile-owner-edit-bar span { color: #d3bdc7; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }.profile-owner-edit-bar .button { flex-shrink: 0; min-height: 44px; }
+@media (max-width: 620px) { .profile-owner-edit-bar { width: min(100% - 24px, 1184px); margin-top: 16px; padding: 14px 16px; }.profile-owner-edit-bar .button { width: 100%; } }
 .admin-audit-heading { scroll-margin-top: 100px; margin: 24px 0 14px; }
 .admin-recent-activity { min-width: 0; padding: 22px; border: 1px solid #3a4559; border-radius: 12px; background: #101724; }
 .admin-recent-activity > header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; }.admin-recent-activity h2 { margin: 4px 0 0; font-size: 23px; }.admin-recent-activity .eyebrow { margin: 0; }

@@ -13,13 +13,14 @@ const validationSource = (await source("lib/video-validation.ts"))
   .replace('"./video-policy"', JSON.stringify(new URL("../lib/video-policy.ts", import.meta.url).href));
 const { validatePreparedVideo } = await import(`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(validationSource)).toString("base64")}`);
 
-test("video source recognizes iPhone MOV/empty MIME, with 50 MB and 10 second bounds", () => {
+test("video source recognizes iPhone MOV/empty MIME, with 50 MB and 15 second bounds", () => {
   assert.equal(isVideoSource({name:"IMG_1001.MOV",type:""}),true);
   assert.equal(isVideoSource({name:"video",type:"video/quicktime"}),true);
   assert.equal(isVideoSource({name:"foto.jpg",type:"image/jpeg"}),false);
-  assert.doesNotThrow(()=>assertVideoSource(50_000_000,10.05));
+  assert.equal(MAX_PREPARED_VIDEO_BYTES,10_000_000);
+  for(const duration of [10,12,15,15.05]) assert.doesNotThrow(()=>assertVideoSource(50_000_000,duration));
   for(const size of [0,NaN,Infinity,50_000_001]) assert.throws(()=>assertVideoSource(size),/50 MB/);
-  for(const duration of [0,NaN,Infinity,10.051]) assert.throws(()=>assertVideoSource(100,duration),/10 segundos/);
+  for(const duration of [0,NaN,Infinity,15.051]) assert.throws(()=>assertVideoSource(100,duration),/15 segundos/);
 });
 
 test("output stays bounded, even-sized, portrait-safe and never upscaled", () => {
@@ -33,9 +34,9 @@ test("output stays bounded, even-sized, portrait-safe and never upscaled", () =>
 });
 
 test("plain proxy 413 and malformed responses never leak JSON SyntaxError or HTML", async () => {
-  await assert.rejects(readUploadResponse(new Response("Payload Too Large",{status:413})),/8 MB/);
+  await assert.rejects(readUploadResponse(new Response("Payload Too Large",{status:413})),/10 MB/);
   await assert.rejects(readUploadResponse(new Response("<html>gateway</html>",{status:502})),/Revisa tu conexión/);
-  await assert.rejects(readUploadResponse(Response.json({error:"Los videos deben durar 10 segundos o menos."},{status:400})),/10 segundos/);
+  await assert.rejects(readUploadResponse(Response.json({error:"Los videos deben durar 15 segundos o menos."},{status:400})),/15 segundos/);
   assert.deepEqual(await readUploadResponse(Response.json({ok:true})),{ok:true});
   await assert.rejects(readUploadResponse(new Response("Payload Too Large",{status:413}),"Cada documento admite hasta 15 MB."),/15 MB/);
 });
@@ -47,14 +48,19 @@ function multipart(path, size, known=true) {
   return new Request(`https://chile3x.cl${path}`,{method:"POST",headers,body,duplex:"half"});
 }
 test("multipart bounds match galleries, exclusive media, documents and ordinary forms",async()=>{
-  assert.equal(multipartBodyLimit("/api/perfiles/qa/media"),8_064_000);
-  assert.equal(multipartBodyLimit("/api/admin/profiles/qa/media"),8_064_000);
-  assert.equal(multipartBodyLimit("/api/mi-cuenta/contenido/medios"),8_064_000);
+  assert.equal(multipartBodyLimit("/api/perfiles/qa/media"),10_256_000);
+  assert.equal(multipartBodyLimit("/api/admin/profiles/qa/media"),10_256_000);
+  assert.equal(multipartBodyLimit("/api/mi-cuenta/contenido/medios"),10_256_000);
+  assert.equal(multipartBodyLimit("/api/admin/media/qa/procesar"),10_256_000);
+  assert.equal(multipartBodyLimit("/api/admin/noticias/media"),10_256_000);
+  assert.equal(multipartBodyLimit("/api/admin/patrocinadores"),20_256_000);
   assert.equal(multipartBodyLimit("/api/perfiles/qa/documentos/identity"),15_064_000);
   assert.equal(multipartBodyLimit("/api/perfiles/nuevo"),1_048_576);
   const compatible=multipart("/api/perfiles/qa/media",1_700_000);assert.equal(await limitMultipartUpload(compatible),compatible);
   for(const known of [true,false]) {
-    const response=await limitMultipartUpload(multipart("/api/perfiles/qa/media",8_064_001,known)); assert.equal(response.status,413);assert.match((await response.json()).error,/tamaño/);assert.equal(response.headers.get("cache-control"),"private, no-store");
+    const accepted=await limitMultipartUpload(multipart("/api/perfiles/qa/media",10_064_000,known)); assert.ok(accepted instanceof Request);
+    if(!known) assert.equal((await accepted.arrayBuffer()).byteLength,10_064_000);
+    const response=await limitMultipartUpload(multipart("/api/perfiles/qa/media",10_256_001,known)); assert.equal(response.status,413);assert.match((await response.json()).error,/tamaño/);assert.equal(response.headers.get("cache-control"),"private, no-store");
   }
   const streamed=await limitMultipartUpload(multipart("/api/perfiles/qa/media",1_700_000,false));assert.equal((await streamed.arrayBuffer()).byteLength,1_700_000);
   const document=multipart("/api/perfiles/qa/documentos/identity",14_000_000);assert.equal(await limitMultipartUpload(document),document);
@@ -71,11 +77,29 @@ async function webm(duration, codec="vp8") {
   track.close();await output.finalize();return output.target.buffer;
 }
 test("server validates real container duration/codec before any R2 storage", async()=>{
-  const result=await validatePreparedVideo(await webm(10),"video/webm");assert.equal(result.codec,"vp8");assert.equal(result.duration,10);
-  await assert.rejects(validatePreparedVideo(await webm(11),"video/webm"),/10 segundos/);
+  for (const duration of [10,12,15]) { const result=await validatePreparedVideo(await webm(duration),"video/webm");assert.equal(result.codec,"vp8");assert.equal(result.duration,duration); }
+  await assert.rejects(validatePreparedVideo(await webm(16),"video/webm"),/15 segundos/);
   await assert.rejects(validatePreparedVideo(await webm(3,"av1"),"video/webm"),/preparación/);
   await assert.rejects(validatePreparedVideo(new TextEncoder().encode("not a movie").buffer,"video/mp4"),/validar/);
-  await assert.rejects(validatePreparedVideo(new ArrayBuffer(MAX_PREPARED_VIDEO_BYTES+1),"video/mp4"),/8 MB/);
+  await assert.rejects(validatePreparedVideo(new ArrayBuffer(MAX_PREPARED_VIDEO_BYTES+1),"video/mp4"),/10 MB/);
+});
+
+test("video policy is shared by upload preparation, server validation and visible rules",async()=>{
+  const policy=await source("lib/video-policy.ts"); assert.match(policy,/hasta 15 segundos/); assert.match(policy,/versión de hasta 10 MB/);
+  assert.match(await source("lib/media.ts"),/MAX_VIDEO_BYTES = MAX_PREPARED_VIDEO_BYTES/);
+  assert.match(await source("app/mi-cuenta/prepare-video.ts"),/end: Math.min\(duration, MAX_VIDEO_SECONDS\)/);
+  for (const path of ["lib/video-policy.ts","lib/video-validation.ts","lib/profile-media-upload.ts","lib/media-upload-form.ts","lib/upload-response.ts","worker/upload-limits.ts","app/mi-cuenta/prepare-video.ts","app/api/mi-cuenta/contenido/medios/route.ts"]) assert.doesNotMatch(await source(path),/8 MB|10 segundos/);
+});
+
+test("edit link on public listing uses server-verified ownership for every listing type", async()=>{
+  const page=await source("app/perfil/[slug]/page.tsx");
+  assert.match(page,/\[getCurrentAdmin\(\), getCurrentUser\(\), searchParams\]/);
+  assert.match(page,/ownerId === viewer.id/);
+  assert.match(page,/viewerOwnsProfile && <aside className="profile-owner-edit-bar"/);
+  assert.match(page,/href=\{`\/mi-cuenta\/\$\{profile.id\}\/editar`\}/);
+  assert.match(page,/prefetch=\{false\}>Editar anuncio/);
+  const edit=await source("app/mi-cuenta/[profileId]/editar/page.tsx"); assert.match(edit,/eq\(profiles.ownerId, user.id\)/);
+  const css=await source("app/globals.css"); assert.match(css,/profile-owner-edit-bar \{ display: flex; flex-wrap: wrap/); assert.match(css,/profile-owner-edit-bar \.button \{ width: 100%/);
 });
 
 test("submission keeps media/documents before the long edit form and preserves moderation",async()=>{

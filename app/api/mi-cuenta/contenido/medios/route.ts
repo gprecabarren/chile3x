@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     const entry = formData.get("file");
     if (!entry || typeof entry === "string") return error("Selecciona una imagen o video para subir.");
     if (entry.size === 0) return error("El archivo llegó vacío. Descarga el original en tu dispositivo y vuelve a seleccionarlo.");
-    if (entry.size > Math.max(MAX_IMAGE_BYTES, MAX_VIDEO_BYTES)) return error("El archivo preparado supera el máximo: fotos de hasta 10 MB y videos de hasta 8 MB.");
+    if (entry.size > Math.max(MAX_IMAGE_BYTES, MAX_VIDEO_BYTES)) return error("El archivo preparado supera el máximo: fotos y videos de hasta 10 MB.");
 
     const data = await entry.arrayBuffer();
     const imageType = detectImageType(data);
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     if (!imageType && !videoType) return error("Solo se permiten imágenes JPEG, PNG o WebP, y videos MP4 o WebM válidos.");
     const mediaType = imageType ? "image" as const : "video" as const;
     const contentType = imageType ?? videoType!;
-    if (entry.size > (mediaType === "image" ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES)) return error(mediaType === "image" ? "Cada imagen debe pesar como máximo 10 MB." : "Cada video debe pesar menos de 8 MB.");
+    if (entry.size > (mediaType === "image" ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES)) return error(mediaType === "image" ? "Cada imagen debe pesar como máximo 10 MB." : "Cada video debe pesar como máximo 10 MB.");
     if (videoType) {
       try { await validatePreparedVideo(data, videoType); }
       catch (cause) { return error(cause instanceof Error ? cause.message : "No se pudo validar el video."); }

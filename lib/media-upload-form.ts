@@ -6,7 +6,7 @@ export class MediaUploadRequestError extends Error {
 /** Bound multipart bytes before parsing, including requests without Content-Length. */
 export async function readMediaUploadForm(request: Request, maxFileBytes: number): Promise<FormData> {
   const maxBodyBytes = maxFileBytes + 256_000;
-  const tooLarge = () => new MediaUploadRequestError("El envío supera el límite: cada foto final admite hasta 10 MB y cada video final hasta 8 MB. Envía un archivo por vez.", 413);
+  const tooLarge = () => new MediaUploadRequestError("El envío supera el límite: cada foto o video final admite hasta 10 MB. Envía un archivo por vez.", 413);
   if (Number(request.headers.get("content-length")) > maxBodyBytes) throw tooLarge();
   if (!request.headers.get("content-type")?.toLowerCase().startsWith("multipart/form-data;")) throw new MediaUploadRequestError("El archivo no llegó como una carga válida. Recarga el panel y vuelve a seleccionarlo.");
   if (!request.body) throw new MediaUploadRequestError("El envío llegó vacío. Selecciona nuevamente el archivo original.");

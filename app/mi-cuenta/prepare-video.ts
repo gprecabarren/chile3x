@@ -50,7 +50,7 @@ export async function prepareVideo(file: File, options: { signal?: AbortSignal; 
     conversion.onProgress = progress => { const percent = Math.floor(progress * 100); if (percent !== lastPercent) { lastPercent = percent; options.onProgress?.(`${remuxOnly ? "Preparando formato" : "Optimizando video"}: ${percent}%…`); } };
     await conversion.execute();
     const buffer = output.target.buffer;
-    if (!buffer || buffer.byteLength === 0 || buffer.byteLength > MAX_PREPARED_VIDEO_BYTES) throw new Error("No se logró reducir este video a 8 MB. Graba una versión más corta o a 720p e inténtalo nuevamente. No se subió el original.");
+    if (!buffer || buffer.byteLength === 0 || buffer.byteLength > MAX_PREPARED_VIDEO_BYTES) throw new Error("No se logró reducir este video a 10 MB. Graba una versión más corta o a 720p e inténtalo nuevamente. No se subió el original.");
     const prepared = new File([buffer], `${file.name.replace(/\.[^.]+$/, "")}-optimizado.${mp4Possible ? "mp4" : "webm"}`, { type: mp4Possible ? "video/mp4" : "video/webm" });
     return { file: prepared, duration: Math.min(duration, MAX_VIDEO_SECONDS), detail: remuxOnly ? "Convertido a MP4 sin pérdida adicional de calidad." : `Video optimizado · ${dimensions.width} × ${dimensions.height} · ${(prepared.size / 1_000_000).toFixed(1)} MB.` };
   } catch (cause) {

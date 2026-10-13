@@ -14,8 +14,8 @@ export function SelectedVideoPreview({ file }: { file: File }) {
   }, [file]);
   return <div className="selected-video-preview"><video ref={videoRef} controls playsInline preload="metadata" aria-label="Vista previa del video seleccionado" onLoadedData={() => {
     const video = videoRef.current;
-    if (video && video.paused && Number.isFinite(video.duration) && video.duration > 0) {
-      try { video.currentTime = Math.min(1, video.duration / 2); previewSought.current = true; } catch { /* Native playback is still available. */ }
+    if (video && !previewSought.current && !playbackStarted.current && video.paused && Number.isFinite(video.duration) && video.duration > 0) {
+      try { video.currentTime = Math.min(0.001, video.duration / 2); previewSought.current = true; } catch { /* Native playback is still available. */ }
     }
   }} onPlay={() => { const video = videoRef.current; if (video && previewSought.current && !playbackStarted.current) video.currentTime = 0; playbackStarted.current = true; }} /><small>Revisa el video completo y su sonido antes de enviarlo.</small></div>;
 }

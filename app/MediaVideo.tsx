@@ -23,8 +23,9 @@ export function MediaVideo({ src, contentType, label = "Video" }: { src: string;
     const video = videoRef.current;
     if (!video || previewSought.current || playbackStarted.current || !video.paused || !Number.isFinite(video.duration) || video.duration <= 0) return;
     previewSought.current = true;
-    // A tiny source time fragment also asks Safari to decode its first frame.
-    try { video.currentTime = Math.min(1, video.duration / 2); } catch { /* Native controls remain available if the stream cannot seek. */ }
+    // Decode the initial frame, keeping native controls at 00:00. The tiny
+    // non-zero time also avoids Safari's empty preview at exactly zero.
+    try { video.currentTime = Math.min(0.001, video.duration / 2); } catch { /* Native controls remain available if the stream cannot seek. */ }
   }
   // Seek after the initial decoded frame: a source time fragment can otherwise
   // overwrite a seek performed during loadedmetadata (observed in Chrome).

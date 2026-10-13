@@ -16,7 +16,7 @@ const files = await Promise.all([
 
 const [profile, directory, submission, schema, components, form, faq, css, migration] = files;
 
-test("Bronze is the persisted tier and appears consistently in public and account UI", () => {
+test("Bronze remains supported in persistence and UI while new escort forms default to VIP", () => {
   assert.match(profile, /tiers = \["bronze", "premium", "vip"\]/);
   assert.match(profile, /bronze: "Bronze"/);
   assert.match(schema, /enum: \["bronze", "premium", "vip"\]/);
@@ -25,7 +25,7 @@ test("Bronze is the persisted tier and appears consistently in public and accoun
   assert.match(directory, /tierLabels\[profile\.tier\]/);
   assert.match(submission, /typeValue === "escort" \? tierValue : "bronze"/);
   assert.match(components, /profile\.tier === "bronze"/);
-  assert.match(form, /defaultValue=\{initial\?\.tier \?\? "bronze"\}/);
+  assert.match(form, /defaultValue=\{initial\?\.tier \?\? "vip"\}/);
   assert.match(form, /value="bronze"/);
   assert.match(faq, /avisos Escort pueden elegir VIP/);
   assert.match(faq, /Premium \(visibilidad intermedia\) o Bronze/);

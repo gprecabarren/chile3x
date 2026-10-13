@@ -31,6 +31,18 @@ test('secondary fields share one collapsed group; important optional fields rema
   assert.doesNotMatch(await source('lib/profile-submission.ts'), /"artist_name"/);
 });
 
+test('new escort listings default to VIP and display descending tiers without changing existing listings', async () => {
+  const form = await source('app/mi-cuenta/ProfileForm.tsx');
+  assert.match(form, /const visibilityTiers = \["vip", "premium", "bronze"\] as const/);
+  assert.match(form, /<select name="tier" defaultValue=\{initial\?\.tier \?\? "vip"\}>/);
+  assert.equal((form.match(/visibilityTiers\.map\(\(tier\)/g) ?? []).length, 2, 'both dropdown and chips use descending tiers');
+  assert.match(form, /type !== "escort" && <input name="tier" type="hidden" value="bronze"/);
+  assert.match(form, /Ej\. Valentina Masajes/);
+  assert.doesNotMatch(form, /Valentina Spa/);
+  assert.match(form, /Dale más fuerza a tu anuncio[\s\S]*mayor confianza[\s\S]*filtros del directorio/);
+  assert.doesNotMatch(form, /garantizan una mejor posición en Google/);
+});
+
 test('global photo controls preserve crops/regions, invalidate only changed photos, and never touch videos or uploaded files', () => {
   const region = [{ x: 0.2, y: 0.3, width: 0.1, height: 0.1 }];
   const photo = { id: 'photo', image: true, status: 'failed', watermark: false, blurFaces: false, prepared: { name: 'old.jpg' }, file: { name: 'cropped.jpg' }, faceRegions: region, detail: 'old' };

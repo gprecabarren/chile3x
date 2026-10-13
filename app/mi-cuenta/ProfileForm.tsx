@@ -18,9 +18,10 @@ import {
   skinColors,
   spokenLanguages,
   tierLabels,
-  tiers,
   type ProfileType,
 } from "@/lib/profile";
+
+const visibilityTiers = ["vip", "premium", "bronze"] as const;
 
 const tierVisibilityOptions = {
   bronze: "Bronze: visibilidad estándar · GRATIS ahora",
@@ -219,18 +220,18 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
           </label>
           <label>
             Nombre visible
-            <input name="display_name" required minLength={2} maxLength={80} defaultValue={initial?.displayName} placeholder={type === "agency" ? "Ej. Agencia Luna" : type === "rental" ? "Ej. Habitación en Providencia" : "Ej. Valentina Spa"} />
+            <input name="display_name" required minLength={2} maxLength={80} defaultValue={initial?.displayName} placeholder={type === "agency" ? "Ej. Agencia Luna" : type === "rental" ? "Ej. Habitación en Providencia" : "Ej. Valentina Masajes"} />
           </label>
           {type === "escort" && <div className="tier-form-field">
             <label>
               Categoría de visibilidad
-              <select name="tier" defaultValue={initial?.tier ?? "bronze"}>
-                {tiers.map((tier) => <option key={tier} value={tier}>{tierVisibilityOptions[tier]}</option>)}
+              <select name="tier" defaultValue={initial?.tier ?? "vip"}>
+                {visibilityTiers.map((tier) => <option key={tier} value={tier}>{tierVisibilityOptions[tier]}</option>)}
               </select>
               <small>Por lanzamiento, todas las categorías son gratis. Sus valores se definirán más adelante.</small>
             </label>
             <div className="tier-form-guide" aria-label="Niveles de visibilidad">
-              {tiers.map((tier) => <span key={tier} className={`tier-form-chip tier-${tier}`}>{tierLabels[tier]}</span>)}
+              {visibilityTiers.map((tier) => <span key={tier} className={`tier-form-chip tier-${tier}`}>{tierLabels[tier]}</span>)}
             </div>
           </div>}
           <label>
@@ -312,7 +313,7 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
       </section>
 
       <details ref={optionalRef} className="profile-optional-fields">
-        <summary><span><strong>Características opcionales</strong><small>Te recomendamos completarlas: un anuncio más detallado puede generar mayor confianza y ayudar a que te encuentren en los filtros del directorio. Son opcionales y no garantizan una mejor posición en Google.</small></span></summary>
+        <summary><span><strong>Características opcionales</strong><small>Dale más fuerza a tu anuncio: completar sus características puede generar mayor confianza y ayudar a que te encuentren en los filtros del directorio.</small></span></summary>
         <div className="profile-optional-fields-content">
           <section className="profile-form-section">
             <div className="profile-form-section-heading"><p>VALORES Y DISPONIBILIDAD</p><h2>Tarifas y horarios</h2></div>

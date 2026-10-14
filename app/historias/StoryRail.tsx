@@ -59,6 +59,7 @@ function StoryViewer({ group: initialGroup, startAt, onClose, onViewed }: { grou
   const [failedId, setFailedId] = useState<string | null>(null);
   const [paused, setPaused] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const story = group.stories[index];
   const ready = story.storyType === "text" || loadedId === story.id;
 
@@ -72,13 +73,20 @@ function StoryViewer({ group: initialGroup, startAt, onClose, onViewed }: { grou
   }, [onViewed, ready, story.id]);
 
   useEffect(() => {
-    if (!ready || paused) return;
+    if (!ready || paused || story.storyType === "video") return;
     const timeout = window.setTimeout(() => {
       if (index < group.stories.length - 1) setIndex((value) => value + 1);
       else onClose();
     }, story.storyType === "image" ? 6_000 : 7_000);
     return () => window.clearTimeout(timeout);
   }, [group.stories.length, index, onClose, ready, paused, story.id, story.storyType]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || story.storyType !== "video") return;
+    if (paused) video.pause();
+    else void video.play().catch(() => setPaused(true));
+  }, [paused, story.id, story.storyType]);
 
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
@@ -113,7 +121,7 @@ function StoryViewer({ group: initialGroup, startAt, onClose, onViewed }: { grou
       <div className="story-viewer-progress" aria-hidden="true">{group.stories.map((item, itemIndex) => <span className={itemIndex <= index ? "is-complete" : ""} key={item.id} />)}</div>
       <header><div><b>{group.profileName}</b><span>{group.city} · {storyTimeLabel(story.expiresAt)}</span></div><button type="button" onClick={onClose} aria-label="Cerrar historia">×</button></header>
       <div className="story-viewer-toolbar"><a className="story-viewer-profile-link" href={profileHref(group)}>Ver anuncio</a><button type="button" onClick={() => setPaused((value) => !value)} aria-pressed={paused}>{paused ? "Continuar" : "Pausar"}</button><small>{index + 1}/{group.stories.length}</small></div>
-      <div className={`story-viewer-content story-viewer-${story.storyType}`}>{story.storyType === "image" && story.imageUrl ? <img key={story.id} src={story.imageUrl} alt={`Historia de ${group.profileName}`} onLoad={() => setLoadedId(story.id)} onError={() => setFailedId(story.id)} /> : <p>{story.body}</p>}{failedId === story.id && <p className="story-image-error" role="status">No se pudo cargar esta foto. Puedes pasar a la siguiente historia.</p>}{story.storyType === "image" && story.body && <span>{story.body}</span>}</div>
+      <div className={`story-viewer-content story-viewer-${story.storyType}`}>{story.storyType === "video" && story.imageUrl ? <video key={story.id} ref={videoRef} data-story-id={story.id} src={story.imageUrl} controls playsInline autoPlay muted preload="metadata" aria-label={`Historia de video de ${group.profileName}`} onLoadedData={() => setLoadedId(story.id)} onPlay={() => setPaused(false)} onPause={() => { if (videoRef.current?.dataset.storyId === story.id) setPaused(true); }} onEnded={() => index < group.stories.length - 1 ? setIndex(value => value + 1) : onClose()} onError={() => setFailedId(story.id)} /> : story.storyType === "image" && story.imageUrl ? <img key={story.id} src={story.imageUrl} alt={`Historia de ${group.profileName}`} onLoad={() => setLoadedId(story.id)} onError={() => setFailedId(story.id)} /> : <p>{story.body}</p>}{failedId === story.id && <p className="story-image-error" role="status">No se pudo cargar {story.storyType === "video" ? "este video" : "esta foto"}. Revisa la conexión o pasa a la siguiente historia.</p>}{story.storyType !== "text" && story.body && <span>{story.body}</span>}</div>
       <button className="story-viewer-previous" type="button" onClick={() => setIndex((value) => Math.max(0, value - 1))} disabled={index === 0} aria-label="Historia anterior">‹</button>
       <button className="story-viewer-next" type="button" onClick={() => index < group.stories.length - 1 ? setIndex((value) => value + 1) : onClose()} aria-label="Historia siguiente">›</button>
     </div>
@@ -133,7 +141,7 @@ function StoryActivityPanel({ stories }: { stories: PublicStory[] }) {
 
 export function StoryRail({ stories, city, profileOnly = false }: StoryRailProps) {
   const active = useActiveStories(stories);
-  const groups = useMemo(() => groupStories(profileOnly ? active : active.filter((story) => story.storyType === "image")), [active, profileOnly]);
+  const groups = useMemo(() => groupStories(profileOnly ? active : active.filter((story) => story.storyType !== "text")), [active, profileOnly]);
   const [seenIds, setSeenIds] = useState<string[]>([]);
   const [open, setOpen] = useState<{ group: StoryGroup; index: number } | null>(null);
   const close = useCallback(() => setOpen(null), []);

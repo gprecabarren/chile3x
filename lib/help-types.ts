@@ -1,6 +1,6 @@
 import type { AdminCapability } from "./admin-permissions";
 
-export const HELP_REVIEWED_AT = "2026-10-13";
+export const HELP_REVIEWED_AT = "2026-10-14";
 export const HELP_BETA_NOTICE = "Ayuda beta: las respuestas pueden contener errores. Verifica los pasos y, si no resuelven tu problema, contacta al equipo por WhatsApp.";
 
 export type HelpAudience = "account" | "admin";

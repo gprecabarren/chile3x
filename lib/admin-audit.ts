@@ -43,6 +43,8 @@ export const ADMIN_AUDIT_ACTIONS = {
   "profile.details_update": "Editó los datos de un anuncio",
   "story.create": "Publicó una historia para un anunciante",
   "story.delete": "Eliminó una historia de un anunciante",
+  "qa.profile_configure": "Preparó campos de un anuncio ficticio para QA",
+  "qa.profile_restore": "Restauró los datos originales de un anuncio pendiente",
   "profile.status_update": "Cambió estados de un anuncio",
   "profile.trash": "Envió un anuncio a la papelera",
   "profile.trash_self": "El anunciante envió su anuncio a la papelera",

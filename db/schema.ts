@@ -622,7 +622,7 @@ export const profileStatuses = sqliteTable("profile_statuses", {
   id: text("id").primaryKey(),
   profileId: text("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
   body: text("body").notNull(),
-  storyType: text("story_type", { enum: ["text", "image"] }).notNull().default("text"),
+  storyType: text("story_type", { enum: ["text", "image", "video"] }).notNull().default("text"),
   r2Key: text("r2_key"),
   contentType: text("content_type"),
   byteSize: integer("byte_size").notNull().default(0),

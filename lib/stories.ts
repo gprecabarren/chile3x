@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, inArray, isNotNull, lt } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray } from "drizzle-orm";
 import { getDb } from "@/db";
 import { profileMedia, profileStatuses, profiles } from "@/db/schema";
 import { type StoryType } from "@/lib/story-data";
@@ -31,24 +31,12 @@ type StoryScope = {
   type?: "escort" | "agency" | "rental";
 };
 
-// Image stories are removed opportunistically when an advertiser publishes a
-// new one. Public reads deliberately do not perform this maintenance work:
-// a read path can run thousands of times a day, while expired stories are
-// already excluded by their expiry condition below. This keeps the public
-// directory fast on the Workers Free CPU budget.
+// Bounded maintenance also runs from the existing scheduled Worker. Public
+// reads only filter expiry; they never perform database/storage deletion.
 export async function purgeExpiredImageStories() {
-  const db = await getDb();
-  const expired = await db.select({ id: profileStatuses.id, r2Key: profileStatuses.r2Key }).from(profileStatuses).where(and(
-    eq(profileStatuses.storyType, "image"),
-    isNotNull(profileStatuses.r2Key),
-    lt(profileStatuses.expiresAt, new Date().toISOString()),
-  )).limit(100);
-  if (!expired.length) return;
   const { env } = await import("cloudflare:workers");
-  if (!env.MEDIA) return;
-  const mediaBucket = env.MEDIA;
-  await Promise.all(expired.map((story) => mediaBucket.delete(story.r2Key!)));
-  await Promise.all(expired.map((story) => db.delete(profileStatuses).where(eq(profileStatuses.id, story.id))));
+  const { purgeExpiredStoryRecords } = await import("@/worker/story-cleanup");
+  return purgeExpiredStoryRecords(env, new Date().toISOString(), 1);
 }
 
 export async function getActiveStories(scope: StoryScope = {}) {
@@ -105,14 +93,14 @@ export async function getActiveStories(scope: StoryScope = {}) {
     }
 
     return rows.flatMap((row) => {
-      if (row.storyType !== "text" && row.storyType !== "image") return [];
-      if (row.storyType === "image" && !row.r2Key) return [];
+      if (row.storyType !== "text" && row.storyType !== "image" && row.storyType !== "video") return [];
+      if (row.storyType !== "text" && !row.r2Key) return [];
       if (row.profileType !== "escort" && row.profileType !== "agency" && row.profileType !== "rental") return [];
       return [{
         id: row.id,
         body: row.body,
         storyType: row.storyType,
-        imageUrl: row.storyType === "image" ? `/historias/${row.id}/media` : null,
+        imageUrl: row.storyType !== "text" ? `/historias/${row.id}/media` : null,
         createdAt: row.createdAt,
         expiresAt: row.expiresAt ?? now,
         profileId: row.profileId,

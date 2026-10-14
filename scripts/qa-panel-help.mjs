@@ -1,11 +1,12 @@
 // Disposable, local-only checks. Never use this against the production site.
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createServer } from 'node:http';
 
-const base = 'http://localhost:3000';
+const base = process.env.QA_LOCAL_BASE ?? 'http://localhost:3000';
+assert.ok(['http://localhost:3000','http://127.0.0.1:8788'].includes(base));
 const fixture = JSON.parse(readFileSync('outputs/qa-media-admin.json', 'utf8'));
 assert.ok(fixture.prefix.startsWith('qa_media_'));
 const database = resolve('.wrangler/visual-state/v3/d1/miniflare-D1DatabaseObject/57517e47ee4bded0b6657bc2537948a96d7c7d36cc7da324b304803924096a61.sqlite');
@@ -61,6 +62,25 @@ if (process.argv[2] === 'proxy') {
       const document = await fetch(base + `/api/perfiles/${fixture.profileId}/documentos/identity`, { method: 'DELETE', headers: { cookie: fixture.adminCookie, origin: base } });
       assert.equal(document.status, 200);
       console.log('Removed only local QA stories and the generated test document.');
+    } else if (process.argv[2] === 'expire-preview') {
+      const stories=db.prepare('SELECT id,r2_key FROM profile_statuses WHERE profile_id=?').all(fixture.profileId);
+      assert.equal(stories.length,3);
+      fixture.expiryTestStories=stories;
+      writeFileSync('outputs/qa-media-admin.json',JSON.stringify(fixture));
+      db.prepare('UPDATE profile_statuses SET expires_at=? WHERE profile_id=?').run(new Date(Date.now()-1000).toISOString(),fixture.profileId);
+      console.log('Expired exactly three disposable local stories for the scheduled cleanup test.');
+    } else if (process.argv[2] === 'verify-expiry') {
+      assert.equal(db.prepare('SELECT count(*) AS n FROM profile_statuses WHERE profile_id=?').get(fixture.profileId).n,0);
+      console.log('PASS: the scheduled Worker removed all three expired local story records.');
+    } else if (process.argv[2] === 'preview-stories') {
+      await removeStories();
+      for (const type of ['text','image','video']) {
+        const form=data({body:`Historia de ${type} para QA local`});
+        if(type==='image')form.set('image',new File([imageBytes],'qa-story.png',{type:'image/png'}));
+        if(type==='video')form.set('video',new File([readFileSync('tmp/story-qa-video.mp4')],'qa-story.mp4',{type:'video/mp4'}));
+        assert.equal((await request(adminStoryPath,fixture.adminCookie,form)).status,201);
+      }
+      console.log('Three local-only story previews ready; no production changes.');
     } else {
       const editor = `/admin/anuncios-publicaciones/${fixture.profileId}/editar`;
       const endpoint = `/api/admin/profiles/${fixture.profileId}/editar`;
@@ -103,15 +123,24 @@ if (process.argv[2] === 'proxy') {
       assert.equal(db.prepare("SELECT count(*) AS n FROM profile_statuses WHERE profile_id=? AND story_type='text'").get(fixture.profileId).n, 5);
       const imageStory = story('Historia QA de imagen'); imageStory.set('image', new File([imageBytes], 'qa-story.png', { type: 'image/png' }));
       assert.equal((await request(adminStoryPath, fixture.adminCookie, imageStory)).status, 201);
+      const videoBytes=readFileSync('tmp/story-qa-video.mp4');
+      const videoStory=()=>{const form=story('Video local QA');form.set('profile_id',fixture.profileId);form.set('video',new File([videoBytes],'qa-clip.mp4',{type:'video/mp4'}));return form;};
+      const clips=await Promise.all(Array.from({length:7},(_,i)=>request(i%2?adminStoryPath:'/api/historias',i%2?fixture.adminCookie:fixture.ownerCookie,videoStory())));
+      assert.equal(clips.filter(result=>result.status===201).length,3);assert.equal(clips.filter(result=>result.status===409).length,4);
+      const [clip]=db.prepare("SELECT id FROM profile_statuses WHERE profile_id=? AND story_type='video'").all(fixture.profileId);
+      const partial=await fetch(`${base}/historias/${clip.id}/media`,{headers:{range:'bytes=0-31'}});assert.equal(partial.status,206);assert.equal((await partial.arrayBuffer()).byteLength,32);
+      assert.equal((await request('/api/historias',fixture.ownerCookie,data({profile_id:fixture.profileId,body:'x'.repeat(181)}))).status,400);
+      const bad=videoStory();bad.set('video',new File([imageBytes],'fake.mp4',{type:'video/mp4'}));const badResponse=await request(adminStoryPath,fixture.adminCookie,bad);assert.equal(badResponse.status,400);assert.match((await badResponse.json()).error,/video/);
       const audit = db.prepare("SELECT actor_github_login,after_data FROM admin_audit_logs WHERE actor_user_id=? AND action='story.create' LIMIT 1").get(fixture.admin);
       assert.equal(audit.actor_github_login, fixture.github); assert.ok(JSON.parse(audit.after_data).expiresAt);
       db.prepare("UPDATE profiles SET status='pending' WHERE id=?").run(fixture.profileId);
       assert.equal((await request(adminStoryPath, fixture.adminCookie, story('Estado no publicado'))).status, 409);
       db.prepare("UPDATE profiles SET status='approved' WHERE id=?").run(fixture.profileId);
       await removeStories();
-      assert.equal(db.prepare("SELECT count(*) AS n FROM admin_audit_logs WHERE actor_user_id=? AND action='story.delete'").get(fixture.admin).n, 6);
+      assert.equal(db.prepare("SELECT count(*) AS n FROM admin_audit_logs WHERE actor_user_id=? AND action='story.delete'").get(fixture.admin).n, 9);
       console.log('PASS: real local admin edit, status preservation, audit actor, CSRF, capability denial, private documents and both help pages.');
       console.log('PASS: 8 concurrent story requests capped atomically at 5; image/text publication, expiry, visibility rules and audited deletion.');
+      console.log('PASS: 7 mixed owner/admin video requests capped at 3; real H.264/AAC clip, 206 range playback, invalid-video and oversized-text errors.');
     }
   } finally {
     db.prepare("UPDATE admin_github_access SET access_level='administrator' WHERE user_id=?").run(fixture.admin);

@@ -1,6 +1,10 @@
 /** Never expose a proxy's HTML/plain text or a JSON SyntaxError to uploaders. */
 export async function readUploadResponse<T>(response: Response, sizeHelp = "Cada foto preparada admite hasta 10 MB y cada video hasta 12 MB. Vuelve a preparar el archivo e inténtalo nuevamente."): Promise<T> {
-  if (response.status === 413) throw new Error(`La carga supera el tamaño permitido. ${sizeHelp}`);
+  if (response.status === 413) {
+    let detail: string | undefined;
+    try { const payload = await response.json() as { error?: unknown }; if (typeof payload?.error === "string") detail = payload.error; } catch { /* A proxy can send HTML or plain text. */ }
+    throw new Error(detail ?? `La carga supera el tamaño permitido. ${sizeHelp}`);
+  }
   let payload: T & { error?: string };
   try { payload = await response.json(); }
   catch { throw new Error(`El servidor devolvió una respuesta no válida (HTTP ${response.status}). Revisa tu conexión e inténtalo nuevamente; no se confirmó el archivo. Si persiste, indica este código a soporte.`); }

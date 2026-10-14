@@ -7,6 +7,7 @@ import { handleTelegramQueue, handleTelegramScheduled, handleTelegramWebhook, is
 import { cityDirectory } from "../app/locations";
 import { enforceEmailVerification, handleEmailVerificationScheduled } from "./email-verification";
 import { limitMultipartUpload } from "./upload-limits";
+import { purgeExpiredStoryRecords } from "./story-cleanup";
 
 const availableCitySlugs = new Set(cityDirectory.map(city => city.citySlug));
 
@@ -135,7 +136,9 @@ const worker = {
     await handleTelegramQueue(batch, env);
   },
   async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
-    await Promise.all([handleTelegramScheduled(env), handleEmailVerificationScheduled(env)]);
+    await Promise.all([handleTelegramScheduled(env), handleEmailVerificationScheduled(env), purgeExpiredStoryRecords(env).then(result => {
+      if (result.retryNeeded) console.warn("Story cleanup needs retry", { removed: result.removed });
+    }).catch(() => { console.error("Scheduled story cleanup failed; will retry on the next cron."); })]);
   },
 } satisfies ExportedHandler<Env, TelegramQueueMessage>;
 

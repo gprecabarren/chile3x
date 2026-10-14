@@ -36,7 +36,7 @@ test('administrative stories are authorized, bound to the listing, bounded atomi
   assert.match(route, /"profiles.moderate"/); assert.match(route, /"media.moderate"/);
   assert.match(route, /eq\(profileStatuses.profileId, profileId\)/);
   assert.match(route, /profile.status !== "approved" \|\| profile.hiddenAt/);
-  assert.match(route, /MAX_STORY_IMAGE_BYTES/); assert.match(route, /MAX_STORY_TEXT_LENGTH/);
+  assert.match(route, /readStoryUpload\(form\)/); assert.match(route, /storyLimitForType\(storyType\)/);
   assert.match(route, /SELECT count\(\*\) FROM profile_statuses/); assert.match(route, /u.is_active = 1/);
   assert.match(route, /inserted.meta.changes/); assert.match(route, /usage.bytes \+ imageData.byteLength > MEDIA_HARD_LIMIT_BYTES/);
   assert.match(route, /story.create/); assert.match(route, /story.delete/); assert.match(route, /recordAdminAudit\(admin/);

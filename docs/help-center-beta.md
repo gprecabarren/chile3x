@@ -1,6 +1,6 @@
 # Centro de ayuda beta — Johnny Sins
 
-Revisión operativa: 13 de octubre de 2026.
+Revisión operativa: 14 de octubre de 2026.
 
 ## Alcance actual
 
@@ -37,12 +37,18 @@ registra `profile.details_update`. Las cargas de medios siguen requiriendo los
 permisos de gestión de cuentas y moderación de medios existentes. Los documentos
 requieren `private.view`; su acceso y cambios se registran y nunca son públicos.
 
-Las historias administrativas requieren moderación de anuncios y, para imágenes,
+Las historias administrativas requieren moderación de anuncios y, para fotos/videos,
 moderación de medios. Se publican en nombre del anunciante, solo en avisos
-publicados/visibles de cuentas activas, con el mismo límite de cinco por tipo,
-24 horas, texto de 180 caracteres e imágenes válidas de 2 MB. La comprobación de
+publicados/visibles de cuentas activas: cinco textos, cinco fotos y tres videos,
+24 horas, texto de 180 caracteres, fotos finales de 5 MB y videos de 12 MB/15 s.
+Las fotos originales de hasta 20 MB se optimizan en el navegador, y los videos
+usan la preparación de anuncios (original hasta 50 MB). La comprobación de
 cupo y estado se repite atómicamente al insertar. Publicar y eliminar quedan
 registrados como `story.create` y `story.delete` con identidad administrativa.
+La auditoría conserva la actuación, no otra copia del archivo o cuerpo de la
+historia. La limpieza de registros y objetos vencidos usa el cron existente cada
+cinco minutos, por lotes seguros; fallos de almacenamiento conservan referencias
+para reintentar. No depende de que otro anunciante suba una foto.
 
 ## Próximas decisiones
 

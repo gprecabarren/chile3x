@@ -440,9 +440,30 @@ export const operationalEvents = sqliteTable("operational_events", {
   index("operational_events_outcome_created_idx").on(table.outcome, table.createdAt),
 ]);
 
-// R2 enumeration is deliberately opt-in from the administrative summary.
-// Snapshots retain aggregate counts only; private object keys are never copied
-// into D1 or exposed by the dashboard.
+// Restricted outbound metadata only, no bodies or recovery tokens. Account
+// deletion cascades linked records; unlinked recipients are purged explicitly.
+export const emailDeliveryLogs = sqliteTable("email_delivery_logs", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
+  recipient: text("recipient").notNull(),
+  audience: text("audience", { enum: ["account", "admin", "owner", "other"] }).notNull(),
+  kind: text("kind").notNull(),
+  subject: text("subject").notNull(),
+  status: text("status", { enum: ["sending", "accepted", "failed", "skipped"] }).notNull(),
+  provider: text("provider", { enum: ["google_relay", "cloudflare_email"] }),
+  detail: text("detail"),
+  attempts: text("attempts"),
+  durationMs: integer("duration_ms"),
+  finishedAt: text("finished_at"),
+  createdAt,
+}, table => [
+  index("email_delivery_created_idx").on(table.createdAt),
+  index("email_delivery_recipient_created_idx").on(table.recipient, table.createdAt),
+  index("email_delivery_kind_created_idx").on(table.kind, table.createdAt),
+  index("email_delivery_status_created_idx").on(table.status, table.createdAt),
+]);
+
+// R2 snapshots retain aggregate counts only, never private object keys.
 export const operationalStorageSnapshots = sqliteTable("operational_storage_snapshots", {
   id: text("id").primaryKey(),
   status: text("status", { enum: ["complete", "partial", "failure"] }).notNull(),

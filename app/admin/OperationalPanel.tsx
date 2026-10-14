@@ -10,6 +10,8 @@ type Dashboard = Awaited<ReturnType<typeof import("@/lib/operations").getOperati
 
 const eventLabels: Record<string, string> = {
   "portal.email": "Envío de correo",
+  "email.history": "Registro de correo",
+  "admin.github_login": "Inicio administrativo con GitHub",
   "account.registration": "Registro de cuenta",
   "google.sign_in": "Inicio con Google",
   "apple.sign_in": "Inicio con Apple",

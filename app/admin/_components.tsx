@@ -6,6 +6,7 @@ import { OfficialChile3xLogo } from "@/app/OfficialChile3xLogo";
 import { getDb } from "@/db";
 import { bugReports, exclusiveContentMedia, profileMedia, profileReports, profiles, telegramModerationCases } from "@/db/schema";
 import { ADMIN_ACCESS_LABELS, adminHasCapability } from "@/lib/admin-permissions";
+import { canViewEmailHistory } from "@/lib/email-history-policy";
 import { AdminWorkspace } from "./AdminWorkspace";
 import { AdminSidebarLink } from "./AdminSidebarLink";
 
@@ -97,6 +98,7 @@ function AdminNavigation({
       {adminHasCapability(user, "settings.manage") && <AdminSidebarLink href="/admin/patrocinadores">Sitios asociados</AdminSidebarLink>}
       {adminHasCapability(user, "telegram.view") && <AdminSidebarLink className={pendingTelegram > 0 ? "admin-nav-alert" : undefined} href="/admin/telegram">Telegram{pendingTelegram > 0 && <b>{pendingTelegram}</b>}</AdminSidebarLink>}
       {adminHasCapability(user, "audit.view") && <AdminSidebarLink href="/admin/actividad">Actividad</AdminSidebarLink>}
+      {canViewEmailHistory(user) && <AdminSidebarLink href="/admin/correos">Correos</AdminSidebarLink>}
       {adminHasCapability(user, "settings.manage") && <AdminSidebarLink href="/admin/configuracion">Configuración</AdminSidebarLink>}
       {adminHasCapability(user, "forum.manage") && <AdminSidebarLink href="/foro">Foro <small>beta privada</small></AdminSidebarLink>}
       {adminHasCapability(user, "admins.manage") && <AdminSidebarLink href="/admin/administradores">Administradores</AdminSidebarLink>}

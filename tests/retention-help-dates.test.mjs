@@ -37,6 +37,7 @@ function retainedFixture(beforeBatch) {
  CREATE TABLE admin_audit_logs(id TEXT PRIMARY KEY,created_at TEXT);
  CREATE TABLE account_deletion_history(id TEXT PRIMARY KEY,deleted_at TEXT);
  CREATE TABLE operational_events(id TEXT PRIMARY KEY,created_at TEXT);
+ CREATE TABLE email_delivery_logs(id TEXT PRIMARY KEY,created_at TEXT);
  CREATE TABLE site_settings(key TEXT PRIMARY KEY,value TEXT,updated_at TEXT);`);
  db.exec(`CREATE TABLE forum_posts(id TEXT PRIMARY KEY,topic_id TEXT,trashed_at TEXT);CREATE TABLE forum_topics(id TEXT PRIMARY KEY,trashed_at TEXT);CREATE TABLE forum_attachments(id TEXT PRIMARY KEY,r2_key TEXT,post_id TEXT,deleted_at TEXT,moderation_status TEXT,reviewed_at TEXT);CREATE TABLE forum_reports(id TEXT PRIMARY KEY,status TEXT,resolved_at TEXT);CREATE TABLE forum_notifications(id TEXT PRIMARY KEY,created_at TEXT);CREATE TABLE forum_rate_limits(key TEXT PRIMARY KEY,updated_at TEXT)`);
  for(const table of ['auth_sessions','account_tokens','auth_session_completions','apple_auth_attempts','apple_registration_intents','google_registration_intents','x_auth_attempts','x_registration_intents'])db.exec(`CREATE TABLE ${table}(id TEXT PRIMARY KEY,expires_at TEXT)`);

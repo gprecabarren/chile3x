@@ -36,6 +36,7 @@ export async function purgeRetainedData(env:RetentionEnv, now=new Date().toISOSt
     [`x_auth_attempts`,`datetime(expires_at)<=datetime(?)`],
     [`x_registration_intents`,`datetime(expires_at)<=datetime(?)`],
     [`operational_events`,`datetime(created_at)<=datetime(?,'-${RETENTION_DAYS.operational} days')`],
+    [`email_delivery_logs`,`datetime(created_at)<=datetime(?,'-${RETENTION_DAYS.emailHistory} days')`],
     [`account_deletion_history`,`datetime(deleted_at)<=datetime(?,'-${RETENTION_DAYS.deletionHistory} days') AND NOT ${held('deletion','account_deletion_history.id')}`],
     [`admin_audit_logs`,`datetime(created_at)<=datetime(?,'-${RETENTION_DAYS.audit} days') AND NOT ${held('audit','admin_audit_logs.id')}`],
     [`message_conversations`,`datetime(last_message_at)<=datetime(?,'-${RETENTION_DAYS.conversation} days') AND NOT ${held('conversation','message_conversations.id')}`],

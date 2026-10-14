@@ -7,9 +7,11 @@ import {
   getGitHubOAuthConfig,
   setAdminSessionCookie,
   safeAdminReturnTo,
+  getCurrentAdmin,
 } from "@/lib/auth";
 import { recordAdminAudit } from "@/lib/admin-audit";
 import { hasPublicAccountEmail } from "@/lib/admin-email";
+import { recordOperationalEvent } from "@/lib/operations";
 
 const OAUTH_STATE_COOKIE = "chile3x_admin_oauth_state";
 const OAUTH_RETURN_TO_COOKIE = "chile3x_admin_oauth_return_to";
@@ -27,10 +29,20 @@ type GitHubEmail = {
   verified: boolean;
 };
 
-function accessDenied(request: Request, reason?: string) {
+async function accessDenied(request: Request, reason = "authorization") {
+  if ((reason === "oauth_invalid" || reason === "oauth_provider") && await getCurrentAdmin()) {
+    const response = NextResponse.redirect(new URL("/admin", request.url));
+    response.headers.set("cache-control", "no-store");
+    return response;
+  }
   const url = new URL("/admin/acceso-denegado", request.url);
   if (reason) url.searchParams.set("reason", reason);
-  return NextResponse.redirect(url);
+  await recordOperationalEvent({ category: "authentication", eventName: "admin.github_login", outcome: "failure", detail: "El inicio administrativo no se completó.", metadata: { reason } });
+  const response = NextResponse.redirect(url);
+  response.headers.set("cache-control", "no-store");
+  response.cookies.delete({ name: OAUTH_STATE_COOKIE, path: "/api/auth/github" });
+  response.cookies.delete({ name: OAUTH_RETURN_TO_COOKIE, path: "/api/auth/github" });
+  return response;
 }
 
 export async function GET(request: NextRequest) {
@@ -40,9 +52,10 @@ export async function GET(request: NextRequest) {
   const storedState = request.cookies.get(OAUTH_STATE_COOKIE)?.value;
 
   if (!config || !code || !state || !storedState || state !== storedState) {
-    return accessDenied(request);
+    return accessDenied(request, "oauth_invalid");
   }
 
+  try {
   const callbackUrl = new URL("/api/auth/github/callback", request.url).toString();
   const tokenResponse = await fetch("https://github.com/login/oauth/access_token", {
     method: "POST",
@@ -56,16 +69,17 @@ export async function GET(request: NextRequest) {
       code,
       redirect_uri: callbackUrl,
     }),
+    signal: AbortSignal.timeout(10_000),
   });
 
   if (!tokenResponse.ok) {
-    return accessDenied(request);
+    return accessDenied(request, "oauth_provider");
   }
 
   const token = await tokenResponse.json() as { access_token?: string };
 
   if (!token.access_token) {
-    return accessDenied(request);
+    return accessDenied(request, "oauth_provider");
   }
 
   const githubUserResponse = await fetch("https://api.github.com/user", {
@@ -75,10 +89,11 @@ export async function GET(request: NextRequest) {
       "user-agent": "Chile3X-Administration",
       "x-github-api-version": "2026-03-10",
     },
+    signal: AbortSignal.timeout(10_000),
   });
 
   if (!githubUserResponse.ok) {
-    return accessDenied(request);
+    return accessDenied(request, "oauth_provider");
   }
 
   const githubUser = await githubUserResponse.json() as GitHubUser;
@@ -89,8 +104,10 @@ export async function GET(request: NextRequest) {
       "user-agent": "Chile3X-Administration",
       "x-github-api-version": "2026-03-10",
     },
+    signal: AbortSignal.timeout(10_000),
   });
-  const githubEmails = githubEmailsResponse.ok ? await githubEmailsResponse.json() as GitHubEmail[] : [];
+  if (!githubEmailsResponse.ok) return accessDenied(request, "oauth_provider");
+  const githubEmails = await githubEmailsResponse.json() as GitHubEmail[];
   const verifiedEmails = githubEmails
     .filter((item) => item.verified)
     .map((item) => item.email.trim().toLowerCase());
@@ -215,6 +232,7 @@ export async function GET(request: NextRequest) {
   } catch {
     return accessDenied(request,"email_conflict");
   }
+  const sessionToken = await createAdminSession(admin.id, request);
   await recordAdminAudit({
     ...admin,
     accessLevel: grant.accessLevel,
@@ -232,8 +250,12 @@ export async function GET(request: NextRequest) {
 
   const returnTo = safeAdminReturnTo(request.cookies.get(OAUTH_RETURN_TO_COOKIE)?.value ?? null);
   const response = NextResponse.redirect(new URL(returnTo, request.url));
+  response.headers.set("cache-control", "no-store");
   response.cookies.delete({ name: OAUTH_STATE_COOKIE, path: "/api/auth/github" });
   response.cookies.delete({ name: OAUTH_RETURN_TO_COOKIE, path: "/api/auth/github" });
-  setAdminSessionCookie(response, await createAdminSession(admin.id, request));
+  setAdminSessionCookie(response, sessionToken);
   return response;
+  } catch {
+    return accessDenied(request, "oauth_provider");
+  }
 }

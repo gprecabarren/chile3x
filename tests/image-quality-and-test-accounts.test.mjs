@@ -16,7 +16,7 @@ test('image preparation preserves small sources, aspect ratio and bounded large 
 test('reserved QA recipients never reach an email provider',async()=>{
   for (const email of ['a@invalid','Paola@cuentas.chile3x.invalid','a@sub.invalid ']) assert.equal(isReservedTestEmail(email),true);
   for (const email of ['a@gmail.com','a@notinvalid.com','a@invalid.example.com']) assert.equal(isReservedTestEmail(email),false);
-  assert.match(await source('lib/account-email.ts'),/if \(isReservedTestEmail\(email\)\) return false/);
+  assert.match(await source('lib/account-email.ts'),/if \(isReservedTestEmail\(email\)\) return finish\(false, null, .*true\)/);
 });
 
 test('photos avoid cropping, enlargement and cover stretching, retaining full-photo links',async()=>{

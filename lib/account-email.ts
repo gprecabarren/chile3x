@@ -7,6 +7,8 @@ import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { isReservedTestEmail } from "@/lib/test-email";
 import { emailVerificationState } from "@/lib/email-verification-policy";
 import { isReservedPublicAccountIdentity } from "@/lib/admin-email";
+import { beginEmailHistory, finishEmailHistory } from "@/lib/email-history";
+import { emailErrorCode, type EmailAttempt } from "@/lib/email-history-policy";
 
 export type AccountTokenPurpose = "verify_email" | "reset_password";
 
@@ -67,7 +69,7 @@ export type PortalEmailNotification = {
 };
 
 async function sendWithAppsScript(message: AccountEmailMessage, relayUrl?: string, relaySecret?: string) {
-  if (!relayUrl || !relaySecret) return false;
+  if (!relayUrl || !relaySecret) return { attempted: false, accepted: false, code: "NOT_CONFIGURED" };
 
   try {
     const response = await fetch(relayUrl, {
@@ -87,34 +89,36 @@ async function sendWithAppsScript(message: AccountEmailMessage, relayUrl?: strin
     });
 
     if (!response.ok) {
-      console.error("Google Apps Script email relay returned an error", { status: response.status });
-      return false;
+      return { attempted: true, accepted: false, code: `HTTP_${response.status}` };
     }
 
     const result = await response.json().catch(() => null) as { ok?: unknown } | null;
-    return result?.ok === true;
+    return { attempted: true, accepted: result?.ok === true, code: result?.ok === true ? "ACCEPTED" : "RELAY_REJECTED" };
   } catch (error) {
-    console.error("Google Apps Script email relay failed", { error });
-    return false;
+    return { attempted: true, accepted: false, code: emailErrorCode(error) };
   }
 }
 
 export async function sendPortalEmail({ email, displayName, subject, heading, message, action, note, kind = "portal_notification" }: PortalEmailNotification) {
-  if (isReservedTestEmail(email)) return false;
   const startedAt = performance.now();
-  const finish = async (delivered: boolean, provider: string | null, detail: string) => {
+  const historyId = await beginEmailHistory({ email, subject, kind, startedAt: new Date().toISOString() });
+  const attempts: EmailAttempt[] = [];
+  const finish = async (accepted: boolean, provider: EmailAttempt["provider"] | null, detail: string, skipped = false) => {
+    await finishEmailHistory(historyId, { status: skipped ? "skipped" : accepted ? "accepted" : "failed", provider, detail, durationMs: performance.now() - startedAt, attempts });
     await recordOperationalEvent({
       category: "email",
       eventName: "portal.email",
-      outcome: delivered ? "success" : "failure",
+      outcome: accepted ? "success" : "failure",
       durationMs: performance.now() - startedAt,
       detail,
       metadata: { provider, kind },
     });
-    return delivered;
+    return accepted;
   };
   if (!isEmail(email)) return finish(false, null, "El destinatario no tenía un formato válido.");
+  if (isReservedTestEmail(email)) return finish(false, null, "Dirección reservada de pruebas: no se contactó a ningún servicio de correo.", true);
 
+  try {
   const { env } = await import("cloudflare:workers");
   const settings = await getSiteSettings();
   const replyTo = settings.contact_email.trim().toLowerCase();
@@ -130,26 +134,31 @@ export async function sendPortalEmail({ email, displayName, subject, heading, me
   const html = `<main style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px;color:#171922"><p style="color:#d4151d;font-size:12px;font-weight:700;letter-spacing:.08em">CHILE3X</p><h1 style="font-family:Georgia,serif;font-weight:400">${safeHeading}</h1>${safeName ? `<p>Hola ${safeName},</p>` : ""}<p>${safeMessage}</p>${action ? `<p style="margin:28px 0"><a href="${safeActionHref}" style="display:inline-block;padding:13px 18px;background:#d4151d;color:#fff;text-decoration:none;font-weight:700">${safeActionLabel}</a></p>` : ""}${safeNote ? `<p style="font-size:13px;color:#5d6272">${safeNote}</p>` : ""}</main>`;
   const emailMessage: AccountEmailMessage = { email, subject, text, html, replyTo: isEmail(replyTo) ? replyTo : undefined };
 
-  // The Google relay is deliberately first: Cloudflare's free Email Service
-  // can accept a call without being able to deliver to arbitrary recipients.
-  // For the beta, a successful Gmail relay is the definitive delivery path.
-  if (await sendWithAppsScript(emailMessage, env.GOOGLE_APPS_SCRIPT_URL, env.GOOGLE_APPS_SCRIPT_SECRET)) {
-    return finish(true, "google_relay", "Correo entregado mediante el relay principal.");
+  // Preserve the configured primary relay. Its acknowledgement is acceptance,
+  // not evidence that the recipient read the message or saw it in their inbox.
+  const relay = await sendWithAppsScript(emailMessage, env.GOOGLE_APPS_SCRIPT_URL, env.GOOGLE_APPS_SCRIPT_SECRET);
+  if (relay.attempted) attempts.push({ provider: "google_relay", accepted: relay.accepted, code: relay.code });
+  if (relay.accepted) {
+    return finish(true, "google_relay", "El relay principal aceptó el envío; recepción y lectura no confirmadas.");
   }
 
   if (!env.EMAIL) return finish(false, null, "No había una alternativa de entrega disponible.");
   try {
-    await env.EMAIL.send({
+    const result = await env.EMAIL.send({
       to: email,
       from: { email: "noreply@chile3x.cl", name: "Chile3X" },
       subject,
       html,
       text,
     });
-    return finish(true, "cloudflare_email", "Correo entregado mediante el servicio alternativo.");
+    attempts.push({ provider: "cloudflare_email", accepted: true, code: "ACCEPTED", messageId: result?.messageId });
+    return finish(true, "cloudflare_email", "El servicio alternativo aceptó el envío; recepción y lectura no confirmadas.");
   } catch (error) {
-    console.error("Cloudflare portal email delivery failed", { subject, error });
+    attempts.push({ provider: "cloudflare_email", accepted: false, code: emailErrorCode(error) });
     return finish(false, "cloudflare_email", "Las alternativas de entrega no pudieron completar el envío.");
+  }
+  } catch {
+    return finish(false, null, "No fue posible preparar el envío por un fallo interno de configuración o del servicio.");
   }
 }
 

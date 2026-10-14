@@ -3,6 +3,7 @@ import { getDb } from "@/db";
 import {
   accountDeletionHistory,
   dataDeletionJobs,
+  emailDeliveryLogs,
   exclusiveContentCollections,
   exclusiveContentMedia,
   profileMedia,
@@ -72,6 +73,7 @@ export async function permanentlyDeleteAccount(userId: string, actor: AccountDel
     await db.batch([
       historyStatement,
       ...fileJobs,
+      db.delete(emailDeliveryLogs).where(eq(emailDeliveryLogs.recipient, account.email.trim().toLowerCase())),
       db.insert(telegramOutboxJobs).values(telegramJob),
       db.delete(profiles).where(eq(profiles.ownerId, userId)),
       db.delete(users).where(eq(users.id, userId)),
@@ -82,6 +84,7 @@ export async function permanentlyDeleteAccount(userId: string, actor: AccountDel
     await db.batch([
       historyStatement,
       ...fileJobs,
+      db.delete(emailDeliveryLogs).where(eq(emailDeliveryLogs.recipient, account.email.trim().toLowerCase())),
       db.delete(profiles).where(eq(profiles.ownerId, userId)),
       db.delete(users).where(eq(users.id, userId)),
       db.delete(messageConversations).where(and(isNull(messageConversations.visitorUserId), isNull(messageConversations.ownerUserId))),

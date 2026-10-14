@@ -12,6 +12,7 @@ import { AdminPageHeading, AdminShell } from "./_components";
 import { OperationalPanel } from "./OperationalPanel";
 import { emailVerificationFilter } from "@/lib/email-verification-admin";
 import { RecentAdminActivity } from "./RecentAdminActivity";
+import { canViewEmailHistory } from "@/lib/email-history-policy";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +58,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
   const pendingMedia = Number(pendingPublicMedia?.total ?? 0) + Number(pendingExclusiveMedia?.total ?? 0);
 
   const summary = [
+    ...(canViewEmailHistory(admin) ? [{ label: "Correos transaccionales", value: "Historial", hint: "Destinatarios, tipos, intentos y resultados técnicos de los envíos del sistema.", href: "/admin/correos", action: "Consultar correos y filtros" }] : []),
     ...(adminHasCapability(admin, "accounts.manage") ? [{ label: "Bloqueadas por correo", value: emailBlockedAccounts?.total ?? 0, hint: "Cuentas cuyo plazo de verificación terminó. Atiéndelas o autoriza una excepción justificada.", href: "/admin/cuentas?email_status=blocked", action: "Revisar cuentas bloqueadas" }] : []),
     {
       label: "Anuncios registrados",

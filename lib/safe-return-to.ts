@@ -10,8 +10,8 @@ function localReturnTo(value: string | null, fallback: string, allowed: (path: s
 }
 
 export function safeAdminReturnTo(value: string | null) {
-  return localReturnTo(value, "/admin", (path) => path === "/admin" || path.startsWith("/admin/")
-    || path === "/foro" || path.startsWith("/foro/"));
+  return localReturnTo(value, "/admin", (path) => path !== "/admin/acceso-denegado" && (path === "/admin" || path.startsWith("/admin/")
+    || path === "/foro" || path.startsWith("/foro/")));
 }
 
 export function safeAccountReturnTo(value: string | null) {

@@ -14,6 +14,7 @@ const paths:Record<string,string>={
  '/admin/patrocinadores':'M10 13l4-4M8 15l-2 2a4 4 0 0 1-5-5l5-5a4 4 0 0 1 5 0M16 9l2-2a4 4 0 0 1 5 5l-5 5a4 4 0 0 1-5 0',
  '/admin/telegram':'M3 11l18-7-4 17-6-5-4 3v-6zM7 13l10-6',
  '/admin/actividad':'M4 12a8 8 0 1 0 3-6M4 4v6h6M12 7v5l3 2',
+ '/admin/correos':'M3 5h18v14H3zM3 5l9 7 9-7',
  '/admin/configuracion':'M4 6h16M4 12h16M4 18h16M8 3v6M16 9v6M10 15v6',
  '/foro':'M3 4h14v12H7l-4 4zM17 8h4v12l-4-3',
  '/admin/administradores':'M12 2l8 3v6c0 5-4 8-8 11-4-3-8-6-8-11V5zM9 11l2 2 4-4',

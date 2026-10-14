@@ -61,6 +61,10 @@ test("return links reject external or malformed destinations and preserve filter
     assert.equal(safeAdminReturnTo(value), "/admin", String(value));
   }
   assert.equal(safeAdminReturnTo("/admin/anuncios-publicaciones?page=2#anuncio"), "/admin/anuncios-publicaciones?page=2#anuncio");
+  assert.equal(safeAdminReturnTo("/foro"), "/foro");
+  assert.equal(safeAdminReturnTo("/foro/tema/ftopic_example?pagina=2#responder"), "/foro/tema/ftopic_example?pagina=2#responder");
+  for (const value of ["/foros", "//evil.test/foro", "/foro/../../outside"]) assert.equal(safeAdminReturnTo(value), "/admin");
+  assert.equal(safeAccountReturnTo("/foro"), "/mi-cuenta");
   assert.equal(safeAccountReturnTo("/perfil/demo?return_to=x#resenas"), "/perfil/demo?return_to=x#resenas");
   assert.equal(safeAccountReturnTo("/mi-cuenta/nuevo-perfil"), "/mi-cuenta/nuevo-perfil");
   assert.equal(safeAccountReturnTo("/admin"), "/mi-cuenta");

@@ -98,6 +98,7 @@ function AdminNavigation({
       {adminHasCapability(user, "audit.view") && <Link href="/admin/actividad" prefetch={false}>Actividad</Link>}
       {adminHasCapability(user, "settings.manage") && <Link href="/admin/configuracion" prefetch={false}>Configuración</Link>}
       {adminHasCapability(user, "admins.manage") && <Link href="/admin/administradores" prefetch={false}>Administradores</Link>}
+      <Link href="/admin/ayuda" prefetch={false}>Ayuda <small>beta</small></Link>
     </nav>
   );
 }

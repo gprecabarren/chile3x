@@ -60,7 +60,7 @@ export function ProfileVerificationDocuments({ profileId, initialDocuments }: { 
     }
   }
 
-  return <section className="private-documents-status" aria-labelledby="private-documents-title">
+  return <section id="documentos-privados" className="private-documents-status" aria-labelledby="private-documents-title">
     <p className="eyebrow">VERIFICACIÓN OPCIONAL</p>
     <h2 id="private-documents-title">Documentos privados</h2>
     <p>Sube cada documento por separado para que un archivo opcional no interfiera con tu aviso. Se aceptan JPG, PNG, WebP y PDF de hasta 15 MB.</p>

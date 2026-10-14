@@ -61,6 +61,7 @@ type ProfileFormProps = {
   initial?: ProfileFormInitial;
   allowEscort?: boolean;
   adminAssisted?: boolean;
+  adminEdit?: boolean;
 };
 
 function socialUsername(value: string) {
@@ -84,7 +85,7 @@ function metadataValue(initial: ProfileFormInitial | undefined, key: string) {
   return initial?.details.metadata?.[key] ?? "";
 }
 
-export function ProfileForm({ action, submitLabel, initial, allowEscort = true, adminAssisted = false }: ProfileFormProps) {
+export function ProfileForm({ action, submitLabel, initial, allowEscort = true, adminAssisted = false, adminEdit = false }: ProfileFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const optionalRef = useRef<HTMLDetailsElement>(null);
   const storageKey = `chile3x-profile-draft:${action}`;
@@ -202,7 +203,7 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
       }
     }}>
       <div className="profile-form-actions profile-form-actions-top">
-        <button className="button button-outline" name="intent" type="submit" value="draft" formNoValidate>Guardar borrador</button>
+        {!adminEdit && <button className="button button-outline" name="intent" type="submit" value="draft" formNoValidate>Guardar borrador</button>}
         <button className="button button-primary" name="intent" type="submit" value="submit">{submitLabel}</button>
       </div>
       <section className="profile-form-section">
@@ -489,11 +490,11 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
 
       <section className="profile-media-notice" aria-label="Estado de carga de fotos y videos">
         <strong>Galería y videos</strong>
-        <p>{initial ? "Las fotos y videos se envían desde su sección al inicio y no necesitan este guardado. Este formulario guarda únicamente los datos del anuncio; cambiar información relevante vuelve a revisión." : adminAssisted ? "Al crear el anuncio pasarás directamente a la carga de la foto principal, hasta 10 fotos y hasta 3 videos. El material que subas como administrador se aprobará al instante; el anuncio se publica desde moderación." : <>Guarda y envía el anuncio a revisión. Luego encontrarás al inicio la carga de fotos y videos; puedes adjuntarlos sin esperar la aprobación del anuncio. Cada imagen puede pesar hasta 10 MB y los archivos se revisan por separado.{type === "escort" && " También podrás adjuntar tu carnet o examen médico privado (JPG, PNG, WebP o PDF de hasta 15 MB)."}</>}</p>
+        <p>{adminEdit ? "Este formulario guarda los datos del anuncio sin cambiar su estado de publicación o verificación. Los medios y documentos se gestionan por separado desde los accesos de esta página." : initial ? "Las fotos y videos se envían desde su sección al inicio y no necesitan este guardado. Este formulario guarda únicamente los datos del anuncio; cambiar información relevante vuelve a revisión." : adminAssisted ? "Al crear el anuncio pasarás directamente a la carga de la foto principal, hasta 10 fotos y hasta 3 videos. El material que subas como administrador se aprobará al instante; el anuncio se publica desde moderación." : <>Guarda y envía el anuncio a revisión. Luego encontrarás al inicio la carga de fotos y videos; puedes adjuntarlos sin esperar la aprobación del anuncio. Cada imagen puede pesar hasta 10 MB y los archivos se revisan por separado.{type === "escort" && " También podrás adjuntar tu carnet o examen médico privado (JPG, PNG, WebP o PDF de hasta 15 MB)."}</>}</p>
       </section>
 
       <div className="profile-form-actions">
-        <button className="button button-outline" name="intent" type="submit" value="draft" formNoValidate>Guardar borrador</button>
+        {!adminEdit && <button className="button button-outline" name="intent" type="submit" value="draft" formNoValidate>Guardar borrador</button>}
         <button className="button button-primary" name="intent" type="submit" value="submit">{submitLabel}</button>
       </div>
     </form>

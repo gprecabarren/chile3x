@@ -5,6 +5,7 @@ import { profiles } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin, getCurrentUser } from "@/lib/auth";
 import { deleteVerificationDocument, findVerificationDocument, prepareVerificationDocument, saveVerificationDocuments, type VerificationDocumentKind, VerificationDocumentError } from "@/lib/verification-documents";
 import { recordAdminAudit } from "@/lib/admin-audit";
+import { adminHasCapability } from "@/lib/admin-permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pro
   const record = await findVerificationDocument(profileId, kind as VerificationDocumentKind);
   if (!record) notFound();
 
-  const [user, admin] = await Promise.all([getCurrentUser(), getCurrentAdmin()]);
+  const [user, sessionAdmin] = await Promise.all([getCurrentUser(), getCurrentAdmin()]);
+  const admin = adminHasCapability(sessionAdmin, "private.view") ? sessionAdmin : null;
   if ((user?.id !== record.profile.ownerId || Boolean(record.profile.trashedAt)) && !admin) notFound();
 
   const { env } = await import("cloudflare:workers");
@@ -34,7 +36,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pro
 }
 
 async function getManager(profileId: string) {
-  const [user, admin] = await Promise.all([getCurrentUser(), getCurrentAdmin()]);
+  const [user, sessionAdmin] = await Promise.all([getCurrentUser(), getCurrentAdmin()]);
+  const admin = adminHasCapability(sessionAdmin, "private.view") ? sessionAdmin : null;
   if (admin) return { allowed: true, admin };
   if (!user) return { allowed: false, admin: null };
   const [profile] = await (await getDb()).select({ ownerId: profiles.ownerId }).from(profiles).where(and(eq(profiles.id, profileId), isNull(profiles.trashedAt))).limit(1);

@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { listingPeriods, profileDetails, profileServices, profileTags as profileTagRows, profiles, users } from "@/db/schema";
 import { createAdminNotification } from "@/lib/admin-notifications";
@@ -469,7 +469,7 @@ export async function createProfile(ownerId: string, submission: ProfileSubmissi
   return id;
 }
 
-export async function updateProfile(profileId: string, ownerId: string, submission: ProfileSubmission) {
+export async function updateProfile(profileId: string, ownerId: string, submission: ProfileSubmission, options: { adminEditor?: boolean } = {}) {
   const db = await getDb();
   const [existing] = await db.select({ profile: profiles, details: profileDetails }).from(profiles)
     .leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id))
@@ -536,10 +536,12 @@ export async function updateProfile(profileId: string, ownerId: string, submissi
     && sameValues(sorted(savedTags.map((item) => item.tag)), sorted(submission.tags))
     && sameValues(sorted(savedServices.filter((item) => item.kind === "included").map((item) => item.service)), sorted(submission.servicesIncluded))
     && sameValues(sorted(savedServices.filter((item) => item.kind === "additional").map((item) => item.service)), sorted(submission.servicesAdditional));
-  const status = contactOnly ? "approved" : existing.profile.status === "paused" ? "paused" : submission.intent === "submit" || existing.profile.status === "approved" ? "pending" : existing.profile.status;
+  // Only a capability-checked administrative route may preserve moderation.
+  // Editing must not silently publish pending listings or unpublish approved ones.
+  const status = options.adminEditor ? existing.profile.status : contactOnly ? "approved" : existing.profile.status === "paused" ? "paused" : submission.intent === "submit" || existing.profile.status === "approved" ? "pending" : existing.profile.status;
 
   const updated = await db.update(profiles).set({
-    status,
+    status: options.adminEditor ? sql`${profiles.status}` : status,
     handle,
     displayName: submission.displayName,
     shortDescription: submission.shortDescription,
@@ -550,9 +552,9 @@ export async function updateProfile(profileId: string, ownerId: string, submissi
     contactWhatsapp: submission.contactWhatsapp,
     contactTelegram: submission.contactTelegram,
     tier: submission.tier,
-    verificationStatus: contactOnly ? existing.profile.verificationStatus : status === "pending" ? "in_review" : "unreviewed",
+    verificationStatus: options.adminEditor ? sql`${profiles.verificationStatus}` : contactOnly ? existing.profile.verificationStatus : status === "pending" ? "in_review" : "unreviewed",
     updatedAt,
-  }).where(and(eq(profiles.id, profileId), isNull(profiles.trashedAt))).returning({ id: profiles.id });
+  }).where(and(eq(profiles.id, profileId), eq(profiles.ownerId, ownerId), isNull(profiles.trashedAt))).returning({ id: profiles.id });
   if (!updated.length) return { updated: false, contactOnly: false };
 
   await db.insert(profileDetails).values({ profileId, ...submission.details, updatedAt }).onConflictDoUpdate({
@@ -560,7 +562,7 @@ export async function updateProfile(profileId: string, ownerId: string, submissi
     set: { ...submission.details, updatedAt },
   });
   if (!contactOnly) await replaceProfileCollections(profileId, submission);
-  await createAdminNotification({
+  if (!options.adminEditor) await createAdminNotification({
     kind: "profile_updated",
     actorUserId: ownerId,
     profileId,

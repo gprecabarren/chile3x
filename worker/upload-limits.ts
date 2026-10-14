@@ -5,7 +5,7 @@ export function multipartBodyLimit(path: string) {
   if (/^\/api\/perfiles\/[^/]+\/documentos\/[^/]+$/.test(path)) return 15 * MB + 64_000;
   if (path === "/api/admin/patrocinadores") return 20 * MB + 256_000; // Main image and optional logo, each up to 10 MB.
   if (path === "/api/admin/noticias/media" || /^\/api\/admin\/media\/[^/]+\/procesar$/.test(path)) return 10 * MB + 256_000;
-  if (path === "/api/historias" || path === "/api/bugs" || /^\/api\/bugs\/[^/]+$/.test(path)) return 5 * MB + 64_000;
+  if (path === "/api/historias" || /^\/api\/admin\/profiles\/[^/]+\/historias$/.test(path) || path === "/api/bugs" || /^\/api\/bugs\/[^/]+$/.test(path)) return 5 * MB + 64_000;
   return 1_048_576;
 }
 

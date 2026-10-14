@@ -111,6 +111,7 @@ export default async function AccountHome({ searchParams }: { searchParams: Prom
         <Link className="button button-outline" href={`/mi-cuenta/${profile.id}/estadisticas`}>Estadísticas</Link>
         <Link className="button button-outline" href={`/mi-cuenta/${profile.id}/editar`}>Editar anuncio</Link>
         <Link className="button button-outline" href={`/mi-cuenta/${profile.id}/editar#fotos-y-videos`}>Fotos y videos</Link>
+        {profile.type === "escort" && <Link className="button button-outline" href={`/mi-cuenta/${profile.id}/editar#documentos-privados`}>Documentos privados</Link>}
         {profile.status === "approved" && <Link className="button button-outline" href={`/mi-cuenta/${profile.id}/historias`}>Historias ({storyCounts.get(profile.id) ?? 0})</Link>}
         {(profile.status === "draft" || profile.status === "rejected") && <form action={`/api/perfiles/${profile.id}/enviar-revision`} method="post"><button className="button button-primary" type="submit">Enviar a revisión</button></form>}
         <form action={`/api/perfiles/${profile.id}/visibilidad`} method="post"><input type="hidden" name="return_to" value="/mi-cuenta" /><input type="hidden" name="action" value={profile.ownerHiddenAt ? "show" : "hide"} /><button className="button button-outline" type="submit">{profile.ownerHiddenAt ? "Volver a mostrar" : "Ocultar anuncio"}</button></form>

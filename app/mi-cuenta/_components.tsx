@@ -22,6 +22,7 @@ function AccountNavigation({ user }: { user: AccountUser }) {
     <AccountNavigationLink href="/mi-cuenta/telegram">Telegram</AccountNavigationLink>
     {user.role === "tester" && <AccountNavigationLink href="/mi-cuenta/pruebas">Mis pruebas</AccountNavigationLink>}
     <AccountNavigationLink href="/mi-cuenta/bloqueados">Anuncios ocultos</AccountNavigationLink>
+    <AccountNavigationLink href="/mi-cuenta/ayuda">Ayuda <small>beta</small></AccountNavigationLink>
     <details className="account-legal-links">
       <summary>Información</summary>
       <div>

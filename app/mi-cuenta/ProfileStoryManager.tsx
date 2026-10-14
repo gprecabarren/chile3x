@@ -6,7 +6,7 @@ import { MAX_STORY_IMAGE_BYTES, MAX_STORY_TEXT_LENGTH, storyTimeLabel, type Stor
 
 type OwnerStory = { id: string; body: string; storyType: StoryType; expiresAt: string | null };
 
-export function ProfileStoryManager({ profileId, profileName, stories }: { profileId: string; profileName: string; stories: OwnerStory[] }) {
+export function ProfileStoryManager({ profileId, profileName, stories, adminMode = false, canUploadImages = true }: { profileId: string; profileName: string; stories: OwnerStory[]; adminMode?: boolean; canUploadImages?: boolean }) {
   const router = useRouter();
   const textForm = useRef<HTMLFormElement>(null);
   const imageForm = useRef<HTMLFormElement>(null);
@@ -14,7 +14,8 @@ export function ProfileStoryManager({ profileId, profileName, stories }: { profi
   const [busy, setBusy] = useState<"text" | "image" | null>(null);
   const textCount = stories.filter((story) => story.storyType === "text").length;
   const imageCount = stories.filter((story) => story.storyType === "image").length;
-  const returnTo = `/mi-cuenta/${profileId}/historias`;
+  const returnTo = adminMode ? `/admin/anuncios-publicaciones/${profileId}/editar#historias` : `/mi-cuenta/${profileId}/historias`;
+  const publishEndpoint = adminMode ? `/api/admin/profiles/${profileId}/historias` : "/api/historias";
 
   async function publish(event: React.FormEvent<HTMLFormElement>, type: "text" | "image") {
     event.preventDefault();
@@ -28,7 +29,7 @@ export function ProfileStoryManager({ profileId, profileName, stories }: { profi
     setBusy(type);
     setNotice("");
     try {
-      const result = await fetch("/api/historias", { method: "POST", body: data, headers: { Accept: "application/json" } });
+      const result = await fetch(publishEndpoint, { method: "POST", body: data, headers: { Accept: "application/json" } });
       const payload = await result.json().catch(() => ({})) as { error?: string; notice?: string };
       if (!result.ok) throw new Error(payload.error ?? (payload.notice === "story_limit" ? "Ya tienes 5 historias activas de este tipo. Elimina una o espera a que expire." : "No se pudo publicar la historia. Revisa que el anuncio siga publicado."));
       form.reset();
@@ -43,11 +44,12 @@ export function ProfileStoryManager({ profileId, profileName, stories }: { profi
 
   return <section className="profile-story-manager" id="historias">
     <div><p className="eyebrow">ACTUALIZACIONES · 24 HORAS</p><h2>Historias de {profileName}</h2><p>Cada publicación tiene sus propias historias: hasta 5 de texto y 5 de imagen. Dejan de ser visibles al cumplir 24 horas; las imágenes vencidas se eliminan del almacenamiento cuando se publican nuevas imágenes.</p></div>
+    {adminMode && <p className="profile-form-help">Publicas en nombre de la cuenta propietaria. Cada publicación o eliminación queda registrada con tu identidad administrativa.</p>}
     {notice && <p className="media-manager-notice" role="status">{notice}</p>}
     <div className="profile-story-manager-forms">
       <form ref={textForm} onSubmit={(event) => publish(event, "text")}><input name="profile_id" type="hidden" value={profileId} /><input name="return_to" type="hidden" value={returnTo} /><label>Historia de texto <small>{textCount}/5 activas · máximo {MAX_STORY_TEXT_LENGTH} caracteres</small><textarea name="body" minLength={2} maxLength={MAX_STORY_TEXT_LENGTH} required rows={3} placeholder="Ej. Disponible hoy hasta las 22:00" /></label><button className="button button-primary" type="submit" disabled={busy !== null || textCount >= 5}>{busy === "text" ? "Publicando…" : "Publicar texto"}</button></form>
-      <form ref={imageForm} onSubmit={(event) => publish(event, "image")}><input name="profile_id" type="hidden" value={profileId} /><input name="return_to" type="hidden" value={returnTo} /><label>Historia de imagen <small>{imageCount}/5 activas · JPEG, PNG o WebP; máximo 2 MB.</small><input name="image" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" required /><textarea name="body" maxLength={MAX_STORY_TEXT_LENGTH} rows={2} placeholder="Descripción opcional" /></label><button className="button button-primary" type="submit" disabled={busy !== null || imageCount >= 5}>{busy === "image" ? "Subiendo…" : "Publicar imagen"}</button></form>
+      {canUploadImages && <form ref={imageForm} onSubmit={(event) => publish(event, "image")}><input name="profile_id" type="hidden" value={profileId} /><input name="return_to" type="hidden" value={returnTo} /><label>Historia de imagen <small>{imageCount}/5 activas · JPEG, PNG o WebP; máximo 2 MB.</small><input name="image" type="file" accept="image/jpeg,image/png,image/webp" required /><textarea name="body" maxLength={MAX_STORY_TEXT_LENGTH} rows={2} placeholder="Descripción opcional" /></label><button className="button button-primary" type="submit" disabled={busy !== null || imageCount >= 5}>{busy === "image" ? "Subiendo…" : "Publicar imagen"}</button></form>}
     </div>
-    {stories.length > 0 && <div className="owner-story-list"><strong>Historias activas</strong>{stories.map((story) => <article key={story.id}><span>{story.storyType === "image" ? "Imagen" : "Texto"}</span><p>{story.body || "Historia de imagen"}</p><small>{story.expiresAt ? storyTimeLabel(story.expiresAt) : "Expira pronto"}</small><form action={`/api/historias/${story.id}`} method="post"><input name="return_to" type="hidden" value={returnTo} /><button type="submit">Eliminar</button></form></article>)}</div>}
+    {stories.length > 0 && <div className="owner-story-list"><strong>Historias activas</strong>{stories.map((story) => <article key={story.id}><span>{story.storyType === "image" ? "Imagen" : "Texto"}</span><p>{story.body || "Historia de imagen"}</p><small>{story.expiresAt ? storyTimeLabel(story.expiresAt) : "Expira pronto"}</small><form action={adminMode ? publishEndpoint : `/api/historias/${story.id}`} method="post"><input name="return_to" type="hidden" value={returnTo} />{adminMode && <><input type="hidden" name="action" value="delete" /><input type="hidden" name="story_id" value={story.id} /></>}<button type="submit" disabled={busy !== null || (adminMode && story.storyType === "image" && !canUploadImages)}>Eliminar</button></form></article>)}</div>}
   </section>;
 }

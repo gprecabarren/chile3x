@@ -10,7 +10,7 @@ const [layoutSource, dashboardSource, cssSource, panelCssSource, adminLayoutSour
   readFile(new URL("../app/admin/layout.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/mi-cuenta/layout.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/admin/_components.tsx", import.meta.url), "utf8"),
-  readFile(new URL("../app/admin/AdminMobileNavigation.tsx", import.meta.url), "utf8"),
+  readFile(new URL("../app/admin/AdminWorkspace.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/mi-cuenta/_components.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/mi-cuenta/AccountMobileNavigation.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/directorio/_components.tsx", import.meta.url), "utf8"),
@@ -43,9 +43,9 @@ test("private panel stylesheet closes with mobile cascade guards", () => {
 });
 
 test("the mobile administration menu closes after selecting a section", () => {
-  assert.match(adminShellSource, /<AdminMobileNavigation>/);
-  assert.match(mobileNavigationSource, /target\.closest\("a\[href\]"\)/);
-  assert.match(mobileNavigationSource, /removeAttribute\("open"\)/);
+  assert.match(adminShellSource, /<AdminWorkspace/);
+  assert.match(mobileNavigationSource, /target\.closest\('a\[href\]'\)/);
+  assert.match(mobileNavigationSource, /setMobileOpen\(false\)/);
 });
 
 test("the mobile account menu closes after selecting a section", () => {

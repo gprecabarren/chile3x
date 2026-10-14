@@ -9,7 +9,7 @@ la navegación de cada panel. Esta primera versión no usa un modelo de IA ni
 requiere un proveedor de pago. Resuelve tareas usando guías revisadas del código
 actual, vocabulario equivalente, pasos y enlaces. No modifica datos ni permisos.
 
-La base operativa está en la tabla `help_guides`, inicializada con las 43 guías
+La base operativa está en la tabla `help_guides`, inicializada con las 46 guías
 revisadas de `lib/help-knowledge.ts`. `/admin/ayuda/guias` permite crear, editar,
 retirar y restaurar guías, definir audiencia, permiso, palabras clave, pasos y
 destinos locales. Requiere `settings.manage`, comprueba la versión al guardar y

@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   assertSameOrigin,
-  deleteCurrentSession,
-  getUserSessionCookieName,
-  getUserSessionDuration,
-  sessionCookieOptions,
+  deleteBrowserSessions,
+  clearSessionCookies,
 } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
@@ -14,8 +12,8 @@ export async function POST(request: NextRequest) {
     return new Response("Solicitud no válida.", { status: 403 });
   }
 
-  await deleteCurrentSession(request.cookies.get(getUserSessionCookieName())?.value);
+  await deleteBrowserSessions(request);
   const response = NextResponse.redirect(new URL("/ingresar?closed=1", request.url), 303);
-  response.cookies.set({ name: getUserSessionCookieName(), value: "", ...sessionCookieOptions(getUserSessionDuration()), maxAge: 0 });
+  clearSessionCookies(response);
   return response;
 }

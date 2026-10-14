@@ -18,6 +18,7 @@ export const metadata: Metadata = privatePageMetadata({
 });
 
 const messages: Record<string, string> = {
+  session_conflict: "Se detectaron sesiones de usuario y administración abiertas a la vez. Por seguridad se cerraron en este navegador. Ingresa nuevamente con una sola identidad; para cambiar de panel se cerrará la sesión anterior.",
   invalid: "El correo o la contraseña no coinciden.",
   disabled: "Tu cuenta está deshabilitada.",
   admin_disabled: "Tu cuenta fue deshabilitada por Chile3X. Solo la administración puede restablecerla; si necesitas una revisión, contáctanos.",

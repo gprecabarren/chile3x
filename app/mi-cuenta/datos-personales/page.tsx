@@ -10,10 +10,12 @@ import { PasswordChangeForm } from "./PasswordChangeForm";
 import { getAccountSocialAccess } from "@/lib/account-social-access";
 import { SocialAccessPanel } from "./SocialAccessPanel";
 import { getXAuthConfig } from "@/lib/x-auth";
+import { AccountDetailsForm } from "./AccountDetailsForm";
+import { ACCOUNT_FIELD_LABELS, ACCOUNT_SAVE_ERRORS, type AccountSavedField, type AccountSaveError } from "@/lib/account-save-feedback";
 
 export const dynamic = "force-dynamic";
 
-export default async function AccountDetailsPage({ searchParams }: { searchParams: Promise<{ notice?: string }> }) {
+export default async function AccountDetailsPage({ searchParams }: { searchParams: Promise<{ notice?: string; updated?: string; errors?: string }> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/ingresar?return_to=/mi-cuenta/datos-personales");
   const [record] = await (await getDb()).select({
@@ -30,7 +32,7 @@ export default async function AccountDetailsPage({ searchParams }: { searchParam
     passwordHash: users.passwordHash,
   }).from(users).where(eq(users.id, user.id)).limit(1);
   if (!record) redirect("/mi-cuenta");
-  const { notice } = await searchParams;
+  const { notice, updated, errors } = await searchParams;
   const socialAccess = await getAccountSocialAccess(user.id);
   const xEnabled = Boolean(await getXAuthConfig());
 
@@ -51,13 +53,14 @@ export default async function AccountDetailsPage({ searchParams }: { searchParam
     {notice === "disable_confirmation" && <p className="form-alert" role="alert">Escribe DESHABILITAR exactamente para confirmar.</p>}
     {notice === "delete_confirmation" && <p className="form-alert" role="alert">Para eliminar la cuenta debes escribir tu correo y ELIMINAR exactamente.</p>}
     {notice === "delete_error" && <p className="form-alert" role="alert">No pudimos eliminar la cuenta. Inténtalo nuevamente o contacta a soporte.</p>}
-    <form action="/api/mi-cuenta/datos" method="post" className="account-details-form">
-      <label>Nombre visible<input name="display_name" required minLength={2} maxLength={80} defaultValue={record.displayName ?? ""} placeholder="Ej. Valentina" /></label>
+    {notice==='details_result'&&<div className="account-save-result">{updated&&<div className="account-success" role="status"><strong>Datos actualizados</strong><ul>{updated.split(',').filter(field=>field in ACCOUNT_FIELD_LABELS).map(field=><li key={field}>{ACCOUNT_FIELD_LABELS[field as AccountSavedField]}</li>)}</ul></div>}{errors&&<div className="form-alert" role="alert"><strong>Campos no actualizados</strong><ul>{errors.split(',').filter(error=>error in ACCOUNT_SAVE_ERRORS).map(error=><li key={error}>{ACCOUNT_SAVE_ERRORS[error as AccountSaveError]}</li>)}</ul><p>Los demás datos válidos sí se guardaron.</p></div>}{!updated&&!errors&&<p>No había cambios nuevos que guardar.</p>}</div>}
+    <AccountDetailsForm>
+      <label>Nombre visible<input name="display_name" required minLength={2} maxLength={80} defaultValue={record.displayName ?? ""} placeholder="Ej. Vale" /><small>Puede ser un apodo; se mostrará en comentarios y reseñas. Tu nombre completo permanece privado.</small></label>
       <label>Nombre de usuario<input name="username" required minLength={3} maxLength={48} defaultValue={record.username ?? ""} autoCapitalize="none" autoCorrect="off" spellCheck="false" placeholder="Ej. valentina-concepcion" /><small>Se usa para identificar tu cuenta y para recibir acceso a contenido exclusivo. No puede coincidir con otro usuario ni con el @ de un anuncio.</small></label>
       <AccountIdentityFields values={{ fullName: record.firstName, documentType: record.documentType, documentNumber: record.documentNumber, foreignCountry: record.foreignCountry, birthDate: record.birthDate, city: record.city, phone: record.phone }} birthDateReadOnly />
       <label>Correo electrónico<input value={record.email} readOnly aria-readonly="true" /><small>El correo no se puede modificar desde aquí.</small></label>
       <div className="account-details-actions"><Link className="button button-outline" href="/mi-cuenta">Cancelar</Link><button className="button button-primary" type="submit">Guardar datos</button></div>
-    </form>
+    </AccountDetailsForm>
     <SocialAccessPanel access={socialAccess} hasPassword={Boolean(record.passwordHash)} xEnabled={xEnabled} />
     <section className="account-password-panel" id="password"><div><p className="eyebrow">ACCESO</p><h2>{record.passwordHash ? "Cambiar contraseña" : "Crear contraseña"}</h2><p>Estás dentro de tu cuenta, por lo que puedes definir una clave nueva sin ingresar la anterior ni esperar un correo.</p></div><form action="/api/mi-cuenta/datos" method="post"><input name="action" type="hidden" value="change_password" /><PasswordChangeForm /><button className="button button-primary" type="submit">{record.passwordHash ? "Actualizar contraseña" : "Crear contraseña"}</button></form></section>
     <section className="account-danger-panel"><div><p className="eyebrow">SEGURIDAD Y CUENTA</p><h2>Deshabilitar o eliminar</h2><p>Deshabilitar es reversible: cierra tus sesiones y oculta tus anuncios sin borrar datos. Eliminar es permanente y borra la cuenta, anuncios, medios, accesos y actividad asociada.</p></div>

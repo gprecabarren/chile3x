@@ -38,7 +38,7 @@ export default async function EscortsPage({ searchParams }: { searchParams: Prom
   const [viewer, settings] = await Promise.all([getCurrentUser(), getSiteSettings()]);
   const { profiles, page, hasNext, outOfRange } = await getPublicProfilePage(filters, { viewerId: viewer?.id, preferredCity: nearbyCity, page: readDirectoryPage(query) });
   if (outOfRange) notFound();
-  const stories = await getActiveStories({ viewerId: viewer?.id, profileIds: profiles.map((profile) => profile.id) });
+  const stories = await getActiveStories({ viewerId: viewer?.id, city: filters.city, region: filters.region });
   const siteUrl = siteBaseUrl(settings.site_url);
   const schema = { "@context": "https://schema.org", "@type": "CollectionPage", name: "Escorts y damas de compañía en Chile", description: "Directorio nacional de escorts y damas de compañía por ciudad, categoría y servicios.", url: `${siteUrl}/escorts`, inLanguage: "es-CL", mainEntity: { "@type": "ItemList", numberOfItems: profiles.length, itemListElement: profiles.map((profile, index) => ({ "@type": "ListItem", position: (page - 1) * DIRECTORY_PAGE_SIZE + index + 1, name: profile.displayName, url: `${siteUrl}${profilePublicPath(profile)}` })) } };
 

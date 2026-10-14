@@ -7,7 +7,8 @@ import { consumeAppleAuthAttempt } from "@/lib/apple-auth-flow";
 import { createAppleRegistrationIntent, APPLE_REGISTRATION_COOKIE } from "@/lib/apple-registration";
 import { encryptAppleRefreshToken, exchangeAppleAuthorizationCode, verifyAppleIdentity } from "@/lib/apple-oauth";
 import { ACCOUNT_REACTIVATION_COOKIE, ACCOUNT_REACTIVATION_DURATION_SECONDS, createAccountReactivationIntent } from "@/lib/account-reactivation";
-import { createUserSession, getUserSessionCookieName, getUserSessionDuration, sessionCookieOptions } from "@/lib/auth";
+import { sessionCookieOptions } from "@/lib/auth";
+import { APPLE_COMPLETION_COOKIE, APPLE_COMPLETION_COOKIE_PATH, createAppleSessionCompletion } from "@/lib/apple-session-completion";
 import { GOOGLE_REGISTRATION_COOKIE } from "@/lib/google-registration";
 import { X_REGISTRATION_COOKIE } from "@/lib/x-oauth";
 import { recordOperationalEvent } from "@/lib/operations";
@@ -104,6 +105,7 @@ export async function POST(request: NextRequest) {
 
     if (account) {
       if (account.role === "admin") return NextResponse.redirect(destination(request, attempt.intent, attempt.returnTo, "apple_admin_email"), 303);
+      if (await isReservedAdminEmail(account.email)) return NextResponse.redirect(destination(request, attempt.intent, attempt.returnTo, "apple_admin_email"), 303);
       if (account.adminDisabledAt) return NextResponse.redirect(destination(request, attempt.intent, attempt.returnTo, "admin_disabled"), 303);
       if (account.selfDisabledAt) {
         const response = NextResponse.redirect(new URL(`/reactivar-cuenta?return_to=${encodeURIComponent(attempt.returnTo)}`, request.url), 303);
@@ -114,8 +116,8 @@ export async function POST(request: NextRequest) {
       const now = new Date().toISOString();
       await db.update(accountAppleIdentities).set({ appleEmail: identity.email, lastLoginAt: now, ...(encryptedRefreshToken ? { refreshTokenEncrypted: encryptedRefreshToken } : {}) }).where(eq(accountAppleIdentities.id, account.identityId));
       await db.update(users).set({ emailVerifiedAt: now }).where(and(eq(users.id, account.userId), eq(users.email, identity.email)));
-      const response = NextResponse.redirect(new URL(attempt.returnTo, request.url), 303);
-      response.cookies.set({ name: getUserSessionCookieName(), value: await createUserSession(account.userId, request, "apple"), ...sessionCookieOptions(getUserSessionDuration()) });
+      const response = NextResponse.redirect(new URL("/api/auth/apple/finish", request.url), 303);
+      response.cookies.set({name:APPLE_COMPLETION_COOKIE,value:await createAppleSessionCompletion(account.userId,attempt.returnTo,attempt.previousSessions),...sessionCookieOptions(60),path:APPLE_COMPLETION_COOKIE_PATH});
       return response;
     }
 

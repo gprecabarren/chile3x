@@ -38,6 +38,7 @@ export async function readAccountReactivationIntent(value: string | undefined) {
     tokenId: accountTokens.id,
     userId: users.id,
     email: users.email,
+    role: users.role,
     displayName: users.displayName,
     selfDisabledAt: users.selfDisabledAt,
     adminDisabledAt: users.adminDisabledAt,
@@ -50,5 +51,5 @@ export async function readAccountReactivationIntent(value: string | undefined) {
       isNull(accountTokens.usedAt),
       gt(accountTokens.expiresAt, new Date().toISOString()),
     )).limit(1);
-  return record ?? null;
+  return record && record.role !== "admin" ? record : null;
 }

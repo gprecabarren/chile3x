@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   assertSameOrigin,
-  deleteCurrentSession,
+  deleteBrowserSessions,
+  clearSessionCookies,
   getCurrentAdmin,
-  getSessionCookieName,
-  sessionCookieOptions,
 } from "@/lib/auth";
 import { recordAdminAudit } from "@/lib/admin-audit";
 
@@ -26,13 +25,8 @@ export async function POST(request: NextRequest) {
       summary: `${admin.displayName ?? admin.email} cerró su sesión administrativa.`,
     });
   }
-  await deleteCurrentSession(request.cookies.get(getSessionCookieName())?.value);
+  await deleteBrowserSessions(request);
   const response = NextResponse.redirect(new URL("/ingresar?closed=admin", request.url), 303);
-  response.cookies.set({
-    name: getSessionCookieName(),
-    value: "",
-    ...sessionCookieOptions(),
-    maxAge: 0,
-  });
+  clearSessionCookies(response);
   return response;
 }

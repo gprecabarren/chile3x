@@ -1,5 +1,6 @@
 import { and, asc, count, desc, eq, isNotNull, isNull, like, or, sql, type SQL } from "drizzle-orm";
 import Link from "next/link";
+import { DateField } from "@/app/DateField";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { adminAuditLogs, adminGithubIdentities, adminNotifications, profileContactEvents, profiles, users } from "@/db/schema";
@@ -284,8 +285,8 @@ export default async function AdminActivityPage({ searchParams }: { searchParams
       <label>Acción<select name="action" defaultValue={filters.action}><option value="">Todas</option>{Object.entries(ADMIN_AUDIT_ACTIONS).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
       <label>Objeto afectado<select name="entity" defaultValue={filters.entity}><option value="">Todos</option>{Object.entries(ADMIN_AUDIT_ENTITY_TYPES).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
       <label>Resultado<select name="result" defaultValue={filters.result}><option value="">Todos</option><option value="success">Completado</option><option value="failure">Fallido</option></select></label>
-      <label>Desde<input type="date" name="from" defaultValue={filters.from} /></label>
-      <label>Hasta<input type="date" name="to" defaultValue={filters.to} /></label>
+      <DateField label="Desde" name="from" defaultValue={filters.from} />
+      <DateField label="Hasta" name="to" defaultValue={filters.to} />
       <label>Orden<select name="order" defaultValue={filters.order}><option value="newest">Más recientes primero</option><option value="oldest">Más antiguos primero</option></select></label>
       <div className="admin-audit-filter-actions"><button className="button button-primary" type="submit">Aplicar filtros</button>{hasFilters && <Link prefetch={false} className="button button-outline" href="/admin/actividad">Limpiar</Link>}</div>
     </form>

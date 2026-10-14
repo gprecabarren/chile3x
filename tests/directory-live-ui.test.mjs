@@ -18,8 +18,14 @@ test('quick and advanced filters share one form inside the same expandable body'
   assert.match(code, /params.delete\(key\)/);
   assert.match(code, /is-online/); assert.match(code, /is-verified/);
 });
-test('stories follow displayed listing IDs and viewers in all catalogues', async () => {
-  for (const path of ['app/escorts/page.tsx', 'app/escorts/[citySlug]/page.tsx', 'app/agencias/page.tsx', 'app/arriendos/page.tsx']) {
+test('escort stories follow location filters independently of listing pagination', async () => {
+  for (const path of ['app/escorts/page.tsx', 'app/escorts/[citySlug]/page.tsx']) {
+    const code = await source(path);
+    assert.match(code, /getActiveStories\(\{ viewerId: viewer\?\.id, (?:city|region)/);
+    assert.doesNotMatch(code, /profileIds: profiles.map/);
+    assert.match(code, /<DirectoryStoryLayout/);
+  }
+  for (const path of ['app/agencias/page.tsx', 'app/arriendos/page.tsx']) {
     const code = await source(path);
     assert.match(code, /getActiveStories\(\{ viewerId: viewer\?\.id, profileIds: profiles.map/);
     assert.match(code, /<DirectoryStoryLayout/);

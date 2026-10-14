@@ -97,7 +97,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
     {params.error && <p className="form-alert" role="alert">{messages[params.error] ?? messages.server}{params.error === "duplicate_rut" && <> <Link href="/recuperar-clave">Recuperar contraseña</Link></>}</p>}
     <form action="/api/auth/register" method="post" className="auth-form">
       <input name="return_to" type="hidden" value={returnTo} />
-      <label>Nombre visible<input name="display_name" required minLength={2} maxLength={80} autoComplete="nickname" defaultValue={saved?.displayName || providerIdentity?.displayName || ""} placeholder="Ej. Valentina" /></label>
+      <label>Nombre visible <small>(nombre que se verá dentro del sitio; puede ser un apodo)</small><input name="display_name" required minLength={2} maxLength={80} autoComplete="nickname" defaultValue={saved?.displayName || ""} placeholder="Ej. Vale" /><small>Se mostrará en tus comentarios y reseñas. No utilizamos tu nombre completo para identificarte públicamente.</small></label>
       <AccountIdentityFields values={saved ? { fullName: saved.fullName || providerIdentity?.fullName, documentType: saved.documentType, documentNumber: saved.documentNumber, foreignCountry: saved.foreignCountry, birthDate: saved.birthDate, region: saved.region, city: saved.city, phone: saved.phone } : providerIdentity ? { fullName: providerIdentity.fullName } : undefined} />
       <RegistrationEmailField defaultValue={providerIdentity?.email ?? saved?.email ?? ""} locked={providerEmailVerified} />
       {!providerIdentity && <RegistrationPasswordFields />}

@@ -38,7 +38,7 @@ export default function PrivacyPage() {
     <LegalPage
       eyebrow="DOCUMENTACIÓN LEGAL"
       title="Política de privacidad y tratamiento de datos"
-      version="2026.10.14"
+      version="2026.10.14.2"
       updatedAt="2026-10-14"
       summary={<p>Esta política informa los datos tratados por Chile3X, sus finalidades, la información que puede hacerse pública y los mecanismos para ejercer los derechos de sus titulares. Describe el funcionamiento actual del directorio y distingue los datos públicos de los archivos privados.</p>}
       notice={<><strong>Canal de privacidad:</strong> las solicitudes de acceso, rectificación, eliminación, bloqueo y consultas se reciben en <a href="mailto:chile3x.site@gmail.com">chile3x.site@gmail.com</a>. No deben enviarse contraseñas ni documentos completos por correo; si se requieren antecedentes, el equipo deberá indicar un canal adecuado.</>}
@@ -209,16 +209,19 @@ export default function PrivacyPage() {
 
       <section id="conservacion">
         <h2>15. Conservación, publicación temporal y eliminación</h2>
-        <p>Conservamos datos mientras la cuenta o anuncio estén activos y después solo durante el tiempo necesario para cerrar operaciones, resolver reportes, prevenir fraude, cumplir obligaciones, ejercer o defender derechos y completar ciclos razonables de respaldo.</p>
+        <p>Chile3X establece los siguientes plazos operativos propios, atendiendo a la finalidad y sensibilidad de cada dato. No se presentan como plazos generales exigidos por una ley ni impiden atender antes una solicitud de eliminación procedente.</p>
         <ul>
-          <li>Los anuncios dejan de mostrarse cuando se pausan, rechazan o eliminan, sin perjuicio de cachés externas.</li>
-          <li>Las historias de fotografía, video y texto expiran públicamente a las 24 horas. La limpieza del almacenamiento activo se ejecuta periódicamente, normalmente en el siguiente ciclo de cinco minutos. Si ocurre un error, los archivos o registros pendientes permanecen restringidos y la tarea vuelve a intentar su eliminación; el acceso público no se extiende.</li>
-          <li>La eliminación del almacenamiento activo no garantiza la desaparición simultánea de copias transitorias en cachés o respaldos del proveedor. Estas no se utilizan para volver a publicar el contenido vencido.</li>
-          <li>Los archivos privados se conservan mientras exista la finalidad de revisión, mientras su titular los mantenga o mientras sean necesarios para acreditar una actuación; al reemplazarlos se elimina la versión anterior del almacenamiento activo.</li>
-          <li>Los reportes, evidencias y registros de seguridad pueden conservarse hasta resolver el caso y durante el plazo necesario para prevenir reiteración o atender responsabilidades legales.</li>
-          <li>Los registros administrativos pueden conservarse separadamente para acreditar actuaciones, revisar incidentes y atender obligaciones o reclamaciones. Su finalidad no es mantener copias del material eliminado.</li>
+          <li><strong>Cuenta, anuncios y medios ordinarios:</strong> mientras la persona mantenga su cuenta y publicaciones, incluidas las pausadas o recuperables. Deshabilitar no equivale a eliminar. La eliminación definitiva retira los datos operativos y el acceso al contenido; los archivos asociados se borran al completar el proceso o mediante reintentos restringidos. No se conservan originales adicionales por aplicar marca de agua.</li>
+          <li><strong>Historias de fotografías, videos y texto:</strong> 24 horas desde su publicación. La limpieza de registros y archivos se ejecuta normalmente en el siguiente ciclo de cinco minutos. Ante una falla se reintenta sin prolongar su acceso público.</li>
+          <li><strong>Archivos de identidad:</strong> hasta 90 días desde su última carga o reemplazo. <strong>Exámenes y certificados médicos:</strong> hasta 30 días desde su última carga o reemplazo. Después se restringe su consulta y se elimina el archivo; el resultado y fecha de la revisión pueden mantenerse mientras exista el anuncio, sin conservar el documento original ni constituir una garantía de salud.</li>
+          <li><strong>Reportes y pruebas adjuntas:</strong> durante la tramitación y hasta 180 días después de su resolución o desestimación. Los casos pendientes no se eliminan por el mero transcurso de ese plazo.</li>
+          <li><strong>Conversaciones internas:</strong> hasta 365 días después del último mensaje, salvo una conservación excepcional fundada. La eliminación de una cuenta puede dejar a la otra persona participante su conversación con la identidad desvinculada; no autoriza conservar indefinidamente ese historial.</li>
+          <li><strong>Auditoría administrativa:</strong> hasta 365 días desde cada actuación. <strong>Diagnósticos operativos propios:</strong> hasta 30 días. Los registros de sesiones vencidas se depuran hasta 30 días después de su vencimiento; los enlaces de acceso o recuperación no amplían su vigencia al permanecer transitoriamente registrados.</li>
+          <li><strong>Constancia mínima de eliminación de cuenta:</strong> hasta 180 días. Contiene una huella del correo y los datos mínimos de la eliminación, no el perfil, documentos ni medios; una huella se trata como dato seudonimizado, no como anonimato absoluto.</li>
+          <li><strong>Respaldos automáticos de la base de datos:</strong> la ventana técnica de recuperación de Cloudflare D1 es de 7 a 30 días según el plan del proveedor. Una eliminación no borra simultáneamente cada estado de recuperación. Esos respaldos no se utilizan para volver a publicar contenido eliminado; al restaurar se deben reaplicar eliminaciones y vencimientos.</li>
         </ul>
-        <p>Cuando la eliminación inmediata no sea posible por respaldo, bloqueo legal o investigación, restringiremos el uso a esas finalidades y eliminaremos el dato al finalizar el motivo de conservación.</p>
+        <p>La política se aplica desde el 14 de octubre de 2026. La depuración ordinaria de los plazos no temporales comienza el 13 de noviembre de 2026, con una transición de 30 días para los datos existentes. Esto no cambia el vencimiento de historias ni posterga las solicitudes de eliminación definitiva realizadas mediante las funciones del sitio.</p>
+        <p>Una orden válida, una investigación documentada o la necesidad concreta de ejercer o defender derechos puede justificar conservar únicamente los antecedentes indispensables por un período mayor. La conservación excepcional se registra, se restringe al caso y debe revisarse al cesar su fundamento. Los errores de almacenamiento pueden requerir reintentos: el contenido afectado no vuelve a quedar accesible por ese motivo.</p>
       </section>
 
       <section id="derechos">

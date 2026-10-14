@@ -20,12 +20,14 @@ export type PublicStory = {
   profileName: string;
   profileImageUrl: string | null;
   city: string;
+  region: string;
   profileType: "escort" | "agency" | "rental";
 };
 
 type StoryScope = {
   viewerId?: string;
   city?: string;
+  region?: string;
   profileId?: string;
   profileIds?: string[];
   type?: "escort" | "agency" | "rental";
@@ -46,6 +48,7 @@ export async function getActiveStories(scope: StoryScope = {}) {
     const now = new Date().toISOString();
     const conditions = [publicProfileCondition, gt(profileStatuses.expiresAt, now)];
     if (scope.city) conditions.push(eq(profiles.city, scope.city));
+    if (scope.region) conditions.push(eq(profiles.region, scope.region));
     if (scope.profileId) conditions.push(eq(profiles.id, scope.profileId));
     if (scope.profileIds?.length) conditions.push(inArray(profiles.id, scope.profileIds));
     if (scope.type) conditions.push(eq(profiles.type, scope.type));
@@ -62,15 +65,15 @@ export async function getActiveStories(scope: StoryScope = {}) {
       profileHandle: profiles.handle,
       profileName: profiles.displayName,
       city: profiles.city,
+      region: profiles.region,
       profileType: profiles.type,
     }).from(profileStatuses)
       .innerJoin(profiles, eq(profileStatuses.profileId, profiles.id))
       .where(and(...conditions))
-      // Stories play in chronological order inside a profile. Their profile
-      // bubbles are ordered separately by the most recent story in the UI.
+      // The newest story is first, consistently across rails and the viewer.
       // Do not cap this public result: every active story must remain
       // reachable during its 24-hour lifetime.
-      .orderBy(asc(profileStatuses.createdAt));
+      .orderBy(desc(profileStatuses.createdAt), desc(profileStatuses.id));
 
     const blockedIds = await getBlockedProfileIds(scope.viewerId);
     const rows = storyRows.filter((story) => !blockedIds.has(story.profileId));
@@ -109,6 +112,7 @@ export async function getActiveStories(scope: StoryScope = {}) {
         profileName: row.profileName,
         profileImageUrl: profileImages.get(row.profileId) ?? null,
         city: row.city,
+        region: row.region,
         profileType: row.profileType,
       } satisfies PublicStory];
     });

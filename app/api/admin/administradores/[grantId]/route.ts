@@ -5,6 +5,7 @@ import { adminGithubAccess, authSessions } from "@/db/schema";
 import { recordAdminAudit } from "@/lib/admin-audit";
 import { ADMIN_ACCESS_LEVELS, adminHasCapability, isAdminAccessLevel } from "@/lib/admin-permissions";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
+import { hasPublicAccountEmail } from "@/lib/admin-email";
 
 const ASSIGNABLE_LEVELS = ADMIN_ACCESS_LEVELS.filter((level) => level !== "owner");
 
@@ -67,6 +68,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   if (intent === "reactivate") {
+    if (grant.protectedEmail && await hasPublicAccountEmail(grant.protectedEmail)) return destination(request, "email_conflict");
     const now = new Date().toISOString();
     await db.update(adminGithubAccess).set({ isActive: true, revokedBy: null, revokedAt: null, updatedAt: now })
       .where(eq(adminGithubAccess.id, grant.id));

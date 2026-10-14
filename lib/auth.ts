@@ -1,14 +1,15 @@
 import { and, eq, gt, lte } from "drizzle-orm";
-import { cookies, headers } from "next/headers";
+import { headers } from "next/headers";
 import { cache } from "react";
+import type { NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { adminGithubAccess, authSessions, users } from "@/db/schema";
 import type { AdminAccessLevel } from "@/lib/admin-permissions";
 import { sessionContextFromHeaders, sessionContextFromRequest, type SessionAuthMethod } from "@/lib/session-context";
 import { emailVerificationState, type EmailVerificationRecord } from "@/lib/email-verification-policy";
+import { hasAdministrativeEmailConflict, isReservedPublicAccountIdentity } from "@/lib/admin-email";
+import { ADMIN_SESSION_COOKIE, USER_SESSION_COOKIE, browserSessionState, parseSessionToken, sessionMatchesMode, type SessionMode } from "@/lib/session-policy";
 
-const ADMIN_SESSION_COOKIE = "chile3x_admin_session";
-const USER_SESSION_COOKIE = "chile3x_user_session";
 const ADMIN_SESSION_DURATION_SECONDS = 60 * 60 * 12;
 const USER_SESSION_DURATION_SECONDS = 60 * 60 * 24 * 30;
 // Cloudflare Workers supports PBKDF2 iteration counts up to 100,000.
@@ -144,6 +145,18 @@ async function createSession(userId: string, durationSeconds: number, request: R
   const context = sessionContextFromRequest(request);
   const db = await getDb();
 
+  const [account] = await db.select({ role: users.role, email: users.email }).from(users).where(and(eq(users.id, userId), eq(users.isActive, true))).limit(1);
+  const mode = authMethod === "github" ? "admin" : "account";
+  if (!account || !sessionMatchesMode(mode, account.role, authMethod) || (mode === "account" && await isReservedPublicAccountIdentity(userId))) {
+    throw new Error("Esta identidad no puede iniciar una sesión de ese tipo.");
+  }
+  if (mode === "admin") {
+    const [grant] = await db.select({ id: adminGithubAccess.id, protectedEmail: adminGithubAccess.protectedEmail }).from(adminGithubAccess).where(and(eq(adminGithubAccess.userId, userId), eq(adminGithubAccess.isActive, true))).limit(1);
+    if (!grant || await hasAdministrativeEmailConflict(userId,grant.protectedEmail)) throw new Error("El acceso administrativo no está autorizado o su correo está vinculado a una cuenta pública.");
+  }
+  // Revoke only credentials presented by this browser, not other devices.
+  await deleteBrowserSessions(request);
+
   await db.delete(authSessions).where(and(eq(authSessions.userId, userId), lte(authSessions.expiresAt, now)));
   await db.insert(authSessions).values({
     id,
@@ -167,9 +180,7 @@ export async function createUserSession(userId: string, request: Request, authMe
 }
 
 export function sessionIdFromToken(sessionToken: string | undefined) {
-  if (!sessionToken) return null;
-  const [id, secret] = sessionToken.split(".");
-  return id && secret ? id : null;
+  return parseSessionToken(sessionToken)?.id ?? null;
 }
 
 export async function deleteCurrentSession(sessionToken: string | undefined) {
@@ -177,11 +188,9 @@ export async function deleteCurrentSession(sessionToken: string | undefined) {
     return;
   }
 
-  const [id, secret] = sessionToken.split(".");
-
-  if (!id || !secret) {
-    return;
-  }
+  const token = parseSessionToken(sessionToken);
+  if (!token) return;
+  const { id, secret } = token;
 
   await (await getDb()).delete(authSessions).where(and(
     eq(authSessions.id, id),
@@ -189,22 +198,64 @@ export async function deleteCurrentSession(sessionToken: string | undefined) {
   ));
 }
 
+export async function deleteBrowserSessions(request: Request) {
+  for (const entry of browserSessionState(request.headers.get("cookie")).entries) await deleteCurrentSession(entry.value);
+}
+
+// Apple returns by cross-site POST, where SameSite=Lax cookies are absent.
+// Retain only revocation proofs in its short-lived, nonce-bound attempt.
+export async function captureBrowserSessionProofs(request: Request) {
+  const proofs = [];
+  for (const entry of browserSessionState(request.headers.get("cookie")).entries.slice(0, 8)) {
+    const token = parseSessionToken(entry.value);
+    if (token) proofs.push({ id: token.id, hash: await sha256(token.secret) });
+  }
+  return JSON.stringify(proofs);
+}
+
+export async function revokeAuthAttemptSessions(value: string | undefined) {
+  if (!value || value.length > 3000) return;
+  let proofs: unknown;
+  try { proofs = JSON.parse(value); } catch { return; }
+  if (!Array.isArray(proofs) || proofs.length > 8) return;
+  const db = await getDb();
+  for (const proof of proofs) {
+    if (!proof || typeof proof !== "object" || typeof proof.id !== "string" || !/^[A-Za-z0-9_-]{1,100}$/.test(proof.id)
+      || typeof proof.hash !== "string" || !/^[a-f0-9]{64}$/.test(proof.hash)) continue;
+    await db.delete(authSessions).where(and(eq(authSessions.id, proof.id), eq(authSessions.tokenHash, proof.hash)));
+  }
+}
+
+export function clearSessionCookies(response: NextResponse) {
+  for (const name of [ADMIN_SESSION_COOKIE, USER_SESSION_COOKIE]) response.cookies.set({ name, value: "", ...sessionCookieOptions(0) });
+}
+
+function setExclusiveSessionCookie(response: NextResponse, mode: SessionMode, token: string) {
+  const name = mode === "admin" ? ADMIN_SESSION_COOKIE : USER_SESSION_COOKIE;
+  const opposite = mode === "admin" ? USER_SESSION_COOKIE : ADMIN_SESSION_COOKIE;
+  response.cookies.set({ name, value: token, ...sessionCookieOptions(mode === "admin" ? ADMIN_SESSION_DURATION_SECONDS : USER_SESSION_DURATION_SECONDS) });
+  response.cookies.set({ name: opposite, value: "", ...sessionCookieOptions(0) });
+}
+export const setUserSessionCookie = (response: NextResponse, token: string) => setExclusiveSessionCookie(response, "account", token);
+export const setAdminSessionCookie = (response: NextResponse, token: string) => setExclusiveSessionCookie(response, "admin", token);
+
 // A page can ask for the current visitor from both the root layout and its
 // route component. Cache it for that render so we only verify the session once.
 // The cache is scoped to a server request, so logout, deactivation and expiry
 // continue to take effect on the very next navigation.
 const getSessionUser = cache(async function getSessionUser(cookieName: string): Promise<AccountUser | null> {
-  const sessionToken = (await cookies()).get(cookieName)?.value;
+  const state = browserSessionState((await headers()).get("cookie"));
+  const mode = cookieName === ADMIN_SESSION_COOKIE ? "admin" : "account";
+  if (state.conflict || state.mode !== mode) return null;
+  const sessionToken = state.entries.find(entry => entry.name === cookieName)?.value;
 
   if (!sessionToken) {
     return null;
   }
 
-  const [id, secret] = sessionToken.split(".");
-
-  if (!id || !secret) {
-    return null;
-  }
+  const token = parseSessionToken(sessionToken);
+  if (!token) return null;
+  const { id, secret } = token;
 
   const db = await getDb();
   const [record] = await db
@@ -220,6 +271,7 @@ const getSessionUser = cache(async function getSessionUser(cookieName: string): 
       emailVerificationDeadline: users.emailVerificationDeadline,
       emailVerificationExemptAt: users.emailVerificationExemptAt,
       sessionId: authSessions.id,
+      sessionAuthMethod: authSessions.authMethod,
       sessionIpAddress: authSessions.ipAddress,
       sessionUserAgent: authSessions.userAgent,
       sessionCountryCode: authSessions.countryCode,
@@ -234,7 +286,8 @@ const getSessionUser = cache(async function getSessionUser(cookieName: string): 
     ))
     .limit(1);
 
-  if (!record || !record.isActive || !["visitor", "advertiser", "tester", "admin"].includes(record.role)) {
+  if (!record || !record.isActive || !sessionMatchesMode(mode, record.role, record.sessionAuthMethod)
+    || (mode === "account" && await isReservedPublicAccountIdentity(record.id))) {
     return null;
   }
 
@@ -274,11 +327,13 @@ export const getCurrentAdmin = cache(async function getCurrentAdmin(): Promise<A
     accessLevel: adminGithubAccess.accessLevel,
     githubLogin: adminGithubAccess.githubLogin,
     isProtectedOwner: adminGithubAccess.isProtectedOwner,
+    protectedEmail: adminGithubAccess.protectedEmail,
   }).from(adminGithubAccess).where(and(
     eq(adminGithubAccess.userId, user.id),
     eq(adminGithubAccess.isActive, true),
   )).limit(1);
 
+  if (grant && await hasAdministrativeEmailConflict(user.id,grant.protectedEmail)) return null;
   return grant ? {
     ...user,
     role: "admin",

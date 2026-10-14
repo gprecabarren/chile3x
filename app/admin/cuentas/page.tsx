@@ -1,5 +1,6 @@
 import { and, count, desc, eq, isNull, or, sql } from "drizzle-orm";
 import Link from "next/link";
+import { DateField } from "@/app/DateField";
 import { redirect } from "next/navigation";
 import { AccountIdentityFields } from "@/app/account-identity-fields";
 import { regions } from "@/app/locations";
@@ -223,8 +224,8 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
             <label>Documento<select name="document" defaultValue={filters.document}><option value="">Cualquiera</option><option value="rut">Con RUT chileno</option><option value="foreign">Con documento extranjero</option><option value="none">Sin documento informado</option></select></label>
             <label>Estado del anuncio<select name="listing_status" defaultValue={filters.listingStatus}><option value="">Cualquiera</option><option value="draft">Borrador</option><option value="pending">En revisión</option><option value="approved">Publicado</option><option value="paused">Pausado</option><option value="rejected">Requiere cambios</option><option value="expired">Vencido</option></select></label>
             <label>Tipo de anuncio<select name="listing_type" defaultValue={filters.listingType}><option value="">Cualquiera</option><option value="escort">Escort</option><option value="agency">Agencia</option><option value="rental">Arriendo</option></select></label>
-            <label>Creada desde<input name="created_from" type="date" defaultValue={filters.createdFrom} /></label>
-            <label>Creada hasta<input name="created_to" type="date" defaultValue={filters.createdTo} /></label>
+            <DateField label="Creada desde" name="created_from" defaultValue={filters.createdFrom} />
+            <DateField label="Creada hasta" name="created_to" defaultValue={filters.createdTo} />
           </div>
           <div className="admin-account-advanced-actions"><button className="button button-primary" type="submit">Aplicar filtros</button><Link prefetch={false} className="button button-outline" href="/admin/cuentas">Restablecer</Link></div>
         </details>

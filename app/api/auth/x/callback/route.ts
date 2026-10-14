@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { accountAuthEvents, accountXIdentities, users } from "@/db/schema";
 import { isReservedAdminEmail } from "@/lib/admin-email";
-import { createUserSession, getCurrentUser, getUserSessionCookieName, getUserSessionDuration, sessionCookieOptions } from "@/lib/auth";
+import { createUserSession, getCurrentUser, setUserSessionCookie, sessionCookieOptions } from "@/lib/auth";
 import { createAccountReactivationIntent, ACCOUNT_REACTIVATION_COOKIE, ACCOUNT_REACTIVATION_DURATION_SECONDS } from "@/lib/account-reactivation";
 import { GOOGLE_REGISTRATION_COOKIE } from "@/lib/google-registration";
 import { APPLE_REGISTRATION_COOKIE } from "@/lib/apple-registration";
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       }
       await db.update(accountXIdentities).set({ xUsername: identity.username, lastLoginAt: new Date().toISOString() }).where(eq(accountXIdentities.userId, user.id));
       const response = redirect(attempt.returnTo);
-      response.cookies.set({ name: getUserSessionCookieName(), value: await createUserSession(user.id, request, "x"), ...sessionCookieOptions(getUserSessionDuration()) });
+      setUserSessionCookie(response, await createUserSession(user.id, request, "x"));
       return response;
     }
     // Never merge accounts solely by email. An existing account must authenticate

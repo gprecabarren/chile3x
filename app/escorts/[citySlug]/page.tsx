@@ -40,7 +40,7 @@ export default async function CityPage({ params, searchParams }: CityPageProps) 
   const [viewer, settings] = await Promise.all([getCurrentUser(), getSiteSettings()]);
   const { profiles, page, hasNext, outOfRange } = await getPublicProfilePage(filters, { viewerId: viewer?.id, page: readDirectoryPage(query) });
   if (outOfRange) notFound();
-  const stories = await getActiveStories({ viewerId: viewer?.id, profileIds: profiles.map((profile) => profile.id) });
+  const stories = await getActiveStories({ viewerId: viewer?.id, city: city.city, region: city.region });
   const basePath = getCityPath(city.city);
   const siteUrl = siteBaseUrl(settings.site_url);
   const pageUrl = `${siteUrl}${basePath}`;

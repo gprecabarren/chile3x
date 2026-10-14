@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { accountAppleIdentities, accountAuthEvents, accountGoogleIdentities, accountXIdentities, xRegistrationIntents, users } from "@/db/schema";
-import { assertSameOrigin, createUserSession, getUserSessionCookieName, getUserSessionDuration, hashPassword, safeAccountReturnTo, sessionCookieOptions } from "@/lib/auth";
+import { assertSameOrigin, createUserSession, setUserSessionCookie, hashPassword, safeAccountReturnTo } from "@/lib/auth";
 import { requestVerificationEmail } from "@/lib/account-email";
 import { DAY_MS, EMAIL_GRACE_DAYS } from "@/lib/email-verification-policy";
 import { readAccountIdentity } from "@/lib/account-data";
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
     await createAdminNotification({ kind: "account_registered", actorUserId: userId, summary: "Se registró una nueva cuenta en Chile3X." });
     if (xRegistration) {
       const response = NextResponse.redirect(new URL(safeAccountReturnTo(getFormString(formData, "return_to")), request.url), 303);
-      response.cookies.set({ name: getUserSessionCookieName(), value: createdPasswordSession!, ...sessionCookieOptions(getUserSessionDuration()) });
+      setUserSessionCookie(response, createdPasswordSession!);
       response.cookies.delete({ name: X_REGISTRATION_COOKIE, path: "/" });
       response.cookies.delete({ name: GOOGLE_REGISTRATION_COOKIE, path: "/" });
       response.cookies.delete({ name: APPLE_REGISTRATION_COOKIE, path: "/" });
@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
       });
       await consumeAppleRegistrationIntent(appleRegistration.id);
       const response = NextResponse.redirect(new URL(safeAccountReturnTo(getFormString(formData, "return_to")), request.url), 303);
-      response.cookies.set({ name: getUserSessionCookieName(), value: await createUserSession(userId, request, "apple"), ...sessionCookieOptions(getUserSessionDuration()) });
+      setUserSessionCookie(response, await createUserSession(userId, request, "apple"));
       response.cookies.delete({ name: APPLE_REGISTRATION_COOKIE, path: "/" });
       response.cookies.delete({ name: GOOGLE_REGISTRATION_COOKIE, path: "/" });
       response.cookies.set(registrationStateCookie, "", { maxAge: 0, path: "/registro" });
@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
       });
       await consumeGoogleRegistrationIntent(googleRegistration.id);
       const response = NextResponse.redirect(new URL(safeAccountReturnTo(getFormString(formData, "return_to")), request.url), 303);
-      response.cookies.set({ name: getUserSessionCookieName(), value: await createUserSession(userId, request, "google"), ...sessionCookieOptions(getUserSessionDuration()) });
+      setUserSessionCookie(response, await createUserSession(userId, request, "google"));
       response.cookies.delete({ name: GOOGLE_REGISTRATION_COOKIE, path: "/" });
       response.cookies.delete({ name: APPLE_REGISTRATION_COOKIE, path: "/" });
       response.cookies.set(registrationStateCookie, "", { maxAge: 0, path: "/registro" });
@@ -180,10 +180,11 @@ export async function POST(request: NextRequest) {
     url.searchParams.set("created", "1");
     url.searchParams.set("verification_delivery", delivered ? "sent" : "pending");
     const response = NextResponse.redirect(url, 303);
-    response.cookies.set({ name: getUserSessionCookieName(), value: createdPasswordSession!, ...sessionCookieOptions(getUserSessionDuration()) });
+    setUserSessionCookie(response, createdPasswordSession!);
     response.cookies.set(registrationStateCookie, "", { maxAge: 0, path: "/registro" });
     return response;
   } catch (error) {
+    if (String(error).includes("admin_email_reserved")) return redirectWithError(request, "admin_email", formData);
     console.error("Account registration failed", { stage, error });
     await recordOperationalEvent({ category: "application", eventName: "account.registration", outcome: "failure", detail: "El registro de cuenta no pudo completar una etapa interna.", metadata: { stage } });
     // Email delivery/notification failure must not abandon a saved account.
@@ -193,7 +194,7 @@ export async function POST(request: NextRequest) {
       url.searchParams.set("created", "1");
       url.searchParams.set("delivery", "1");
       const response = NextResponse.redirect(url, 303);
-      if (createdPasswordSession) response.cookies.set({ name: getUserSessionCookieName(), value: createdPasswordSession, ...sessionCookieOptions(getUserSessionDuration()) });
+      if (createdPasswordSession) setUserSessionCookie(response, createdPasswordSession);
       response.cookies.set(registrationStateCookie, "", { maxAge: 0, path: "/registro" });
       response.cookies.delete({ name: X_REGISTRATION_COOKIE, path: "/" });
       return response;

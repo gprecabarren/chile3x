@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { DateField } from "@/app/DateField";
 import { regions } from "@/app/locations";
 import {
   additionalServices,
@@ -397,8 +398,8 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
               <fieldset className="travel-agenda-editor"><legend>Agenda de viajes</legend><p>Informa una visita temporal a otra ciudad. Tu anuncio seguirá perteneciendo a su ciudad habitual.</p><div className="form-grid form-grid-two">
                 <label>Ciudad del próximo viaje<select name="travel_city" defaultValue={metadataValue(initial, "travel_city")}><option value="">Sin viaje programado</option>{regions.map((item) => <optgroup label={item.displayTitle} key={item.title}>{item.cities.map((travelCity) => <option value={travelCity} key={travelCity}>{travelCity}</option>)}</optgroup>)}</select></label>
                 <label>Nota breve<input name="travel_note" maxLength={180} defaultValue={metadataValue(initial, "travel_note")} placeholder="Ej. Agenda abierta durante esos días" /></label>
-                <label>Desde<input name="travel_start" type="date" defaultValue={metadataValue(initial, "travel_start")} /></label>
-                <label>Hasta<input name="travel_end" type="date" defaultValue={metadataValue(initial, "travel_end")} /></label>
+                <DateField label="Desde" name="travel_start" defaultValue={metadataValue(initial, "travel_start")} />
+                <DateField label="Hasta" name="travel_end" defaultValue={metadataValue(initial, "travel_end")} />
               </div></fieldset>
             </section>
           )}

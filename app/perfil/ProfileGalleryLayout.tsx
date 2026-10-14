@@ -9,14 +9,16 @@ function GalleryViewIcon({ columns }: { columns: number }) {
   </svg>;
 }
 
-export function ProfileGalleryLayout({ count, kind, children }: { count: number; kind: "photos" | "videos"; children: ReactNode }) {
+export function ProfileGalleryLayout({ count, kind, heading, children }: { count: number; kind: "photos" | "videos"; heading?: ReactNode; children: ReactNode }) {
   const maximum = Math.min(3, Math.max(1, count));
   const [columns, setColumns] = useState(maximum);
   const current = Math.min(columns, maximum);
   return <div className="profile-gallery-layout" style={{ "--gallery-columns": current } as CSSProperties}>
+    <div className="profile-gallery-header">{heading}
     {maximum > 1 && <div className="profile-gallery-controls" role="group" aria-label={`Distribución de ${kind === "photos" ? "fotos" : "videos"}`}>
       <span>Vista</span>{Array.from({ length: maximum }, (_, index) => index + 1).map(value => <button key={value} type="button" title={`${value} ${value === 1 ? "columna" : "columnas"}`} aria-label={`${value} ${value === 1 ? "columna" : "columnas"}`} aria-pressed={current === value} onClick={() => setColumns(value)}><GalleryViewIcon columns={value} /></button>)}
     </div>}
+    </div>
     {children}
   </div>;
 }

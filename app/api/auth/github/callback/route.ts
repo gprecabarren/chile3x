@@ -1,15 +1,15 @@
-import { and, eq, ne, or } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { adminGithubAccess, adminGithubIdentities, users } from "@/db/schema";
 import {
   createAdminSession,
   getGitHubOAuthConfig,
-  getSessionCookieName,
+  setAdminSessionCookie,
   safeAdminReturnTo,
-  sessionCookieOptions,
 } from "@/lib/auth";
 import { recordAdminAudit } from "@/lib/admin-audit";
+import { hasPublicAccountEmail } from "@/lib/admin-email";
 
 const OAUTH_STATE_COOKIE = "chile3x_admin_oauth_state";
 const OAUTH_RETURN_TO_COOKIE = "chile3x_admin_oauth_return_to";
@@ -130,8 +130,7 @@ export async function GET(request: NextRequest) {
     return accessDenied(request);
   }
 
-  const [publicAccountConflict] = await db.select({ id: users.id }).from(users)
-    .where(and(eq(users.email, administrativeEmail), ne(users.role, "admin"))).limit(1);
+  const publicAccountConflict = await hasPublicAccountEmail(administrativeEmail);
   if (publicAccountConflict) return accessDenied(request, "email_conflict");
 
   if (grant.userId) {
@@ -185,6 +184,7 @@ export async function GET(request: NextRequest) {
       eq(adminGithubIdentities.userId, admin.id),
     ))
     .limit(1);
+  try {
   if (existingIdentity) {
     await db.update(adminGithubIdentities).set({
       userId: admin.id,
@@ -212,6 +212,9 @@ export async function GET(request: NextRequest) {
     revokedBy: null,
     updatedAt: now,
   }).where(eq(adminGithubAccess.id, grant.id));
+  } catch {
+    return accessDenied(request,"email_conflict");
+  }
   await recordAdminAudit({
     ...admin,
     accessLevel: grant.accessLevel,
@@ -231,10 +234,6 @@ export async function GET(request: NextRequest) {
   const response = NextResponse.redirect(new URL(returnTo, request.url));
   response.cookies.delete({ name: OAUTH_STATE_COOKIE, path: "/api/auth/github" });
   response.cookies.delete({ name: OAUTH_RETURN_TO_COOKIE, path: "/api/auth/github" });
-  response.cookies.set({
-    name: getSessionCookieName(),
-    value: await createAdminSession(admin.id, request),
-    ...sessionCookieOptions(),
-  });
+  setAdminSessionCookie(response, await createAdminSession(admin.id, request));
   return response;
 }

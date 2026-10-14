@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { defaultBirthDate, foreignCountries, maximumBirthDate } from "@/lib/account-data";
 import { accountLocationRegions, getAccountLocationRegionByCity, normalizeAccountCity } from "@/lib/account-locations";
+import { DateField } from "@/app/DateField";
 
 type AccountIdentityValues = {
   fullName?: string | null;
@@ -27,7 +28,7 @@ export function AccountIdentityFields({ values, birthDateReadOnly = false }: { v
 
   return <>
     <div className="account-identity-required">
-      <label className="account-birth-date">Fecha de nacimiento<input name="birth_date" type="date" required readOnly={birthDateReadOnly} defaultValue={values?.birthDate ?? defaultBirthDate} max={maximumBirthDate()} autoComplete="bday" /><small>{birthDateReadOnly ? "Para corregir tu fecha de nacimiento, contacta a soporte." : "Debes ser mayor de 18 años."}</small></label>
+      <div className="account-birth-date"><DateField label="Fecha de nacimiento" name="birth_date" required readOnly={birthDateReadOnly} defaultValue={values?.birthDate ?? defaultBirthDate} max={maximumBirthDate()} /><small>{birthDateReadOnly ? "Para corregir tu fecha de nacimiento, contacta a soporte." : "Debes tener 18 años cumplidos. Elige año, mes y día."}</small></div>
       <div className="form-grid form-grid-two account-location-grid">
         <label>Región<select name="account_region" required value={region} onChange={(event) => { setRegion(event.target.value); setCity(""); }}><option value="" disabled>Selecciona una región</option>{accountLocationRegions.map((entry) => <option key={entry.id} value={entry.title}>{entry.displayTitle}</option>)}</select></label>
         <label>Ciudad o comuna<select name="account_city" required value={city} onChange={(event) => setCity(event.target.value)} disabled={!region}><option value="" disabled>{region ? "Elige ciudad o comuna" : "Elige una región"}</option>{cities.map((entry) => <option key={entry} value={entry}>{entry}</option>)}</select></label>
@@ -35,7 +36,7 @@ export function AccountIdentityFields({ values, birthDateReadOnly = false }: { v
       <p className="account-identity-note">La ubicación de tu cuenta es administrativa y no determina dónde se publican tus anuncios.</p>
     </div>
     <fieldset className="account-identity-optional"><legend>Datos opcionales</legend><p>Agrega solo lo que quieras registrar ahora. Tus anuncios se configuran por separado y mantienen su propia cobertura.</p><div className="form-grid form-grid-two">
-      <label className="form-grid-full">Nombre completo (opcional)<input name="full_name" maxLength={160} autoComplete="name" defaultValue={values?.fullName ?? ""} placeholder="Ej. Daniela Rojas" /></label>
+      <label className="form-grid-full">Nombre completo (opcional)<input name="full_name" maxLength={160} autoComplete="name" defaultValue={values?.fullName ?? ""} placeholder="Ej. Valentina Andrea Rojas Díaz" /><small>Dato privado de tu cuenta; no se muestra en comentarios ni reseñas.</small></label>
       <label>Tipo de documento (opcional)<select name="document_type" value={documentType} onChange={(event) => setDocumentType(event.target.value as "rut" | "foreign")}><option value="rut">RUT chileno</option><option value="foreign">Documento extranjero</option></select></label>
       <label>Número de documento (opcional)<input name="document_number" maxLength={40} autoComplete="off" defaultValue={values?.documentNumber ?? ""} placeholder={documentType === "rut" ? "Ej. 12.345.678-5" : "Tal como aparece en el documento"} /><small>{documentType === "rut" ? "Si lo ingresas, el RUT se valida." : "Ingresa el número tal como aparece en el documento."}</small></label>
       {documentType === "foreign" && <label className="form-grid-full">País emisor del documento (obligatorio si ingresas documento extranjero)<select name="foreign_country" defaultValue={values?.foreignCountry ?? ""}><option value="" disabled>Selecciona un país</option>{foreignCountries.map((country) => <option key={country} value={country}>{country}</option>)}</select></label>}

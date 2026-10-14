@@ -1,7 +1,8 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { profileVerificationFiles, profiles } from "@/db/schema";
 import { detectImageType, extensionForImageType, type SupportedImageType } from "@/lib/media";
+import { verificationRetentionExpiresAt } from "@/lib/data-retention-policy";
 
 export type VerificationDocumentKind = "identity" | "medical";
 
@@ -71,10 +72,11 @@ export async function saveVerificationDocuments(profileId: string, documents: Pe
         r2Key: key,
         byteSize: document.bytes.byteLength,
         contentType: document.contentType,
+        retentionExpiresAt: verificationRetentionExpiresAt(document.kind),
         updatedAt: new Date().toISOString(),
       }).onConflictDoUpdate({
         target: [profileVerificationFiles.profileId, profileVerificationFiles.kind],
-        set: { r2Key: key, byteSize: document.bytes.byteLength, contentType: document.contentType, updatedAt: new Date().toISOString() },
+        set: { r2Key: key, byteSize: document.bytes.byteLength, contentType: document.contentType, updatedAt: new Date().toISOString(), retentionExpiresAt:verificationRetentionExpiresAt(document.kind) },
       });
     } catch (error) {
       await env.MEDIA.delete(key);
@@ -106,7 +108,7 @@ export async function getVerificationDocuments(profileId: string) {
     byteSize: profileVerificationFiles.byteSize,
     contentType: profileVerificationFiles.contentType,
     updatedAt: profileVerificationFiles.updatedAt,
-  }).from(profileVerificationFiles).where(eq(profileVerificationFiles.profileId, profileId))) as Array<{
+  }).from(profileVerificationFiles).where(and(eq(profileVerificationFiles.profileId, profileId),activeVerificationRetention()))) as Array<{
     id: string;
     kind: VerificationDocumentKind;
     byteSize: number;
@@ -118,7 +120,12 @@ export async function getVerificationDocuments(profileId: string) {
 export async function findVerificationDocument(profileId: string, kind: VerificationDocumentKind) {
   const [row] = await (await getDb()).select({ file: profileVerificationFiles, profile: profiles }).from(profileVerificationFiles)
     .innerJoin(profiles, eq(profileVerificationFiles.profileId, profiles.id))
-    .where(and(eq(profileVerificationFiles.profileId, profileId), eq(profileVerificationFiles.kind, kind)))
+    .where(and(eq(profileVerificationFiles.profileId, profileId), eq(profileVerificationFiles.kind, kind),activeVerificationRetention()))
     .limit(1);
   return row ?? null;
+}
+
+function activeVerificationRetention() {
+  return sql`(${profileVerificationFiles.retentionExpiresAt} IS NULL OR datetime(${profileVerificationFiles.retentionExpiresAt}) > datetime('now')
+    OR EXISTS (SELECT 1 FROM data_retention_holds WHERE entity_type='verification' AND entity_id=${profileVerificationFiles.id}))`;
 }

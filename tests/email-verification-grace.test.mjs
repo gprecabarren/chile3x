@@ -13,14 +13,15 @@ const workerSource = (await source("worker/email-verification.ts"))
   .replace('"../lib/email-verification-policy"', url("lib/email-verification-policy.ts"))
   .replace('"../lib/account-email"', JSON.stringify(stubMail))
   .replace('"../lib/auth"', JSON.stringify(stubAuth));
-const { enforceEmailVerification, handleEmailVerificationScheduled, trashLongBlockedProfiles, verificationGuardExemptPath } = await import(`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(workerSource)).toString("base64")}`);
+const guardedWorkerSource = workerSource.replace('"../lib/session-policy"', url("lib/session-policy.ts"));
+const { enforceEmailVerification, handleEmailVerificationScheduled, trashLongBlockedProfiles, verificationGuardExemptPath } = await import(`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(guardedWorkerSource)).toString("base64")}`);
 
 function localDb() {
   const sqlite = new DatabaseSync(":memory:");
   sqlite.exec(`CREATE TABLE users(id TEXT PRIMARY KEY, email TEXT, display_name TEXT, password_hash TEXT, creation_source TEXT DEFAULT 'self', role TEXT DEFAULT 'advertiser', is_active INTEGER DEFAULT 1, email_verified_at TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE account_apple_identities(user_id TEXT); CREATE TABLE account_google_identities(user_id TEXT);
     CREATE TABLE profiles(id TEXT PRIMARY KEY, owner_id TEXT, display_name TEXT, type TEXT, status TEXT, trashed_at TEXT, trashed_by_kind TEXT, trashed_by_actor_id TEXT, trashed_by_admin_login TEXT, updated_at TEXT);
-    CREATE TABLE auth_sessions(id TEXT PRIMARY KEY, user_id TEXT, token_hash TEXT, expires_at TEXT);
+    CREATE TABLE auth_sessions(id TEXT PRIMARY KEY, user_id TEXT, token_hash TEXT, expires_at TEXT, auth_method TEXT DEFAULT 'unknown');
     CREATE TABLE admin_audit_logs(id TEXT PRIMARY KEY, actor_email TEXT, actor_name TEXT, category TEXT, action TEXT, outcome TEXT, entity_type TEXT, entity_id TEXT, entity_label TEXT, summary TEXT, after_data TEXT);`);
   const wrap = (statement, params = []) => ({ bind: (...values) => wrap(statement, values), all: async () => ({results: statement.all(...params)}), first: async () => statement.get(...params) ?? null, run: async () => ({success:true,meta:statement.run(...params)}) });
   const binding = { prepare: sql => wrap(sqlite.prepare(sql)), batch: async statements => {
@@ -74,7 +75,7 @@ test("existing sessions are blocked server-side; verify/logout/assets stay reach
   const {sqlite,binding}=localDb(); try {
     await migrate(sqlite); addAccount(sqlite,"blocked","2026-01-01T00:00:00Z");
     const hash=await (await import(stubAuth)).sha256("secret");
-    sqlite.prepare("INSERT INTO auth_sessions VALUES ('s','blocked',?,'2099-01-01T00:00:00Z')").run(hash);
+    sqlite.prepare("INSERT INTO auth_sessions(id,user_id,token_hash,expires_at) VALUES ('s','blocked',?,'2099-01-01T00:00:00Z')").run(hash);
     const cookie="chile3x_user_session=s.secret";
     let response=await enforceEmailVerification(new Request("https://chile3x.cl/mi-cuenta",{headers:{cookie}}),binding);
     assert.equal(response.status,303); assert.match(response.headers.get("location"),/\/verificar-correo$/); assert.match(response.headers.get("cache-control"),/no-store/);

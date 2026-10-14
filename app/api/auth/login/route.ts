@@ -2,11 +2,12 @@ import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { users } from "@/db/schema";
-import { assertSameOrigin, createUserSession, getUserSessionCookieName, getUserSessionDuration, safeAccountReturnTo, sessionCookieOptions, verifyPassword } from "@/lib/auth";
+import { assertSameOrigin, createUserSession, setUserSessionCookie, safeAccountReturnTo, sessionCookieOptions, verifyPassword } from "@/lib/auth";
 import { TURNSTILE_AUTH_LOGIN_ACTION } from "@/lib/turnstile";
 import { verifyTurnstile } from "@/lib/turnstile-server";
 import { ACCOUNT_REACTIVATION_COOKIE, ACCOUNT_REACTIVATION_DURATION_SECONDS, createAccountReactivationIntent } from "@/lib/account-reactivation";
 import { emailVerificationState } from "@/lib/email-verification-policy";
+import { isReservedAdminEmail, isReservedPublicAccountIdentity } from "@/lib/admin-email";
 
 function loginError(request: Request, formData: FormData, error = "invalid") {
   const url = new URL("/ingresar", request.url);
@@ -32,9 +33,12 @@ export async function POST(request: NextRequest) {
   const email = getFormString(formData, "email").trim().toLowerCase().slice(0, 160);
   const password = getFormString(formData, "password");
   if (!email || !password) return loginError(request, formData);
+  if (await isReservedAdminEmail(email)) return loginError(request, formData, "admin_email");
 
   const [user] = await (await getDb()).select({ id: users.id, role: users.role, createdAt: users.createdAt, passwordHash: users.passwordHash, emailVerifiedAt: users.emailVerifiedAt, emailVerificationDeadline: users.emailVerificationDeadline, emailVerificationExemptAt: users.emailVerificationExemptAt, isActive: users.isActive, selfDisabledAt: users.selfDisabledAt, adminDisabledAt: users.adminDisabledAt }).from(users).where(eq(users.email, email)).limit(1);
   if (!user || !await verifyPassword(password, user.passwordHash)) return loginError(request, formData);
+  if (user.role === "admin") return loginError(request, formData, "admin_email");
+  if (await isReservedPublicAccountIdentity(user.id)) return loginError(request, formData, "admin_email");
   if (user.adminDisabledAt) return loginError(request, formData, "admin_disabled");
   if (user.selfDisabledAt) {
     const returnTo = safeAccountReturnTo(getFormString(formData, "return_to"));
@@ -51,6 +55,6 @@ export async function POST(request: NextRequest) {
   if (blocked) destination.searchParams.set("return_to", returnTo);
   // A blocked session is restricted to verifying/logout, never normal actions.
   const response = NextResponse.redirect(destination, 303);
-  response.cookies.set({ name: getUserSessionCookieName(), value: await createUserSession(user.id, request, "password"), ...sessionCookieOptions(getUserSessionDuration()) });
+  setUserSessionCookie(response, await createUserSession(user.id, request, "password"));
   return response;
 }

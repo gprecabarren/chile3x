@@ -20,12 +20,14 @@ const fixtureModule = `data:text/javascript,${encodeURIComponent(`
  export const safeAccountReturnTo=value=>value?.startsWith('/mi-cuenta')?value:'/mi-cuenta';
  export const sessionCookieOptions=()=>({httpOnly:true,sameSite:'lax'}),getUserSessionCookieName=()=> 'local-user-session',getUserSessionDuration=()=>2592000;
  export async function createUserSession(id,request,method){state().sessions.push({id,method});return 'test-only-session';}
+ export function setUserSessionCookie(response,token){response.cookies.set({name:'local-user-session',value:token});response.cookies.set({name:'local-admin-session',value:'',maxAge:0});}
  export async function hashPassword(){return 'not-a-real-password-hash';} export async function verifyPassword(){return state().passwordCorrect;}
  export async function verifyTurnstile(){return state().captchaValid;}
  export async function createAccountReactivationIntent(){state().reactivations++;return 'test-reactivation';}
  export function readAccountIdentity(){return {firstName:'Local',documentType:'foreign',documentNumber:'LOCAL',foreignCountry:'Test',birthDate:'1990-01-01',city:'Concepción',phone:''};}
  export const encodeRegistrationState=()=>'',registrationStateFromForm=()=>({});
  export async function generateUniqueAccountUsername(){return 'local-test';} export async function isReservedAdminEmail(){return false;}
+ export async function isReservedPublicAccountIdentity(){return false;}
  export async function readGoogleRegistrationIntent(){return null;} export async function readAppleRegistrationIntent(){return null;}
  export async function readXRegistrationIntent(){return null;}
  export async function consumeGoogleRegistrationIntent(){} export async function consumeAppleRegistrationIntent(){}

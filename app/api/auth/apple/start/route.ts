@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
   const intent = request.nextUrl.searchParams.get("intent") === "register" ? "register" : "login";
   const returnTo = safeAccountReturnTo(request.nextUrl.searchParams.get("return_to"));
-  const attempt = await createAppleAuthAttempt(intent, returnTo);
+  const attempt = await createAppleAuthAttempt(intent, returnTo, request);
   const redirectUri = `${new URL(request.url).origin}/api/auth/apple/callback`;
   const authorization = new URL("https://appleid.apple.com/auth/authorize");
   authorization.searchParams.set("client_id", settings.apple_services_id);

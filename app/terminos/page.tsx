@@ -37,7 +37,7 @@ export default function TermsPage() {
     <LegalPage
       eyebrow="DOCUMENTACIÓN LEGAL"
       title="Términos y condiciones de uso"
-      version="2026.10.14"
+      version="2026.10.14.2"
       updatedAt="2026-10-14"
       summary={<p>Estas condiciones regulan el acceso y uso de <strong>chile3x.cl</strong>, un directorio para adultos con publicaciones de escorts, agencias y arriendos en Chile. Su lectura es necesaria antes de crear una cuenta, publicar o interactuar con un anuncio.</p>}
     >
@@ -190,6 +190,8 @@ export default function TermsPage() {
         <h2>18. Pausa, suspensión, cierre y eliminación</h2>
         <p>La persona anunciante puede ocultar temporalmente sus publicaciones y solicitar el cierre de su cuenta mediante las funciones disponibles o el canal de soporte. Chile3X puede restringir o terminar el acceso por incumplimiento, riesgo, requerimiento de autoridad, fraude, inactividad prolongada o necesidad operativa fundada.</p>
         <p>El cierre no elimina de inmediato antecedentes que deban conservarse para resolver reportes, prevenir abuso, ejercer o defender derechos, cumplir obligaciones legales o mantener respaldos transitorios. El tratamiento posterior se rige por la Política de privacidad.</p>
+        <p>Los plazos ordinarios de conservación se describen en la <Link href="/privacidad#conservacion">sección 15 de la Política de privacidad</Link>: documentos de identidad hasta 90 días, archivos médicos hasta 30 días, reportes resueltos hasta 180 días, conversaciones sin nuevos mensajes y auditoría hasta 365 días. Las historias conservan su duración de 24 horas. La transición de la nueva depuración no posterga solicitudes de eliminación ni permite mantener una historia vencida visible.</p>
+        <p>Una sesión del navegador no puede operar simultáneamente como cuenta pública y como identidad administrativa. Iniciar sesión en otro panel cierra la sesión anterior de ese navegador; los correos administrativos reservados no pueden utilizarse para crear o recuperar cuentas públicas. Los accesos contradictorios se rechazan y requieren una nueva autenticación.</p>
         <p>Deshabilitar o eliminar una cuenta revoca su acceso al espacio privado de Telegram. Cuando una cuenta creada con Apple se elimine permanentemente y el proveedor esté activo, Chile3X intentará además revocar la autorización externa antes de borrar localmente la identidad.</p>
       </section>
 

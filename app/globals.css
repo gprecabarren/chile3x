@@ -2270,8 +2270,8 @@ input[type="submit"] { text-transform: none !important; letter-spacing: .015em; 
   .account-access-row summary { text-align: left; }
 }
 /* Responsive public galleries keep their server-rendered media and lightbox. */
-.x-signin { margin: 0; width: 100%; }
-.x-signin-button { width: 100%; }
+.x-signin { margin: 0; width: 100%; display: grid; justify-items: center; }
+.x-signin-button { width: min(100%,400px); }
 .x-signin-button svg { width: 19px; height: 19px; }
 .x-signin.is-disabled .x-signin-button { color: #adb2bd; border-color: #3c4350; background: #171b24; cursor: not-allowed; opacity: .82; }
 .admin-settings-grid .x-activation-confirmation { display: flex; align-items: flex-start; gap: 10px; }
@@ -2286,6 +2286,49 @@ input[type="submit"] { text-transform: none !important; letter-spacing: .015em; 
 .profile-gallery-layout .profile-media-grid figure { min-height: 0; aspect-ratio: 2 / 3; }
 .profile-gallery-layout .profile-video-grid video { object-fit: contain; }
 .profile-gallery-controls button { display: inline-grid; place-items: center; }
+.profile-gallery-header { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 0 12px; margin-bottom: 18px; min-width: 0; }
+.profile-gallery-header > div:not(.profile-gallery-controls) { display: contents; }
+.profile-gallery-header .eyebrow { grid-column: 1 / -1; grid-row: 1; margin: 0 0 9px; }
+.profile-gallery-header h2 { grid-column: 1; grid-row: 2; }
+.profile-gallery-header h2, .profile-exclusive-gallery h2 { margin: 0; font-size: clamp(24px,2.4vw,30px); line-height: 1.2; }
+.profile-gallery-header .profile-gallery-controls { grid-column: 2; grid-row: 2; margin: 0; }
+.account-navigation-home { font-weight: 800; }
+.date-parts-field { min-width: 0; margin: 0; padding: 0; border: 0; }
+.account-details-fields { display: grid; gap: 24px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.account-save-result { display: grid; gap: 12px; }
+.account-save-result ul { margin: 10px 0 0; padding-left: 20px; display: grid; gap: 6px; }
+.account-save-result p { margin: 10px 0 0; line-height: 1.6; }
+.date-parts-field legend { padding: 0; margin-bottom: 10px; color: inherit; font-size: 13px; font-weight: 700; }
+.date-parts-field > div { display: grid; grid-template-columns: .85fr 1.25fr .65fr; gap: 8px; }
+.date-parts-field label { display: grid; gap: 7px; min-width: 0; margin: 0; font-size: 11px; color: #b9c3d4; }
+.date-parts-field select { width: 100%; min-width: 0; min-height: 46px; padding: 10px 8px; border: 1px solid #465169; border-radius: 8px; color: #eff3fa; background: #0e1320; font: inherit; font-size: 14px; }
+.account-birth-date > small { display: block; margin-top: 10px; line-height: 1.6; color: #a3aec1; font-size: 12px; }
+@media(max-width:620px) { .date-parts-field select { font-size: 16px; }.date-parts-field > div { gap: 6px; }.date-parts-field legend { font-size: 14px; } }
+.story-viewer .story-viewer-panel { width: min(100%,540px); height: min(90dvh,860px); max-width: 100%; max-height: calc(100dvh - 24px); grid-template-rows: auto auto auto minmax(0,1fr); }
+.story-viewer .story-viewer-content { min-width: 0; min-height: 0; overflow: hidden; }
+.story-viewer .story-viewer-content > img, .story-viewer .story-viewer-content > video { position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: 100%; max-height: 100%; min-width: 0; min-height: 0; object-fit: contain; }
+.story-viewer .story-viewer-progress span { overflow: hidden; }
+.story-viewer-progress i { display: block; height: 100%; background: #fff; }
+.story-viewer header time { color: #d0d7e5; font-size: 10px; line-height: 1.5; }
+.story-countdown { color: #dfebfc; font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.story-rail.story-rail-region { margin: 16px 0 0; padding: 12px 0 0; border-top: 1px solid #30394d; background: transparent; }
+.story-rail-region .story-rail-heading { margin-bottom: 9px; }
+.story-rail-region .story-rail-heading h2 { font-size: 13px; }
+.story-rail-region .story-bubble { width: 72px; flex-basis: 72px; }
+.story-rail-region .story-bubble-avatar { width: 52px; height: 52px; }
+.story-rail-region .story-bubble strong { font-size: 10px; }
+@media (max-width:620px) {
+  .profile-gallery-header { gap: 8px; margin-bottom: 14px; }
+  .profile-gallery-header .profile-gallery-controls { gap: 5px; }
+  .profile-gallery-header .profile-gallery-controls button { min-width: 38px; min-height: 40px; }
+  .account-mobile-navigation .account-navigation-home { padding-top: 22px; padding-bottom: 22px; margin-bottom: 12px; color: #fff; background: #381a25; border-bottom: 2px solid #aa4454; }
+  .story-viewer .story-viewer-panel { width: 100%; height: calc(100dvh - 16px); max-height: calc(100dvh - 16px); }
+  .story-viewer-toolbar { gap: 8px; }
+  .story-viewer-text { padding: 22px; }
+  .story-rail-region .story-bubble, .story-rail-region .story-bubble-card { width: 56px; flex-basis: 56px; }
+  .story-rail-region .story-bubble-avatar { width: 42px; height: 42px; border-width: 2px; }
+  .story-rail-region .story-bubble strong { font-size: 9px; }
+}
 @media (max-width: 620px) {
   .profile-media-gallery { padding: 16px 10px; }
   .profile-gallery-layout .profile-media-grid, .profile-gallery-layout .profile-video-grid { gap: 6px; }
@@ -2309,7 +2352,7 @@ input[type="submit"] { text-transform: none !important; letter-spacing: .015em; 
 .listings-section + .directory-section { padding-top: 56px; }
 @media (max-width: 620px) { .listings-section { padding-bottom: 32px; }.listings-section + .directory-section { padding-top: 32px; } }
 @media (min-width: 901px) { .profile-detail-layout { grid-template-columns: minmax(0,1fr) minmax(330px,.55fr); gap: 28px; } }
-@media (min-width: 761px) { .portal-whatsapp-panel { width: min(480px,100%); padding: 20px; } }
+@media (min-width: 761px) { .portal-whatsapp-panel { width: min(540px,100%); padding: 22px; } }
 .portal-whatsapp-advertiser { border: 2px solid #6ed798; background: linear-gradient(135deg,#173f2b,#14281e); padding-block: 16px; }
 .portal-whatsapp-advertiser strong { font-size: 18px; overflow-wrap: anywhere; }
 .portal-whatsapp-advertiser small:first-child { color: #9eecb9; font-size: 9px; font-weight: 800; letter-spacing: .06em; }

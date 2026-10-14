@@ -9,6 +9,35 @@ import {
 
 const createdAt = text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`);
 
+export const helpGuides = sqliteTable("help_guides", {
+  id: text("id").primaryKey(),
+  audience: text("audience", { enum: ["account", "admin", "all"] }).notNull(),
+  capability: text("capability"),
+  testerOnly: integer("tester_only", { mode: "boolean" }).notNull().default(false),
+  category: text("category").notNull(),
+  title: text("title").notNull(),
+  aliases: text("aliases").notNull().default("[]"),
+  summary: text("summary").notNull(),
+  steps: text("steps").notNull(),
+  linkHref: text("link_href").notNull(),
+  linkLabel: text("link_label").notNull(),
+  linkTarget: text("link_target"),
+  isPublished: integer("is_published", { mode: "boolean" }).notNull().default(true),
+  isDeleted: integer("is_deleted", { mode: "boolean" }).notNull().default(false),
+  updatedBy: text("updated_by"),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  createdAt,
+}, table => [index("help_guides_audience_idx").on(table.audience, table.isPublished, table.isDeleted)]);
+
+export const authSessionCompletions = sqliteTable("auth_session_completions", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull(),
+  returnTo: text("return_to").notNull(),
+  previousSessions: text("previous_sessions").notNull().default("[]"),
+  expiresAt: text("expires_at").notNull(),
+}, table => [index("auth_session_completions_expiry_idx").on(table.expiresAt)]);
+
 export const forumSections = sqliteTable("forum_sections", {
   id: text("id").primaryKey(),
   groupName: text("group_name").notNull(),
@@ -275,6 +304,7 @@ export const accountAppleIdentities = sqliteTable("account_apple_identities", {
 // SameSite=Lax cookie for CSRF protection. This short-lived server-side state
 // record is consumed atomically before any authorization code is exchanged.
 export const appleAuthAttempts = sqliteTable("apple_auth_attempts", {
+  previousSessions: text("previous_sessions").notNull().default("[]"),
   id: text("id").primaryKey(),
   stateHash: text("state_hash").notNull(),
   nonce: text("nonce").notNull(),
@@ -668,6 +698,7 @@ export const profileStatuses = sqliteTable("profile_statuses", {
 // Identity and optional medical evidence are deliberately separate from public
 // media. Their R2 keys are never included in a public profile response.
 export const profileVerificationFiles = sqliteTable("profile_verification_files", {
+  retentionExpiresAt: text("retention_expires_at"),
   id: text("id").primaryKey(),
   profileId: text("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
   kind: text("kind", { enum: ["identity", "medical"] }).notNull(),
@@ -678,7 +709,23 @@ export const profileVerificationFiles = sqliteTable("profile_verification_files"
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
   uniqueIndex("profile_verification_file_unique").on(table.profileId, table.kind),
+  index("profile_verification_retention_idx").on(table.retentionExpiresAt),
 ]);
+
+export const dataRetentionHolds = sqliteTable("data_retention_holds", {
+  id: text("id").primaryKey(),
+  entityType: text("entity_type", {enum:["verification","report","conversation","audit","deletion"]}).notNull(),
+  entityId: text("entity_id").notNull(),
+  reason: text("reason").notNull(),
+  createdBy: text("created_by").notNull(),
+  createdAt,
+}, table=>[uniqueIndex("data_retention_hold_entity_unique").on(table.entityType,table.entityId)]);
+
+export const dataDeletionJobs = sqliteTable("data_deletion_jobs", {
+  id:text("id").primaryKey(),
+  r2Key:text("r2_key").notNull().unique(),
+  createdAt,
+}, table=>[index("data_deletion_jobs_created_idx").on(table.createdAt)]);
 
 export const favorites = sqliteTable("favorites", {
   id: text("id").primaryKey(),

@@ -9,10 +9,18 @@ la navegación de cada panel. Esta primera versión no usa un modelo de IA ni
 requiere un proveedor de pago. Resuelve tareas usando guías revisadas del código
 actual, vocabulario equivalente, pasos y enlaces. No modifica datos ni permisos.
 
-La base está en `lib/help-knowledge.ts`. Los documentos históricos del producto
-no se incorporan automáticamente: varios describen reglas que ya cambiaron.
-Actualizar esta base forma parte de modificar un flujo operativo. Las pruebas
-comprueban permisos, destinos, consultas habituales y políticas de medios.
+La base operativa está en la tabla `help_guides`, inicializada con las 43 guías
+revisadas de `lib/help-knowledge.ts`. `/admin/ayuda/guias` permite crear, editar,
+retirar y restaurar guías, definir audiencia, permiso, palabras clave, pasos y
+destinos locales. Requiere `settings.manage`, comprueba la versión al guardar y
+registra el actor en la auditoría. Los documentos históricos no se incorporan
+automáticamente: varios describen reglas que ya cambiaron.
+
+El administrador alterna las vistas «Administración» y «Usuarios normales» sin
+suplantar una cuenta. La consulta SQL filtra audiencia, publicación, permisos y
+guías de testers ANTES de enviar datos al navegador. La configuración
+`account_help_enabled` oculta los accesos normales y devuelve 404 en la URL
+directa; la ayuda administrativa sigue disponible.
 
 ## Privacidad y seguridad
 
@@ -58,5 +66,4 @@ para reintentar. No depende de que otro anunciante suba una foto.
 3. Si se quieren conservar preguntas no resueltas o valoraciones: requiere definir
    finalidad, consentimiento cuando corresponda, acceso, retención y eliminación.
 4. Si el soporte debe abrir tickets o si se mantiene la derivación manual.
-5. Si las guías deben editarse desde administración, con versión, revisión y
-   registro de cambios, o seguir dentro del repositorio.
+5. Revisar y mantener el catálogo desde administración cuando cambie un flujo.

@@ -1,6 +1,7 @@
 import { emailVerificationState } from "../lib/email-verification-policy";
 import { createAccountToken, sendAccountEmail } from "../lib/account-email";
 import { sha256 } from "../lib/auth";
+import { browserSessionState, USER_SESSION_COOKIE, parseSessionToken } from "../lib/session-policy";
 
 export function verificationGuardExemptPath(path: string) {
   // Public files/verification/OAuth remain accessible; their own handlers still
@@ -16,14 +17,16 @@ export function verificationGuardExemptPath(path: string) {
 export async function enforceEmailVerification(request: Request, db: D1Database): Promise<Response | null> {
   const url = new URL(request.url);
   if (verificationGuardExemptPath(url.pathname)) return null;
-  const token = request.headers.get("cookie")?.split(";").map(value => value.trim()).find(value => value.startsWith("chile3x_user_session="))?.slice("chile3x_user_session=".length);
-  const parts = token?.split(".");
-  if (!parts || parts.length !== 2 || !parts[0] || !parts[1]) return null;
+  const state = browserSessionState(request.headers.get("cookie"));
+  if (state.conflict || state.mode !== "account") return null;
+  const token = parseSessionToken(state.entries.find(entry => entry.name === USER_SESSION_COOKIE)?.value);
+  if (!token) return null;
   const user = await db.prepare(`SELECT u.role, u.created_at AS createdAt, u.email_verified_at AS emailVerifiedAt,
       u.email_verification_deadline AS emailVerificationDeadline, u.email_verification_exempt_at AS emailVerificationExemptAt
     FROM auth_sessions s JOIN users u ON u.id = s.user_id
-    WHERE s.id = ? AND s.token_hash = ? AND datetime(s.expires_at) > datetime(?) AND u.is_active = 1 LIMIT 1`)
-    .bind(parts[0], await sha256(parts[1]), new Date().toISOString()).first<{
+    WHERE s.id = ? AND s.token_hash = ? AND datetime(s.expires_at) > datetime(?) AND u.is_active = 1
+      AND u.role <> 'admin' AND s.auth_method <> 'github' LIMIT 1`)
+    .bind(token.id, await sha256(token.secret), new Date().toISOString()).first<{
       role: string; createdAt: string; emailVerifiedAt: string | null; emailVerificationDeadline: string | null; emailVerificationExemptAt: string | null;
     }>();
   if (!user || emailVerificationState(user) !== "blocked") return null;

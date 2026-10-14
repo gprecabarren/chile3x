@@ -50,7 +50,8 @@ test("all authentication methods create sessions with request metadata", async (
   assert.match(auth, /sessionContextFromRequest\(request\)/);
   assert.match(password, /createUserSession\(user\.id, request, "password"\)/);
   assert.match(google, /createUserSession\(account\.userId, request, "google"\)/);
-  assert.match(apple, /createUserSession\(account\.userId, request, "apple"\)/);
+  assert.match(apple, /createAppleSessionCompletion\(account\.userId,attempt\.returnTo,attempt\.previousSessions\)/);
+  assert.match(await read("app/api/auth/apple/finish/route.ts"), /createUserSession\(completion\.userId,request,"apple"\)/);
   assert.match(github, /createAdminSession\(admin\.id, request\)/);
   assert.match(register, /createUserSession\(userId, request, "google"\)/);
   assert.match(register, /createUserSession\(userId, request, "apple"\)/);

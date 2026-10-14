@@ -71,6 +71,6 @@ test('advertiser WhatsApp uses its own tracked contact and appears ahead of team
 });
 test('legal documents have visible versions, current story expiry, and no blanket anonymous-message claim',()=>{
   const terms=source('app/terminos/page.tsx'),privacy=source('app/privacidad/page.tsx');
-  for(const text of [terms,privacy]){assert.match(text,/version="2026.10.14"/); assert.match(text,/texto.*24 horas/);assert.doesNotMatch(text,/conservarse por más tiempo|historial anonimizado/);}
+  for(const text of [terms,privacy]){assert.match(text,/version="2026.10.14.2"/); assert.match(text,/texto.*24 horas/);assert.doesNotMatch(text,/conservarse por más tiempo|historial anonimizado/);}
   assert.match(privacy,/no se guardan como conversación en la base de datos/);
 });

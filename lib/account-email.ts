@@ -6,6 +6,7 @@ import { recordOperationalEvent } from "@/lib/operations";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { isReservedTestEmail } from "@/lib/test-email";
 import { emailVerificationState } from "@/lib/email-verification-policy";
+import { isReservedPublicAccountIdentity } from "@/lib/admin-email";
 
 export type AccountTokenPurpose = "verify_email" | "reset_password";
 
@@ -15,6 +16,8 @@ function escapeHtml(value: string) {
 
 export async function createAccountToken(userId: string, purpose: AccountTokenPurpose) {
   const db = await getDb();
+  const [account] = await db.select({ role: users.role, email: users.email }).from(users).where(eq(users.id, userId)).limit(1);
+  if (!account || account.role === "admin" || await isReservedPublicAccountIdentity(userId)) throw new Error("Esta identidad no admite recuperación de una cuenta pública.");
   const tokenId = crypto.randomUUID();
   const secret = createOpaqueToken();
   const hours = purpose === "verify_email" ? 24 : 1;
@@ -211,6 +214,8 @@ export async function resetPasswordWithToken(token: string, passwordHash: string
     gt(accountTokens.expiresAt, new Date().toISOString()),
   )).limit(1);
   if (!record) return false;
+  const [account] = await db.select({ role: users.role, email: users.email }).from(users).where(eq(users.id, record.userId)).limit(1);
+  if (!account || account.role === "admin" || await isReservedPublicAccountIdentity(record.userId)) return false;
   const now = new Date().toISOString();
   await db.update(accountTokens).set({ usedAt: now }).where(eq(accountTokens.id, record.id));
   await db.update(users).set({ passwordHash, emailVerifiedAt: now }).where(eq(users.id, record.userId));

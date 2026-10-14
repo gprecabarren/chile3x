@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { accountAppleIdentities, accountGoogleIdentities, users } from "@/db/schema";
 import { isReservedAdminEmail } from "@/lib/admin-email";
-import { assertSameOrigin, createUserSession, getUserSessionCookieName, getUserSessionDuration, safeAccountReturnTo, sessionCookieOptions } from "@/lib/auth";
+import { assertSameOrigin, createUserSession, setUserSessionCookie, safeAccountReturnTo, sessionCookieOptions } from "@/lib/auth";
 import { GOOGLE_NONCE_COOKIE, verifyGoogleCredential } from "@/lib/google-auth";
 import { createGoogleRegistrationIntent, GOOGLE_REGISTRATION_COOKIE } from "@/lib/google-registration";
 import { getSiteSettings } from "@/lib/site-settings";
@@ -89,6 +89,7 @@ export async function POST(request: NextRequest) {
 
     if (account) {
       if (account.role === "admin") return jsonError("Las identidades administrativas solo ingresan mediante GitHub.", 409);
+      if (await isReservedAdminEmail(account.email)) return jsonError("El correo de esta cuenta está reservado para administración. Ingresa mediante GitHub o contacta a soporte.", 409);
       if (account.adminDisabledAt) return jsonError("Tu cuenta fue deshabilitada por Chile3X. Solo la administración puede restablecerla; contáctanos desde la sección Contacto.", 403);
       if (account.selfDisabledAt) {
         const destination = new URL("/reactivar-cuenta", request.url);
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest) {
         .where(eq(accountGoogleIdentities.id, account.identityId));
       await db.update(users).set({ emailVerifiedAt: now }).where(and(eq(users.id, account.userId), eq(users.email, identity.email)));
       const response = NextResponse.json({ redirectTo: returnTo }, { headers: { "cache-control": "no-store" } });
-      response.cookies.set({ name: getUserSessionCookieName(), value: await createUserSession(account.userId, request, "google"), ...sessionCookieOptions(getUserSessionDuration()) });
+      setUserSessionCookie(response, await createUserSession(account.userId, request, "google"));
       response.cookies.delete({ name: GOOGLE_NONCE_COOKIE, path: "/api/auth/google" });
       return response;
     }

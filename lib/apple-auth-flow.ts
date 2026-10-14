@@ -1,7 +1,7 @@
 import { and, eq, gt, lt } from "drizzle-orm";
 import { getDb } from "@/db";
 import { appleAuthAttempts } from "@/db/schema";
-import { sha256 } from "@/lib/auth";
+import { captureBrowserSessionProofs, sha256 } from "@/lib/auth";
 
 const APPLE_AUTH_DURATION_SECONDS = 10 * 60;
 
@@ -12,7 +12,7 @@ function opaqueToken() {
   return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/g, "");
 }
 
-export async function createAppleAuthAttempt(intent: "login" | "register", returnTo: string) {
+export async function createAppleAuthAttempt(intent: "login" | "register", returnTo: string, request: Request) {
   const db = await getDb();
   const state = opaqueToken();
   const nonce = opaqueToken();
@@ -24,6 +24,7 @@ export async function createAppleAuthAttempt(intent: "login" | "register", retur
     nonce,
     intent,
     returnTo,
+    previousSessions: await captureBrowserSessionProofs(request),
     expiresAt: new Date(now + APPLE_AUTH_DURATION_SECONDS * 1000).toISOString(),
   });
   return { state, nonce };
@@ -39,6 +40,7 @@ export async function consumeAppleAuthAttempt(state: string) {
     nonce: appleAuthAttempts.nonce,
     intent: appleAuthAttempts.intent,
     returnTo: appleAuthAttempts.returnTo,
+    previousSessions: appleAuthAttempts.previousSessions,
   });
   return rows[0] ?? null;
 }

@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { accountAppleIdentities, accountAuthEvents, accountGoogleIdentities, accountXIdentities, authSessions, users } from "@/db/schema";
-import { assertSameOrigin, createUserSession, getCurrentUser, getUserSessionCookieName, getUserSessionDuration, sessionCookieOptions, verifyPassword } from "@/lib/auth";
+import { assertSameOrigin, createUserSession, getCurrentUser, setUserSessionCookie, verifyPassword } from "@/lib/auth";
 import { revokeAppleGrantForUser } from "@/lib/apple-account";
 
 export async function POST(request: NextRequest) {
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     ]);
     // Rotate onto password access; emailVerifiedAt and original registration method are untouched.
     const response = destination("provider_unlinked");
-    response.cookies.set({ name: getUserSessionCookieName(), value: await createUserSession(user.id, request, "password"), ...sessionCookieOptions(getUserSessionDuration()) });
+    setUserSessionCookie(response, await createUserSession(user.id, request, "password"));
     return response;
   } catch { return destination("unlink_error"); }
 }

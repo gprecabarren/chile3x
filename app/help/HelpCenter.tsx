@@ -21,6 +21,7 @@ export function HelpCenter({ audience, topics, contacts, profiles = NO_PROFILES 
   const counter = useRef(0);
   const log = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
+  const revealAnswer = useRef(false);
   const selectedProfile = profiles.find(profile => profile.id === profileId);
   const categories = [...new Set(topics.map(topic => topic.category))];
   const visibleTopics = mode === "guides" && category ? topics.filter(topic => topic.category === category) : topics;
@@ -28,7 +29,10 @@ export function HelpCenter({ audience, topics, contacts, profiles = NO_PROFILES 
   const examples = audience === "account" ? ["¿Cómo cambio una foto?", "No puedo subir un video", "¿Dónde veo mis comentarios?"] : ["¿Cómo edito un anuncio?", "¿Cómo apruebo todas las fotos?", "¿Cómo publico una historia?"];
 
   useEffect(() => {
-    if (log.current) log.current.scrollTop = log.current.scrollHeight;
+    const container = log.current;
+    const last = container?.querySelector<HTMLElement>(".help-chat-turn:last-child");
+    if (container && last) container.scrollTop += last.getBoundingClientRect().top - container.getBoundingClientRect().top;
+    if (revealAnswer.current) { container?.scrollIntoView({ block: "start", behavior: "instant" }); revealAnswer.current = false; }
   }, [turns.length]);
 
   function ask(value: string, topic?: HelpTopic) {
@@ -40,11 +44,13 @@ export function HelpCenter({ audience, topics, contacts, profiles = NO_PROFILES 
     }
     const answer = topic ? { kind: "answer" as const, topics: [topic] } : helpAnswer(topics, text);
     const turn = { id: ++counter.current, question: text, answer };
+    if (topic) input.current?.blur();
+    revealAnswer.current = mode === "guides";
     setTurns(current => [...current, turn].slice(-8));
     setMode("chat");
     setQuestion("");
     setWarning("");
-    input.current?.focus({ preventScroll: true });
+    // Guide/example taps must not open the mobile keyboard or jump to the input.
   }
 
   function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); ask(question); }
@@ -59,7 +65,7 @@ export function HelpCenter({ audience, topics, contacts, profiles = NO_PROFILES 
       <img src="/help/johnny-sins.jpg" width="342" height="459" alt="Retrato de Johnny Sins utilizado para el bot de ayuda" />
     </span><div><p>BOT DE AYUDA DE CHILE3X <span className="help-beta">BETA</span></p><h2>Johnny Sins</h2><span>Hoy mi especialidad es ayudarte con tu anuncio.</span></div></header>
     <p className="help-beta-notice">{HELP_BETA_NOTICE}</p>
-    <div className="help-toolbar"><nav aria-label="Modo del centro de ayuda"><button type="button" aria-pressed={mode === "chat"} onClick={() => setMode("chat")}>Preguntar</button><button type="button" aria-pressed={mode === "guides"} onClick={() => setMode("guides")}>Explorar guías <small>{topics.length}</small></button></nav><button className="help-reset" type="button" disabled={!turns.length} onClick={() => { setTurns([]); setQuestion(""); setWarning(""); input.current?.focus(); }}>Nueva conversación</button></div>
+    <div className="help-toolbar"><nav aria-label="Modo del centro de ayuda"><button type="button" aria-pressed={mode === "chat"} onClick={() => setMode("chat")}>Preguntar</button><button type="button" aria-pressed={mode === "guides"} onClick={() => setMode("guides")}>Explorar guías <small>{topics.length}</small></button></nav><button className="help-reset" type="button" disabled={!turns.length} onClick={() => { setTurns([]); setQuestion(""); setWarning(""); input.current?.blur(); }}>Nueva conversación</button></div>
     {profiles.length > 0 && <label className="help-profile-selector">¿Sobre qué anuncio necesitas ayuda?<select value={profileId} onChange={event => setProfileId(event.target.value)}><option value="">Mis anuncios (elegir después)</option>{profiles.map(profile => <option value={profile.id} key={profile.id}>{profile.name}</option>)}</select><small>Los enlaces de las guías abrirán la sección de este anuncio. Solo aparecen tus publicaciones.</small></label>}
     {mode === "chat" && <>
       <div className="help-chat-log" ref={log} role="log" aria-label="Conversación de ayuda" aria-live="polite" aria-relevant="additions">
@@ -86,6 +92,6 @@ export function HelpCenter({ audience, topics, contacts, profiles = NO_PROFILES 
     {mode === "guides" && <nav className="help-categories" aria-label="Categorías de ayuda"><button type="button" aria-pressed={!category} onClick={() => setCategory("")}>Todas</button>{categories.map(item => <button type="button" key={item} aria-pressed={category === item} onClick={() => setCategory(item)}>{item}</button>)}</nav>}
     {(mode === "guides" || question.trim()) && <section className="help-guide-results" aria-label="Guías encontradas"><h3>{mode === "guides" ? "Guías disponibles para tu panel" : "Guías relacionadas con tu búsqueda"}</h3>{results.length ? <div>{results.slice(0, mode === "guides" ? 40 : 4).map(topic => <button type="button" key={topic.id} onClick={() => ask(`Guía: ${topic.title}`, topic)}><small>{topic.category}</small><strong>{topic.title}</strong><span>{topic.summary}</span><b>Abrir guía →</b></button>)}</div> : <p>No hay coincidencias. Prueba otra palabra o utiliza los canales de soporte.</p>}</section>}
     <aside className="help-human-support" aria-label="Soporte humano"><h3>¿No se resolvió?</h3><p>Habla con el equipo de Chile3X. La ayuda del sitio no coordina citas ni acuerdos de los anuncios.</p>{supportLinks}</aside>
-    <footer className="help-footer"><span>Guías operativas revisadas · 14 de octubre de 2026</span><span>Solo orientación: no cambia datos ni permisos.</span><span>El actor no participa en este servicio ni está afiliado a Chile3X. Foto: <a href="https://commons.wikimedia.org/wiki/File:Guy,_Ava_Lauren_at_XRCO_Awards_2007_1_(cropped).jpg" target="_blank" rel="noopener noreferrer">Luke Ford, recorte de Wikimedia Commons</a> · <a href="https://creativecommons.org/licenses/by-sa/2.5/" target="_blank" rel="noopener noreferrer">CC BY-SA 2.5</a>.</span></footer>
+    <footer className="help-footer"><span>Guías del centro de ayuda de Chile3X</span><span>Solo orientación: no cambia datos ni permisos.</span><details><summary>Créditos de imagen</summary><span>Foto de Johnny Sins: <a href="https://commons.wikimedia.org/wiki/File:Guy,_Ava_Lauren_at_XRCO_Awards_2007_1_(cropped).jpg" target="_blank" rel="noopener noreferrer">Luke Ford, recorte de Wikimedia Commons</a> · <a href="https://creativecommons.org/licenses/by-sa/2.5/" target="_blank" rel="noopener noreferrer">CC BY-SA 2.5</a>.</span></details></footer>
   </section>;
 }

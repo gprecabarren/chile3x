@@ -2,13 +2,15 @@
 /* eslint-disable @next/next/no-img-element -- ephemeral R2 stories bypass image optimization intentionally. */
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import type { PublicStory } from "@/lib/stories";
-import { activeStories, chronologicalStories, storyTimestamp } from "@/lib/story-order";
+import { activeStories, newestStories, storyTimestamp, storyUploadLabel } from "@/lib/story-order";
 
 type StoryRailProps = {
   stories: PublicStory[];
   city?: string;
   profileOnly?: boolean;
+  compactRegion?: boolean;
 };
 
 type StoryGroup = { profileId: string; profileSlug: string; profileHandle: string | null; profileName: string; profileImageUrl: string | null; city: string; stories: PublicStory[] };
@@ -38,7 +40,7 @@ function groupStories(stories: PublicStory[]) {
     if (group) group.stories.push(story);
     else groups.set(story.profileId, { profileId: story.profileId, profileSlug: story.profileSlug, profileHandle: story.profileHandle, profileName: story.profileName, profileImageUrl: story.profileImageUrl, city: story.city, stories: [story] });
   }
-  return [...groups.values()].map((group) => ({ ...group, stories: chronologicalStories(group.stories) }));
+  return [...groups.values()].map((group) => ({ ...group, stories: newestStories(group.stories) }));
 }
 
 function useActiveStories(stories: PublicStory[]) {
@@ -58,6 +60,8 @@ function StoryViewer({ group: initialGroup, startAt, onClose, onViewed }: { grou
   const [loadedId, setLoadedId] = useState<string | null>(null);
   const [failedId, setFailedId] = useState<string | null>(null);
   const [paused, setPaused] = useState(false);
+  const [clock, setClock] = useState({ id: "", elapsed: 0, total: 7000 });
+  const elapsed = useRef({ id: "", value: 0 });
   const panelRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const story = group.stories[index];
@@ -74,11 +78,17 @@ function StoryViewer({ group: initialGroup, startAt, onClose, onViewed }: { grou
 
   useEffect(() => {
     if (!ready || paused || story.storyType === "video") return;
-    const timeout = window.setTimeout(() => {
-      if (index < group.stories.length - 1) setIndex((value) => value + 1);
-      else onClose();
-    }, story.storyType === "image" ? 6_000 : 7_000);
-    return () => window.clearTimeout(timeout);
+    if (elapsed.current.id !== story.id) elapsed.current = { id: story.id, value: 0 };
+    let lastTick = Date.now();
+    const timer = window.setInterval(() => {
+      const now = Date.now(); elapsed.current.value += now - lastTick; lastTick = now;
+      setClock({ id: story.id, elapsed: Math.min(7000, elapsed.current.value), total: 7000 });
+      if (elapsed.current.value >= 7000) {
+        window.clearInterval(timer);
+        if (index < group.stories.length - 1) setIndex(value => value + 1); else onClose();
+      }
+    }, 100);
+    return () => window.clearInterval(timer);
   }, [group.stories.length, index, onClose, ready, paused, story.id, story.storyType]);
 
   useEffect(() => {
@@ -92,7 +102,7 @@ function StoryViewer({ group: initialGroup, startAt, onClose, onViewed }: { grou
     const previous = document.activeElement as HTMLElement | null;
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    panelRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    panelRef.current?.querySelector<HTMLButtonElement>("button")?.focus({ preventScroll: true });
     function trapFocus(event: KeyboardEvent) {
       if (event.key !== "Tab") return;
       const elements = [...(panelRef.current?.querySelectorAll<HTMLElement>("a[href],button:not([disabled])") ?? [])];
@@ -103,7 +113,7 @@ function StoryViewer({ group: initialGroup, startAt, onClose, onViewed }: { grou
     const visibility = () => { if (document.hidden) setPaused(true); };
     document.addEventListener("visibilitychange", visibility);
     window.addEventListener("keydown", trapFocus);
-    return () => { document.body.style.overflow = overflow; previous?.focus(); document.removeEventListener("visibilitychange", visibility); window.removeEventListener("keydown", trapFocus); };
+    return () => { document.body.style.overflow = overflow; previous?.focus({ preventScroll: true }); document.removeEventListener("visibilitychange", visibility); window.removeEventListener("keydown", trapFocus); };
   }, []);
 
   useEffect(() => {
@@ -116,21 +126,23 @@ function StoryViewer({ group: initialGroup, startAt, onClose, onViewed }: { grou
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [group.stories.length, onClose]);
 
-  return <div className="story-viewer" role="dialog" aria-modal="true" aria-label={`Historia de ${group.profileName}`}>
+  const progress = clock.id === story.id ? Math.min(1, clock.elapsed / clock.total) : 0;
+  const remaining = Math.max(0, Math.ceil((clock.id === story.id ? clock.total - clock.elapsed : 7000) / 1000));
+  return createPortal(<div className="story-viewer" role="dialog" aria-modal="true" aria-label={`Historia de ${group.profileName}`}>
     <div className="story-viewer-panel" ref={panelRef}>
-      <div className="story-viewer-progress" aria-hidden="true">{group.stories.map((item, itemIndex) => <span className={itemIndex <= index ? "is-complete" : ""} key={item.id} />)}</div>
-      <header><div><b>{group.profileName}</b><span>{group.city} · {storyTimeLabel(story.expiresAt)}</span></div><button type="button" onClick={onClose} aria-label="Cerrar historia">×</button></header>
-      <div className="story-viewer-toolbar"><a className="story-viewer-profile-link" href={profileHref(group)}>Ver anuncio</a><button type="button" onClick={() => setPaused((value) => !value)} aria-pressed={paused}>{paused ? "Continuar" : "Pausar"}</button><small>{index + 1}/{group.stories.length}</small></div>
-      <div className={`story-viewer-content story-viewer-${story.storyType}`}>{story.storyType === "video" && story.imageUrl ? <video key={story.id} ref={videoRef} data-story-id={story.id} src={story.imageUrl} controls playsInline autoPlay muted preload="metadata" aria-label={`Historia de video de ${group.profileName}`} onLoadedData={() => setLoadedId(story.id)} onPlay={() => setPaused(false)} onPause={() => { if (videoRef.current?.dataset.storyId === story.id) setPaused(true); }} onEnded={() => index < group.stories.length - 1 ? setIndex(value => value + 1) : onClose()} onError={() => setFailedId(story.id)} /> : story.storyType === "image" && story.imageUrl ? <img key={story.id} src={story.imageUrl} alt={`Historia de ${group.profileName}`} onLoad={() => setLoadedId(story.id)} onError={() => setFailedId(story.id)} /> : <p>{story.body}</p>}{failedId === story.id && <p className="story-image-error" role="status">No se pudo cargar {story.storyType === "video" ? "este video" : "esta foto"}. Revisa la conexión o pasa a la siguiente historia.</p>}{story.storyType !== "text" && story.body && <span>{story.body}</span>}</div>
+      <div className="story-viewer-progress" aria-hidden="true">{group.stories.map((item, itemIndex) => <span key={item.id}><i style={{ width: `${(itemIndex < index ? 1 : itemIndex === index ? progress : 0) * 100}%` }} /></span>)}</div>
+      <header><div><b>{group.profileName}</b><span>{group.city} · {storyTimeLabel(story.expiresAt)}</span><time dateTime={story.createdAt}>Subida: {storyUploadLabel(story.createdAt)} · hora de Chile</time></div><button type="button" onClick={onClose} aria-label="Cerrar historia">×</button></header>
+      <div className="story-viewer-toolbar"><a className="story-viewer-profile-link" href={profileHref(group)}>Ver anuncio</a><button type="button" onClick={() => setPaused((value) => !value)} aria-pressed={paused}>{paused ? "Continuar" : "Pausar"}</button><span className="story-countdown" aria-label={`Tiempo restante: ${remaining} segundos`}><span aria-hidden="true">◷</span> {ready ? `${remaining} s` : "Cargando…"}</span><small>{index + 1}/{group.stories.length}</small></div>
+      <div className={`story-viewer-content story-viewer-${story.storyType}`}>{story.storyType === "video" && story.imageUrl ? <video key={story.id} ref={videoRef} data-story-id={story.id} src={story.imageUrl} controls playsInline autoPlay muted preload="metadata" aria-label={`Historia de video de ${group.profileName}`} onLoadedMetadata={event => { const duration = event.currentTarget.duration; if (Number.isFinite(duration) && duration > 0) setClock({ id: story.id, elapsed: 0, total: duration * 1000 }); }} onTimeUpdate={event => { const video = event.currentTarget; if (Number.isFinite(video.duration) && video.duration > 0) setClock({ id: story.id, elapsed: video.currentTime * 1000, total: video.duration * 1000 }); }} onLoadedData={() => setLoadedId(story.id)} onPlay={() => setPaused(false)} onPause={() => { if (videoRef.current?.dataset.storyId === story.id) setPaused(true); }} onEnded={() => index < group.stories.length - 1 ? setIndex(value => value + 1) : onClose()} onError={() => setFailedId(story.id)} /> : story.storyType === "image" && story.imageUrl ? <img key={story.id} src={story.imageUrl} alt={`Historia de ${group.profileName}`} onLoad={() => setLoadedId(story.id)} onError={() => setFailedId(story.id)} /> : <p>{story.body}</p>}{failedId === story.id && <p className="story-image-error" role="status">No se pudo cargar {story.storyType === "video" ? "este video" : "esta foto"}. Revisa la conexión o pasa a la siguiente historia.</p>}{story.storyType !== "text" && story.body && <span>{story.body}</span>}</div>
       <button className="story-viewer-previous" type="button" onClick={() => setIndex((value) => Math.max(0, value - 1))} disabled={index === 0} aria-label="Historia anterior">‹</button>
       <button className="story-viewer-next" type="button" onClick={() => index < group.stories.length - 1 ? setIndex((value) => value + 1) : onClose()} aria-label="Historia siguiente">›</button>
     </div>
-  </div>;
+  </div>, document.body);
 }
 
 function StoryActivityPanel({ stories }: { stories: PublicStory[] }) {
   const [visible, setVisible] = useState(8);
-  const activity = useMemo(() => chronologicalStories(stories.filter((story) => story.storyType === "text" && story.body.trim())).reverse(), [stories]);
+  const activity = useMemo(() => newestStories(stories.filter((story) => story.storyType === "text" && story.body.trim())), [stories]);
   if (!activity.length) return null;
   return <aside id="directory-activity" className="story-activity-panel" aria-label="Última actividad">
     <header><h2>Última actividad</h2><span>24 h</span></header>
@@ -139,9 +151,9 @@ function StoryActivityPanel({ stories }: { stories: PublicStory[] }) {
   </aside>;
 }
 
-export function StoryRail({ stories, city, profileOnly = false }: StoryRailProps) {
+export function StoryRail({ stories, city, profileOnly = false, compactRegion = false }: StoryRailProps) {
   const active = useActiveStories(stories);
-  const groups = useMemo(() => groupStories(profileOnly ? active : active.filter((story) => story.storyType !== "text")), [active, profileOnly]);
+  const groups = useMemo(() => groupStories(active), [active]);
   const [seenIds, setSeenIds] = useState<string[]>([]);
   const [open, setOpen] = useState<{ group: StoryGroup; index: number } | null>(null);
   const close = useCallback(() => setOpen(null), []);
@@ -159,16 +171,12 @@ export function StoryRail({ stories, city, profileOnly = false }: StoryRailProps
   }, []);
 
   const orderedGroups = useMemo(() => {
-    const seen = new Set(seenIds);
     return [...groups].sort((first, second) => {
-      const firstHasNew = first.stories.some((story) => !seen.has(story.id));
-      const secondHasNew = second.stories.some((story) => !seen.has(story.id));
-      if (firstHasNew !== secondHasNew) return firstHasNew ? -1 : 1;
-      const firstLatest = first.stories.at(-1)?.createdAt ?? "";
-      const secondLatest = second.stories.at(-1)?.createdAt ?? "";
+      const firstLatest = first.stories[0]?.createdAt ?? "";
+      const secondLatest = second.stories[0]?.createdAt ?? "";
       return storyTimestamp(secondLatest) - storyTimestamp(firstLatest) || first.profileId.localeCompare(second.profileId);
     });
-  }, [groups, seenIds]);
+  }, [groups]);
 
   const markStorySeen = useCallback((storyId: string) => {
     setSeenIds((current) => {
@@ -180,17 +188,16 @@ export function StoryRail({ stories, city, profileOnly = false }: StoryRailProps
   }, []);
 
   function openGroup(group: StoryGroup) {
-    setOpen({ group, index: Math.max(0, group.stories.findIndex((story) => !seenIds.includes(story.id))) });
+    setOpen({ group, index: 0 });
   }
 
   if (!groups.length) return null;
   const title = profileOnly ? "Historias activas" : city ? `Historias en ${city}` : "Actualizaciones de Chile";
   const description = profileOnly ? "Actualizaciones visibles durante 24 horas." : city ? `Actualizaciones de publicaciones en ${city}, visibles con o sin cuenta durante 24 horas.` : "Historias recientes del directorio nacional, visibles con o sin cuenta.";
-  return <section className={`story-rail story-rail-compact${profileOnly ? " story-rail-profile" : ""}`} aria-label={title}>
+  return <section className={`story-rail story-rail-compact${profileOnly ? " story-rail-profile" : ""}${compactRegion ? " story-rail-region" : ""}`} aria-label={title}>
     <div className="story-rail-heading"><h2>{title}</h2><span>24 h</span></div><p className="sr-only">{description}</p>
     <div className="story-bubble-list">{orderedGroups.map((group) => {
-      const cover = [...group.stories].reverse().find((story) => story.storyType === "image");
-      const avatar = cover?.imageUrl ?? group.profileImageUrl;
+      const avatar = group.profileImageUrl;
       const viewed = group.stories.every((story) => seenIds.includes(story.id));
       return <div className="story-bubble-card" key={group.profileId}><button className={`story-bubble${viewed ? " is-viewed" : ""}`} type="button" onClick={() => openGroup(group)} aria-label={`Ver historias de ${group.profileName}${viewed ? ", ya vistas" : ""}`}><span className={`story-bubble-avatar${avatar ? " has-image" : ""}`}>{avatar ? <img src={avatar} alt="" loading="lazy" /> : group.profileName.slice(0, 1)}</span><strong>{group.profileName}</strong>{!profileOnly && !city && <small>{group.city}</small>}</button></div>;
     })}</div>

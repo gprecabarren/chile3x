@@ -1,7 +1,8 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { getDb } from "@/db";
 import {
   accountDeletionHistory,
+  dataDeletionJobs,
   exclusiveContentCollections,
   exclusiveContentMedia,
   profileMedia,
@@ -53,6 +54,8 @@ export async function permanentlyDeleteAccount(userId: string, actor: AccountDel
   ]);
   const objectKeys = [...publicObjects, ...storyObjects, ...verificationObjects, ...reportObjects, ...exclusiveObjects]
     .map((item) => item.key).filter((key): key is string => Boolean(key));
+  const fileJobs=[];
+  for(let start=0;start<objectKeys.length;start+=40)fileJobs.push(db.insert(dataDeletionJobs).values(objectKeys.slice(start,start+40).map(r2Key=>({id:crypto.randomUUID(),r2Key}))).onConflictDoNothing({target:dataDeletionJobs.r2Key}));
 
   const historyId = `account_deletion_${crypto.randomUUID()}`;
   const historyStatement = db.insert(accountDeletionHistory).values({
@@ -68,6 +71,7 @@ export async function permanentlyDeleteAccount(userId: string, actor: AccountDel
   if (telegramJob) {
     await db.batch([
       historyStatement,
+      ...fileJobs,
       db.insert(telegramOutboxJobs).values(telegramJob),
       db.delete(profiles).where(eq(profiles.ownerId, userId)),
       db.delete(users).where(eq(users.id, userId)),
@@ -77,6 +81,7 @@ export async function permanentlyDeleteAccount(userId: string, actor: AccountDel
   } else {
     await db.batch([
       historyStatement,
+      ...fileJobs,
       db.delete(profiles).where(eq(profiles.ownerId, userId)),
       db.delete(users).where(eq(users.id, userId)),
       db.delete(messageConversations).where(and(isNull(messageConversations.visitorUserId), isNull(messageConversations.ownerUserId))),
@@ -90,6 +95,7 @@ export async function permanentlyDeleteAccount(userId: string, actor: AccountDel
         for (let start = 0; start < objectKeys.length; start += 1000) {
           await env.MEDIA.delete(objectKeys.slice(start, start + 1000));
         }
+        for(let start=0;start<objectKeys.length;start+=40)await db.delete(dataDeletionJobs).where(inArray(dataDeletionJobs.r2Key,objectKeys.slice(start,start+40)));
       }
     } catch (error) {
       // The database rows are already gone, so an orphaned object cannot be

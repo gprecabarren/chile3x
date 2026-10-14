@@ -14,6 +14,7 @@ import { MessageNotifications, PendingReviewsNotice, UnreadMessagesBadge, Unread
 
 function AccountNavigation({ user, helpEnabled }: { user: AccountUser; helpEnabled: boolean }) {
   return <nav aria-label="Navegación de cuenta">
+    <AccountNavigationLink className="account-navigation-home" href="/mi-cuenta">Mi cuenta</AccountNavigationLink>
     <AccountNavigationLink href="/mi-cuenta#mis-anuncios">Mis anuncios</AccountNavigationLink>
     <AccountNavigationLink className="account-messages-link" href="/mi-cuenta/mensajes">Mensajes<UnreadMessagesBadge /></AccountNavigationLink>
     <AccountNavigationLink href="/mi-cuenta/contenido">Mi contenido</AccountNavigationLink>

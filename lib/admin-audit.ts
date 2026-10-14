@@ -21,6 +21,10 @@ export const ADMIN_AUDIT_CATEGORIES = {
 } as const;
 
 export const ADMIN_AUDIT_ACTIONS = {
+  "help.guide_create": "Creó una guía de ayuda",
+  "help.guide_update": "Editó una guía de ayuda",
+  "help.guide_delete": "Retiró una guía de ayuda",
+  "help.guide_restore": "Restauró una guía de ayuda",
   "forum.section_create": "Creó una sección del foro",
   "forum.section_update": "Editó o archivó una sección del foro",
   "forum.topic_create": "Creó un tema del foro",
@@ -50,6 +54,7 @@ export const ADMIN_AUDIT_ACTIONS = {
   "profile.details_update": "Editó los datos de un anuncio",
   "story.create": "Publicó una historia para un anunciante",
   "story.delete": "Eliminó una historia de un anunciante",
+  "story.qa_retime": "Varió los minutos ficticios de historias QA",
   "qa.profile_configure": "Preparó campos de un anuncio ficticio para QA",
   "qa.profile_restore": "Restauró los datos originales de un anuncio pendiente",
   "profile.status_update": "Cambió estados de un anuncio",

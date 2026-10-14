@@ -186,6 +186,7 @@ export default async function Home() {
               <ul className="commune-list" aria-label={`Ciudades de ${region.displayTitle}`}>
                 {region.cities.map((city) => <li key={city}><Link href={`/escorts/${city.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}>{city} <span className="city-count">({cityEscortCounts.get(city) ?? 0})</span></Link></li>)}
               </ul>
+              <StoryRail stories={stories.filter(story => story.region === region.title)} city={region.shortTitle} compactRegion />
             </section>
           ))}
         </div>

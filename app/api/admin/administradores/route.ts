@@ -5,6 +5,7 @@ import { adminGithubAccess, adminGithubIdentities, users } from "@/db/schema";
 import { recordAdminAudit } from "@/lib/admin-audit";
 import { ADMIN_ACCESS_LEVELS, adminHasCapability, isAdminAccessLevel } from "@/lib/admin-permissions";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
+import { hasPublicAccountEmail } from "@/lib/admin-email";
 
 const ASSIGNABLE_LEVELS = ADMIN_ACCESS_LEVELS.filter((level) => level !== "owner");
 
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
   if (existing?.isProtectedOwner) return destination(request, "protected");
   if (existing?.isActive) return destination(request, "duplicate");
   if (publicAccountConflict) return destination(request, "email_conflict");
+  if (await hasPublicAccountEmail(protectedEmail)) return destination(request, "email_conflict");
   if (reservedGrant && reservedGrant.id !== existing?.id) return destination(request, "email_duplicate");
   if (reservedIdentity && (reservedIdentity.userId !== existing?.userId || reservedIdentity.githubLogin !== githubLogin)) {
     return destination(request, "email_duplicate");

@@ -1,0 +1,6 @@
+import { AdminPageHeading,AdminShell } from "@/app/admin/_components";
+import { requireForumAdmin } from "@/lib/forum";
+import { getForumRules } from "@/lib/forum-community";
+import { ForumNavigation,ForumDate } from "../_components";
+import { ForumForm } from "../ForumForm";
+export default async function ForumRulesPage(){const admin=await requireForumAdmin(),rules=await getForumRules();return <AdminShell user={admin}><div className="admin-content forum-root"><AdminPageHeading title="Normas del foro" eyebrow="FORO · CONVIVENCIA" description="Normas versionadas para la beta privada. Su actualización requiere nueva confirmación antes de publicar." backHref="/foro" /><ForumNavigation /><section className="forum-card"><p>Actualización: <ForumDate value={rules.updatedAt} /></p><div className="forum-plain-text">{rules.rules}</div><details><summary>Editar normas generales</summary><ForumForm label="Actualizar normas"><input name="action" type="hidden" value="rules_update" /><input name="version" type="hidden" value={rules.version} /><label>Normas<textarea name="reglas" required maxLength={8000} rows={16} defaultValue={rules.rules} /></label><p>No se admiten garantías falsas ni excepciones para publicar información privada.</p></ForumForm></details></section></div></AdminShell>;}

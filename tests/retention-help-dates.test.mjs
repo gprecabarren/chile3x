@@ -38,6 +38,7 @@ function retainedFixture(beforeBatch) {
  CREATE TABLE account_deletion_history(id TEXT PRIMARY KEY,deleted_at TEXT);
  CREATE TABLE operational_events(id TEXT PRIMARY KEY,created_at TEXT);
  CREATE TABLE site_settings(key TEXT PRIMARY KEY,value TEXT,updated_at TEXT);`);
+ db.exec(`CREATE TABLE forum_posts(id TEXT PRIMARY KEY,topic_id TEXT,trashed_at TEXT);CREATE TABLE forum_topics(id TEXT PRIMARY KEY,trashed_at TEXT);CREATE TABLE forum_attachments(id TEXT PRIMARY KEY,r2_key TEXT,post_id TEXT,deleted_at TEXT,moderation_status TEXT,reviewed_at TEXT);CREATE TABLE forum_reports(id TEXT PRIMARY KEY,status TEXT,resolved_at TEXT);CREATE TABLE forum_notifications(id TEXT PRIMARY KEY,created_at TEXT);CREATE TABLE forum_rate_limits(key TEXT PRIMARY KEY,updated_at TEXT)`);
  for(const table of ['auth_sessions','account_tokens','auth_session_completions','apple_auth_attempts','apple_registration_intents','google_registration_intents','x_auth_attempts','x_registration_intents'])db.exec(`CREATE TABLE ${table}(id TEXT PRIMARY KEY,expires_at TEXT)`);
  return {db,DB:binding(db,()=>beforeBatch?.(db))};
 }
@@ -78,6 +79,29 @@ test('stale retention reads cannot erase replaced documents or reopened reports'
   await retention.purgeRetainedData({DB},now);
   assert.equal(db.prepare('SELECT r2_key FROM profile_verification_files').get().r2_key,'private/replaced');
   assert.equal(db.prepare('SELECT status FROM profile_reports').get().status,'pending');assert.equal(db.prepare('SELECT count(*) n FROM data_deletion_jobs').get().n,0);
+ }finally{db.close();}
+});
+test('forum retention removes only retired files, old own notifications and closed unheld reports',async()=>{
+ const {db,DB}=retainedFixture();try{
+  db.exec(`INSERT INTO forum_topics VALUES('active',NULL),('trash','2026-01-01');
+   INSERT INTO forum_posts VALUES('p','active',NULL),('pt','trash',NULL);
+   INSERT INTO forum_attachments VALUES('deleted','forum/deleted','p','2026-01-01','approved',NULL),('rejected','forum/rejected','p',NULL,'rejected','2026-01-01'),('parent','forum/parent','pt',NULL,'approved',NULL),('held','forum/held','p','2026-01-01','approved',NULL),('new','forum/new','p','2027-11-30','approved',NULL),('active','forum/active','p',NULL,'approved',NULL);
+   INSERT INTO data_retention_holds VALUES('fh','forum_attachment','held'),('rh','forum_report','held-report');
+   INSERT INTO forum_reports VALUES('closed','resolved','2026-01-01'),('open','open',NULL),('held-report','dismissed','2026-01-01');
+   INSERT INTO forum_notifications VALUES('old','2026-01-01'),('new','2027-11-30');
+   INSERT INTO forum_rate_limits VALUES('old','2026-01-01'),('new','2027-11-30T18:00:00Z');`);
+  await retention.purgeRetainedData({DB},now);
+  assert.deepEqual(db.prepare('SELECT id FROM forum_attachments ORDER BY id').all().map(x=>x.id),['active','held','new']);
+  assert.deepEqual(db.prepare('SELECT r2_key FROM data_deletion_jobs ORDER BY r2_key').all().map(x=>x.r2_key),['forum/deleted','forum/parent','forum/rejected']);
+  assert.deepEqual(db.prepare('SELECT id FROM forum_reports ORDER BY id').all().map(x=>x.id),['held-report','open']);
+  assert.deepEqual(db.prepare('SELECT id FROM forum_notifications').all().map(x=>x.id),['new']);
+  assert.deepEqual(db.prepare('SELECT key FROM forum_rate_limits').all().map(x=>x.key),['new']);
+ }finally{db.close();}
+});
+test('a file restored after retention selection cannot be removed or queued',async()=>{
+ let calls=0;const {db,DB}=retainedFixture(sqlite=>{if(++calls===2)sqlite.exec("UPDATE forum_attachments SET deleted_at=NULL WHERE id='restored'");});
+ try{db.exec("INSERT INTO forum_topics VALUES('t',NULL);INSERT INTO forum_posts VALUES('p','t',NULL);INSERT INTO forum_attachments VALUES('restored','forum/restored','p','2026-01-01','approved',NULL)");
+  await retention.purgeRetainedData({DB},now);assert.equal(db.prepare('SELECT count(*) n FROM forum_attachments').get().n,1);assert.equal(db.prepare('SELECT count(*) n FROM data_deletion_jobs').get().n,0);
  }finally{db.close();}
 });
 test('persisted help filters private, draft, tester and malformed guides before serialization',async()=>{

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { MediaVideo } from "@/app/MediaVideo";
 import Image from "next/image";
+import { publicProfileAge } from "@/lib/profile-age";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
@@ -162,6 +163,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   const agencyMembers = profile.type === "agency" ? relatedProfiles : [];
   const coverImage = profile.media.find((media) => media.mediaType === "image" && media.isProfilePhoto) ?? profile.media.find((media) => media.mediaType === "image");
   const exclusiveMedia = exclusiveContent.media;
+  const age = publicProfileAge(profile.type,profile.details.metadata);
   const hasExclusiveAccess = exclusiveMedia.length > 0 && exclusiveContent.hasAccess;
   const travel = profile.type === "escort" && profile.details.metadata.travel_city && profile.details.metadata.travel_start && profile.details.metadata.travel_end ? {
     city: profile.details.metadata.travel_city,
@@ -185,7 +187,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
         <div className={`profile-page-visual${coverImage ? " has-image" : ""}`}>{coverImage ? <><ProfilePhotoLink className="profile-cover-photo-trigger" mediaId={coverImage.id} href={coverImage.url} aria-label={`Ampliar foto principal de ${profile.displayName}`}><Image className="profile-page-cover" src={coverImage.url} alt={coverImage.altText ?? `Foto de ${profile.displayName}`} fill priority unoptimized sizes="(max-width: 900px) 100vw, 45vw" style={{ objectFit: "scale-down" }} /></ProfilePhotoLink><ProfilePhotoLink className="profile-full-photo-link" mediaId={coverImage.id} href={coverImage.url}>Ver foto completa ⤢</ProfilePhotoLink></> : <span>{profile.displayName.slice(0, 1)}</span>}{stories.length > 0 && <span className="profile-story-photo-marker" aria-hidden="true" />}</div>
         <div className="profile-page-summary">
           <p className="eyebrow">{profileTypeLabel(profile.type).toUpperCase()} · {profile.city.toUpperCase()}</p>
-          <div className="profile-page-title"><h1>{profile.displayName}</h1>{profile.verificationStatus === "reviewed" && profile.type === "escort" && <ProfileVerificationBadge displayName={profile.displayName} imageUrl={coverImage?.url ?? null} verifiedAt={profile.verifiedAt} />}{profile.isOnline && <span className="profile-online-badge profile-online-badge-large"><i aria-hidden="true" />Online</span>}</div>
+          <div className="profile-page-title"><h1>{profile.displayName}{age!==null&&<small className="profile-heading-age" aria-label={`${age} años`}>, {age}</small>}</h1>{profile.verificationStatus === "reviewed" && profile.type === "escort" && <ProfileVerificationBadge displayName={profile.displayName} imageUrl={coverImage?.url ?? null} verifiedAt={profile.verifiedAt} />}{profile.isOnline && <span className="profile-online-badge profile-online-badge-large"><i aria-hidden="true" />Online</span>}</div>
           {profile.handle && <p className="profile-public-handle">@{profile.handle}</p>}
           <p className="profile-page-location"><Link href={getCityPath(profile.city)}>{location}</Link></p>
           <div className="public-tag-row">{tags.map((tag) => <span key={tag} className={`public-tag ${tag.toLowerCase().replaceAll(" ", "-")}`}>{tag}</span>)}</div>

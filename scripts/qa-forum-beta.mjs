@@ -10,7 +10,9 @@ const db=new DatabaseSync(resolve('.wrangler/visual-state/v3/d1/miniflare-D1Data
 db.exec('PRAGMA foreign_keys=ON');
 const read=(path,cookie)=>fetch(base+path,{headers:{...(cookie?{cookie}:{}),authorization:'qa-local-cache-bypass'},redirect:'manual'});
 const send=(fields,cookie=fixture.adminCookie,origin=base)=>fetch(base+'/api/admin/foro',{method:'POST',headers:{cookie,origin,accept:'application/json','content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams(fields),redirect:'manual'});
-async function save(fields){const result=await send(fields);const body=await result.json();assert.equal(result.status,200,JSON.stringify(body));return body.redirectTo;}
+function resetRate(){for(const kind of ['write','publish','report'])db.prepare('DELETE FROM forum_rate_limits WHERE key=?').run(`${fixture.admin}:${kind}`);}
+const withRules=fields=>({...fields,...(['topic_create','post_create'].includes(fields.action)?{rules_version:db.prepare("SELECT version FROM forum_settings WHERE id='global'").get().version,rules_ack:'yes'}:{})});
+async function save(fields){resetRate();const result=await send(withRules(fields));const body=await result.json();assert.equal(result.status,200,JSON.stringify(body));return body.redirectTo;}
 const sections=()=>db.prepare('SELECT * FROM forum_sections WHERE id=?').get(fixture.forumSectionId);
 const topic=()=>db.prepare('SELECT * FROM forum_topics WHERE id=?').get(fixture.forumTopicId);
 const moderate=(changes={})=>({action:'topic_update',id:fixture.forumTopicId,version:topic().updated_at,titulo:topic().title,seccion:topic().section_id,...changes});
@@ -34,7 +36,7 @@ try{
     db.prepare('UPDATE admin_github_access SET access_level=? WHERE user_id=?').run('moderator',fixture.admin);
     try{assert.equal((await send({action:'section_create'})).status,403);assert.ok([302,303,307].includes((await read('/foro',fixture.adminCookie)).status));}
     finally{db.prepare('UPDATE admin_github_access SET access_level=? WHERE user_id=?').run('administrator',fixture.admin);}
-    assert.equal((await send({action:'topic_create',seccion:'foro_normas',titulo:'x',texto:'x'.repeat(6001)})).status,400);
+    assert.equal((await send(withRules({action:'topic_create',seccion:'foro_normas',titulo:'x',texto:'x'.repeat(6001)}))).status,400);resetRate();
     assert.equal((await send({action:'not_valid'})).status,400);
     assert.equal((await send({action:'section_create',grupo:'QA',nombre:'QA',descripcion:'',reglas:'',orden:'-1'})).status,400);
     await save({action:'section_create',grupo:'Pruebas locales',nombre:fixture.prefix,descripcion:'Sección desechable de QA.',reglas:'Solo datos ficticios.',orden:'1'});
@@ -50,7 +52,7 @@ try{
     const replyPath=await save({action:'post_create',tema:fixture.forumTopicId,texto:'Respuesta de QA local.'});fixture.forumPostId=replyPath.split('#')[1];
     const oldVersion=topic().updated_at;
     await save(moderate({fijado:'on',cerrado:'on'}));
-    assert.equal((await send({action:'post_create',tema:fixture.forumTopicId,texto:'No debe guardarse'})).status,409);
+    resetRate();assert.equal((await send(withRules({action:'post_create',tema:fixture.forumTopicId,texto:'No debe guardarse'}))).status,409);
     assert.equal((await send({...moderate(),version:oldVersion})).status,409);
     await save(moderate({papelera:'on'}));assert.ok(topic().trashed_at);
     await save(moderate());assert.equal(topic().trashed_at,null);
@@ -61,7 +63,7 @@ try{
     await save({action:'post_update',id:post.id,version,texto:'Respuesta recuperada local.'});
     const section=sections();
     await save({action:'section_update',id:section.id,version:section.updated_at,grupo:'Pruebas locales',nombre:section.title,descripcion:section.description,reglas:section.rules,orden:'2',archivada:'on'});
-    assert.equal((await send({action:'post_create',tema:fixture.forumTopicId,texto:'No debe guardarse'})).status,409);
+    resetRate();assert.equal((await send(withRules({action:'post_create',tema:fixture.forumTopicId,texto:'No debe guardarse'}))).status,409);
     const archived=sections();await save({action:'section_update',id:archived.id,version:archived.updated_at,grupo:'Pruebas locales',nombre:archived.title,descripcion:archived.description,reglas:archived.rules,orden:'2'});
     const audits=db.prepare("SELECT action,after_data,metadata FROM admin_audit_logs WHERE actor_user_id=? AND category='forum'").all(fixture.admin);
     for(const action of ['section_create','section_update','topic_create','topic_update','post_create','post_update'])assert.ok(audits.some(row=>row.action===`forum.${action}`));

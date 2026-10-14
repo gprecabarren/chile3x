@@ -1,6 +1,6 @@
 # Actualización formal de privacidad y términos
 
-Versión pública 2026.10.14.2, conservando estructura, índice y estilo de las páginas.
+Versión pública 2026.10.14.3, conservando estructura, índice y estilo de las páginas.
 
 Cambios: historias de los tres tipos con vencimiento público a las 24 horas y limpieza programada; límites reales de fotos y videos; opciones de preparación y almacenamiento final; separación de moderación de archivos/anuncio; previsualización privada; edición y publicación de historias por administración; auditoría sin duplicación de documentos o cuerpos temporales; métodos federados y desvinculación; bot de búsqueda local y sin generación externa; foro privado; distinción anunciante/equipo en WhatsApp; alcance informativo del resumen 24/7; seudonimización de identidad del chat sin prometer anonimización de texto libre.
 
@@ -33,6 +33,10 @@ contractuales ni asumir que corresponden a Chile3X.
 | Diagnósticos propios | 30 días |
 | Sesión vencida | Hasta 30 días después del vencimiento; tokens de cuenta vencidos, hasta siete días |
 | Constancia seudonimizada de eliminación de cuenta | 180 días |
+| Adjuntos retirados/rechazados del foro, o con mensaje/tema en papelera | 30 días en ese estado |
+| Avisos internos del foro | 90 días |
+| Denuncias cerradas del foro | 180 días desde la decisión |
+| Contadores de frecuencia del foro | Un día sin actividad |
 
 Aviso de transición de 30 días: ejecución de nuevos plazos no temporales desde
 el **13 de noviembre de 2026, 09:00 hora de Chile**. No se borran cargas
@@ -45,6 +49,12 @@ La eliminación de documentos/reportes registra atómicamente trabajos de borrad
 de sus objetos. Si R2 falla, la cola durable conserva solo las claves necesarias
 para reintentar y ya no deja disponible el contenido mediante el registro
 operativo. La eliminación expresa de cuenta usa la misma protección.
+
+La versión .3 incorpora normas versionadas, declaración de derechos y
+consentimiento de adjuntos, seguimiento y avisos internos propios, denuncias y
+rectificación del foro beta. Sigue privado y no transfiere estos datos a un
+proveedor de foros. Sus adjuntos usan el mismo mecanismo de borrado durable;
+temas y textos no reciben un plazo fijo nuevo sin evaluar su uso administrativo.
 
 Los respaldos automáticos de D1 pueden conservar versiones durante
 [7 o 30 días según el plan](https://developers.cloudflare.com/d1/reference/time-travel/).

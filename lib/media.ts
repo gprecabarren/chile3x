@@ -2,7 +2,7 @@ import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { MAX_IMAGE_UPLOAD_BYTES } from "@/lib/image-upload-policy";
 import { MAX_PREPARED_VIDEO_BYTES } from "@/lib/video-policy";
-import { exclusiveContentMedia, newsMedia, profileMedia, profileReportEvidence, profileStatuses, profileVerificationFiles, profiles, sponsors, users } from "@/db/schema";
+import { exclusiveContentMedia, forumAttachments, newsMedia, profileMedia, profileReportEvidence, profileStatuses, profileVerificationFiles, profiles, sponsors, users } from "@/db/schema";
 
 export const MAX_IMAGES_PER_PROFILE = 10;
 export const MAX_IMAGE_BYTES = MAX_IMAGE_UPLOAD_BYTES;
@@ -91,6 +91,7 @@ export async function getMediaUsage() {
   // that owns an object so the quota warning stays meaningful as features
   // such as reports and stories are used.
   const totals = await Promise.all([
+    db.select({bytes:sql<number>`coalesce(sum(${forumAttachments.byteSize}),0)`,files:sql<number>`count(*)`}).from(forumAttachments),
     // New exclusive media lives in exclusiveContentMedia. Ignore historical
     // profile-exclusive rows here so migrated R2 objects are not counted twice.
     db.select({ bytes: sql<number>`coalesce(sum(${profileMedia.byteSize}), 0)`, files: sql<number>`count(*)` }).from(profileMedia).where(eq(profileMedia.visibility, "public")),

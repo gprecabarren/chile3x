@@ -21,6 +21,15 @@ export const ADMIN_AUDIT_CATEGORIES = {
 } as const;
 
 export const ADMIN_AUDIT_ACTIONS = {
+  "forum.rules_update": "Actualizó las normas del foro",
+  "forum.watch_update": "Cambió el seguimiento de un tema",
+  "forum.notifications_read": "Leyó notificaciones propias del foro",
+  "forum.report_create": "Denunció un mensaje del foro",
+  "forum.report_resolve": "Atendió una denuncia del foro",
+  "forum.attachment_upload": "Subió un adjunto del foro para revisión",
+  "forum.attachment_review": "Revisó un adjunto del foro",
+  "forum.attachment_remove": "Retiró un adjunto del foro",
+  "forum.attachment_restore": "Restauró un adjunto del foro",
   "help.guide_create": "Creó una guía de ayuda",
   "help.guide_update": "Editó una guía de ayuda",
   "help.guide_delete": "Retiró una guía de ayuda",

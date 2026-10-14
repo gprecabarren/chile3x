@@ -142,12 +142,16 @@ function StoryViewer({ group: initialGroup, startAt, onClose, onViewed }: { grou
 
 function StoryActivityPanel({ stories }: { stories: PublicStory[] }) {
   const [visible, setVisible] = useState(8);
+  const groups = useMemo(() => new Map(groupStories(stories).map(group => [group.profileId, group])), [stories]);
+  const [open, setOpen] = useState<StoryGroup | null>(null);
+  const close = useCallback(() => setOpen(null), []);
   const activity = useMemo(() => newestStories(stories.filter((story) => story.storyType === "text" && story.body.trim())), [stories]);
   if (!activity.length) return null;
   return <aside id="directory-activity" className="story-activity-panel" aria-label="Última actividad">
     <header><h2>Última actividad</h2><span>24 h</span></header>
-    <div>{activity.slice(0, visible).map((story) => <a href={profileHref(story)} key={story.id} className="story-activity-item"><span className="story-activity-avatar">{story.profileImageUrl ? <img src={story.profileImageUrl} alt="" loading="lazy" /> : story.profileName.slice(0, 1)}</span><span><strong>{story.profileName}</strong><small>{story.city} · {activityTimeLabel(story.createdAt)}</small><p>{story.body}</p></span></a>)}</div>
+    <div>{activity.slice(0, visible).map((story) => <article key={story.id} className="story-activity-item"><button type="button" className="story-activity-avatar" aria-label={`Ver historias de ${story.profileName} desde actividad`} onClick={() => setOpen(groups.get(story.profileId) ?? null)}>{story.profileImageUrl ? <img src={story.profileImageUrl} alt="" loading="lazy" /> : story.profileName.slice(0, 1)}</button><a href={profileHref(story)}><strong>{story.profileName}</strong><small>{story.city} · {activityTimeLabel(story.createdAt)}</small><p>{story.body}</p></a></article>)}</div>
     {activity.length > visible && <button className="story-activity-more" type="button" onClick={() => setVisible((value) => value + 8)}>Ver más actividad</button>}
+    {open && <StoryViewer group={open} startAt={0} onClose={close} />}
   </aside>;
 }
 
@@ -205,14 +209,25 @@ export function StoryRail({ stories, city, profileOnly = false, compactRegion = 
   </section>;
 }
 
-export function DirectoryStoryLayout({ stories, city, children }: { stories: PublicStory[]; city?: string; children: ReactNode }) {
+export function DirectoryStoryLayout({ stories, city, children, listingsLabel = "Anuncios" }: { stories: PublicStory[]; city?: string; children: ReactNode; listingsLabel?: string }) {
   const active = useActiveStories(stories);
   const [activityOpen, setActivityOpen] = useState(false);
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
   const hasActivity = active.some((story) => story.storyType === "text" && story.body.trim());
+  function showListings(fromFooter = false) {
+    setActivityOpen(false);
+    if (fromFooter) window.requestAnimationFrame(() => {
+      const target = tabsRef.current && getComputedStyle(tabsRef.current).display !== "none" ? tabsRef.current : resultsRef.current;
+      target?.scrollIntoView({ block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
+      target?.querySelector<HTMLButtonElement>("button")?.focus({ preventScroll: true });
+    });
+  }
   return <div className={`directory-stories-layout${hasActivity ? " has-activity" : ""}${activityOpen && hasActivity ? " is-activity-open" : ""}`}>
     <StoryRail stories={active} city={city} />
-    {hasActivity && <div className="directory-activity-tabs" role="group" aria-label="Vista del directorio"><button type="button" aria-pressed={!activityOpen} aria-controls="directory-listings" onClick={() => setActivityOpen(false)}>▦ Anuncios</button><button type="button" aria-pressed={activityOpen} aria-controls="directory-activity" onClick={() => setActivityOpen(true)}>◷ Actividad</button></div>}
-    <div className="directory-live-layout"><div id="directory-listings" className="directory-main-results">{children}</div>{hasActivity && <StoryActivityPanel stories={active} />}</div>
+    {hasActivity && <div ref={tabsRef} className="directory-activity-tabs" role="group" aria-label="Vista del directorio"><button type="button" aria-pressed={!activityOpen} aria-controls="directory-listings" onClick={() => showListings()}>▦ {listingsLabel}</button><button type="button" aria-pressed={activityOpen} aria-controls="directory-activity" onClick={() => setActivityOpen(true)}>◷ Actividad</button></div>}
+    <div ref={resultsRef} className="directory-live-layout"><div id="directory-listings" className="directory-main-results">{children}</div>{hasActivity && <StoryActivityPanel stories={active} />}</div>
+    {hasActivity && activityOpen && <div className="directory-activity-tabs directory-activity-footer" role="group" aria-label="Vista del directorio, final"><button type="button" aria-pressed={false} aria-controls="directory-listings" onClick={() => showListings(true)}>▦ {listingsLabel}</button><button type="button" aria-pressed={true} aria-controls="directory-activity">◷ Actividad</button></div>}
   </div>;
 }
 

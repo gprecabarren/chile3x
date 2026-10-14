@@ -1,5 +1,6 @@
 import Link from "@/app/NavigationLink";
 import Image from "next/image";
+import { publicProfileAge } from "@/lib/profile-age";
 import { cookies } from "next/headers";
 import type { ReactNode } from "react";
 import { getCurrentAdmin, getCurrentUser, getSessionCookieName, getUserSessionCookieName, type AccountUser } from "@/lib/auth";
@@ -220,8 +221,8 @@ export function ProfileCard({ profile }: { profile: PublicProfile }) {
   const tags = getProfileDisplayTags(profile);
   const tierTag = profile.type === "escort" ? tags[0] ?? "Bronze" : null;
   const detailTags = profile.type === "escort" ? tags.slice(1) : [];
-  const age = profile.details.metadata.age;
-  const subtitle = [age ? `${age} años` : null, profile.comuna ?? profile.details.referenceLocation].filter(Boolean).join(" · ");
+  const age = publicProfileAge(profile.type,profile.details.metadata);
+  const subtitle = profile.comuna ?? profile.details.referenceLocation;
   const mainPrice = readProfilePrices(profile.details)[0];
   const coverImage = profile.media.find((media) => media.mediaType === "image" && media.isProfilePhoto) ?? profile.media.find((media) => media.mediaType === "image");
   const profileHref = profilePublicPath(profile);
@@ -242,7 +243,7 @@ export function ProfileCard({ profile }: { profile: PublicProfile }) {
             {profile.isOnline && <span className="profile-online-badge"><i aria-hidden="true" />Online</span>}
             {profile.handle && <small className="public-profile-handle">@{profile.handle}</small>}
             {profile.isDemo && <small className="profile-test-caption">Ficha de prueba · sin servicio real</small>}
-            <p><Link href={getCityPath(profile.city)}>{profile.city}</Link>{subtitle && ` · ${subtitle}`}</p>
+            <p><Link href={getCityPath(profile.city)}>{profile.city}</Link>{age!==null&&<span className="public-card-age" aria-label={`${age} años`}>, {age}</span>}{subtitle && ` · ${subtitle}`}</p>
           </div>
         </div>
         <div className="public-profile-meta"><span>{formatRegionName(profile.region)}</span>{mainPrice && <strong>{mainPrice.label} · ${priceFormatter.format(mainPrice.amount)} {mainPrice.currency}</strong>}</div>

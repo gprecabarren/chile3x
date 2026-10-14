@@ -73,6 +73,29 @@ export const forumPosts = sqliteTable("forum_posts", {
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, table => [index("forum_posts_topic_idx").on(table.topicId, table.createdAt, table.id)]);
 
+export const forumSettings = sqliteTable("forum_settings", {
+  id: text("id").primaryKey(), rules: text("rules").notNull(), version: text("version").notNull(), updatedBy: text("updated_by"), updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+export const forumRuleAcceptances = sqliteTable("forum_rule_acceptances", {
+  id: text("id").primaryKey(), userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }), version: text("version").notNull(), acceptedAt: text("accepted_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, table => [uniqueIndex("forum_acceptance_user_version_unique").on(table.userId,table.version)]);
+export const forumWatches = sqliteTable("forum_watches", {
+  id: text("id").primaryKey(), topicId: text("topic_id").notNull().references(() => forumTopics.id,{onDelete:"cascade"}), userId: text("user_id").notNull().references(() => users.id,{onDelete:"cascade"}), createdAt,
+}, table => [uniqueIndex("forum_watch_user_topic_unique").on(table.userId,table.topicId),index("forum_watches_topic_idx").on(table.topicId)]);
+export const forumNotifications = sqliteTable("forum_notifications", {
+  id: text("id").primaryKey(), recipientId: text("recipient_id").notNull().references(()=>users.id,{onDelete:"cascade"}), topicId:text("topic_id").notNull().references(()=>forumTopics.id,{onDelete:"cascade"}), postId:text("post_id").references(()=>forumPosts.id,{onDelete:"cascade"}), readAt:text("read_at"), createdAt,
+}, table => [uniqueIndex("forum_notification_post_recipient_unique").on(table.postId,table.recipientId),index("forum_notifications_recipient_idx").on(table.recipientId,table.readAt,table.createdAt)]);
+export const forumReports = sqliteTable("forum_reports", {
+  id:text("id").primaryKey(), postId:text("post_id").notNull().references(()=>forumPosts.id,{onDelete:"cascade"}), reporterId:text("reporter_id").references(()=>users.id,{onDelete:"set null"}), reason:text("reason").notNull(), detail:text("detail").notNull(), postVersion:text("post_version").notNull(), status:text("status",{enum:["open","resolved","dismissed"]}).notNull().default("open"), resolution:text("resolution"), resolvedBy:text("resolved_by"), resolvedAt:text("resolved_at"), createdAt,
+  decisionToken:text("decision_token"),
+},table=>[uniqueIndex("forum_report_post_reporter_unique").on(table.postId,table.reporterId),index("forum_reports_queue_idx").on(table.status,table.createdAt)]);
+export const forumAttachments = sqliteTable("forum_attachments", {
+  id:text("id").primaryKey(),postId:text("post_id").notNull().references(()=>forumPosts.id,{onDelete:"cascade"}),uploadedBy:text("uploaded_by"),mediaType:text("media_type",{enum:["image","video"]}).notNull(),r2Key:text("r2_key").notNull(),byteSize:integer("byte_size").notNull(),contentType:text("content_type").notNull(),moderationStatus:text("moderation_status",{enum:["pending","approved","rejected"]}).notNull().default("pending"),consentVersion:text("consent_version").notNull(),reviewedBy:text("reviewed_by"),reviewedAt:text("reviewed_at"),deletedAt:text("deleted_at"),createdAt,updatedAt:text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+},table=>[index("forum_attachments_post_idx").on(table.postId,table.deletedAt),index("forum_attachments_moderation_idx").on(table.moderationStatus,table.updatedAt)]);
+export const forumRateLimits = sqliteTable("forum_rate_limits", {
+  key:text("key").primaryKey(),windowStart:integer("window_start").notNull(),hits:integer("hits").notNull(),updatedAt:text("updated_at").notNull(),
+});
+
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
@@ -714,7 +737,7 @@ export const profileVerificationFiles = sqliteTable("profile_verification_files"
 
 export const dataRetentionHolds = sqliteTable("data_retention_holds", {
   id: text("id").primaryKey(),
-  entityType: text("entity_type", {enum:["verification","report","conversation","audit","deletion"]}).notNull(),
+  entityType: text("entity_type", {enum:["verification","report","conversation","audit","deletion","forum_attachment","forum_report"]}).notNull(),
   entityId: text("entity_id").notNull(),
   reason: text("reason").notNull(),
   createdBy: text("created_by").notNull(),

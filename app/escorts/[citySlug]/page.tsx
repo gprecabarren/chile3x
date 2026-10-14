@@ -57,7 +57,7 @@ export default async function CityPage({ params, searchParams }: CityPageProps) 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(schema) }} />
       <section className="city-hero"><p className="eyebrow">DIRECTORIO ADULTO · {city.regionDisplay.toUpperCase()}</p><h1>Escorts y damas de compañía en <em>{city.city}</em></h1><p>Encuentra una escort en {city.city} y revisa perfiles, agencias y arriendos disponibles. Navega por categoría o afina la búsqueda con filtros avanzados.</p></section>
       <section className="directory-content city-content">
-        <DirectoryStoryLayout stories={stories} city={city.city}>
+        <DirectoryStoryLayout stories={stories} city={city.city} listingsLabel="Escorts">
         <DirectoryFilters key={JSON.stringify(filters)} action={basePath} filters={filters} pinnedCity={city.city} pinnedRegion={city.region} showType />
         {filters.invalidCombination && <p className="filter-warning" role="alert">MILF y TRANS no se pueden combinar. Selecciona solo una para buscar.</p>}
         <div id="resultados" className="directory-results-heading"><div><p className="eyebrow">{city.city.toUpperCase()}</p><h2>{profiles.length} {profiles.length === 1 ? "publicación" : "publicaciones"} {hasNext || page > 1 ? "en esta página" : profiles.length === 1 ? "visible" : "visibles"}</h2></div></div>

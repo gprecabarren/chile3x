@@ -25,6 +25,8 @@ export async function purgeRetainedData(env:RetentionEnv, now=new Date().toISOSt
     ]);removed+=result[1].meta.changes??0;
   }
   const statements = [
+    [`forum_notifications`,`datetime(created_at)<=datetime(?,'-90 days')`],
+    [`forum_reports`,`status IN ('resolved','dismissed') AND datetime(resolved_at)<=datetime(?,'-180 days') AND NOT ${held('forum_report','forum_reports.id')}`],
     [`auth_sessions`,`datetime(expires_at)<=datetime(?,'-${RETENTION_DAYS.expiredSession} days')`],
     [`account_tokens`,`datetime(expires_at)<=datetime(?,'-7 days')`],
     [`auth_session_completions`,`datetime(expires_at)<=datetime(?)`],
@@ -39,6 +41,13 @@ export async function purgeRetainedData(env:RetentionEnv, now=new Date().toISOSt
     [`message_conversations`,`datetime(last_message_at)<=datetime(?,'-${RETENTION_DAYS.conversation} days') AND NOT ${held('conversation','message_conversations.id')}`],
   ].map(([table,condition])=>env.DB.prepare(`DELETE FROM ${table} WHERE id IN (SELECT id FROM ${table} WHERE ${condition} LIMIT 200)`).bind(now));
   for(const result of await env.DB.batch(statements))removed+=result.meta.changes??0;
+  await env.DB.prepare("DELETE FROM forum_rate_limits WHERE key IN (SELECT key FROM forum_rate_limits WHERE datetime(updated_at)<=datetime(?,'-1 day') LIMIT 200)").bind(now).run();
+  const retired=`(datetime(deleted_at)<=datetime(?,'-30 days') OR (moderation_status='rejected' AND datetime(reviewed_at)<=datetime(?,'-30 days')) OR EXISTS(SELECT 1 FROM forum_posts p JOIN forum_topics t ON t.id=p.topic_id WHERE p.id=forum_attachments.post_id AND (datetime(p.trashed_at)<=datetime(?,'-30 days') OR datetime(t.trashed_at)<=datetime(?,'-30 days')))) AND NOT ${held('forum_attachment','forum_attachments.id')}`;
+  const files=await env.DB.prepare(`SELECT id,r2_key FROM forum_attachments WHERE ${retired} LIMIT 50`).bind(now,now,now,now).all<{id:string;r2_key:string}>();
+  for(const file of files.results){const condition=`id=? AND r2_key=? AND ${retired}`;const result=await env.DB.batch([
+    env.DB.prepare(`INSERT OR IGNORE INTO data_deletion_jobs(id,r2_key) SELECT ?,r2_key FROM forum_attachments WHERE ${condition}`).bind(crypto.randomUUID(),file.id,file.r2_key,now,now,now,now),
+    env.DB.prepare(`DELETE FROM forum_attachments WHERE ${condition}`).bind(file.id,file.r2_key,now,now,now,now),
+  ]);removed+=result[1].meta.changes??0;}
   return {removed,retryNeeded,rollout:false};
 }
 export async function purgeMediaDeletionJobs(env:RetentionEnv) {

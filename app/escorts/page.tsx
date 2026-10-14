@@ -51,7 +51,7 @@ export default async function EscortsPage({ searchParams }: { searchParams: Prom
         <p>Explora perfiles revisados por ciudad, categoría, atributos y servicios. Los filtros combinan sus condiciones para entregar resultados precisos.</p>
       </section>
       <section className="directory-content">
-        <DirectoryStoryLayout stories={stories}>
+        <DirectoryStoryLayout stories={stories} listingsLabel="Escorts">
         <DirectoryFilters key={JSON.stringify(filters)} action="/escorts" filters={filters} />
         {filters.invalidCombination && <p className="filter-warning" role="alert">MILF y TRANS no se pueden combinar. Selecciona solo una para buscar.</p>}
         <div id="resultados" className="directory-results-heading"><div><p className="eyebrow">RESULTADOS</p><h2>{profiles.length} perfil{profiles.length === 1 ? "" : "es"}{hasNext || page > 1 ? " en esta página" : ` encontrado${profiles.length === 1 ? "" : "s"}`}</h2></div><p>{nearbyCity ? `Mostramos primero los perfiles de ${nearbyCity}; puedes cambiar la ciudad desde los filtros.` : "Las etiquetas y servicios se muestran según la información aprobada de cada perfil."}</p></div>

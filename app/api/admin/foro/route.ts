@@ -6,6 +6,8 @@ import { getDb } from "@/db";
 import { forumPosts, forumSections, forumTopics } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { FORUM_LIMITS, FORUM_MAX_SECTIONS, FORUM_PAGE_SIZE, ForumInputError, forumOrder, forumText } from "@/lib/forum-policy";
+import { acceptForumRules, applyForumCommunityAction, notifyForumReply } from "@/lib/forum-community";
+import { claimForumRate } from "@/lib/forum-community-policy";
 
 const privateHeaders = { "cache-control": "private, no-store", "x-robots-tag": "noindex, nofollow" };
 function failure(error: string, status: number) { return NextResponse.json({ error }, { status, headers: privateHeaders }); }
@@ -43,9 +45,13 @@ export async function POST(request: NextRequest) {
     const now = new Date().toISOString();
     const { env } = await import("cloudflare:workers");
     const db = await getDb();
+    await claimForumRate(env.DB,admin.id,action==='report_create'?'report':'write');
+    if(action==='topic_create'||action==='post_create'){await acceptForumRules(env.DB,admin,form);await claimForumRate(env.DB,admin.id,'publish');}
     let audit: AdminAuditInput;
     let path = "/foro";
-    if (action === "section_create" || action === "section_update") {
+    const community=await applyForumCommunityAction(form,action,admin);
+    if(community){path=community.path;audit=community.audit;}
+    else if (action === "section_create" || action === "section_update") {
       const fields = {
         groupName: forumText(form, "grupo", FORUM_LIMITS.group), title: forumText(form, "nombre", FORUM_LIMITS.sectionTitle),
         description: forumText(form, "descripcion", FORUM_LIMITS.description, false), rules: forumText(form, "reglas", FORUM_LIMITS.rules, false),
@@ -76,6 +82,7 @@ export async function POST(request: NextRequest) {
         env.DB.prepare("INSERT INTO forum_posts(id,topic_id,author_id,author_name,body,created_at,updated_at) SELECT ?,id,?,?,?,?,? FROM forum_topics WHERE id = ?").bind(postId, admin.id, author, body, now, now, id),
       ]);
       if (!results[0].meta.changes) throw new ForumInputError("Elige una sección activa. Esa sección no existe o está archivada.", 409);
+      await env.DB.prepare("INSERT OR IGNORE INTO forum_watches(id,topic_id,user_id) SELECT ?,?,? WHERE (SELECT count(*) FROM forum_watches WHERE user_id=?)<200").bind(crypto.randomUUID(),id,admin.id,admin.id).run();
       audit = { category: "forum", action: "forum.topic_create", entityType: "forum_topic", entityId: id, entityLabel: title, summary: `Creó el tema «${title}».`, after: { sectionId } };
       path = `/foro/tema/${id}`;
     } else if (action === "topic_update") {
@@ -100,6 +107,7 @@ export async function POST(request: NextRequest) {
         env.DB.prepare("SELECT count(*) AS total FROM forum_posts WHERE topic_id=?").bind(topicId),
       ]);
       if (!results[0].meta.changes) throw new ForumInputError("No es posible responder: el tema está cerrado, en papelera o su sección está archivada.", 409);
+      await notifyForumReply(env.DB,topicId,id,admin.id);
       const total = Number((results[2].results[0] as { total?: number })?.total || 1);
       path = `/foro/tema/${topicId}?pagina=${Math.ceil(total / FORUM_PAGE_SIZE)}#${id}`;
       audit = { category: "forum", action: "forum.post_create", entityType: "forum_post", entityId: id, entityLabel: "Respuesta", summary: "Añadió una respuesta en el foro privado.", metadata: { topicId, characters: body.length } };

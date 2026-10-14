@@ -344,6 +344,20 @@
       "when": 1791981907175,
       "tag": "0048_retention_media_delete_jobs",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "6",
+      "when": 1791996531825,
+      "tag": "0049_forum_community",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "6",
+      "when": 1791998059712,
+      "tag": "0050_forum_decision_claim",
+      "breakpoints": true
     }
   ]
 }

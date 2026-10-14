@@ -24,6 +24,7 @@
 /* Ficha pública: verificación explicada, compartir y avisos de ciudad. */
 .profile-page-title { display: flex; align-items: center; gap: 10px; }
 .profile-page-title h1 { margin-bottom: 9px; }
+.profile-page-title .profile-heading-age { display: inline; margin: 0; color: #b8c1d1; font-family: inherit; font-size: clamp(14px,1.3vw,18px); font-style: normal; font-weight: 400; letter-spacing: 0; white-space: nowrap; }
 .verified-sticker { padding: 0; border: 0; cursor: pointer; }
 .verified-sticker:hover { transform: translateY(-1px) scale(1.05); }
 .verified-sticker:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
@@ -1976,6 +1977,11 @@ input[type="submit"] { text-transform: none !important; letter-spacing: .015em; 
 .story-activity-panel { border-radius: 12px; max-height: none; }
 .story-activity-item { padding: 16px; grid-template-columns: 38px minmax(0, 1fr); }
 .story-activity-avatar { width: 38px; height: 38px; }
+.story-activity-avatar { padding: 0; cursor: pointer; font: inherit; font-size: 16px; }
+.story-activity-avatar:focus-visible { outline: 3px solid #ff8d9e; outline-offset: 3px; }
+.story-activity-item > a { min-width: 0; color: inherit; text-decoration: none; }
+.directory-activity-tabs, .directory-live-layout { scroll-margin-top: 145px; }
+.directory-activity-footer { margin-top: 18px !important; }
 .story-activity-item strong { max-width: 100%; display: block; font-size: 12px; }
 .story-activity-item small { display: block; margin: 3px 0 0; font-size: 10px; }
 .story-activity-item p { display: block; margin-top: 7px; font-size: 12px; line-height: 1.55; overflow-wrap: anywhere; white-space: pre-wrap; }

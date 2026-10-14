@@ -1,0 +1,1 @@
+ALTER TABLE `forum_reports` ADD `decision_token` text;

@@ -98,7 +98,7 @@ function AdminNavigation({
       {adminHasCapability(user, "settings.manage") && <AdminSidebarLink href="/admin/patrocinadores">Sitios asociados</AdminSidebarLink>}
       {adminHasCapability(user, "telegram.view") && <AdminSidebarLink className={pendingTelegram > 0 ? "admin-nav-alert" : undefined} href="/admin/telegram">Telegram{pendingTelegram > 0 && <b>{pendingTelegram}</b>}</AdminSidebarLink>}
       {adminHasCapability(user, "audit.view") && <AdminSidebarLink href="/admin/actividad">Actividad</AdminSidebarLink>}
-      {canViewEmailHistory(user) && <AdminSidebarLink href="/admin/correos">Correos</AdminSidebarLink>}
+      {canViewEmailHistory(user) && <AdminSidebarLink href="/admin/correos">Historial correos</AdminSidebarLink>}
       {adminHasCapability(user, "settings.manage") && <AdminSidebarLink href="/admin/configuracion">Configuración</AdminSidebarLink>}
       {adminHasCapability(user, "forum.manage") && <AdminSidebarLink href="/foro">Foro <small>beta privada</small></AdminSidebarLink>}
       {adminHasCapability(user, "admins.manage") && <AdminSidebarLink href="/admin/administradores">Administradores</AdminSidebarLink>}
@@ -115,7 +115,7 @@ export async function AdminShell({ user, children }: { user: AdminUser; children
     adminHasCapability(user, "bugs.manage") ? getNewBugReportsCount() : 0,
     adminHasCapability(user, "telegram.view") ? getOpenTelegramCasesCount() : 0,
   ]);
-  const brand=<div className="admin-sidebar-brand"><Link href="/" aria-label="Ver sitio público Chile3X"><OfficialChile3xLogo priority /></Link><Link className="admin-home-link" href="/admin" aria-label="Ir al resumen de administración">ADMIN</Link></div>;
+  const brand=<div className="admin-sidebar-brand"><Link href="/" aria-label="Ver sitio público Chile3X"><OfficialChile3xLogo priority /></Link><Link className="admin-home-link" href="/admin" aria-label="Ir al resumen de administración">ADMINISTRADOR</Link></div>;
   const identity=<><div className="admin-sidebar-identity"><span className="admin-sidebar-avatar" aria-hidden="true">{user.githubLogin.slice(0,1).toUpperCase()}</span><div><strong title={`@${user.githubLogin}`}>@{user.githubLogin}</strong><small>{ADMIN_ACCESS_LABELS[user.accessLevel]} · Sesión administrativa</small></div></div><form action="/api/auth/logout" method="post"><button type="submit" title="Cerrar la sesión administrativa">Cerrar sesión administrador</button></form></>;
   return <AdminWorkspace brand={brand} identity={identity} navigation={<AdminNavigation user={user} pendingCount={pendingCount} pendingMedia={pendingMedia} pendingReports={pendingReports} pendingBugs={pendingBugs} pendingTelegram={pendingTelegram} />}>{children}</AdminWorkspace>;
 }

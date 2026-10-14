@@ -7,6 +7,8 @@ test('admin navigation keeps permissions on the server and does not replace norm
  for(const permission of ['profiles.moderate','media.moderate','reviews.moderate','reports.manage','bugs.manage','accounts.manage','news.manage','settings.manage','telegram.view','audit.view','forum.manage','admins.manage'])assert.ok(shell.includes(`adminHasCapability(user, "${permission}")`));
  assert.doesNotMatch(source('app/mi-cuenta/_components.tsx'),/AdminWorkspace/);
  assert.match(shell,/className="admin-home-link" href="\/admin"/);
+ assert.match(shell,/href="\/admin\/correos">Historial correos<\/AdminSidebarLink>/);
+ assert.match(shell,/aria-label="Ir al resumen de administración">ADMINISTRADOR<\/Link>/);
  assert.match(shell,/href="\/" aria-label="Ver sitio público Chile3X"/);
  for(const counter of ['pendingCount','pendingMedia','pendingReports','pendingBugs','pendingTelegram'])assert.ok(shell.includes(`${counter} > 0 && <b>{${counter}}</b>`));
 });

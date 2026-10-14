@@ -25,7 +25,7 @@ const sections = [
   ["proveedores", "Proveedores y transferencias"],
   ["autoridades", "Comunicaciones de datos"],
   ["conservacion", "Conservación y eliminación"],
-  ["derechos", "Tus derechos"],
+  ["derechos", "Derechos de la persona titular"],
   ["ejercicio", "Cómo ejercerlos"],
   ["seguridad", "Seguridad"],
   ["menores", "Protección de menores"],
@@ -38,8 +38,10 @@ export default function PrivacyPage() {
     <LegalPage
       eyebrow="DOCUMENTACIÓN LEGAL"
       title="Política de privacidad y tratamiento de datos"
-      summary={<p>Esta política explica qué datos trata Chile3X, para qué los utiliza, qué información puede hacerse pública y cómo ejercer tus derechos. Está redactada para el funcionamiento actual del directorio y distingue expresamente los datos públicos de los archivos privados.</p>}
-      notice={<><strong>Canal de privacidad:</strong> para acceder, corregir, eliminar, bloquear o consultar por tus datos escribe a <a href="mailto:chile3x.site@gmail.com">chile3x.site@gmail.com</a>. Nunca envíes tu contraseña ni documentos completos por correo salvo que el equipo te indique un canal seguro.</>}
+      version="2026.10.14"
+      updatedAt="2026-10-14"
+      summary={<p>Esta política informa los datos tratados por Chile3X, sus finalidades, la información que puede hacerse pública y los mecanismos para ejercer los derechos de sus titulares. Describe el funcionamiento actual del directorio y distingue los datos públicos de los archivos privados.</p>}
+      notice={<><strong>Canal de privacidad:</strong> las solicitudes de acceso, rectificación, eliminación, bloqueo y consultas se reciben en <a href="mailto:chile3x.site@gmail.com">chile3x.site@gmail.com</a>. No deben enviarse contraseñas ni documentos completos por correo; si se requieren antecedentes, el equipo deberá indicar un canal adecuado.</>}
     >
       <nav className="legal-index" aria-label="Índice de la política de privacidad">
         <strong>Contenido</strong>
@@ -64,13 +66,14 @@ export default function PrivacyPage() {
         <ul>
           <li>dirección IP, fecha y hora, ruta solicitada, navegador, dispositivo, registros de error y señales técnicas de seguridad;</li>
           <li>confirmación de mayoría de edad, preferencias de privacidad y datos mínimos para mantener la sesión;</li>
-          <li>datos generales de navegación y eventos únicamente si aceptas la medición opcional.</li>
+          <li>datos generales de navegación y eventos únicamente con consentimiento de medición opcional.</li>
         </ul>
         <h3>3.2. Cuentas</h3>
         <ul>
           <li>correo electrónico, nombre visible, nombre completo opcional, tipo y número de documento, país del documento extranjero cuando corresponda, fecha de nacimiento, ciudad y teléfono opcional;</li>
-          <li>contraseña protegida mediante un resumen criptográfico; Chile3X no necesita conocer ni almacenar tu contraseña en texto legible;</li>
-          <li>estado de verificación del correo, rol, estado de la cuenta, fechas de creación y actividad administrativa.</li>
+          <li>contraseña protegida mediante un resumen criptográfico; Chile3X no almacena contraseñas en texto legible;</li>
+          <li>estado de verificación del correo, rol, estado de la cuenta, fechas de creación y actividad administrativa;</li>
+          <li>historial de cambios en métodos de acceso y desvinculación de proveedores, sin contraseñas ni secretos legibles.</li>
         </ul>
         <h3>3.3. Anuncios</h3>
         <ul>
@@ -83,11 +86,13 @@ export default function PrivacyPage() {
         <ul>
           <li>favoritos, likes, bloqueos, reseñas, comentarios y su estado de moderación;</li>
           <li>reportes, motivo, texto y capturas de evidencia, además de las actuaciones administrativas asociadas;</li>
-          <li>visualizaciones de anuncios y clics en botones de contacto, agrupados por fecha y tipo de acción, incluyendo el número agregado de pulsaciones. Solo si aceptas la medición, un clic de WhatsApp puede asociarse a tu cuenta iniciada y agregar país, región o ciudad aproximada entregada por Cloudflare, tipo de dispositivo y ruta de origen. Sin ese permiso se conserva únicamente un identificador opaco para el conteo diario y nunca se guarda la IP en ese registro;</li>
+          <li>visualizaciones de anuncios y clics en botones de contacto, agrupados por fecha y tipo de acción, incluyendo el número agregado de pulsaciones. Solo con consentimiento de medición, un clic de WhatsApp puede asociarse a la cuenta iniciada y agregar país, región o ciudad aproximada entregada por Cloudflare, tipo de dispositivo y ruta de origen. Sin ese permiso se conserva únicamente un identificador opaco para el conteo diario y nunca se guarda la IP en ese registro;</li>
           <li>mensajes privados enviados dentro de Chile3X, anuncio de origen, participantes, fecha, estado de lectura, silencio y bloqueos necesarios para mantener el historial y prevenir abuso;</li>
           <li>última actividad reciente de cuentas con anuncios, utilizada únicamente para mostrar un indicador temporal “Online”; el público no recibe la fecha exacta;</li>
-          <li>si vinculas Telegram: identificador numérico, usuario y nombre que Telegram comparte, estado de vinculación y membresía, invitaciones, medidas de moderación y registros técnicos necesarios para operar el bot;</li>
-          <li>si en el futuro eliges Apple una vez habilitado: identificador estable, correo verificado —incluido un posible correo privado de retransmisión—, nombre compartido la primera vez y autorización cifrada necesaria para revocar el acceso al eliminar la cuenta.</li>
+          <li>si se vincula Telegram: identificador numérico, usuario y nombre que Telegram comparte, estado de vinculación y membresía, invitaciones, medidas de moderación y registros técnicos necesarios para operar el bot;</li>
+          <li>si se elige Apple una vez habilitado: identificador estable, correo verificado —incluido un posible correo privado de retransmisión—, nombre compartido la primera vez y autorización cifrada necesaria para revocar el acceso al eliminar la cuenta;</li>
+          <li>actuaciones administrativas: identidad de quien intervino, fecha, operación, elemento afectado, resultado y cambios relevantes. Incluyen aprobación de archivos, modificaciones de anuncios, publicación de historias por administración y configuración. No se duplican archivos de identidad, contraseñas, secretos ni cuerpos de historias en esos registros;</li>
+          <li>en el foro privado beta: identificador y nombre administrativo de autoría, sección, título, texto, fechas y estados de edición, cierre, fijación y papelera. Esta información no se publica ni se ofrece a usuarios generales.</li>
         </ul>
       </section>
 
@@ -111,7 +116,7 @@ export default function PrivacyPage() {
           <li>crear borradores, moderar cambios, publicar, ordenar, buscar, pausar y mostrar anuncios;</li>
           <li>gestionar historias, galerías, medios, relaciones agencia–escort y accesos exclusivos;</li>
           <li>habilitar favoritos, likes, reseñas, comentarios, mensajería privada, bloqueos, reportes y paneles de rendimiento;</li>
-          <li>ordenar anuncios según la ciudad o comuna de cobertura que eliges manualmente; puedes borrar esa preferencia y volver a Todo Chile. Esta función no solicita coordenadas GPS;</li>
+          <li>ordenar anuncios según la ciudad o comuna de cobertura seleccionada manualmente; la persona usuaria puede borrar esa preferencia y volver a Todo Chile. Esta función no solicita coordenadas GPS;</li>
           <li>vincular voluntariamente Telegram, administrar el acceso a Miembros, sincronizar Novedades, moderar la comunidad y avisar al equipo sobre medidas relevantes;</li>
           <li>enviar correos transaccionales como verificación, recuperación, aprobación, rechazo, suspensión y avisos importantes de la cuenta;</li>
           <li>prevenir fraude, spam, suplantación, explotación, contenido ilícito, ataques y uso indebido;</li>
@@ -137,6 +142,7 @@ export default function PrivacyPage() {
         <h2>9. Documentos de identidad y antecedentes médicos opcionales</h2>
         <p>Una persona anunciante puede adjuntar voluntariamente imágenes o PDF de identidad y/o antecedentes médicos para revisión interna. Estos archivos se almacenan de forma privada, no tienen una URL pública de listado, no se indexan y solo pueden ser consultados por la persona dueña del anuncio y administradores autorizados que los necesiten para revisar.</p>
         <p>Un archivo nuevo puede reemplazar al anterior y la persona puede eliminarlo desde las funciones disponibles o pedir su retiro. Chile3X no diagnostica, no certifica vigencia médica ni garantiza que un documento refleje el estado actual de una persona. El resultado de una revisión puede conservarse separadamente como registro de moderación.</p>
+        <p>El acceso a documentos y las actuaciones de carga, reemplazo o eliminación se registran para trazabilidad. El historial no contiene una segunda copia del documento. Los permisos administrativos se asignan por función; disponer de acceso general al panel no autoriza por sí solo la consulta de todos los archivos privados.</p>
       </section>
 
       <section id="exclusivo">
@@ -149,8 +155,11 @@ export default function PrivacyPage() {
         <h2>11. Reseñas, Telegram, bloqueos, reportes y evidencias</h2>
         <p>Las reseñas o comentarios aprobados por el anunciante pueden mostrar el nombre visible de su autor y su contenido. Antes de aprobarse solo pueden consultarlos su autor, el propietario del anuncio y administración. El autor puede retirar su reseña pendiente; el anunciante puede aprobarla, rechazarla o eliminarla, y administración puede consultarla o eliminarla. Favoritos, bloqueos y listas personales no se muestran públicamente. Los reportes y sus capturas son privados y accesibles para el equipo autorizado y para la cuenta que los envió dentro de su panel.</p>
         <p>Podemos utilizar esos antecedentes para investigar, contactar a las partes cuando sea seguro y necesario, moderar, preservar evidencia, prevenir reiteración y responder a una autoridad. No revelaremos la identidad de quien reporta al perfil denunciado salvo consentimiento, obligación legal o necesidad fundada de defensa, aplicando minimización.</p>
-        <p>Vincular Telegram es opcional. El sitio conserva la relación entre tu cuenta y el identificador que entrega Telegram para comprobar acceso, crear invitaciones individuales y aplicar o retirar medidas. Los mensajes procesados por el bot pueden conservarse de forma temporal para deduplicar, detectar flood o spam y ejecutar la cola; una evidencia breve y la medida aplicada pueden mantenerse mientras sea necesario para revisar el caso y prevenir reincidencia. Desvincular, deshabilitar o eliminar la cuenta retira el acceso a Miembros, pero Telegram puede conservar mensajes conforme a sus propias reglas.</p>
-        <p>El chat interno requiere sesión. Cada participante puede silenciar o bloquear la conversación. Si una de las cuentas se deshabilita o elimina, la otra puede conservar el texto del historial, pero Chile3X sustituye la identidad de la persona retirada por “Usuario de Chile3X”, oculta sus referencias identificables y bloquea mensajes nuevos; las relaciones directas con la cuenta eliminada se desprenden de la conversación. Si ya no queda ningún participante con acceso, la conversación se elimina. Los indicadores de no leído y los avisos del navegador se usan solo para comunicar mensajes; Chile3X puede aplicar límites automáticos de frecuencia para reducir spam. No debes enviar contraseñas, códigos, documentos ni datos bancarios.</p>
+        <p>Vincular Telegram es opcional. El sitio conserva la relación entre la cuenta y el identificador que entrega Telegram para comprobar acceso, crear invitaciones individuales y aplicar o retirar medidas. Los mensajes procesados por el bot pueden conservarse temporalmente para evitar duplicados, detectar envíos masivos o spam y ejecutar las tareas pendientes; una evidencia breve y la medida aplicada pueden mantenerse mientras sea necesario para revisar el caso y prevenir reincidencia. Desvincular, deshabilitar o eliminar la cuenta retira el acceso a Miembros, pero Telegram puede conservar mensajes conforme a sus propias reglas.</p>
+        <p>El chat interno requiere sesión. Cada participante puede silenciar o bloquear la conversación. Si una de las cuentas se deshabilita o elimina, la otra puede conservar el texto del historial, pero Chile3X sustituye la identidad visible de la persona retirada por “Usuario de Chile3X” y bloquea mensajes nuevos; las relaciones directas con la cuenta eliminada se desprenden de la conversación. Si ya no queda ningún participante con acceso, la conversación se elimina. Los indicadores de no leído y los avisos del navegador se usan solo para comunicar mensajes; Chile3X puede aplicar límites automáticos de frecuencia para reducir spam. No deben enviarse contraseñas, códigos, documentos ni datos bancarios.</p>
+        <p>La sustitución del nombre de una cuenta no anonimiza automáticamente el texto de sus mensajes. Las referencias identificables incorporadas en conversaciones se evalúan conforme a los derechos aplicables y a la finalidad de conservación del historial.</p>
+        <p>El centro de ayuda “Johnny Sins” funciona mediante búsqueda guiada en documentación revisada. Las consultas y valoraciones se mantienen únicamente en la memoria de la pestaña durante la visita; no se guardan como conversación en la base de datos ni se envían a un proveedor de IA generativa. Los enlaces de ayuda pueden referirse a anuncios pertenecientes a la cuenta, consultados con su sesión. Al abrir un WhatsApp de soporte, no se adjunta automáticamente la conversación. No deben ingresarse contraseñas, códigos, documentos ni datos privados de terceros.</p>
+        <p>El foro privado beta se utiliza para desarrollo y pruebas administrativas. Sus contenidos solo pueden ser consultados por administración habilitada para el foro y se conservan hasta que proceda su eliminación. Archivar una sección o enviar un tema a papelera no equivale a borrar sus datos. La auditoría de cambios no duplica el texto de las respuestas.</p>
       </section>
 
       <section id="medicion">
@@ -158,23 +167,24 @@ export default function PrivacyPage() {
         <h3>12.1. Funciones necesarias</h3>
         <p>Utilizamos cookies o almacenamiento equivalente para mantener la sesión, recordar la confirmación de mayoría de edad, conservar preferencias de privacidad, proteger formularios, limitar abuso, recordar historias vistas y operar funciones solicitadas. Estas tecnologías son necesarias para que ciertas partes del sitio funcionen y no se utilizan para publicidad conductual.</p>
         <h3>12.2. Inicio de sesión con Google</h3>
-        <p>Si eliges continuar con Google, recibimos el identificador estable de tu cuenta de Google, tu correo verificado y el nombre que Google comparte. Usamos el identificador y el correo exclusivamente para comprobar tu identidad, vincular o crear tu cuenta y evitar accesos duplicados; el nombre solo rellena inicialmente campos que puedes editar durante el registro.</p>
+        <p>Si se elige continuar con Google, recibimos el identificador estable de la cuenta de Google, el correo verificado y el nombre que Google comparte. Usamos el identificador y el correo para comprobar la identidad, vincular o crear la cuenta y evitar accesos duplicados; el nombre solo completa inicialmente campos editables durante el registro.</p>
         <p>No solicitamos acceso a Gmail, Drive, contactos, archivos ni calendario, y no almacenamos tokens de acceso de Google. El correo queda vinculado y no puede modificarse desde la cuenta. Si abandonas el registro, los datos del intento se eliminan automáticamente al vencer el plazo breve de seguridad.</p>
-        <p>Puedes desvincular un proveedor desde Mis datos después de configurar y confirmar una contraseña. Esto no elimina tu cuenta ni revierte la verificación de tu correo. Conservamos un historial de cambios de acceso, consultable por ti y por administración, para proteger la cuenta.</p>
+        <p>La persona titular puede desvincular un proveedor desde Mis datos después de configurar y confirmar una contraseña. Esto no elimina la cuenta ni revierte la verificación de su correo. Conservamos un historial de cambios de acceso, consultable por la persona titular y administración autorizada, para proteger la cuenta.</p>
         <h3>12.3. Inicio de sesión con Apple preparado, aún inactivo</h3>
-        <p>Chile3X muestra un botón de Apple deshabilitado mientras no exista una configuración completa de Apple Developer. En ese estado no se abre Apple ni se le envían datos. Si se habilita en el futuro y eliges usarlo, recibiremos el identificador estable, correo verificado y, únicamente en la primera autorización, el nombre que Apple comparta. Esos nombres solo rellenarán campos editables del registro; el correo quedará bloqueado.</p>
-        <p>El flujo rechazará un correo ya vinculado a Google o a una identidad administrativa. La autorización de larga duración que Apple entregue se almacenará cifrada y se utilizará únicamente para revocarla cuando corresponda, incluida la eliminación permanente de la cuenta. Chile3X no recibirá tu contraseña de Apple ni acceso a iCloud, fotos, contactos o archivos.</p>
+        <p>Chile3X muestra un botón de Apple deshabilitado mientras el proveedor no se encuentre habilitado con una configuración completa. En ese estado no se abre Apple ni se le envían datos. Si se habilita en el futuro y la persona elige utilizarlo, recibiremos el identificador estable, correo verificado y, únicamente en la primera autorización, el nombre que Apple comparta. Esos nombres solo completarán campos editables del registro; el correo quedará bloqueado.</p>
+        <p>El flujo rechazará identidades incompatibles, incluido un correo vinculado a otro proveedor o a una identidad administrativa. La autorización de larga duración que Apple entregue se almacenará cifrada y se utilizará para revocarla cuando corresponda, incluida la eliminación permanente de la cuenta. Chile3X no recibirá la contraseña de Apple ni acceso a iCloud, fotos, contactos o archivos.</p>
         <h3>12.4. Google Tag Manager y Google Analytics</h3>
         <p>Los WhatsApp del equipo usan contadores internos agregados por día, área y acceso: aperturas del panel y clics para abrir WhatsApp. No guardan IP, cuenta, número del visitante ni el contenido de mensajes, y no acreditan que se haya enviado un mensaje. Son independientes de los contactos de anunciantes.</p>
-        <p>La medición es opcional y solo se carga si eliges <strong>“Aceptar medición”</strong> en el aviso de privacidad. Si aceptas, medimos visitas y acciones generales como registros, envíos de anuncios, clics de contacto, favoritos, likes y reseñas para entender el uso y mejorar Chile3X.</p>
+        <p>El contacto del anunciante destacado dentro del panel de WhatsApp utiliza el registro de contactos del anuncio, no el contador del equipo. El contador de pulsaciones de WhatsApp del anuncio es visible únicamente para administración autorizada. El equipo no recibe el contenido de las conversaciones mantenidas en WhatsApp.</p>
+        <p>La medición es opcional y solo se carga cuando la persona selecciona <strong>“Aceptar medición”</strong> en el aviso de privacidad. Con esa autorización se miden visitas y acciones generales como registros, envíos de anuncios, clics de contacto, favoritos, likes y reseñas para entender el uso y mejorar Chile3X.</p>
         <p>No configuramos el envío a Google de nombres, correos, teléfonos, RUT, direcciones, archivos privados, texto libre ni identificadores internos de perfiles como parámetros de Analytics. Google puede tratar información técnica como dirección IP, navegador, dispositivo y señales de interacción conforme a sus propias condiciones y medidas disponibles.</p>
-        <p>Si eliges <strong>“Solo necesarias”</strong>, el sitio seguirá funcionando sin cargar Google Tag Manager ni Google Analytics. Puedes retirar o cambiar tu elección en cualquier momento; el cambio no invalida el tratamiento anterior basado en tu consentimiento.</p>
+        <p>Al seleccionar <strong>“Solo necesarias”</strong>, el sitio seguirá funcionando sin cargar Google Tag Manager ni Google Analytics. La elección puede retirarse o modificarse en cualquier momento; el cambio no invalida el tratamiento anterior basado en consentimiento.</p>
         <p><a className="text-link" href="/privacidad?medicion=editar#medicion">Cambiar mi elección de medición <span aria-hidden="true">→</span></a></p>
         <h3>12.5. Inicio de sesión con X preparado, aún inactivo</h3>
-        <p>Mientras el acceso con X esté deshabilitado no se abre ese proveedor ni se le envían datos. Si se habilita y eliges usarlo, recibiremos tu identificador estable, nombre, nombre de usuario y el correo confirmado que X autorice compartir. Si no entrega un correo confirmado, deberás completar y verificar uno mediante el proceso del sitio. El nombre solo rellena campos editables del registro.</p>
-        <p>No solicitamos permiso para publicar, enviar mensajes privados ni acceder a tus mensajes. El token se utiliza únicamente para obtener tu identidad y se solicita su revocación al terminar; no se almacena como credencial permanente. Puedes desvincular X con los mismos controles de contraseña e historial que los demás proveedores.</p>
+        <p>Mientras el acceso con X esté deshabilitado no se abre ese proveedor ni se le envían datos. Si se habilita y la persona elige utilizarlo, recibiremos su identificador estable, nombre, nombre de usuario y el correo confirmado que X autorice compartir. Si no entrega un correo confirmado, la persona deberá completar y verificar uno mediante el proceso del sitio. El nombre solo completa campos editables del registro.</p>
+        <p>No solicitamos permiso para publicar, enviar mensajes privados ni acceder a mensajes. El token se utiliza únicamente para obtener la identidad y se solicita su revocación al terminar; no se almacena como credencial permanente. X podrá desvincularse con los mismos controles de contraseña e historial que los demás proveedores.</p>
         <h3>12.6. Mapas referenciales de Google Maps</h3>
-        <p>Los anuncios incluyen un mapa referencial de su ciudad, que se carga de forma diferida. Solo enviamos el nombre de la ciudad, región y país: no enviamos el nombre del anunciante, su cuenta, dirección, notas de ubicación ni coordenadas privadas. Al cargarse el mapa o abrir Maps, Google puede recibir información técnica del navegador y aplicar sus propias condiciones y política de privacidad. No solicitamos tu ubicación para mostrar estos mapas.</p>
+        <p>Los anuncios incluyen un mapa referencial de su ciudad, que se carga de forma diferida. Solo enviamos el nombre de la ciudad, región y país: no enviamos el nombre del anunciante, su cuenta, dirección, notas de ubicación ni coordenadas privadas. Al cargarse el mapa o abrir Maps, Google puede recibir información técnica del navegador y aplicar sus propias condiciones y política de privacidad. No solicitamos la ubicación de la persona visitante para mostrar estos mapas.</p>
       </section>
 
       <section id="proveedores">
@@ -182,10 +192,10 @@ export default function PrivacyPage() {
         <p>Para operar Chile3X utilizamos proveedores que tratan datos por cuenta del portal o prestan infraestructura bajo sus propios términos:</p>
         <ul>
           <li><strong>Cloudflare:</strong> alojamiento del sitio, base de datos, almacenamiento de archivos, red de entrega, certificados, seguridad y Turnstile para combatir bots;</li>
-          <li><strong>Google:</strong> autenticación cuando eliges “Continuar con Google”, correo transaccional, mapas referenciales de ciudades y, solo con consentimiento, Google Tag Manager y Google Analytics;</li>
+          <li><strong>Google:</strong> autenticación cuando se elige “Continuar con Google”, correo transaccional, mapas referenciales de ciudades y, solo con consentimiento, Google Tag Manager y Google Analytics;</li>
           <li><strong>Telegram:</strong> comunidad pública, vinculación voluntaria de cuentas, invitaciones a Miembros, Novedades y moderación mediante el bot;</li>
           <li><strong>Apple:</strong> solo si el proveedor llega a habilitarse y la persona lo elige, autenticación y revocación de la autorización asociada;</li>
-          <li><strong>X:</strong> solo si el acceso llega a habilitarse y lo eliges, autenticación e identidad autorizada para crear o vincular tu cuenta;</li>
+          <li><strong>X:</strong> solo si el acceso llega a habilitarse y la persona lo elige, autenticación e identidad autorizada para crear o vincular su cuenta;</li>
           <li><strong>proveedores de navegador, sistema operativo o redes externas:</strong> únicamente cuando la persona utiliza esas aplicaciones o sigue un enlace.</li>
         </ul>
         <p>Estos servicios pueden procesar o respaldar información fuera de Chile. Chile3X procura escoger proveedores reconocidos, limitar los datos enviados, configurar accesos y aplicar salvaguardas contractuales y técnicas razonables. La ubicación de la infraestructura puede cambiar sin que ello signifique una venta de datos.</p>
@@ -202,31 +212,32 @@ export default function PrivacyPage() {
         <p>Conservamos datos mientras la cuenta o anuncio estén activos y después solo durante el tiempo necesario para cerrar operaciones, resolver reportes, prevenir fraude, cumplir obligaciones, ejercer o defender derechos y completar ciclos razonables de respaldo.</p>
         <ul>
           <li>Los anuncios dejan de mostrarse cuando se pausan, rechazan o eliminan, sin perjuicio de cachés externas.</li>
-          <li>Las historias de imagen o video expiran públicamente a las 24 horas y se eliminan mediante los procesos programados del servicio; una copia transitoria puede subsistir brevemente en cachés o respaldos.</li>
-          <li>Los estados de texto pueden conservarse hasta que su titular los elimine, expiren por configuración o la plataforma los retire.</li>
+          <li>Las historias de fotografía, video y texto expiran públicamente a las 24 horas. La limpieza del almacenamiento activo se ejecuta periódicamente, normalmente en el siguiente ciclo de cinco minutos. Si ocurre un error, los archivos o registros pendientes permanecen restringidos y la tarea vuelve a intentar su eliminación; el acceso público no se extiende.</li>
+          <li>La eliminación del almacenamiento activo no garantiza la desaparición simultánea de copias transitorias en cachés o respaldos del proveedor. Estas no se utilizan para volver a publicar el contenido vencido.</li>
           <li>Los archivos privados se conservan mientras exista la finalidad de revisión, mientras su titular los mantenga o mientras sean necesarios para acreditar una actuación; al reemplazarlos se elimina la versión anterior del almacenamiento activo.</li>
           <li>Los reportes, evidencias y registros de seguridad pueden conservarse hasta resolver el caso y durante el plazo necesario para prevenir reiteración o atender responsabilidades legales.</li>
+          <li>Los registros administrativos pueden conservarse separadamente para acreditar actuaciones, revisar incidentes y atender obligaciones o reclamaciones. Su finalidad no es mantener copias del material eliminado.</li>
         </ul>
         <p>Cuando la eliminación inmediata no sea posible por respaldo, bloqueo legal o investigación, restringiremos el uso a esas finalidades y eliminaremos el dato al finalizar el motivo de conservación.</p>
       </section>
 
       <section id="derechos">
-        <h2>16. Derechos sobre tus datos</h2>
-        <p>De acuerdo con la Ley N.º 19.628 vigente, puedes solicitar información y acceso a tus datos, su rectificación cuando sean inexactos o estén desactualizados, su eliminación o cancelación cuando proceda y el bloqueo de determinados tratamientos en los casos legales.</p>
-        <p>La Ley N.º 21.719, que entra en vigor el <strong>1 de diciembre de 2026</strong>, refuerza el marco chileno e incorpora de forma expresa derechos de acceso, rectificación, supresión, oposición, portabilidad y bloqueo temporal, junto con reglas sobre decisiones automatizadas. Chile3X procurará aplicar anticipadamente esos estándares cuando sean compatibles con la normativa actualmente vigente y completará su adecuación antes de esa fecha.</p>
+        <h2>16. Derechos de la persona titular</h2>
+        <p>De acuerdo con la Ley N.º 19.628 vigente, la persona titular puede solicitar información y acceso a sus datos, su rectificación cuando sean inexactos o estén desactualizados, su eliminación o cancelación cuando proceda y el bloqueo de determinados tratamientos en los casos legales.</p>
+        <p>La Ley N.º 21.719 prevé su entrada en vigor el <strong>1 de diciembre de 2026</strong>, conforme al texto legal publicado consultado para esta versión. Refuerza el marco chileno e incorpora derechos de acceso, rectificación, supresión, oposición, portabilidad y bloqueo temporal, junto con reglas sobre decisiones automatizadas. Su aplicación se realizará conforme a la vigencia y exigencias legales efectivas; una propuesta de modificación de plazos no altera por sí sola la ley publicada.</p>
         <p>Estos derechos no son absolutos: una solicitud puede limitarse cuando sea necesario conservar antecedentes para obligaciones legales, seguridad, derechos de terceros, libertad de expresión, investigación de ilícitos o defensa de reclamaciones, explicando el fundamento aplicable.</p>
       </section>
 
       <section id="ejercicio">
-        <h2>17. Cómo ejercer tus derechos</h2>
-        <p>Puedes editar parte de tu información desde <Link href="/mi-cuenta">Mi cuenta</Link> o escribir a <a href="mailto:chile3x.site@gmail.com">chile3x.site@gmail.com</a> indicando:</p>
+        <h2>17. Ejercicio de los derechos</h2>
+        <p>La persona titular puede editar parte de su información desde <Link href="/mi-cuenta">Mi cuenta</Link> o presentar una solicitud en <a href="mailto:chile3x.site@gmail.com">chile3x.site@gmail.com</a> indicando:</p>
         <ul>
-          <li>el derecho o solicitud que deseas ejercer;</li>
-          <li>el correo asociado a tu cuenta y los datos necesarios para ubicar el anuncio;</li>
+          <li>el derecho o solicitud que desea ejercer;</li>
+          <li>el correo asociado a su cuenta y los datos necesarios para ubicar el anuncio;</li>
           <li>una explicación clara y, si corresponde, el dato correcto o el contenido cuya eliminación solicitas.</li>
         </ul>
-        <p>Podemos verificar tu identidad con el método menos invasivo razonablemente disponible antes de entregar o modificar información. No envíes una contraseña. Las solicitudes se responderán dentro de los plazos de la ley vigente y serán gratuitas en los casos legalmente previstos.</p>
-        <p>También puedes retirar el consentimiento de medición desde esta página, revocar accesos a la galería exclusiva, pausar anuncios, eliminar historias o solicitar el cierre de la cuenta mediante las opciones disponibles. Si consideras insatisfactoria la respuesta, puedes acudir a tribunales o a la autoridad competente, incluida la Agencia de Protección de Datos Personales una vez que ejerza sus atribuciones.</p>
+        <p>Podemos verificar la identidad mediante el método menos invasivo razonablemente disponible antes de entregar o modificar información. No debe enviarse una contraseña. Las solicitudes se responderán dentro de los plazos de la ley vigente y serán gratuitas en los casos legalmente previstos.</p>
+        <p>También puede retirarse el consentimiento de medición desde esta página, revocarse el acceso a la galería exclusiva, ocultarse un anuncio, eliminarse historias o solicitarse el cierre de la cuenta mediante las opciones disponibles. Si la respuesta resulta insatisfactoria, la persona titular puede acudir a tribunales o a la autoridad competente, incluida la Agencia de Protección de Datos Personales una vez que ejerza sus atribuciones.</p>
       </section>
 
       <section id="seguridad">
@@ -238,13 +249,14 @@ export default function PrivacyPage() {
       <section id="menores">
         <h2>19. Protección de niñas, niños y adolescentes</h2>
         <p>Chile3X no está dirigido a menores de 18 años y no acepta su registro, publicación ni aparición en material. Si tomamos conocimiento o tenemos una sospecha razonable, bloquearemos el contenido o cuenta, podremos preservar la evidencia estrictamente necesaria y actuaremos conforme a la legislación y los requerimientos de las autoridades.</p>
-        <p>Para reportar la posible presencia de una persona menor de edad, utiliza el botón de reporte si tienes una cuenta o escribe de inmediato a <a href="mailto:chile3x.site@gmail.com">chile3x.site@gmail.com</a>. No descargues, reenvíes ni difundas el material.</p>
+        <p>La posible presencia de una persona menor de edad debe informarse mediante el botón de reporte, cuando se disponga de una cuenta, o inmediatamente a <a href="mailto:chile3x.site@gmail.com">chile3x.site@gmail.com</a>. No debe descargarse, reenviarse ni difundirse el material.</p>
       </section>
 
       <section id="automatizacion">
         <h2>20. Moderación y decisiones automatizadas</h2>
         <p>Podemos utilizar validaciones automáticas para detectar formatos inválidos, spam, límites de carga, riesgo técnico o señales de abuso. Las decisiones relevantes de publicación, verificación y sanción contemplan revisión administrativa y no se basan exclusivamente en perfilamiento automatizado con efectos jurídicos equivalentes.</p>
-        <p>Si una validación automática produce un error, puedes pedir intervención humana y revisión mediante el canal de soporte.</p>
+        <p>Si una validación automática produce un error, puede solicitarse intervención humana y revisión mediante el canal de soporte.</p>
+        <p>Las respuestas del bot de ayuda son orientativas y pueden contener errores. La búsqueda guiada no decide aprobaciones, sanciones, verificaciones ni accesos, y puede ser desactivada por administración. La persona interesada puede solicitar asistencia humana por los canales oficiales.</p>
       </section>
 
       <section id="cambios">

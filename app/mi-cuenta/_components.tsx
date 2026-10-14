@@ -9,9 +9,10 @@ import { countUnreadMessages } from "@/lib/internal-messages";
 import { countPendingReceivedReviews } from "@/lib/profile-interactions";
 import { emailVerificationDeadline, emailVerificationState } from "@/lib/email-verification-policy";
 import { EmailVerificationNotice } from "@/app/EmailVerificationNotice";
+import { getSiteSettings } from "@/lib/site-settings";
 import { MessageNotifications, PendingReviewsNotice, UnreadMessagesBadge, UnreadMessagesNotice } from "@/app/MessageNotifications";
 
-function AccountNavigation({ user }: { user: AccountUser }) {
+function AccountNavigation({ user, helpEnabled }: { user: AccountUser; helpEnabled: boolean }) {
   return <nav aria-label="Navegación de cuenta">
     <AccountNavigationLink href="/mi-cuenta#mis-anuncios">Mis anuncios</AccountNavigationLink>
     <AccountNavigationLink className="account-messages-link" href="/mi-cuenta/mensajes">Mensajes<UnreadMessagesBadge /></AccountNavigationLink>
@@ -22,7 +23,7 @@ function AccountNavigation({ user }: { user: AccountUser }) {
     <AccountNavigationLink href="/mi-cuenta/telegram">Telegram</AccountNavigationLink>
     {user.role === "tester" && <AccountNavigationLink href="/mi-cuenta/pruebas">Mis pruebas</AccountNavigationLink>}
     <AccountNavigationLink href="/mi-cuenta/bloqueados">Anuncios ocultos</AccountNavigationLink>
-    <AccountNavigationLink href="/mi-cuenta/ayuda">Ayuda <small>beta</small></AccountNavigationLink>
+    {helpEnabled && <AccountNavigationLink href="/mi-cuenta/ayuda">Ayuda <small>beta</small></AccountNavigationLink>}
     <details className="account-legal-links">
       <summary>Información</summary>
       <div>
@@ -35,17 +36,18 @@ function AccountNavigation({ user }: { user: AccountUser }) {
 }
 
 export async function AccountShell({ user, children, showActivityNotices = true }: { user: AccountUser; children: ReactNode; showActivityNotices?: boolean }) {
-  const [unreadMessages, pendingReviews] = await Promise.all([countUnreadMessages(user.id), countPendingReceivedReviews(user.id)]);
+  const [unreadMessages, pendingReviews, settings] = await Promise.all([countUnreadMessages(user.id), countPendingReceivedReviews(user.id), getSiteSettings()]);
+  const helpEnabled = settings.account_help_enabled === "enabled";
   return (
     <MessageNotifications initialUnread={unreadMessages} initialPendingReviews={pendingReviews}><main className="account-root">
       <header className="account-header">
         <div className="account-brand"><Link href="/" aria-label="Chile3X, inicio"><OfficialChile3xLogo priority /></Link><Link className="account-brand-home" href="/mi-cuenta"><small>MI CUENTA</small></Link></div>
-        <div className="account-desktop-navigation"><AccountNavigation user={user} /></div>
+        <div className="account-desktop-navigation"><AccountNavigation user={user} helpEnabled={helpEnabled} /></div>
         <div className="account-user">
           <Link className="account-home-link" href="/mi-cuenta" title={user.email} aria-label={`Ir a mi cuenta: ${user.email}`}>{user.role === "admin" ? user.displayName ?? "Administración" : user.email}</Link>
           <form action="/api/auth/session/logout" method="post"><button type="submit" title="Cerrar la sesión de esta cuenta">Cerrar sesión</button></form>
         </div>
-      <AccountMobileNavigation><AccountNavigation user={user} /></AccountMobileNavigation>
+      <AccountMobileNavigation><AccountNavigation user={user} helpEnabled={helpEnabled} /></AccountMobileNavigation>
       </header>
       <PresenceHeartbeat />
       {emailVerificationState(user) === "grace" && <EmailVerificationNotice deadline={emailVerificationDeadline(user)} />}

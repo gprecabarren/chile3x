@@ -7,15 +7,18 @@ type LegalPageProps = {
   children: ReactNode;
   summary?: ReactNode;
   notice?: ReactNode;
+  version?: string;
+  updatedAt?: string;
 };
 
-export function LegalPage({ eyebrow, title, children, summary, notice }: LegalPageProps) {
+export function LegalPage({ eyebrow, title, children, summary, notice, version, updatedAt }: LegalPageProps) {
   return (
     <DirectoryShell>
       <article className="legal-page">
         <header>
           <p className="eyebrow">{eyebrow}</p>
           <h1>{title}</h1>
+          {version && updatedAt && <p className="legal-version">Versión {version} · Última actualización: <time dateTime={updatedAt}>{new Date(`${updatedAt}T12:00:00Z`).toLocaleDateString("es-CL", { timeZone: "America/Santiago", day: "numeric", month: "long", year: "numeric" })}</time></p>}
           {summary ? <div className="legal-summary">{summary}</div> : null}
         </header>
         <div className="legal-content">{children}</div>

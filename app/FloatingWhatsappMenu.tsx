@@ -6,10 +6,13 @@ import type { PublicWhatsappContact, WhatsappPanelPlacement } from "@/lib/portal
 import { PortalWhatsappLink, recordPortalWhatsapp } from "./PortalWhatsappLink";
 import { WhatsappMenuContext } from "./WhatsappMenuContext";
 import Link from "./NavigationLink";
+import { TrackedContactLink } from "./perfil/TrackedContactLink";
 
-export function FloatingWhatsappMenu({ contacts, title, description, buttonLabel, icon, showFloating = true, children }: {
+export type AdvertiserWhatsapp = { profileId: string; name: string; href: string | null; unavailableMessage?: string };
+
+export function FloatingWhatsappMenu({ contacts, title, description, buttonLabel, icon, showFloating = true, children, advertiser }: {
   contacts: PublicWhatsappContact[]; title: string; description: string; buttonLabel: string;
-  icon: ReactNode; showFloating?: boolean; children?: ReactNode;
+  icon: ReactNode; showFloating?: boolean; children?: ReactNode; advertiser?: AdvertiserWhatsapp;
 }) {
   const [placement, setPlacement] = useState<WhatsappPanelPlacement | null>(null);
   const open = placement !== null;
@@ -50,7 +53,7 @@ export function FloatingWhatsappMenu({ contacts, title, description, buttonLabel
   }, [open]);
 
   function openMenu(source: WhatsappPanelPlacement, opener: HTMLElement) {
-    if (!contacts.length) return false;
+    if (!contacts.length && !advertiser) return false;
     openerRef.current = opener;
     if (!open) recordPortalWhatsapp("panel_open", "panel", source);
     setPlacement(source);
@@ -59,17 +62,23 @@ export function FloatingWhatsappMenu({ contacts, title, description, buttonLabel
 
   return <WhatsappMenuContext.Provider value={{ isOpen: open, openMenu }}>
     <div inert={open ? true : undefined}>{children}</div>
-    {showFloating && contacts.length > 0 && <div className="portal-whatsapp-widget" inert={open ? true : undefined}>
-      <button type="button" className="floating-whatsapp" aria-label={buttonLabel} title={buttonLabel}
+    {showFloating && (contacts.length > 0 || advertiser) && <div className="portal-whatsapp-widget" inert={open ? true : undefined}>
+      <button type="button" className="floating-whatsapp" aria-label={advertiser?.href ? `WhatsApp de ${advertiser.name} y ayuda de Chile3X` : advertiser ? "Contactos de este anuncio y ayuda de Chile3X" : buttonLabel} title={advertiser ? "Contactar al anunciante o al equipo" : buttonLabel}
         aria-expanded={open} aria-haspopup="dialog" onClick={event => openMenu("floating", event.currentTarget)}>{icon}</button>
     </div>}
     {open && createPortal(<div className="portal-whatsapp-backdrop" onClick={event => { if (event.target === event.currentTarget) close(); }}>
       <section className="portal-whatsapp-panel" ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId}>
-        <header><div><span>EQUIPO CHILE3X</span><h2 id={titleId}>{title}</h2></div>
+        <header><div><span>{advertiser ? "CONTACTOS DEL ANUNCIO" : "EQUIPO CHILE3X"}</span><h2 id={titleId}>{advertiser ? "¿Con quién quieres hablar?" : title}</h2></div>
           <button type="button" className="portal-whatsapp-close" ref={closeRef} aria-label="Cerrar contactos de WhatsApp" onClick={close}>×</button>
         </header>
-        <p className="portal-whatsapp-explanation" id={descriptionId}>{description}</p>
-        <div className="portal-whatsapp-options">{contacts.map(contact => <PortalWhatsappLink key={contact.id} placement={placement!} contactId={contact.id}
+        <p className="portal-whatsapp-explanation" id={descriptionId}>{advertiser ? "Para consultar este anuncio, escribe directamente a su anunciante. El equipo de Chile3X solo atiende soporte y marketing; no coordina citas ni arriendos." : description}</p>
+        <div className="portal-whatsapp-options">
+          {advertiser?.href && <TrackedContactLink profileId={advertiser.profileId} kind="whatsapp" className="portal-whatsapp-option portal-whatsapp-advertiser" href={advertiser.href} target="_blank" rel="noopener noreferrer" onClick={() => setPlacement(null)} aria-label={`Contactar directamente a ${advertiser.name} por WhatsApp`}>
+            <span className="portal-whatsapp-option-icon" aria-hidden="true">{icon}</span><span><small>ANUNCIANTE · CONTACTO DIRECTO</small><strong>{advertiser.name}</strong><small>Consultar este anuncio por WhatsApp →</small></span>
+          </TrackedContactLink>}
+          {advertiser && !advertiser.href && <aside className="portal-whatsapp-unavailable"><strong>{advertiser.name}</strong><p>{advertiser.unavailableMessage || "Este anuncio no tiene un WhatsApp disponible."}</p><small>Los contactos del equipo no sustituyen al anunciante.</small></aside>}
+          {advertiser && contacts.length > 0 && <p className="portal-whatsapp-team-label">AYUDA DEL EQUIPO CHILE3X</p>}
+          {contacts.map(contact => <PortalWhatsappLink key={contact.id} placement={placement!} contactId={contact.id}
           className="portal-whatsapp-option" href={contact.href} target="_blank" rel="noopener noreferrer" aria-label={`${contact.label}, abrir WhatsApp`} onClick={() => setPlacement(null)}>
           <span className="portal-whatsapp-option-icon" aria-hidden="true">{icon}</span>
           <span><strong>{contact.label}</strong><small>{contact.description}</small></span>

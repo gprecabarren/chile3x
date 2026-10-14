@@ -38,7 +38,7 @@ if (process.argv[2] === 'proxy') {
     if (url.pathname === '/qa/admin') path = '/admin/ayuda';
     if (url.pathname === '/qa/editor') path = `/admin/anuncios-publicaciones/${fixture.profileId}/editar`;
     if (url.pathname === '/qa/profile') path = `/perfil/@${fixture.prefix.replaceAll('_', '-')}`;
-    const cookie = path.startsWith('/admin') ? fixture.adminCookie : fixture.ownerCookie;
+    const cookie = path.startsWith('/admin') || path.startsWith('/foro') ? fixture.adminCookie : fixture.ownerCookie;
     try {
       const result = await fetch(base + path, { headers: { cookie, authorization: 'qa-local-cache-bypass', accept: incoming.headers.accept ?? '*/*', 'sec-fetch-dest': incoming.headers['sec-fetch-dest'] ?? '' }, redirect: 'manual' });
       outgoing.writeHead(result.status, Object.fromEntries([...result.headers].filter(([key]) => !['set-cookie', 'content-length', 'content-encoding', 'transfer-encoding'].includes(key))));

@@ -9,7 +9,7 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
   const baseUrl = siteBaseUrl(settings.site_url);
   return {
     rules: indexingEnabled
-      ? { userAgent: "*", allow: "/", disallow: ["/admin", "/mi-cuenta", "/api/"] }
+      ? { userAgent: "*", allow: "/", disallow: ["/admin", "/mi-cuenta", "/api/", "/foro"] }
       : { userAgent: "*", disallow: "/" },
     sitemap: `${baseUrl}/sitemap.xml`,
   };

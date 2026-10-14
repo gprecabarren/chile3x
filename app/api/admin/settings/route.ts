@@ -15,6 +15,7 @@ const allowedSettings = {
   moderation_mode: new Set(["manual", "manual_priority"]),
   billing_mode: new Set(["manual", "planned"]),
   maintenance_mode: new Set(["disabled", "enabled"]),
+  account_help_enabled: new Set(["disabled", "enabled"]),
   robots_indexing: new Set(["enabled", "disabled"]),
   profile_gallery_watermark_enabled: new Set(["enabled", "disabled"]),
   profile_gallery_face_blur_enabled: new Set(["enabled", "disabled"]),

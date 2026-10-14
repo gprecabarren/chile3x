@@ -97,6 +97,7 @@ function AdminNavigation({
       {adminHasCapability(user, "telegram.view") && <Link prefetch={false} className={pendingTelegram > 0 ? "admin-nav-alert" : undefined} href="/admin/telegram">Telegram{pendingTelegram > 0 && <b>{pendingTelegram}</b>}</Link>}
       {adminHasCapability(user, "audit.view") && <Link href="/admin/actividad" prefetch={false}>Actividad</Link>}
       {adminHasCapability(user, "settings.manage") && <Link href="/admin/configuracion" prefetch={false}>Configuración</Link>}
+      {adminHasCapability(user, "forum.manage") && <Link href="/foro" prefetch={false}>Foro <small>beta privada</small></Link>}
       {adminHasCapability(user, "admins.manage") && <Link href="/admin/administradores" prefetch={false}>Administradores</Link>}
       <Link href="/admin/ayuda" prefetch={false}>Ayuda <small>beta</small></Link>
     </nav>

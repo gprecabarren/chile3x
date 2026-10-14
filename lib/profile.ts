@@ -222,6 +222,12 @@ export function serializeAvailability(formData: FormData) {
   }).join("|");
 }
 
+/** Collapse only a complete, valid seven-day schedule; never infer missing days. */
+export function isAvailableEveryDay24Hours(entries: AvailabilityEntry[]) {
+  return entries.length === availabilityDays.length && availabilityDays.every(day =>
+    entries.some(entry => entry.key === day.key && entry.opensAt === "00:00" && entry.closesAt === "24:00"));
+}
+
 const availabilityFormatter = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/Santiago",
     weekday: "short",

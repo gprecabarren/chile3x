@@ -9,6 +9,41 @@ import {
 
 const createdAt = text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`);
 
+export const forumSections = sqliteTable("forum_sections", {
+  id: text("id").primaryKey(),
+  groupName: text("group_name").notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull().default(""),
+  rules: text("rules").notNull().default(""),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isArchived: integer("is_archived", { mode: "boolean" }).notNull().default(false),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, table => [index("forum_sections_order_idx").on(table.isArchived, table.groupName, table.sortOrder)]);
+
+export const forumTopics = sqliteTable("forum_topics", {
+  id: text("id").primaryKey(),
+  sectionId: text("section_id").notNull().references(() => forumSections.id),
+  title: text("title").notNull(),
+  authorId: text("author_id"),
+  authorName: text("author_name").notNull(),
+  isPinned: integer("is_pinned", { mode: "boolean" }).notNull().default(false),
+  isLocked: integer("is_locked", { mode: "boolean" }).notNull().default(false),
+  trashedAt: text("trashed_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, table => [index("forum_topics_section_idx").on(table.sectionId, table.trashedAt, table.isPinned, table.updatedAt), index("forum_topics_activity_idx").on(table.trashedAt, table.updatedAt)]);
+
+export const forumPosts = sqliteTable("forum_posts", {
+  id: text("id").primaryKey(),
+  topicId: text("topic_id").notNull().references(() => forumTopics.id),
+  authorId: text("author_id"),
+  authorName: text("author_name").notNull(),
+  body: text("body").notNull(),
+  trashedAt: text("trashed_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, table => [index("forum_posts_topic_idx").on(table.topicId, table.createdAt, table.id)]);
+
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),

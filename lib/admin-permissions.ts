@@ -5,6 +5,7 @@ export type AdminAccessLevel = typeof ADMIN_ACCESS_LEVELS[number];
 export type AdminCapability =
   | "admins.manage"
   | "settings.manage"
+  | "forum.manage"
   | "accounts.manage"
   | "profiles.moderate"
   | "profiles.recycle"
@@ -23,6 +24,7 @@ export type AdminCapability =
 export const ADMIN_CAPABILITY_LABELS: Record<AdminCapability, string> = {
   "admins.manage": "Agregar, cambiar y revocar administradores",
   "settings.manage": "Cambiar la configuración general, SEO y contactos",
+  "forum.manage": "Acceder y administrar el foro privado beta",
   "accounts.manage": "Administrar cuentas de anunciantes y testers",
   "profiles.moderate": "Revisar y cambiar el estado de anuncios",
   "profiles.recycle": "Enviar anuncios a la papelera, restaurarlos y eliminarlos definitivamente",
@@ -57,12 +59,12 @@ export const ADMIN_ACCESS_DESCRIPTIONS: Record<AdminAccessLevel, string> = {
 
 export const ADMIN_ACCESS_CAPABILITIES: Record<AdminAccessLevel, readonly AdminCapability[]> = {
   owner: [
-    "admins.manage", "settings.manage", "accounts.manage", "profiles.moderate", "profiles.recycle",
+    "admins.manage", "settings.manage", "forum.manage", "accounts.manage", "profiles.moderate", "profiles.recycle",
     "media.moderate", "reviews.moderate", "reports.manage", "bugs.manage",
     "news.manage", "telegram.view", "telegram.publish", "telegram.moderate", "telegram.manage", "audit.view", "private.view",
   ],
   administrator: [
-    "settings.manage", "accounts.manage", "profiles.moderate", "profiles.recycle", "media.moderate",
+    "settings.manage", "forum.manage", "accounts.manage", "profiles.moderate", "profiles.recycle", "media.moderate",
     "reviews.moderate", "reports.manage", "bugs.manage", "news.manage",
     "telegram.view", "telegram.publish", "telegram.moderate", "telegram.manage",
     "audit.view", "private.view",

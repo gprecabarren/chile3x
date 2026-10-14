@@ -11,10 +11,6 @@ type Turn = { id: number; question: string; answer: ReturnType<typeof helpAnswer
 type Props = { audience: HelpAudience; topics: HelpTopic[]; contacts: PublicWhatsappContact[]; profiles?: HelpProfile[] };
 const NO_PROFILES: HelpProfile[] = [];
 
-function HelpIcon() {
-  return <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 4h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-9l-5 3v-3a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" strokeWidth="1.7" /><path d="M9 9a3 3 0 0 1 6 0c0 2-3 2-3 4m0 2v.1" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></svg>;
-}
-
 export function HelpCenter({ audience, topics, contacts, profiles = NO_PROFILES }: Props) {
   const [mode, setMode] = useState<"chat" | "guides">("chat");
   const [question, setQuestion] = useState("");
@@ -57,16 +53,20 @@ export function HelpCenter({ audience, topics, contacts, profiles = NO_PROFILES 
   const supportLinks = <div className="help-support-links">{contacts.map(contact => <a key={contact.id} href={contact.href} target="_blank" rel="noopener noreferrer">WhatsApp · {contact.label}</a>)}<Link href="/contacto">Otros canales de contacto</Link></div>;
 
   return <section className="help-center" aria-label="Johnny Sins, centro de ayuda beta">
-    <header className="help-header"><span className="help-avatar" aria-hidden="true"><HelpIcon /></span><div><p>ASISTENTE DE CHILE3X <span className="help-beta">BETA</span></p><h2>Johnny Sins</h2><span>Busca una respuesta. Encuentra el siguiente paso.</span></div></header>
+    <header className="help-header"><span className="help-avatar">
+      {/* Licensed local portrait: no external image request or actor account connection. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/help/johnny-sins.jpg" width="342" height="459" alt="Retrato de Johnny Sins utilizado para el bot de ayuda" />
+    </span><div><p>BOT DE AYUDA DE CHILE3X <span className="help-beta">BETA</span></p><h2>Johnny Sins</h2><span>Hoy mi especialidad es ayudarte con tu anuncio.</span></div></header>
     <p className="help-beta-notice">{HELP_BETA_NOTICE}</p>
     <div className="help-toolbar"><nav aria-label="Modo del centro de ayuda"><button type="button" aria-pressed={mode === "chat"} onClick={() => setMode("chat")}>Preguntar</button><button type="button" aria-pressed={mode === "guides"} onClick={() => setMode("guides")}>Explorar guías <small>{topics.length}</small></button></nav><button className="help-reset" type="button" disabled={!turns.length} onClick={() => { setTurns([]); setQuestion(""); setWarning(""); input.current?.focus(); }}>Nueva conversación</button></div>
     {profiles.length > 0 && <label className="help-profile-selector">¿Sobre qué anuncio necesitas ayuda?<select value={profileId} onChange={event => setProfileId(event.target.value)}><option value="">Mis anuncios (elegir después)</option>{profiles.map(profile => <option value={profile.id} key={profile.id}>{profile.name}</option>)}</select><small>Los enlaces de las guías abrirán la sección de este anuncio. Solo aparecen tus publicaciones.</small></label>}
     {mode === "chat" && <>
       <div className="help-chat-log" ref={log} role="log" aria-label="Conversación de ayuda" aria-live="polite" aria-relevant="additions">
-        <article className="help-answer help-welcome"><strong>Johnny Sins · Ayuda beta</strong><p>Te ayudo a encontrar los pasos y enlaces del panel {audience === "admin" ? "administrativo" : "de tu cuenta"}. Esta versión utiliza guías revisadas: no es IA generativa y no realiza cambios por ti.</p><p>No envíes contraseñas, códigos, documentos ni información de otras personas.</p><small>Las respuestas pueden contener errores. Si necesitas atención humana, tienes los WhatsApp oficiales al final.</small></article>
+        <article className="help-answer help-welcome"><strong>Johnny Sins · Bot de ayuda beta</strong><p>Soy el bot de ayuda de Chile3X. Te muestro los pasos y enlaces del panel {audience === "admin" ? "administrativo" : "de tu cuenta"}. Esta versión no es IA generativa: utiliza guías revisadas. No soy una persona y no realizo cambios por ti.</p><p>No envíes contraseñas, códigos, documentos ni información de otras personas.</p><small>Las respuestas pueden contener errores. Si necesitas atención humana, tienes los WhatsApp oficiales al final.</small></article>
         {turns.map(turn => <div className="help-chat-turn" key={turn.id}>
           <div className="help-question"><span>Tú</span><p>{turn.question}</p></div>
-          <article className="help-answer"><strong>Johnny Sins · Ayuda beta</strong>
+          <article className="help-answer"><strong>Johnny Sins · Bot de ayuda beta</strong>
             {turn.answer.kind === "answer" ? turn.answer.topics.map(topic => <div key={topic.id}>
               <h3>{topic.title}</h3><p>{topic.summary}</p><ol>{topic.steps.map((step, index) => <li key={index}>{step}</li>)}</ol>
               <Link className="help-action-link" href={helpTopicLink(topic, selectedProfile)}>{topic.link.label} <span aria-hidden="true">→</span></Link>
@@ -86,6 +86,6 @@ export function HelpCenter({ audience, topics, contacts, profiles = NO_PROFILES 
     {mode === "guides" && <nav className="help-categories" aria-label="Categorías de ayuda"><button type="button" aria-pressed={!category} onClick={() => setCategory("")}>Todas</button>{categories.map(item => <button type="button" key={item} aria-pressed={category === item} onClick={() => setCategory(item)}>{item}</button>)}</nav>}
     {(mode === "guides" || question.trim()) && <section className="help-guide-results" aria-label="Guías encontradas"><h3>{mode === "guides" ? "Guías disponibles para tu panel" : "Guías relacionadas con tu búsqueda"}</h3>{results.length ? <div>{results.slice(0, mode === "guides" ? 40 : 4).map(topic => <button type="button" key={topic.id} onClick={() => ask(`Guía: ${topic.title}`, topic)}><small>{topic.category}</small><strong>{topic.title}</strong><span>{topic.summary}</span><b>Abrir guía →</b></button>)}</div> : <p>No hay coincidencias. Prueba otra palabra o utiliza los canales de soporte.</p>}</section>}
     <aside className="help-human-support" aria-label="Soporte humano"><h3>¿No se resolvió?</h3><p>Habla con el equipo de Chile3X. La ayuda del sitio no coordina citas ni acuerdos de los anuncios.</p>{supportLinks}</aside>
-    <footer className="help-footer"><span>Guías operativas revisadas · 14 de octubre de 2026</span><span>Solo orientación: no cambia datos ni permisos.</span></footer>
+    <footer className="help-footer"><span>Guías operativas revisadas · 14 de octubre de 2026</span><span>Solo orientación: no cambia datos ni permisos.</span><span>El actor no participa en este servicio ni está afiliado a Chile3X. Foto: <a href="https://commons.wikimedia.org/wiki/File:Guy,_Ava_Lauren_at_XRCO_Awards_2007_1_(cropped).jpg" target="_blank" rel="noopener noreferrer">Luke Ford, recorte de Wikimedia Commons</a> · <a href="https://creativecommons.org/licenses/by-sa/2.5/" target="_blank" rel="noopener noreferrer">CC BY-SA 2.5</a>.</span></footer>
   </section>;
 }

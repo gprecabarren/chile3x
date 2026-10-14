@@ -37,7 +37,9 @@ export default function TermsPage() {
     <LegalPage
       eyebrow="DOCUMENTACIÓN LEGAL"
       title="Términos y condiciones de uso"
-      summary={<p>Estas condiciones regulan el acceso y uso de <strong>chile3x.cl</strong>, un directorio para adultos con publicaciones de escorts, agencias y arriendos en Chile. Léelas antes de crear una cuenta, publicar o interactuar con un anuncio.</p>}
+      version="2026.10.14"
+      updatedAt="2026-10-14"
+      summary={<p>Estas condiciones regulan el acceso y uso de <strong>chile3x.cl</strong>, un directorio para adultos con publicaciones de escorts, agencias y arriendos en Chile. Su lectura es necesaria antes de crear una cuenta, publicar o interactuar con un anuncio.</p>}
     >
       <nav className="legal-index" aria-label="Índice de términos y condiciones">
         <strong>Contenido</strong>
@@ -47,12 +49,12 @@ export default function TermsPage() {
       <section id="alcance">
         <h2>1. Alcance y aceptación</h2>
         <p>Estos términos constituyen el acuerdo entre quien visita, crea una cuenta o utiliza cualquier función de Chile3X (la “persona usuaria”) y Chile3X respecto del uso del sitio <strong>chile3x.cl</strong> y sus servicios asociados. La <Link href="/privacidad">Política de privacidad</Link> y las <Link href="/reglas-de-publicacion">Reglas de publicación</Link> forman parte de este marco.</p>
-        <p>Crear una cuenta, enviar una publicación o utilizar funciones reservadas exige aceptar estas condiciones de manera libre e informada. La sola visita al sitio no crea una obligación de pago. Si no estás de acuerdo, no debes crear una cuenta ni utilizar funciones que requieran aceptación.</p>
+        <p>Crear una cuenta, enviar una publicación o utilizar funciones reservadas exige aceptar estas condiciones de manera libre e informada. La sola visita al sitio no crea una obligación de pago. Quien no acepte estas condiciones deberá abstenerse de utilizar funciones que requieran su aceptación.</p>
       </section>
 
       <section id="adultos">
         <h2>2. Acceso exclusivo para personas adultas</h2>
-        <p>Chile3X está destinado exclusivamente a personas de <strong>18 años o más</strong>. Al ingresar declaras cumplir esa edad y te comprometes a no mostrar el sitio, entregar credenciales ni facilitar acceso a una persona menor de edad.</p>
+        <p>Chile3X está destinado exclusivamente a personas de <strong>18 años o más</strong>. Al ingresar, la persona usuaria declara cumplir esa edad y se obliga a no facilitar el acceso ni entregar sus credenciales a personas menores de edad.</p>
         <p>La confirmación de mayoría de edad del aviso de entrada no equivale por sí sola a una verificación de identidad. Chile3X puede solicitar antecedentes adicionales para determinadas cuentas o publicaciones y rechazar, suspender o eliminar accesos cuando existan dudas razonables sobre la edad o identidad.</p>
       </section>
 
@@ -69,7 +71,8 @@ export default function TermsPage() {
           <li>Cada persona es responsable de mantener segura su contraseña y de las acciones efectuadas desde su cuenta. Debe avisar de inmediato si detecta un acceso no autorizado.</li>
           <li>No se permite vender, ceder, prestar ni compartir una cuenta para eludir una suspensión o permitir que otra persona se haga pasar por su titular.</li>
           <li>Chile3X puede solicitar corrección de datos, confirmación de correo, edad, identidad, autorización o representación antes de publicar o mantener un anuncio.</li>
-          <li>Un correo solo puede asociarse a un método federado compatible. Si ya está vinculado a Google o Apple, Chile3X puede exigir que se use ese mismo proveedor para evitar cuentas o identidades duplicadas. Las identidades administrativas continúan separadas e ingresan mediante GitHub.</li>
+          <li>Los accesos federados admitidos deben corresponder a una identidad compatible y respetar las validaciones de registro. Google se encuentra disponible; Apple y X permanecen preparados e inactivos mientras no se habiliten expresamente. Las identidades administrativas continúan separadas e ingresan mediante GitHub.</li>
+          <li>La desvinculación de un proveedor exige configurar y confirmar una contraseña de acceso. No elimina la cuenta ni deja sin verificar un correo previamente verificado. Los cambios de método de acceso se registran para su consulta por la persona titular y administración autorizada.</li>
           <li>Los datos legales y documentos privados de una cuenta no se muestran en el anuncio salvo que su titular los incorpore voluntariamente a un campo público.</li>
         </ul>
       </section>
@@ -78,7 +81,8 @@ export default function TermsPage() {
         <h2>5. Publicaciones, revisión y distintivo de verificación</h2>
         <p>Los perfiles de escort, agencia y arriendo se envían a revisión manual antes de publicarse. Chile3X puede pedir cambios, rechazar material, limitar su alcance, pausar el anuncio o retirarlo cuando incumpla estas condiciones, las reglas de publicación, la ley o criterios razonables de seguridad.</p>
         <p>El distintivo verde de “verificado” es opcional y se concede manualmente. Refleja una comprobación adicional realizada con la información disponible al momento de la revisión; puede retirarse si los datos cambian, caducan, resultan inconsistentes o existe una alerta fundada.</p>
-        <p>Una publicación aprobada puede volver a revisión cuando su titular modifica información relevante, foto principal, documentos, medios o datos que afecten la decisión original.</p>
+        <p>La revisión del anuncio y la aprobación de sus archivos son controles distintos. Los archivos nuevos o reemplazados se someten a su revisión correspondiente; su carga no implica, por sí sola, que toda la publicación cambie de estado. El equipo puede revisar, limitar o retirar un anuncio cuando existan cambios o antecedentes que lo justifiquen.</p>
+        <p>La persona titular y administración autorizada pueden consultar una vista previa privada de anuncios no publicados. Esa vista no constituye aprobación ni permite su acceso público. Administración puede editar datos, revisar documentos privados y publicar historias por cuenta del anunciante dentro de sus permisos; estas actuaciones deben responder a una solicitud, autorización o finalidad operativa legítima y quedan registradas.</p>
       </section>
 
       <section id="agencias-arriendos">
@@ -124,14 +128,17 @@ export default function TermsPage() {
         <h2>9. Favoritos, likes, reseñas, mensajes, Telegram, bloqueos y reportes</h2>
         <p>Las cuentas pueden utilizar funciones de comunidad de acuerdo con su disponibilidad. Las reseñas y comentarios deben referirse a experiencias reales, expresarse con respeto y no contener datos personales, amenazas, extorsión, publicidad, acusaciones deliberadamente falsas ni contenido ilícito.</p>
         <p>Bloquear un anuncio solo lo oculta para la cuenta que realizó la acción; no sanciona al anunciante. Reportar inicia una revisión, no determina culpabilidad. El uso coordinado de votos, likes, reportes o reseñas para manipular resultados está prohibido.</p>
-        <p>El chat interno vincula cada conversación con un anuncio y exige una cuenta activa. Está prohibido usarlo para spam, acoso, amenazas, suplantación, captación ilícita, envío de malware o intercambio de contenido ilegal. Silenciar detiene avisos; bloquear impide mensajes nuevos y mantiene el historial disponible mientras corresponda. Si una cuenta se deshabilita o elimina, su identidad se reemplaza por “Usuario de Chile3X” para el otro participante y no se admiten mensajes nuevos, aunque el texto previo puede permanecer como historial anonimizado.</p>
+        <p>El chat interno vincula cada conversación con un anuncio y exige una cuenta activa. Está prohibido usarlo para spam, acoso, amenazas, suplantación, captación ilícita, envío de malware o intercambio de contenido ilegal. Silenciar detiene avisos; bloquear impide mensajes nuevos y mantiene el historial disponible mientras corresponda. Si una cuenta se deshabilita o elimina, su identidad visible se reemplaza por “Usuario de Chile3X” para el otro participante y no se admiten mensajes nuevos. Esta sustitución no garantiza la anonimización del contenido previo: los propios mensajes podrían contener referencias identificables.</p>
+        <p>El centro de ayuda beta, denominado “Johnny Sins”, es un bot de búsqueda guiada basado en documentación revisada del sitio. No constituye atención humana, asesoría profesional ni inteligencia artificial generativa; sus respuestas pueden contener errores y no ejecutan modificaciones de cuentas. La persona usuaria debe verificar los pasos y recurrir a los canales oficiales cuando no se resuelva su consulta. El nombre y la imagen no implican participación, afiliación ni respaldo del actor.</p>
+        <p>El foro se encuentra en una beta privada accesible exclusivamente a administración autorizada. No admite participación de usuarios generales ni constituye una sección pública. Sus temas y respuestas están sujetos a las prohibiciones de estos términos; no se permite incluir documentos privados ni datos personales de terceros. Una apertura posterior requerirá informar previamente sus reglas y condiciones.</p>
         <p>La comunidad pública de Telegram puede utilizarse sin cuenta Chile3X. El acceso al espacio privado de Miembros requiere una cuenta activa, correo verificado y vinculación voluntaria con el bot. Los mensajes quedan sujetos a las reglas de la comunidad, a las condiciones de Telegram y a moderación manual o automática por spam, fraude, amenazas, acoso, contenido ilícito o reincidencia. Una medida en Telegram no reemplaza por sí sola una decisión sobre la cuenta del sitio.</p>
       </section>
 
       <section id="medios">
         <h2>10. Fotos, videos, historias y estados</h2>
-        <p>Todo material enviado queda sujeto a moderación. Chile3X puede redimensionar, comprimir, recortar técnicamente y aplicar una marca de agua para mostrarlo y protegerlo dentro del servicio, sin que ello asegure impedir toda copia por terceros.</p>
-        <p>Las historias de imagen o video tienen vigencia pública limitada según la función disponible. Los estados de texto pueden conservarse por más tiempo hasta que la persona los elimine o la plataforma los retire. El contenido temporal sigue sujeto a estas condiciones durante toda su existencia.</p>
+        <p>Todo material enviado queda sujeto a moderación. El sistema puede redimensionar, comprimir y convertir técnicamente archivos para su publicación. La marca de agua en fotos y videos y el difuminado de rostros en fotografías se aplican cuando se seleccionan las opciones correspondientes; el difuminado de videos no se encuentra habilitado. La preparación se realiza en el dispositivo cuando la función lo permite y se almacena el archivo final, sin conservar una segunda copia del original por ese procesamiento. Estas medidas no garantizan impedir copias ni ocultar correctamente todos los rostros; el resultado debe revisarse antes de enviarlo.</p>
+        <p>La galería del anuncio admite fotografías finales de hasta 10 MB y videos finales de hasta 12 MB y 15 segundos. Las historias admiten hasta cinco fotografías finales de 5 MB, cinco estados de texto y tres videos de hasta 12 MB y 15 segundos activos por anuncio. Los formularios informan los formatos y demás restricciones aplicables; documentos privados y otros tipos de archivo tienen controles específicos.</p>
+        <p>Las historias de fotografía, video y texto expiran públicamente a las 24 horas. Una tarea programada elimina los archivos y registros vencidos del almacenamiento activo; su ejecución puede demorarse ante errores técnicos o acumulación de tareas, sin prolongar el acceso público. Las copias transitorias de respaldo o caché se rigen por la Política de privacidad. El contenido temporal sigue sujeto a estas condiciones durante toda su existencia.</p>
       </section>
 
       <section id="exclusivo">
@@ -150,14 +157,15 @@ export default function TermsPage() {
         <h2>13. Propiedad intelectual y licencia de publicación</h2>
         <p>Cada titular conserva los derechos sobre el contenido que aporta. Al enviarlo concede a Chile3X una licencia no exclusiva, gratuita, revocable respecto de usos futuros y limitada a operar, almacenar, respaldar, adaptar técnicamente, moderar, proteger, promocionar el propio anuncio y mostrar el contenido dentro del portal y sus vistas previas.</p>
         <p>La parte pública de un anuncio puede ser indexada por buscadores y aparecer al compartir enlaces en redes sociales. Retirar el anuncio detiene usos futuros controlados por Chile3X, pero la desindexación, cachés o copias de terceros pueden tardar y dependen de esos servicios.</p>
-        <p>Las marcas, diseño, código, textos institucionales y elementos propios de Chile3X no pueden copiarse, comercializarse ni reutilizarse sin autorización. Para reclamar por uso no autorizado de material, escribe a <a href="mailto:chile3x.site@gmail.com">chile3x.site@gmail.com</a> e identifica el contenido y tu relación con él.</p>
+        <p>Las marcas, diseño, código, textos institucionales y elementos propios de Chile3X no pueden copiarse, comercializarse ni reutilizarse sin autorización. Las reclamaciones por uso no autorizado de material se reciben en <a href="mailto:chile3x.site@gmail.com">chile3x.site@gmail.com</a>, indicando el contenido y la relación de quien reclama con él.</p>
       </section>
 
       <section id="contacto-externo">
         <h2>14. Contactos, redes y servicios externos</h2>
         <p>Los botones de teléfono, WhatsApp, Telegram, Instagram, Arsmate, OnlyFans y otros enlaces conducen a servicios de terceros con sus propias reglas y políticas. Chile3X no controla sus mensajes, cobros, disponibilidad, seguridad ni tratamiento de datos.</p>
+        <p>Dentro de un anuncio con contacto disponible, el panel de WhatsApp distingue y presenta primero al anunciante, seguido de los canales del equipo de Chile3X. Soporte y marketing no representan al anunciante ni coordinan sus servicios. Los contadores registran pulsaciones, no mensajes enviados ni una garantía de contacto efectivo.</p>
         <p>Cuando una persona vincula Telegram, el bot puede comprobar su identidad del sitio, administrar invitaciones, sincronizar Novedades y aplicar las medidas descritas en las reglas. Chile3X no solicita la contraseña de Telegram. El botón de Apple permanece inactivo mientras no exista una configuración completa; si se habilita, la autenticación se realizará en los servidores de Apple y el correo asociado quedará bloqueado en Chile3X.</p>
-        <p>La agenda de viajes es únicamente informativa: no modifica automáticamente la ciudad principal ni constituye intermediación, transporte o garantía. Está prohibido utilizarla para captar, trasladar o explotar personas o para facilitar conductas contrarias a los artículos 411 ter y 411 quáter del Código Penal u otras normas aplicables.</p>
+        <p>La agenda de viajes y los horarios son información declarada por el anunciante. Mostrar “24/7” resume una configuración de atención durante las 24 horas de los siete días y no acredita disponibilidad real en cada momento. La agenda no modifica automáticamente la ciudad principal ni constituye intermediación, transporte o garantía. Está prohibido utilizarla para captar, trasladar o explotar personas o facilitar conductas contrarias a los artículos 411 ter y 411 quáter del Código Penal u otras normas aplicables.</p>
       </section>
 
       <section id="disponibilidad">
@@ -180,7 +188,7 @@ export default function TermsPage() {
 
       <section id="termino">
         <h2>18. Pausa, suspensión, cierre y eliminación</h2>
-        <p>La persona anunciante puede pausar publicaciones y solicitar el cierre de su cuenta mediante las funciones disponibles o el canal de soporte. Chile3X puede restringir o terminar el acceso por incumplimiento, riesgo, requerimiento de autoridad, fraude, inactividad prolongada o necesidad operativa fundada.</p>
+        <p>La persona anunciante puede ocultar temporalmente sus publicaciones y solicitar el cierre de su cuenta mediante las funciones disponibles o el canal de soporte. Chile3X puede restringir o terminar el acceso por incumplimiento, riesgo, requerimiento de autoridad, fraude, inactividad prolongada o necesidad operativa fundada.</p>
         <p>El cierre no elimina de inmediato antecedentes que deban conservarse para resolver reportes, prevenir abuso, ejercer o defender derechos, cumplir obligaciones legales o mantener respaldos transitorios. El tratamiento posterior se rige por la Política de privacidad.</p>
         <p>Deshabilitar o eliminar una cuenta revoca su acceso al espacio privado de Telegram. Cuando una cuenta creada con Apple se elimine permanentemente y el proveedor esté activo, Chile3X intentará además revocar la autorización externa antes de borrar localmente la identidad.</p>
       </section>
@@ -194,7 +202,7 @@ export default function TermsPage() {
       <section id="ley">
         <h2>20. Legislación chilena, autoridades y contacto</h2>
         <p>Estos términos se interpretan conforme a las leyes de la República de Chile, incluyendo, según corresponda, la Ley N.º 19.628 sobre protección de la vida privada, la Ley N.º 19.496 sobre protección de los derechos de los consumidores, la Ley N.º 19.799 sobre documentos y firma electrónica, el Código Penal y la Ley N.º 21.719 desde su entrada en vigencia el <strong>1 de diciembre de 2026</strong>.</p>
-        <p>Antes de iniciar una controversia, puedes solicitar una revisión escribiendo a <a href="mailto:chile3x.site@gmail.com">chile3x.site@gmail.com</a>. Esto no limita el derecho a acudir a SERNAC, tribunales, policías, Ministerio Público, la futura Agencia de Protección de Datos Personales u otra autoridad competente.</p>
+        <p>Antes de iniciar una controversia, puede solicitarse una revisión escribiendo a <a href="mailto:chile3x.site@gmail.com">chile3x.site@gmail.com</a>. Esto no limita el derecho a acudir a SERNAC, tribunales, policías, Ministerio Público, la Agencia de Protección de Datos Personales cuando ejerza sus atribuciones u otra autoridad competente.</p>
         <div className="legal-sources">
           <h3>Fuentes legales oficiales</h3>
           <ul>

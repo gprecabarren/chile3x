@@ -17,9 +17,16 @@ export const ADMIN_AUDIT_CATEGORIES = {
   telegram: "Telegram",
   settings: "Configuración",
   security: "Accesos privados",
+  forum: "Foro privado beta",
 } as const;
 
 export const ADMIN_AUDIT_ACTIONS = {
+  "forum.section_create": "Creó una sección del foro",
+  "forum.section_update": "Editó o archivó una sección del foro",
+  "forum.topic_create": "Creó un tema del foro",
+  "forum.topic_update": "Editó o moderó un tema del foro",
+  "forum.post_create": "Respondió en el foro",
+  "forum.post_update": "Editó o moderó una respuesta del foro",
   "media.public_bulk_approve": "Aprobó varios archivos de un anuncio",
   "media.exclusive_bulk_approve": "Aprobó varios archivos de contenido exclusivo",
   "admin.login": "Inició sesión",
@@ -93,6 +100,9 @@ export const ADMIN_AUDIT_ACTIONS = {
 } as const;
 
 export const ADMIN_AUDIT_ENTITY_TYPES = {
+  forum_section: "Sección del foro",
+  forum_topic: "Tema del foro",
+  forum_post: "Respuesta del foro",
   admin: "Administrador",
   account: "Cuenta",
   account_deletion: "Eliminación de cuenta",

@@ -7,6 +7,7 @@ export const siteSettingDefaults = {
   moderation_mode: "manual",
   billing_mode: "manual",
   maintenance_mode: "disabled",
+  account_help_enabled: "enabled",
   sponsors_enabled: "enabled",
   robots_indexing: "enabled",
   site_url: "https://chile3x.cl",

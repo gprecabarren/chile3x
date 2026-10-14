@@ -63,7 +63,12 @@ test('every catalog destination exists and never performs an API mutation', asyn
     assert.ok(!topic.link.href.startsWith('/api/'));
     assert.ok(topic.steps.length >= 3);
     const path = topic.link.href.split(/[?#]/)[0];
-    await access(new URL(`../app${path}/page.tsx`, import.meta.url));
+    if (path.startsWith('/admin/configuracion/')) {
+      const section = path.split('/').at(-1);
+      const settingsPage = await source('app/admin/configuracion/[section]/page.tsx');
+      assert.ok(new RegExp(`\\b${section}: \\{ eyebrow:`).test(settingsPage));
+      await access(new URL('../app/admin/configuracion/[section]/page.tsx', import.meta.url));
+    } else await access(new URL(`../app${path}/page.tsx`, import.meta.url));
   }
   assert.match(HELP_BETA_NOTICE, /errores[\s\S]*WhatsApp/);
 });

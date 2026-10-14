@@ -8,6 +8,7 @@ import { profilePublicPath, readProfilePrices, type Tier } from "@/lib/profile";
 import { getPortalContacts } from "@/lib/site-contacts";
 import { publicWhatsappContacts, WHATSAPP_TEXT_LIMITS, type WhatsappPlacement } from "@/lib/portal-whatsapp";
 import { FloatingWhatsappMenu } from "@/app/FloatingWhatsappMenu";
+import type { AdvertiserWhatsapp } from "@/app/FloatingWhatsappMenu";
 import { PortalWhatsappLink } from "@/app/PortalWhatsappLink";
 import { getSiteSettings } from "@/lib/site-settings";
 import { formatRegionName, getRegionByTitle } from "@/app/locations";
@@ -136,8 +137,8 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
   );
 }
 
-export function DirectoryShell({ children, selectedCity, kind = "escort" }: { children: ReactNode; selectedCity?: string; kind?: "escort" | "agency" | "rental" }) {
-  return <PortalWhatsappScope><main className="directory-root"><PublicHeader /><DirectoryCityBar selectedCity={selectedCity} kind={kind} />{children}<PublicFooter /></main></PortalWhatsappScope>;
+export function DirectoryShell({ children, selectedCity, kind = "escort", advertiserWhatsapp }: { children: ReactNode; selectedCity?: string; kind?: "escort" | "agency" | "rental"; advertiserWhatsapp?: AdvertiserWhatsapp }) {
+  return <PortalWhatsappScope advertiser={advertiserWhatsapp}><main className="directory-root"><PublicHeader /><DirectoryCityBar selectedCity={selectedCity} kind={kind} />{children}<PublicFooter /></main></PortalWhatsappScope>;
 }
 
 export async function PublicFooter() {
@@ -182,11 +183,11 @@ export function PortalContactIcon({ kind }: { kind: "whatsapp" | "telegram" | "i
   return <span className="arsmate-icon" aria-hidden="true">OF</span>;
 }
 
-export async function PortalWhatsappScope({ children }: { children: ReactNode }) {
+export async function PortalWhatsappScope({ children, advertiser }: { children: ReactNode; advertiser?: AdvertiserWhatsapp }) {
   const settings = await getSiteSettings();
   const contacts = publicWhatsappContacts(settings);
   return <FloatingWhatsappMenu contacts={contacts} title={settings.whatsapp_panel_title.slice(0, WHATSAPP_TEXT_LIMITS.title)} description={settings.whatsapp_panel_description.slice(0, WHATSAPP_TEXT_LIMITS.explanation)} buttonLabel={settings.whatsapp_button_label}
-    showFloating={settings.whatsapp_panel_enabled === "enabled"} icon={<PortalContactIcon kind="whatsapp" />}>
+    advertiser={advertiser} showFloating={settings.whatsapp_panel_enabled === "enabled"} icon={<PortalContactIcon kind="whatsapp" />}>
     {children}
   </FloatingWhatsappMenu>;
 }

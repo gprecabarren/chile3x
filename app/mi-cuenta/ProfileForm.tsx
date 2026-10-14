@@ -18,6 +18,7 @@ import {
   readAvailability,
   skinColors,
   spokenLanguages,
+  tagLabels,
   tierLabels,
   type ProfileType,
 } from "@/lib/profile";
@@ -74,10 +75,6 @@ function socialUsername(value: string) {
   }
 }
 
-function titleCase(value: string) {
-  return value ? `${value[0].toUpperCase()}${value.slice(1)}` : value;
-}
-
 function profileTypeLabel(type: ProfileType) {
   return type === "escort" ? "Escort" : type === "agency" ? "Agencia" : "Arriendo";
 }
@@ -104,6 +101,8 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
   const previousAvailabilityHours = useRef<Record<string, { opens: string; closes: string }>>({});
   const allSelectedHours = enabledAvailabilityDays.size > 0 && [...enabledAvailabilityDays].every(key => availabilityHours[key]?.opens === "00:00" && availabilityHours[key]?.closes === "24:00");
   const [selectedProfileTags, setSelectedProfileTags] = useState<string[]>(initial?.tags ?? []);
+  const [contentOnly, setContentOnly] = useState(metadataValue(initial, "content_only") === "1");
+  const [selectedTier, setSelectedTier] = useState(initial?.tier ?? "vip");
   const [underageNotice, setUnderageNotice] = useState(false);
   const typeLocked = Boolean(initial);
 
@@ -134,6 +133,8 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
       if (savedRegion && regions.some((item) => item.title === savedRegion)) setRegion(savedRegion);
       if (savedCity) setCity(savedCity);
       setSelectedProfileTags((saved.tags ?? []).filter((tag) => profileTags.some((allowedTag) => allowedTag === tag)));
+      setContentOnly(saved.content_only?.includes("on") ?? false);
+      if (visibilityTiers.some(tier => tier === saved.tier?.[0])) setSelectedTier(saved.tier[0]);
       setEnabledAvailabilityDays(new Set(availabilityDays.filter((day) => saved[`availability_${day.key}_enabled`]?.includes("on")).map((day) => day.key)));
       setAvailabilityHours(Object.fromEntries(availabilityDays.map(day => [day.key, { opens: saved[`availability_${day.key}_opens`]?.[0] ?? "", closes: saved[`availability_${day.key}_closes`]?.[0] ?? "" }])));
       // Wait for the selected listing type to render its own fields before
@@ -215,7 +216,7 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
         <div className="form-grid form-grid-two">
           <label>
             Tipo de anuncio
-            {typeLocked ? <><input name="type" type="hidden" value={type} /><span className="profile-type-locked"><strong>{profileTypeLabel(type)}</strong><small>El tipo queda definido al crear el anuncio. Para otro tipo, crea una publicación nueva.</small></span></> : <select name="type" value={type} onChange={(event) => setType(event.target.value as ProfileType)}>
+            {typeLocked ? <><input name="type" type="hidden" value={type} /><span className="profile-type-locked"><strong>{profileTypeLabel(type)}</strong><small>El tipo queda definido al crear el anuncio. Para otro tipo, crea una publicación nueva.</small></span></> : <select name="type" value={type} onChange={(event) => { setType(event.target.value as ProfileType); setContentOnly(false); }}>
               {availableProfileTypes.map((item) => <option key={item} value={item}>{profileTypeLabel(item)}</option>)}
             </select>}
             {!typeLocked && !allowEscort && <small>Ya tienes un Escort activo. Puedes crear varias agencias o arriendos.</small>}
@@ -224,10 +225,11 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
             Nombre visible
             <input name="display_name" required minLength={2} maxLength={80} defaultValue={initial?.displayName} placeholder={type === "agency" ? "Ej. Agencia Luna" : type === "rental" ? "Ej. Habitación en Providencia" : "Ej. Valentina Masajes"} />
           </label>
-          {type === "escort" && <div className="tier-form-field">
+          {type === "escort" && contentOnly && <input name="tier" type="hidden" value={selectedTier} />}
+          {type === "escort" && !contentOnly && <div className="tier-form-field">
             <label>
               Categoría de visibilidad
-              <select name="tier" defaultValue={initial?.tier ?? "vip"}>
+              <select name="tier" value={selectedTier} onChange={event => setSelectedTier(event.target.value)}>
                 {visibilityTiers.map((tier) => <option key={tier} value={tier}>{tierVisibilityOptions[tier]}</option>)}
               </select>
               <small>Por lanzamiento, todas las categorías son gratis. Sus valores se definirán más adelante.</small>
@@ -243,6 +245,15 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
           </label>
           {type !== "escort" && <input name="tier" type="hidden" value="bronze" />}
         </div>
+        {type === "escort" && <fieldset className="profile-content-mode">
+          <legend>Modalidad del anuncio</legend>
+          <label className="profile-content-only-toggle"><input type="checkbox" name="content_only" checked={contentOnly} onChange={event => {
+            const only = event.target.checked;
+            setContentOnly(only);
+            if (only) setSelectedProfileTags(current => [...new Set([...current.filter(tag => tag !== "masajes"), "venta-contenido"])]);
+          }} /><span><strong>Solo vendo contenido; no soy escort</strong><small>Mi anuncio aparecerá únicamente en Venta de contenido, sin etiqueta Escort ni categorías VIP, Premium, Bronze o Masajes.</small></span></label>
+          <p>Si también eres escort, deja esta opción desmarcada y activa la etiqueta Venta contenido más abajo. Puedes vender por contacto directo o en otras plataformas; no necesitas una galería privada en Chile3X. Al guardar Solo contenido se retiran Masajes, los servicios presenciales, viajes y tarifas por tiempo.</p>
+        </fieldset>}
       </section>
 
       <section className="profile-form-section">
@@ -299,8 +310,8 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
           <p>Selecciona solo las que correspondan a tu anuncio. Puedes dejarlas sin marcar.</p>
           <div className="check-grid">
             {profileTags.map((tag) => {
-              const blocked = (tag === "milf" && selectedProfileTags.includes("trans")) || (tag === "trans" && selectedProfileTags.includes("milf"));
-              return <label key={tag} className={blocked ? "is-blocked" : ""}><input name="tags" type="checkbox" value={tag} checked={selectedProfileTags.includes(tag)} disabled={blocked} onChange={() => toggleProfileTag(tag)} />{titleCase(tag)}</label>;
+              const blocked = (tag === "milf" && selectedProfileTags.includes("trans")) || (tag === "trans" && selectedProfileTags.includes("milf")) || (contentOnly && (tag === "masajes" || tag === "venta-contenido"));
+              return <label key={tag} className={blocked ? "is-blocked" : ""}><input name="tags" type="checkbox" value={tag} checked={(contentOnly && tag === "venta-contenido") || selectedProfileTags.includes(tag)} disabled={blocked} onChange={() => toggleProfileTag(tag)} />{tagLabels[tag]}</label>;
             })}
           </div>
         </fieldset>}
@@ -320,7 +331,7 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
           <section className="profile-form-section">
             <div className="profile-form-section-heading"><p>VALORES Y DISPONIBILIDAD</p><h2>Tarifas y horarios</h2></div>
             <div className="form-grid form-grid-three">
-              {type === "escort" ? <>
+              {type === "escort" && !contentOnly ? <>
                 <label>
                   Valor por 30 minutos
                   <input name="price_30_min" inputMode="numeric" min="1" type="number" defaultValue={metadataValue(initial, "price_30_min")} placeholder="Ej. 30000" />
@@ -337,7 +348,7 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
                   Valor por noche
                   <input name="price_night" inputMode="numeric" min="1" type="number" defaultValue={metadataValue(initial, "price_night")} placeholder="Ej. 150000" />
                 </label>
-              </> : <label>
+              </> : !contentOnly && <label>
                 {type === "rental" ? "Valor mensual" : "Valor referencial"}
                 <input name="price_amount" inputMode="numeric" min="1" type="number" defaultValue={initial?.details.priceAmount ?? ""} placeholder={type === "rental" ? "Ej. 350000" : "Monto referencial"} />
               </label>}
@@ -395,12 +406,12 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
                 <label>Tamaño de busto<select name="bust_size" defaultValue={metadataValue(initial, "bust_size")}><option value="">Seleccionar</option>{bustSizes.map((item) => <option key={item}>{item}</option>)}</select></label>
               </div>
               <fieldset className="language-checklist"><legend>Idiomas</legend><p>Marca todos los idiomas que puedes atender.</p><div className="check-grid">{spokenLanguages.map((language) => <label key={language}><input name="languages" type="checkbox" value={language} defaultChecked={metadataValue(initial, "languages").split(", ").includes(language)} />{language}</label>)}</div></fieldset>
-              <fieldset className="travel-agenda-editor"><legend>Agenda de viajes</legend><p>Informa una visita temporal a otra ciudad. Tu anuncio seguirá perteneciendo a su ciudad habitual.</p><div className="form-grid form-grid-two">
+              {!contentOnly && <fieldset className="travel-agenda-editor"><legend>Agenda de viajes</legend><p>Informa una visita temporal a otra ciudad. Tu anuncio seguirá perteneciendo a su ciudad habitual.</p><div className="form-grid form-grid-two">
                 <label>Ciudad del próximo viaje<select name="travel_city" defaultValue={metadataValue(initial, "travel_city")}><option value="">Sin viaje programado</option>{regions.map((item) => <optgroup label={item.displayTitle} key={item.title}>{item.cities.map((travelCity) => <option value={travelCity} key={travelCity}>{travelCity}</option>)}</optgroup>)}</select></label>
                 <label>Nota breve<input name="travel_note" maxLength={180} defaultValue={metadataValue(initial, "travel_note")} placeholder="Ej. Agenda abierta durante esos días" /></label>
                 <DateField label="Desde" name="travel_start" defaultValue={metadataValue(initial, "travel_start")} />
                 <DateField label="Hasta" name="travel_end" defaultValue={metadataValue(initial, "travel_end")} />
-              </div></fieldset>
+              </div></fieldset>}
             </section>
           )}
 
@@ -471,7 +482,7 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
                 <label>Usuario de OnlyFans<input name="onlyfans_url" maxLength={64} defaultValue={socialUsername(metadataValue(initial, "onlyfans_url"))} placeholder="nombredeusuario" /><small>Se enlazará a onlyfans.com/tuusuario.</small></label></>}
               </div>
             </fieldset>
-            {type !== "rental" && <div className="service-columns">
+            {type !== "rental" && !contentOnly && <div className="service-columns">
               <fieldset>
                 <legend>Servicios incluidos</legend>
                 <div className="check-grid">

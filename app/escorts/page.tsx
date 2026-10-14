@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { readDirectoryOrderSeed } from "@/lib/directory-order";
 import { DirectoryFilters } from "@/app/directorio/DirectoryFilters";
 import { DirectoryPagination } from "@/app/directorio/DirectoryPagination";
-import { DirectoryShell, ProfileGrid } from "@/app/directorio/_components";
+import { CityProfileSections, DirectoryShell } from "@/app/directorio/_components";
 import { DIRECTORY_PAGE_SIZE, getPublicProfilePage, readDirectoryFilters, readDirectoryPage, type DirectoryQuery } from "@/lib/directory";
 import { cityDirectory, getCityBySlug, getPreferredCitySlug } from "@/app/locations";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
@@ -36,7 +37,7 @@ export default async function EscortsPage({ searchParams }: { searchParams: Prom
   const preferredCity = getCityBySlug(getPreferredCitySlug(await cookies()))?.city;
   const nearbyCity = cityDirectory.some((item) => item.city === nearbyCityValue) ? nearbyCityValue : preferredCity;
   const [viewer, settings] = await Promise.all([getCurrentUser(), getSiteSettings()]);
-  const { profiles, page, hasNext, outOfRange } = await getPublicProfilePage(filters, { viewerId: viewer?.id, preferredCity: nearbyCity, page: readDirectoryPage(query) });
+  const { profiles, page, hasNext, outOfRange, orderSeed } = await getPublicProfilePage(filters, { viewerId: viewer?.id, preferredCity: nearbyCity, page: readDirectoryPage(query), orderSeed: readDirectoryOrderSeed(query.orden) });
   if (outOfRange) notFound();
   const stories = await getActiveStories({ viewerId: viewer?.id, city: filters.city, region: filters.region });
   const siteUrl = siteBaseUrl(settings.site_url);
@@ -55,9 +56,16 @@ export default async function EscortsPage({ searchParams }: { searchParams: Prom
         <DirectoryFilters key={JSON.stringify(filters)} action="/escorts" filters={filters} />
         {filters.invalidCombination && <p className="filter-warning" role="alert">MILF y TRANS no se pueden combinar. Selecciona solo una para buscar.</p>}
         <div id="resultados" className="directory-results-heading"><div><p className="eyebrow">RESULTADOS</p><h2>{profiles.length} perfil{profiles.length === 1 ? "" : "es"}{hasNext || page > 1 ? " en esta página" : ` encontrado${profiles.length === 1 ? "" : "s"}`}</h2></div><p>{nearbyCity ? `Mostramos primero los perfiles de ${nearbyCity}; puedes cambiar la ciudad desde los filtros.` : "Las etiquetas y servicios se muestran según la información aprobada de cada perfil."}</p></div>
-        <ProfileGrid profiles={profiles} />
-        <DirectoryPagination path="/escorts" query={query} page={page} hasNext={hasNext} />
+        <CityProfileSections city={filters.city ?? "Chile"} profiles={profiles} selectedCategory={filters.category} paginated={hasNext || page > 1} />
+        <DirectoryPagination path="/escorts" query={query} page={page} hasNext={hasNext} orderSeed={orderSeed} />
         </DirectoryStoryLayout>
+      </section>
+      <section className="seo-content">
+        <p className="eyebrow">GUÍA DEL DIRECTORIO</p>
+        <h2>Cómo buscar escorts y damas de compañía en Chile</h2>
+        <p>Elige una región o ciudad para revisar anuncios de esa ubicación y compara la información de cada perfil. Búsquedas como “putas en Chile” también se usan en internet para encontrar publicaciones para adultos; aquí cada anuncio conserva su nombre y su modalidad declarada, sin atribuirle servicios no informados.</p>
+        <h3>Venta de contenido: una modalidad diferente</h3>
+        <p>Puedes filtrar por Venta de contenido para encontrar personas que venden material digital, sean o no escorts. Quienes activan Solo vendo contenido aparecen únicamente en esa sección. No es obligatorio utilizar la galería privada: también pueden vender por contacto directo o en otras plataformas. Chile3X no procesa esos pagos.</p>
       </section>
     </DirectoryShell>
   );

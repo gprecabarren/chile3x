@@ -28,6 +28,10 @@ export function publicCacheKey(request: Request, deploymentVersion = CACHE_VERSI
     if (name.startsWith("next-") || name.startsWith("x-vinext-")) return null;
   }
   const path = url.pathname;
+  // Directory entry requests generate a new random order. Caching their HTML
+  // would give everyone the same seed for ten minutes, including on reload.
+  // Other public pages retain their existing anonymous cache policy.
+  if (path === "/escorts" || path.startsWith("/escorts/") || path === "/agencias" || path === "/arriendos") return null;
   const allowed = ["/", "/escorts", "/agencias", "/arriendos", "/quienes-somos", "/noticias", "/faq", "/contacto", "/terminos", "/privacidad", "/reglas-de-publicacion"].includes(path)
     || path.startsWith("/escorts/") || path.startsWith("/perfil/") || path.startsWith("/noticias/");
   if (!allowed) return null;

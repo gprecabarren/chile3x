@@ -15,17 +15,22 @@ test("authenticated visitors never read or populate shared page caches, includin
 });
 
 test("HTML cache is isolated by deployment and cannot collide with router payloads or legacy entries", () => {
-  const html = publicCacheKey(request("/escorts?city=Valdivia"), "worker-version-123");
+  const html = publicCacheKey(request("/noticias?pagina=2"), "worker-version-123");
   assert.ok(html);
-  assert.equal(new URL(html.url).searchParams.get("city"), "Valdivia");
+  assert.equal(new URL(html.url).searchParams.get("pagina"), "2");
   assert.equal(new URL(html.url).searchParams.get("__chile3x_cache"), "worker-version-123");
-  assert.notEqual(html.url, request("/escorts?city=Valdivia").url);
+  assert.notEqual(html.url, request("/noticias?pagina=2").url);
   for (const headers of [{ rsc: "1" }, { accept: "text/x-component" }, { "next-router-state-tree": "[]" }, { "x-vinext-mounted-slots": "x" }]) {
     assert.equal(publicCacheKey(request("/escorts", headers)), null);
   }
   assert.equal(publicCacheKey(request("/escorts.rsc")), null);
   assert.equal(publicCacheKey(request("/", {}, "POST")), null);
   for (const path of ["/admin", "/mi-cuenta", "/registro", "/api/auth/login", "/restablecer-clave"]) assert.equal(publicCacheKey(request(path)), null);
+});
+
+test("randomized directory documents bypass shared HTML on entry, filtering and pagination", () => {
+  for(const path of ['/escorts','/escorts/concepcion','/escorts?categoria=contenido','/escorts/concepcion?orden=9231&pagina=2','/agencias','/arriendos']) assert.equal(publicCacheKey(request(path)),null,path);
+  for(const path of ['/','/perfil/example','/noticias','/faq']) assert.ok(publicCacheKey(request(path)),path);
 });
 
 test("cookies, errors and non-document bodies never become shared cache entries", () => {

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { DirectoryQuery } from "@/lib/directory";
 
-export function DirectoryPagination({ path, query, page, hasNext }: { path: string; query: DirectoryQuery; page: number; hasNext: boolean }) {
+export function DirectoryPagination({ path, query, page, hasNext, orderSeed }: { path: string; query: DirectoryQuery; page: number; hasNext: boolean; orderSeed?: number }) {
   if (page === 1 && !hasNext) return null;
   function href(target: number) {
     const params = new URLSearchParams();
@@ -10,6 +10,7 @@ export function DirectoryPagination({ path, query, page, hasNext }: { path: stri
       for (const item of Array.isArray(value) ? value : [value]) params.append(key, item);
     }
     if (target > 1) params.set("pagina", String(target));
+    if (orderSeed) params.set("orden", String(orderSeed));
     const search = params.toString();
     return `${path}${search ? `?${search}` : ""}#resultados`;
   }

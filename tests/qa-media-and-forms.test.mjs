@@ -51,7 +51,7 @@ test('QA forms preserve original endpoints and put submit and WhatsApp actions a
  assert.equal((form.match(/name="intent" type="submit" value="submit"/g)||[]).length,2);
  assert.equal((registration.match(/Solicitar creación de cuenta por WhatsApp/g)||[]).length,2);
  assert.match(login,/auth-split-card/);assert.match(login,/action="\/api\/auth\/login"/);assert.match(recovery,/auth-recovery-card/);
- assert.match(form,/type !== "rental" && <div className="service-columns"/);
- assert.match(submission,/servicesIncluded: typeValue === "rental" \? \[\]/);
+ assert.match(form,/type !== "rental" && !contentOnly && <div className="service-columns"/);
+ assert.match(submission,/servicesIncluded: typeValue === "rental" \|\| contentOnly \? \[\]/);
  assert.match(status,/existingProfile.type === "escort" \? requestedHealthReviewStatus : "not_requested"/);
 });

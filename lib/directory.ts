@@ -7,6 +7,8 @@ import { accountPresence, agencyMembers, blockedProfiles, profileDetails, profil
 import { getApprovedMediaForProfiles } from "@/lib/media";
 import { publicProfileCondition } from "@/lib/public-profile-visibility";
 import { profileMetadataForType } from "@/lib/profile-type-metadata";
+import { isContentOnly, sellsContent, profileMatchesDirectoryCategory } from "@/lib/profile-content-category";
+import { readDirectoryOrderSeed } from "@/lib/directory-order";
 import {
   additionalServices,
   bodyTypes,
@@ -28,7 +30,7 @@ export type DirectoryQuery = Record<string, QueryValue>;
 
 export type DirectoryFilters = {
   name?: string;
-  category?: "vip" | "premium" | "bronze" | "masajes" | "agency" | "rental";
+  category?: "vip" | "premium" | "bronze" | "masajes" | "contenido" | "agency" | "rental";
   online: boolean;
   verified: boolean;
   region?: string;
@@ -97,7 +99,7 @@ export type PublicProfile = {
  */
 export type PublicProfileSeo = Pick<PublicProfile,
   "slug" | "handle" | "type" | "displayName" | "shortDescription" | "region" | "city" | "isDemo"
-> & { socialImageId: string | null };
+> & { socialImageId: string | null; contentOnly: boolean };
 
 function values(query: DirectoryQuery, key: string) {
   const value = query[key];
@@ -131,7 +133,7 @@ function numberQuery(value: string | undefined) {
 export function readDirectoryFilters(query: DirectoryQuery, pinned?: { region?: string; city?: string; type?: ProfileType }): DirectoryFilters {
   const requestedTags = values(query, "tag").filter((value) => allowedTags.includes(value as (typeof allowedTags)[number]));
   const requestedCategory = one(query, "categoria");
-  const category = (["vip", "premium", "bronze", "masajes", "agency", "rental"] as const).find((value) => value === requestedCategory && (!pinned?.type || pinned.type === "escort" && value !== "agency" && value !== "rental"))
+  const category = (["vip", "premium", "bronze", "masajes", "contenido", "agency", "rental"] as const).find((value) => value === requestedCategory && (!pinned?.type || pinned.type === "escort" && value !== "agency" && value !== "rental"))
     ?? undefined;
   const nonEscortCategory = category === "agency" || category === "rental";
   const tierValue = one(query, "tier");
@@ -317,21 +319,33 @@ function metadataText(key: string) {
   return sql<string>`coalesce(json_extract(${profileDetails.metadata}, ${`$.${key}`}), '')`;
 }
 
+function contentOnlyCondition() {
+  return sql<boolean>`(${profiles.type} = 'escort' and coalesce(json_extract(case when json_valid(${profileDetails.metadata}) then ${profileDetails.metadata} else '{}' end, '$.content_only'), '') = '1')`;
+}
+
 /** Filter IDs in D1 first, then hydrate only the 24 cards in this page. */
-export async function getPublicProfilePage(filters: DirectoryFilters, options: { page?: number; viewerId?: string; preferredCity?: string } = {}) {
+export async function getPublicProfilePage(filters: DirectoryFilters, options: { page?: number; viewerId?: string; preferredCity?: string; orderSeed?: number } = {}) {
   const page = Math.min(Math.max(Math.trunc(options.page ?? 1), 1), 1000);
-  if (filters.invalidCombination) return { profiles: [] as PublicProfile[], page, pageSize: DIRECTORY_PAGE_SIZE, hasNext: false, outOfRange: page > 1 };
+  const orderSeed = readDirectoryOrderSeed(options.orderSeed?.toString());
+  if (filters.invalidCombination) return { profiles: [] as PublicProfile[], page, pageSize: DIRECTORY_PAGE_SIZE, hasNext: false, orderSeed, outOfRange: page > 1 };
 
   const db = await getDb();
   const conditions: SQL[] = [publicProfileCondition];
+  const contentOnly = contentOnlyCondition();
   if (options.viewerId) conditions.push(notExists(db.select({ id: blockedProfiles.id }).from(blockedProfiles).where(and(eq(blockedProfiles.userId, options.viewerId), eq(blockedProfiles.profileId, profiles.id)))));
   if (filters.region) conditions.push(eq(profiles.region, filters.region));
   if (filters.city) conditions.push(eq(profiles.city, filters.city));
   if (filters.type) conditions.push(eq(profiles.type, filters.type));
   if (filters.category === "masajes") {
     conditions.push(eq(profiles.type, "escort"));
+    conditions.push(sql`not ${contentOnly}`);
     conditions.push(exists(db.select({ id: profileTags.id }).from(profileTags).where(and(eq(profileTags.profileId, profiles.id), eq(profileTags.tag, "masajes")))));
   }
+  if (filters.category === "contenido") {
+    conditions.push(eq(profiles.type, "escort"));
+    conditions.push(or(contentOnly, exists(db.select({ id: profileTags.id }).from(profileTags).where(and(eq(profileTags.profileId, profiles.id), eq(profileTags.tag, "venta-contenido")))))!);
+  }
+  if (filters.tier) conditions.push(sql`not ${contentOnly}`);
   if (filters.tier) conditions.push(eq(profiles.tier, filters.tier));
   if (filters.verified) conditions.push(eq(profiles.verificationStatus, "reviewed"));
   if (filters.online) {
@@ -349,11 +363,14 @@ export async function getPublicProfilePage(filters: DirectoryFilters, options: {
   for (const service of filters.servicesAdditional) conditions.push(exists(db.select({ id: profileServices.id }).from(profileServices).where(and(eq(profileServices.profileId, profiles.id), eq(profileServices.kind, "additional"), eq(profileServices.service, service)))));
 
   const where = and(...conditions);
-  // Stable ordering can use the public-page index. Random SQL ordering would
-  // scan the entire directory and make adjacent pages overlap or skip cards.
-  const ordering = [desc(profiles.tier), desc(profiles.isFeatured), desc(profiles.updatedAt), desc(profiles.id)];
+  // Randomize before LIMIT, not just the loaded cards. Reuse the seed in next/
+  // previous links so unchanged listings cannot overlap across adjacent pages.
+  // Hash legacy non-hex IDs as well as UUIDs; arithmetic stays below 2^53.
+  let suffix: SQL = sql`0`;
+  for (let index = -8; index < 0; index++) suffix = sql`((${suffix} * 131 + coalesce(unicode(lower(substr(${profiles.id}, ${index}, 1))), 0)) % 2147483647)`;
+  const ordering = [sql`((${suffix} * ${orderSeed}) % 2147483647)`, asc(profiles.id)];
   if (options.preferredCity && !filters.city) ordering.unshift(sql`case when ${profiles.city} = ${options.preferredCity} then 0 else 1 end`);
-  const needsMetadata = Boolean(filters.nationality || filters.gender || filters.skinColor || filters.hairColor || filters.bodyType || filters.bustSize || filters.language || filters.ageMin || filters.ageMax);
+  const needsMetadata = Boolean(filters.category === "masajes" || filters.category === "contenido" || filters.tier || filters.nationality || filters.gender || filters.skinColor || filters.hairColor || filters.bodyType || filters.bustSize || filters.language || filters.ageMin || filters.ageMax);
   const idsBase = db.select({ id: profiles.id }).from(profiles);
   const ids = await (needsMetadata ? idsBase.leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id)) : idsBase)
     .where(where).orderBy(...ordering).limit(DIRECTORY_PAGE_SIZE + 1).offset((page - 1) * DIRECTORY_PAGE_SIZE);
@@ -361,7 +378,7 @@ export async function getPublicProfilePage(filters: DirectoryFilters, options: {
   const pageIds = ids.slice(0, DIRECTORY_PAGE_SIZE);
   const hydrated = pageIds.length ? await getPublicProfiles({ profileIds: pageIds.map((row) => row.id), viewerId: options.viewerId }) : [];
   const byId = new Map(hydrated.map((profile) => [profile.id, profile]));
-  return { profiles: pageIds.flatMap((row) => { const profile = byId.get(row.id); return profile ? [profile] : []; }), page, pageSize: DIRECTORY_PAGE_SIZE, hasNext, outOfRange: page > 1 && !pageIds.length };
+  return { profiles: pageIds.flatMap((row) => { const profile = byId.get(row.id); return profile ? [profile] : []; }), page, pageSize: DIRECTORY_PAGE_SIZE, hasNext, orderSeed, outOfRange: page > 1 && !pageIds.length };
 }
 
 /** Sitemap needs only canonical paths and timestamps, never media or tags. */
@@ -423,7 +440,9 @@ const getPublicProfileSeoForRouteCached = cache(async function getPublicProfileS
     city: profiles.city,
     isDemo: profiles.isDemo,
     socialImageId: profileMedia.id,
+    contentOnly: contentOnlyCondition().mapWith(Boolean),
   }).from(profiles)
+    .leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id))
     .leftJoin(profileMedia, and(
       eq(profileMedia.profileId, profiles.id),
       eq(profileMedia.mediaType, "image"),
@@ -476,8 +495,8 @@ export function filterPublicProfiles(profilesToFilter: PublicProfile[], filters:
     if (filters.region && profile.region !== filters.region) return false;
     if (filters.city && profile.city !== filters.city) return false;
     if (filters.type && profile.type !== filters.type) return false;
-    if (filters.category === "masajes" && (profile.type !== "escort" || !profile.tags.includes("masajes"))) return false;
-    if (filters.tier && profile.tier !== filters.tier) return false;
+    if (!profileMatchesDirectoryCategory(profile, filters.category)) return false;
+    if (filters.tier && (isContentOnly(profile) || profile.tier !== filters.tier)) return false;
     if (filters.online && !profile.isOnline) return false;
     if (filters.verified && profile.verificationStatus !== "reviewed") return false;
     if (!matchesText(profile.displayName, filters.name)) return false;
@@ -504,7 +523,8 @@ export async function getCityEscortCounts() {
     const db = await getDb();
     const rows = await db.select({ city: profiles.city, total: count() })
       .from(profiles)
-      .where(and(publicProfileCondition, eq(profiles.type, "escort")))
+      .leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id))
+      .where(and(publicProfileCondition, eq(profiles.type, "escort"), sql`not ${contentOnlyCondition()}`))
       .groupBy(profiles.city);
 
     return new Map(rows.map((row) => [row.city, Number(row.total)]));
@@ -530,18 +550,21 @@ export async function getFeaturedProfiles(limit = 6, viewerId?: string) {
     // the home page. We first select a small, representative candidate set:
     // manually highlighted/recent listings plus the most-viewed recent ones.
     const [manualCandidates, viewedCandidates] = await Promise.all([
-      db.select({ id: profiles.id }).from(profiles).where(and(
+      db.select({ id: profiles.id }).from(profiles).leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id)).where(and(
         publicProfileCondition,
         eq(profiles.type, "escort"),
         eq(profiles.isDemo, false),
+        sql`not ${contentOnlyCondition()}`,
       )).orderBy(desc(profiles.isFeatured), desc(profiles.updatedAt)).limit(candidateLimit),
       db.select({ profileId: profileViews.profileId, total: count() }).from(profileViews)
         .innerJoin(profiles, eq(profileViews.profileId, profiles.id))
+        .leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id))
         .where(and(
           gte(profileViews.viewedOn, cutoff),
           publicProfileCondition,
           eq(profiles.type, "escort"),
           eq(profiles.isDemo, false),
+          sql`not ${contentOnlyCondition()}`,
         ))
         .groupBy(profileViews.profileId)
         .orderBy(desc(count()))
@@ -556,10 +579,11 @@ export async function getFeaturedProfiles(limit = 6, viewerId?: string) {
       // Durante el lanzamiento puede no existir todavía una escort real
       // aprobada. En ese único caso se conserva una portada útil con los
       // perfiles de demostración que ya son públicos en el directorio.
-      const demoCandidates = await db.select({ id: profiles.id }).from(profiles).where(and(
+      const demoCandidates = await db.select({ id: profiles.id }).from(profiles).leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id)).where(and(
         publicProfileCondition,
         eq(profiles.type, "escort"),
         eq(profiles.isDemo, true),
+        sql`not ${contentOnlyCondition()}`,
       )).orderBy(desc(profiles.isFeatured), desc(profiles.updatedAt)).limit(limit);
       const demoProfiles = await getPublicProfiles({ viewerId, type: "escort", profileIds: demoCandidates.map((candidate) => candidate.id) });
       return [...demoProfiles]
@@ -610,8 +634,8 @@ export function getCityPath(city: string) {
 }
 
 export function getProfileDisplayTags(profile: PublicProfile) {
-  const tags = profile.type === "escort" ? [tierLabels[profile.tier], ...profile.tags.map((tag) => tagLabels[tag as keyof typeof tagLabels] ?? tag)] : [];
-  // Tier is always the primary tag. A manually assigned tag can have the same
+  const tags = profile.type === "escort" ? [...(!isContentOnly(profile) ? [tierLabels[profile.tier]] : []), ...(sellsContent(profile) ? [tagLabels["venta-contenido"]] : []), ...profile.tags.filter(tag => tag !== "venta-contenido" && (!isContentOnly(profile) || tag !== "masajes")).map((tag) => tagLabels[tag as keyof typeof tagLabels] ?? tag)] : [];
+  // Tier is the primary tag unless this is a content-only listing. A tag can have the same
   // label (for example, tier "vip" plus tag "vip"), so normalize before
   // rendering to guarantee visitors never see a duplicate badge.
   const seen = new Set<string>();

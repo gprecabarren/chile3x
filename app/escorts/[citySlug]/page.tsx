@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { readDirectoryOrderSeed } from "@/lib/directory-order";
 import { notFound } from "next/navigation";
 import { DirectoryFilters } from "@/app/directorio/DirectoryFilters";
 import { DirectoryPagination } from "@/app/directorio/DirectoryPagination";
@@ -38,7 +39,7 @@ export default async function CityPage({ params, searchParams }: CityPageProps) 
   const query = await searchParams;
   const filters = readDirectoryFilters(query, { region: city.region, city: city.city });
   const [viewer, settings] = await Promise.all([getCurrentUser(), getSiteSettings()]);
-  const { profiles, page, hasNext, outOfRange } = await getPublicProfilePage(filters, { viewerId: viewer?.id, page: readDirectoryPage(query) });
+  const { profiles, page, hasNext, outOfRange, orderSeed } = await getPublicProfilePage(filters, { viewerId: viewer?.id, page: readDirectoryPage(query), orderSeed: readDirectoryOrderSeed(query.orden) });
   if (outOfRange) notFound();
   const stories = await getActiveStories({ viewerId: viewer?.id, city: city.city, region: city.region });
   const basePath = getCityPath(city.city);
@@ -62,7 +63,7 @@ export default async function CityPage({ params, searchParams }: CityPageProps) 
         {filters.invalidCombination && <p className="filter-warning" role="alert">MILF y TRANS no se pueden combinar. Selecciona solo una para buscar.</p>}
         <div id="resultados" className="directory-results-heading"><div><p className="eyebrow">{city.city.toUpperCase()}</p><h2>{profiles.length} {profiles.length === 1 ? "publicación" : "publicaciones"} {hasNext || page > 1 ? "en esta página" : profiles.length === 1 ? "visible" : "visibles"}</h2></div></div>
         <CityProfileSections city={city.city} profiles={profiles} selectedCategory={filters.category} paginated={hasNext || page > 1} />
-        <DirectoryPagination path={basePath} query={query} page={page} hasNext={hasNext} />
+        <DirectoryPagination path={basePath} query={query} page={page} hasNext={hasNext} orderSeed={orderSeed} />
         </DirectoryStoryLayout>
         <SeoContent city={city.city} region={city.region} count={profiles.length} />
       </section>

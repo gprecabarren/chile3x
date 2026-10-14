@@ -785,6 +785,33 @@ footer span { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid #272
 .public-type-label { z-index: 4; top: 10px; right: 10px; left: auto; }
 .public-profile-visual .featured-label { z-index: 4; top: auto; right: auto; bottom: 10px; left: 10px; border-radius: 4px; }
 
+/* Shared wrapping lanes prevent badges from overlapping, even on narrow cards. */
+.public-card-primary-badges, .public-card-secondary-badges { position: absolute; z-index: 4; right: 8px; left: 8px; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 5px; pointer-events: none; }
+.public-card-primary-badges { top: 8px; justify-content: space-between; }
+.public-card-secondary-badges { bottom: 8px; align-items: flex-end; }
+.public-card-primary-badges .public-card-tier-badge, .public-card-primary-badges .public-type-label, .public-profile-visual .public-card-secondary-badges .featured-label { position: static; max-width: 100%; box-sizing: border-box; }
+.public-card-secondary-badges .public-card-detail-badges { position: static; flex: 1 1 100px; min-width: 0; justify-content: flex-end; }
+.public-card-badge { max-width: 100%; box-sizing: border-box; overflow-wrap: anywhere; line-height: 1.25; }
+.public-card-badge.venta-contenido, .public-tag.venta-contenido { border-color: #52cbea; color: #d0f7ff; background: #11435a; }
+.public-card-badge.venta-contenido { font-size: 9px; letter-spacing: .025em; }
+.public-tag.venta-contenido { text-transform: uppercase; }
+.city-profile-section#contenido { border-color: #327e96; }
+.city-profile-section#contenido summary strong { color: #86e1f5; }
+.city-section-page-note { margin: 0; color: #aeb6c7; font-size: 12px; line-height: 1.5; }
+.quick-filter-category.is-contenido { border-color: #52cbea; }
+.profile-form .profile-content-mode { margin: 22px 0 0; padding: 18px; border: 1px solid #327e96; border-radius: 12px; background: #0c2431; }
+.profile-form .profile-content-mode legend { padding-inline: 7px; color: #a5eaf8; font-size: 13px; font-weight: 700; }
+.profile-form .profile-content-only-toggle { display: flex; align-items: flex-start; gap: 11px; }
+.profile-form .profile-content-only-toggle input { flex: 0 0 18px; width: 18px; height: 18px; min-height: 0; margin-top: 2px; accent-color: #52cbea; }
+.profile-form .profile-content-only-toggle span { display: grid; min-width: 0; gap: 7px; }
+.profile-form .profile-content-only-toggle small { line-height: 1.5; }
+.profile-form .profile-content-mode p { margin: 14px 0 0; color: #b4cbd4; font-size: 12px; line-height: 1.6; }
+@media (max-width: 620px) {
+  .public-card-primary-badges, .public-card-secondary-badges { right: 6px; left: 6px; gap: 4px; }
+  .public-card-secondary-badges .public-card-detail-badges { position: static; }
+  .public-card-badge.venta-contenido { font-size: 8px; }
+}
+
 /* Historias: el contenido conserva su visualización, pero siempre permite llegar al anuncio. */
 .story-bubble-card { width: 92px; flex: 0 0 92px; display: grid; justify-items: center; gap: 3px; }
 .story-bubble-card .story-bubble { flex-basis: auto; }

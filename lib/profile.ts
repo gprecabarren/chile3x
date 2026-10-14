@@ -2,7 +2,7 @@ import { regions } from "@/app/locations";
 
 export const profileTypes = ["escort", "agency", "rental"] as const;
 export const tiers = ["bronze", "premium", "vip"] as const;
-export const profileTags = ["milf", "hombres", "trans", "masajes"] as const;
+export const profileTags = ["milf", "hombres", "trans", "masajes", "venta-contenido"] as const;
 export const includedServices = [
   "Departamento propio",
   "Hoteles",
@@ -76,6 +76,7 @@ export const tagLabels: Record<(typeof profileTags)[number], string> = {
   hombres: "Hombres",
   trans: "TRANS",
   masajes: "Masajes",
+  "venta-contenido": "Venta contenido",
 };
 
 export const tierLabels: Record<Tier, string> = {

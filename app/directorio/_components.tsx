@@ -1,6 +1,7 @@
 import Link from "@/app/NavigationLink";
 import Image from "next/image";
 import { publicProfileAge } from "@/lib/profile-age";
+import { isContentOnly, publicProfileTypeLabel, profileMatchesDirectoryCategory } from "@/lib/profile-content-category";
 import { cookies } from "next/headers";
 import type { ReactNode } from "react";
 import { getCurrentAdmin, getCurrentUser, getSessionCookieName, getUserSessionCookieName, type AccountUser } from "@/lib/auth";
@@ -21,12 +22,6 @@ import { countUnreadMessages } from "@/lib/internal-messages";
 import { MessageNotifications, PendingReviewsNotice, UnreadMessagesNotice } from "@/app/MessageNotifications";
 import { countPendingReceivedReviews } from "@/lib/profile-interactions";
 import { PublicNavigationLink as NavLink } from "./PublicNavigationLink";
-
-const typeLabel = {
-  escort: "Escort",
-  agency: "Agencia",
-  rental: "Arriendo",
-};
 
 const visualTone = ["rose", "violet", "blue", "amber", "teal", "plum"];
 const priceFormatter = new Intl.NumberFormat("es-CL");
@@ -219,11 +214,11 @@ export function LaEstokadaBadge() {
 
 export function ProfileCard({ profile }: { profile: PublicProfile }) {
   const tags = getProfileDisplayTags(profile);
-  const tierTag = profile.type === "escort" ? tags[0] ?? "Bronze" : null;
-  const detailTags = profile.type === "escort" ? tags.slice(1) : [];
+  const tierTag = profile.type === "escort" && !isContentOnly(profile) ? tags[0] ?? "Bronze" : null;
+  const detailTags = profile.type === "escort" ? tierTag ? tags.slice(1) : tags : [];
   const age = publicProfileAge(profile.type,profile.details.metadata);
   const subtitle = profile.comuna ?? profile.details.referenceLocation;
-  const mainPrice = readProfilePrices(profile.details)[0];
+  const mainPrice = isContentOnly(profile) ? undefined : readProfilePrices(profile.details)[0];
   const coverImage = profile.media.find((media) => media.mediaType === "image" && media.isProfilePhoto) ?? profile.media.find((media) => media.mediaType === "image");
   const profileHref = profilePublicPath(profile);
 
@@ -231,10 +226,8 @@ export function ProfileCard({ profile }: { profile: PublicProfile }) {
     <article className="public-profile-card">
       <Link href={profileHref} className={`public-profile-visual ${toneFor(profile.slug)}${coverImage ? " has-image" : ""}`} aria-label={`Ver perfil de ${profile.displayName}`}>
         {coverImage ? <Image className="public-profile-image" src={coverImage.url} alt={coverImage.altText ?? `Foto de ${profile.displayName}`} fill unoptimized sizes="(max-width: 360px) 100vw, (max-width: 720px) 50vw, (max-width: 1040px) 33vw, 25vw" style={{ objectFit: "scale-down" }} /> : <span className="public-profile-initial">{profile.displayName.slice(0, 1)}</span>}
-        <span className="public-type-label">{typeLabel[profile.type]}</span>
-        {tierTag && <span className={`public-card-tier-badge ${tierTag.toLowerCase()}`}>{tierTag}</span>}
-        {detailTags.length > 0 && <span className="public-card-detail-badges" aria-label={`Etiquetas: ${detailTags.join(", ")}`}>{detailTags.map((tag) => <span key={tag} className={`public-card-badge ${tag.toLowerCase().replaceAll(" ", "-")}`}>{tag}</span>)}</span>}
-        {profile.isFeatured && <span className="featured-label">DESTACADA</span>}
+        <span className="public-card-primary-badges">{tierTag && <span className={`public-card-tier-badge ${tierTag.toLowerCase()}`}>{tierTag}</span>}{!isContentOnly(profile) && <span className="public-type-label">{publicProfileTypeLabel(profile)}</span>}</span>
+        {(detailTags.length > 0 || profile.isFeatured) && <span className="public-card-secondary-badges">{profile.isFeatured && <span className="featured-label">DESTACADA</span>}{detailTags.length > 0 && <span className="public-card-detail-badges" aria-label={`Etiquetas: ${detailTags.join(", ")}`}>{detailTags.map((tag) => <span key={tag} className={`public-card-badge ${tag.toLowerCase().replaceAll(" ", "-")}`}>{tag}</span>)}</span>}</span>}
       </Link>
       <div className="public-profile-content">
         <div className="public-profile-title">
@@ -279,20 +272,22 @@ function CityProfileSection({ id, title, description, profiles, tier }: { id: st
 }
 
 export function CityProfileSections({ city, profiles, selectedCategory, paginated = false }: CityProfileSectionsProps) {
-  const escorts = profiles.filter((profile) => profile.type === "escort");
+  const escorts = profiles.filter((profile) => profile.type === "escort" && !isContentOnly(profile));
   const sections: { id: string; title: string; description: string; profiles: PublicProfile[]; tier?: Tier }[] = [
     { id: "vip", title: "VIP", description: "Perfiles de élite con máxima visibilidad.", profiles: escorts.filter((profile) => profile.tier === "vip"), tier: "vip" },
     { id: "premium", title: "Premium", description: "Perfiles con visibilidad intermedia y presentación destacada.", profiles: escorts.filter((profile) => profile.tier === "premium"), tier: "premium" },
     { id: "bronze", title: "Bronze", description: "Perfiles con visibilidad estándar en el directorio.", profiles: escorts.filter((profile) => profile.tier === "bronze"), tier: "bronze" },
     { id: "masajes", title: "Masajes", description: "Escorts con la etiqueta Masajes; también aparecen en su categoría de visibilidad", profiles: escorts.filter((profile) => profile.tags.includes("masajes")) },
+    { id: "contenido", title: "Venta de contenido", description: "Contenido por contacto directo o en otras plataformas; no requiere una galería privada en Chile3X", profiles: profiles.filter((profile) => profileMatchesDirectoryCategory(profile, "contenido")) },
     { id: "agency", title: "Agencias", description: "Agencias visibles en la ciudad", profiles: profiles.filter((profile) => profile.type === "agency") },
     { id: "rental", title: "Arriendos", description: "Arriendos visibles en la ciudad", profiles: profiles.filter((profile) => profile.type === "rental") },
   ];
 
   return <section className="city-profile-sections" aria-label={`Publicaciones en ${city}`}>
-    {(selectedCategory ? sections.filter((section) => section.id === selectedCategory) : sections.slice(0, 3).filter((section) => !paginated || section.profiles.length > 0)).map(({ id, title, description, profiles: sectionProfiles, tier }) => <CityProfileSection key={id} id={id} title={title} description={description} profiles={sectionProfiles} tier={tier} />)}
+    {paginated && <p className="city-section-page-note">Los recuentos corresponden a esta página. Selecciona una categoría en los filtros para consultar todos sus resultados.</p>}
+    {(selectedCategory ? sections.filter((section) => section.id === selectedCategory) : sections.slice(0, 3)).map(({ id, title, description, profiles: sectionProfiles, tier }) => <CityProfileSection key={id} id={id} title={title} description={description} profiles={sectionProfiles} tier={tier} />)}
     {!selectedCategory && <><div className="city-section-divider"><h3>También en {city}</h3><span aria-hidden="true" /></div>
-    {sections.slice(3).filter((section) => !paginated || section.profiles.length > 0).map(({ id, title, description, profiles: sectionProfiles, tier }) => <CityProfileSection key={id} id={id} title={title} description={description} profiles={sectionProfiles} tier={tier} />)}</>}
+    {sections.slice(3).map(({ id, title, description, profiles: sectionProfiles, tier }) => <CityProfileSection key={id} id={id} title={title} description={description} profiles={sectionProfiles} tier={tier} />)}</>}
   </section>;
 }
 
@@ -326,6 +321,10 @@ export function SeoContent({ city, region, count }: { city: string; region: stri
       <p>{regionalContext[regionInfo?.id ?? ""] ?? `La ruta de ${city} forma parte de la cobertura territorial de Chile3X y mantiene sus resultados separados de otras ciudades.`}</p>
       <h3>Cómo explorar publicaciones en {city}</h3>
       <p>{count > 0 ? `Esta página muestra ${count} ${count === 1 ? "publicación visible" : "publicaciones visibles"}. ` : null}Usa los filtros para acotar por categoría, atributos o servicios y abre cada perfil para consultar su información aprobada. Si necesitas entender la moderación, consulta las preguntas frecuentes y las reglas antes de publicar o contactar.</p>
+      <h3>Escorts, damas de compañía y búsquedas locales</h3>
+      <p>En internet también se utiliza la búsqueda “putas en {city}” para encontrar anuncios para adultos. Chile3X presenta cada publicación según la modalidad y los datos declarados por su titular: revisa su ubicación, descripción y canales de contacto, sin suponer servicios que no estén informados.</p>
+      <h3>¿Venta de contenido significa que la persona es escort?</h3>
+      <p>No. Venta de contenido reúne tanto escorts que también venden material digital como personas que únicamente venden contenido y no son escorts. Estas últimas no aparecen en VIP, Premium, Bronze ni Masajes. La etiqueta no implica que la compra se realice en Chile3X; el canal y las condiciones se consultan directamente a la persona anunciante.</p>
       <nav className="seo-content-links" aria-label={`Información y ciudades relacionadas con ${city}`}>
         <Link href="/escorts">Directorio de escorts en Chile</Link>
         {nearbyCities.map((nearbyCity) => <Link href={getCityPath(nearbyCity)} key={nearbyCity}>Escorts en {nearbyCity}</Link>)}

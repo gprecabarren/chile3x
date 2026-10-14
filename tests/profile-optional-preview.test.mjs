@@ -34,7 +34,8 @@ test('secondary fields share one collapsed group; important optional fields rema
 test('new escort listings default to VIP and display descending tiers without changing existing listings', async () => {
   const form = await source('app/mi-cuenta/ProfileForm.tsx');
   assert.match(form, /const visibilityTiers = \["vip", "premium", "bronze"\] as const/);
-  assert.match(form, /<select name="tier" defaultValue=\{initial\?\.tier \?\? "vip"\}>/);
+  assert.match(form, /useState\(initial\?\.tier \?\? "vip"\)/);
+  assert.match(form, /<select name="tier" value=\{selectedTier\}/);
   assert.equal((form.match(/visibilityTiers\.map\(\(tier\)/g) ?? []).length, 2, 'both dropdown and chips use descending tiers');
   assert.match(form, /type !== "escort" && <input name="tier" type="hidden" value="bronze"/);
   assert.match(form, /Ej\. Valentina Masajes/);

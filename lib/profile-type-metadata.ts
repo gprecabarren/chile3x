@@ -6,5 +6,7 @@ const rentalFields = new Set([
 // Old records may contain fields from another listing type. Keep them stored
 // until the owner edits, but never expose Escort attributes on a rental.
 export function profileMetadataForType(type: string, metadata: Record<string, string>) {
-  return type === "rental" ? Object.fromEntries(Object.entries(metadata).filter(([key]) => rentalFields.has(key))) : metadata;
+  if (type === "rental") return Object.fromEntries(Object.entries(metadata).filter(([key]) => rentalFields.has(key)));
+  if (type !== "escort") return Object.fromEntries(Object.entries(metadata).filter(([key]) => key !== "content_only"));
+  return metadata;
 }

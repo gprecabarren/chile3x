@@ -205,6 +205,8 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
     throw new ProfileValidationError("El tipo de perfil o categoría no es válido.");
   }
 
+  const contentOnly = typeValue === "escort" && formData.get("content_only") === "on";
+
   if (!isAllowedLocation(region, city)) {
     throw new ProfileValidationError("Selecciona una ciudad disponible para la región elegida.");
   }
@@ -225,7 +227,7 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
 
   const priceValues = ["price_30_min", "price_60_min", "price_moment", "price_night"] as const;
   const prices = Object.fromEntries(priceValues.flatMap((field) => {
-    if (typeValue !== "escort") return [];
+    if (typeValue !== "escort" || contentOnly) return [];
     const raw = compactText(formData.get(field), 14);
     const value = optionalPositiveInteger(formData.get(field));
     if (raw && (value === null || value === 0)) {
@@ -256,12 +258,12 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
   const availabilityError = validateAvailability(formData);
   if (availabilityError) throw new ProfileValidationError(availabilityError);
   const availability = serializeAvailability(formData);
-  const travelCity = typeValue === "escort" ? compactText(formData.get("travel_city"), 120) : "";
+  const travelCity = typeValue === "escort" && !contentOnly ? compactText(formData.get("travel_city"), 120) : "";
   const travelStart = compactText(formData.get("travel_start"), 10);
   const travelEnd = compactText(formData.get("travel_end"), 10);
   const travelNote = compactText(formData.get("travel_note"), 180);
   const allowedTravelCities = new Set([...citiesByRegion.values()].flat());
-  if (typeValue === "escort" && [travelCity, travelStart, travelEnd].some(Boolean) && !(travelCity && travelStart && travelEnd)) {
+  if (typeValue === "escort" && !contentOnly && [travelCity, travelStart, travelEnd].some(Boolean) && !(travelCity && travelStart && travelEnd)) {
     throw new ProfileValidationError("Para publicar un viaje indica ciudad, fecha de inicio y fecha de término.");
   }
   if (travelCity && (!allowedTravelCities.has(travelCity) || !/^\d{4}-\d{2}-\d{2}$/.test(travelStart) || !/^\d{4}-\d{2}-\d{2}$/.test(travelEnd) || travelStart > travelEnd)) {
@@ -274,6 +276,7 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
 
   const metadata = Object.fromEntries(
     metadataFields
+      .filter(field => !contentOnly || !field.startsWith("travel_"))
       .filter((field) => typeValue === "escort" || !["gender", "age", "nationality", "skin_color", "languages", "height_cm", "weight_kg", "measurements", "hair_color", "body_type", "bust_size"].includes(field))
       .filter((field) => typeValue !== "rental" || !["agency_years", "website", "facebook_url", "twitter_url", "arsmate_url", "onlyfans_url", "promotions", "contact_methods"].includes(field))
       .map((field) => [field, compactText(formData.get(field), field === "promotions" ? 500 : 180)] as const)
@@ -281,6 +284,7 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
   );
 
   if (typeValue === "escort") Object.assign(metadata, prices);
+  if (contentOnly) metadata.content_only = "1";
   if (languages) metadata.languages = languages;
   if (availability) metadata.availability = availability;
   if (website) metadata.website = website;
@@ -296,7 +300,8 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
     if (travelNote) metadata.travel_note = travelNote;
   }
 
-  const tags = typeValue === "escort" ? listFromForm(formData.getAll("tags"), profileTags) : [];
+  const tags = typeValue === "escort" ? listFromForm(formData.getAll("tags"), profileTags).filter(tag => !contentOnly || tag !== "masajes") : [];
+  if (contentOnly && !tags.includes("venta-contenido")) tags.push("venta-contenido");
   if (tags.includes("milf") && tags.includes("trans")) {
     throw new ProfileValidationError("MILF y TRANS no se pueden combinar en un mismo perfil.");
   }
@@ -323,8 +328,8 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
       metadata: JSON.stringify(profileMetadataForType(typeValue, metadata)),
     },
     tags,
-    servicesIncluded: typeValue === "rental" ? [] : listFromForm(formData.getAll("services_included"), includedServices),
-    servicesAdditional: typeValue === "rental" ? [] : listFromForm(formData.getAll("services_additional"), additionalServices),
+    servicesIncluded: typeValue === "rental" || contentOnly ? [] : listFromForm(formData.getAll("services_included"), includedServices),
+    servicesAdditional: typeValue === "rental" || contentOnly ? [] : listFromForm(formData.getAll("services_additional"), additionalServices),
     intent,
   };
 }

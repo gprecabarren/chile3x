@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { MediaVideo } from "@/app/MediaVideo";
 import Image from "next/image";
 import { publicProfileAge } from "@/lib/profile-age";
+import { isContentOnly, publicProfileTypeLabel } from "@/lib/profile-content-category";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
@@ -43,11 +44,7 @@ export const dynamic = "force-dynamic";
 
 type ProfilePageProps = { params: Promise<{ slug: string }>; searchParams: Promise<{ return_to?: string; media_notice?: string }> };
 
-function profileTypeLabel(type: PublicProfile["type"]) {
-  return type === "escort" ? "Escort" : type === "agency" ? "Agencia" : "Arriendo";
-}
-
-function profileSeoDescription(profile: Pick<PublicProfileSeo, "type" | "displayName" | "city" | "region" | "shortDescription">) {
+function profileSeoDescription(profile: Pick<PublicProfileSeo, "type" | "displayName" | "city" | "region" | "shortDescription"> & { contentOnly?: boolean; details?: { metadata: Record<string, string> } }) {
   return buildProfileSeoDescription(profile, formatRegionName(profile.region));
 }
 
@@ -138,14 +135,14 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   const videoCallHref = profile.type === "escort" && profile.servicesIncluded.includes("Videollamada") && contacts.whatsapp
     ? contacts.whatsapp.replace(/text=[^&]*/, `text=${encodeURIComponent(`Hola ${profile.displayName}, vi que ofreces videollamada en Chile3X y quisiera consultar.`)}`)
     : null;
-  const prices = readProfilePrices(profile.details).map((price) => ({
+  const prices = (isContentOnly(profile) ? [] : readProfilePrices(profile.details)).map((price) => ({
     ...price,
     label: profile.type === "rental" && price.label === "Tarifa informada" ? "Valor mensual" : price.label,
   }));
   const availability = readAvailability(profile.details.metadata.availability);
   const allDayEveryDay = isAvailableEveryDay24Hours(availability);
   const availabilityStatus = getAvailabilityStatus(availability, new Date(), profile.type === "escort" ? "atiende" : "abre");
-  const showCityAlerts = profile.isPublic && profile.type === "escort" && !profile.isDemo;
+  const showCityAlerts = profile.isPublic && profile.type === "escort" && !isContentOnly(profile) && !profile.isDemo;
   const [relatedProfiles, stories, approvedReviewsPage, verificationDocuments, exclusiveContent, cityAlertCities, activeCityAlerts, viewerOwnsProfile, engagement, ownPendingReviews, adminWhatsappStatistics] = await Promise.all([
     relatedProfileIds.length ? getPublicProfiles({ includeUnapproved: Boolean(admin), viewerId: viewer?.id, profileIds: relatedProfileIds }) : Promise.resolve([]),
     getActiveStories({ profileId: profile.id }),
@@ -165,7 +162,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   const exclusiveMedia = exclusiveContent.media;
   const age = publicProfileAge(profile.type,profile.details.metadata);
   const hasExclusiveAccess = exclusiveMedia.length > 0 && exclusiveContent.hasAccess;
-  const travel = profile.type === "escort" && profile.details.metadata.travel_city && profile.details.metadata.travel_start && profile.details.metadata.travel_end ? {
+  const travel = profile.type === "escort" && !isContentOnly(profile) && profile.details.metadata.travel_city && profile.details.metadata.travel_start && profile.details.metadata.travel_end ? {
     city: profile.details.metadata.travel_city,
     start: profile.details.metadata.travel_start,
     end: profile.details.metadata.travel_end,
@@ -186,7 +183,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
       <section className="profile-page-shell">
         <div className={`profile-page-visual${coverImage ? " has-image" : ""}`}>{coverImage ? <><ProfilePhotoLink className="profile-cover-photo-trigger" mediaId={coverImage.id} href={coverImage.url} aria-label={`Ampliar foto principal de ${profile.displayName}`}><Image className="profile-page-cover" src={coverImage.url} alt={coverImage.altText ?? `Foto de ${profile.displayName}`} fill priority unoptimized sizes="(max-width: 900px) 100vw, 45vw" style={{ objectFit: "scale-down" }} /></ProfilePhotoLink><ProfilePhotoLink className="profile-full-photo-link" mediaId={coverImage.id} href={coverImage.url}>Ver foto completa ⤢</ProfilePhotoLink></> : <span>{profile.displayName.slice(0, 1)}</span>}{stories.length > 0 && <span className="profile-story-photo-marker" aria-hidden="true" />}</div>
         <div className="profile-page-summary">
-          <p className="eyebrow">{profileTypeLabel(profile.type).toUpperCase()} · {profile.city.toUpperCase()}</p>
+          <p className="eyebrow">{publicProfileTypeLabel(profile).toUpperCase()} · {profile.city.toUpperCase()}</p>
           <div className="profile-page-title"><h1>{profile.displayName}{age!==null&&<small className="profile-heading-age" aria-label={`${age} años`}>, {age}</small>}</h1>{profile.verificationStatus === "reviewed" && profile.type === "escort" && <ProfileVerificationBadge displayName={profile.displayName} imageUrl={coverImage?.url ?? null} verifiedAt={profile.verifiedAt} />}{profile.isOnline && <span className="profile-online-badge profile-online-badge-large"><i aria-hidden="true" />Online</span>}</div>
           {profile.handle && <p className="profile-public-handle">@{profile.handle}</p>}
           <p className="profile-page-location"><Link href={getCityPath(profile.city)}>{location}</Link></p>
@@ -219,7 +216,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           {(availability.length > 0 || profile.details.schedule) && <section className="profile-detail-section availability-detail-section"><div className="availability-detail-heading"><div><h2>Disponibilidad</h2>{allDayEveryDay ? <p className="availability-open availability-247">Todos los días · 24 horas <span>24/7</span></p> : availabilityStatus && <p className={availabilityStatus.isOpen ? "availability-open" : "availability-closed"}>{availabilityStatus.text}</p>}</div>{availabilityStatus && <span aria-hidden="true" className={availabilityStatus.isOpen ? "availability-status-dot is-open" : "availability-status-dot"} />}</div>{!allDayEveryDay && (availability.length > 0 ? <dl className="availability-list">{availability.map((day) => <div key={day.key}><dt>{day.label}</dt><dd>{day.opensAt === "00:00" && day.closesAt === "24:00" ? "24 horas" : `${day.opensAt} – ${day.closesAt === "24:00" ? "medianoche" : day.closesAt}`}</dd></div>)}</dl> : <p>{profile.details.schedule}</p>)}</section>}
           {travel && <section className="profile-detail-section travel-agenda-public"><p className="eyebrow">AGENDA DE VIAJES</p><h2>Próxima visita a {travel.city}</h2><p><strong>{new Intl.DateTimeFormat("es-CL", { day: "numeric", month: "long" }).format(new Date(`${travel.start}T12:00:00Z`))}</strong> al <strong>{new Intl.DateTimeFormat("es-CL", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${travel.end}T12:00:00Z`))}</strong></p>{travel.note && <p>{travel.note}</p>}<small>Información referencial: el aviso continúa publicado en {profile.city}.</small></section>}
           {facts.length > 0 && <section className="profile-detail-section"><h2>{profile.type === "rental" ? "Características" : "Información del perfil"}</h2><dl className="profile-facts">{facts.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></section>}
-          {profile.type !== "rental" && (profile.servicesIncluded.length > 0 || profile.servicesAdditional.length > 0) && <section className="profile-detail-section service-detail-section"><h2>Servicios</h2><p className="service-filter-hint">Selecciona un servicio para ver resultados inicialmente en {profile.city}; después puedes ajustar los filtros.</p><div>{profile.servicesIncluded.length > 0 && <article><h3>Incluidos</h3><ul>{profile.servicesIncluded.map((item) => <li key={item}><Link href={serviceFilterPath(profile, "included", item)}>{item}</Link></li>)}</ul></article>}{profile.servicesAdditional.length > 0 && <article><h3>Adicionales</h3><ul>{profile.servicesAdditional.map((item) => <li key={item}><Link href={serviceFilterPath(profile, "additional", item)}>{item}</Link></li>)}</ul></article>}</div></section>}
+          {profile.type !== "rental" && !isContentOnly(profile) && (profile.servicesIncluded.length > 0 || profile.servicesAdditional.length > 0) && <section className="profile-detail-section service-detail-section"><h2>Servicios</h2><p className="service-filter-hint">Selecciona un servicio para ver resultados inicialmente en {profile.city}; después puedes ajustar los filtros.</p><div>{profile.servicesIncluded.length > 0 && <article><h3>Incluidos</h3><ul>{profile.servicesIncluded.map((item) => <li key={item}><Link href={serviceFilterPath(profile, "included", item)}>{item}</Link></li>)}</ul></article>}{profile.servicesAdditional.length > 0 && <article><h3>Adicionales</h3><ul>{profile.servicesAdditional.map((item) => <li key={item}><Link href={serviceFilterPath(profile, "additional", item)}>{item}</Link></li>)}</ul></article>}</div></section>}
         </div>
         <ProfileLocationCard city={profile.city} region={profile.region} referenceLocation={profile.details.referenceLocation} />
       </section>

@@ -25,7 +25,8 @@ test("Bronze remains supported in persistence and UI while new escort forms defa
   assert.match(directory, /tierLabels\[profile\.tier\]/);
   assert.match(submission, /typeValue === "escort" \? tierValue : "bronze"/);
   assert.match(components, /profile\.tier === "bronze"/);
-  assert.match(form, /defaultValue=\{initial\?\.tier \?\? "vip"\}/);
+  assert.match(form, /useState\(initial\?\.tier \?\? "vip"\)/);
+  assert.match(form, /name="tier" value=\{selectedTier\}/);
   assert.match(form, /value="bronze"/);
   assert.match(faq, /avisos Escort pueden elegir VIP/);
   assert.match(faq, /Premium \(visibilidad intermedia\) o Bronze/);

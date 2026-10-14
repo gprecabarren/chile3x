@@ -28,6 +28,11 @@ function withSecurityHeaders(response: Response, pathname = "", privateDocument 
   // top-level page from unrelated cross-origin windows.
   headers.set("cross-origin-opener-policy", "same-origin-allow-popups");
   headers.set("referrer-policy", pathname === "/api/auth/verificar-correo" ? "no-referrer" : "strict-origin-when-cross-origin");
+  // Even anonymous sign-in redirects from the beta must remain private.
+  if (pathname === "/foro" || pathname.startsWith("/foro/")) {
+    headers.set("cache-control", "private, no-store, max-age=0");
+    headers.set("x-robots-tag", "noindex, nofollow, nosnippet");
+  }
   headers.set("permissions-policy", "camera=(self), geolocation=(self), microphone=(self)");
   headers.set("content-security-policy", `default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline'${wasmPermission} https://accounts.google.com https://challenges.cloudflare.com https://www.googletagmanager.com https://news.google.com https://cdn.jsdelivr.net https://static.cloudflareinsights.com; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob:; font-src 'self' data:; frame-src https://accounts.google.com https://challenges.cloudflare.com https://www.googletagmanager.com https://news.google.com https://maps.google.com https://www.google.com; connect-src 'self' https://accounts.google.com https://www.googleapis.com https://challenges.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com https://news.google.com https://cdn.jsdelivr.net https://storage.googleapis.com https://cloudflareinsights.com; upgrade-insecure-requests`);
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });

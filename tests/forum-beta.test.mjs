@@ -54,6 +54,8 @@ test('all forum pages authenticate before querying; API authenticates before par
   assert.match(source('lib/forum.ts'),/t.section_id = forum_sections.id/);
   assert.match(source('lib/forum.ts'),/p.topic_id = forum_topics.id/);
   assert.doesNotMatch(source('worker/public-cache.ts'),/"\/foro"/);
+  assert.match(source('worker/index.ts'),/pathname === "\/foro" \|\| pathname.startsWith\("\/foro\/"\)/);
+  assert.match(source('worker/index.ts'),/"x-robots-tag", "noindex, nofollow, nosnippet"/);
   assert.match(source('app/robots.ts'),/"\/foro"/);
 });
 test('help toggle hides both navigation variants and rejects direct URLs; portrait has license and bot identity',()=>{

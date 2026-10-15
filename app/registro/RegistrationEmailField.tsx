@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { useEffect, useId, useState } from "react";
 
 type EmailStatus = "idle" | "checking" | "exists" | "unknown";

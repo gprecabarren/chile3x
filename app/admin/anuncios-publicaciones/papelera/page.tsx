@@ -1,5 +1,5 @@
 import { and, count, desc, eq, inArray, isNotNull, like, or, sql } from "drizzle-orm";
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { adminAuditLogs, profileMedia, profiles, users } from "@/db/schema";

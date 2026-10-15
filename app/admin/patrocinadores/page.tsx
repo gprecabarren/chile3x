@@ -1,5 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { redirect } from "next/navigation";
 import { getCurrentAdmin } from "@/lib/auth";
 import { adminHasCapability } from "@/lib/admin-permissions";

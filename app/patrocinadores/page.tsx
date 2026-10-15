@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { notFound } from "next/navigation";
 import { DirectoryShell } from "@/app/directorio/_components";
 import { getCurrentAdmin } from "@/lib/auth";

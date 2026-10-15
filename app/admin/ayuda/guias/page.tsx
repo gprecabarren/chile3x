@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { redirect } from "next/navigation";
 import { asc } from "drizzle-orm";
 import { getDb } from "@/db";

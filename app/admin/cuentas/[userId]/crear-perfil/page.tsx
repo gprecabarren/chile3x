@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { and, eq, isNull } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { ProfileForm } from "@/app/mi-cuenta/ProfileForm";

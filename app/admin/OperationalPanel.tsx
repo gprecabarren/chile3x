@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import {
   formatBytes,
   OPERATIONAL_CATEGORIES,

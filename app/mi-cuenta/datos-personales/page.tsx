@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { redirect } from "next/navigation";
 import { AccountIdentityFields } from "@/app/account-identity-fields";
 import { getDb } from "@/db";

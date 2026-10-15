@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { privatePageMetadata } from "@/lib/seo";
 import { OfficialChile3xLogo } from "@/app/OfficialChile3xLogo";
 import { MIN_PASSWORD_LENGTH, passwordRequirementText } from "@/lib/password-policy";

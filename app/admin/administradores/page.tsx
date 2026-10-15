@@ -1,5 +1,5 @@
 import { desc, eq } from "drizzle-orm";
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { adminGithubAccess, adminGithubIdentities, telegramAdminIdentities, users } from "@/db/schema";

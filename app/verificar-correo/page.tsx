@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { AnalyticsEvent } from "@/app/AnalyticsEvent";
 import { OfficialChile3xLogo } from "@/app/OfficialChile3xLogo";
 import { getVerificationUser, safeAccountReturnTo } from "@/lib/auth";

@@ -108,13 +108,19 @@ export async function getMediaUsage() {
   }), { bytes: 0, files: 0 });
 }
 
-export async function getApprovedMediaForProfiles(profileIds: string[]) {
+export async function getApprovedMediaForProfiles(profileIds: string[], coverOnly = false) {
   if (!profileIds.length) return new Map<string, ProfileMediaRecord[]>();
   const rows = await (await getDb()).select().from(profileMedia)
     .where(and(
       inArray(profileMedia.profileId, profileIds),
       eq(profileMedia.moderationStatus, "approved"),
       eq(profileMedia.visibility, "public"),
+      // Cards need one photo, not every full gallery and video in the page.
+      // Keep the complete media set on the individual profile route.
+      coverOnly ? sql`${profileMedia.id} = (SELECT cover.id FROM profile_media cover
+        WHERE cover.profile_id = ${profileMedia.profileId} AND cover.media_type = 'image'
+          AND cover.moderation_status = 'approved' AND cover.visibility = 'public'
+        ORDER BY cover.is_profile_photo DESC, cover.sort_order ASC, cover.created_at ASC, cover.id ASC LIMIT 1)` : undefined,
     ))
     .orderBy(asc(profileMedia.sortOrder), asc(profileMedia.createdAt));
   const byProfile = new Map<string, ProfileMediaRecord[]>();

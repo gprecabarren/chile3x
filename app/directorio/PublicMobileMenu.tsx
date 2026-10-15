@@ -62,6 +62,7 @@ export function PublicMobileMenu({ hasUserSession = false, hasAdminSession = fal
             <p>DIRECTORIO</p>
             <Link href="/agencias" onClick={closeMenu}>Agencias</Link>
             <Link href="/arriendos" onClick={closeMenu}>Arriendos</Link>
+            <Link href="/venta-contenido" onClick={closeMenu}>Venta de contenido</Link>
           </div>
           <div>
             <p>CHILE3X</p>

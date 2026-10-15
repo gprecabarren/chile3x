@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { useCallback, useState } from "react";
 import { MAX_REPORT_EVIDENCE_BYTES, MAX_REPORT_EVIDENCE_IMAGES, MAX_REPORT_EVIDENCE_TOTAL_BYTES } from "@/lib/report-evidence";
 import { TURNSTILE_PROFILE_REPORT_ACTION, TURNSTILE_PROFILE_REVIEW_SITEKEY } from "@/lib/turnstile";

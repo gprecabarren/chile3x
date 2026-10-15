@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { clearPreferredCity, savePreferredCity } from "@/app/directorio/location-client";

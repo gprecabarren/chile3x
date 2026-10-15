@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { telegramAccountLinks, telegramMemberships } from "@/db/schema";

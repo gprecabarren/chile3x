@@ -1,20 +1,20 @@
 import Image from "next/image";
 import { MediaVideo } from "@/app/MediaVideo";
 import { and, count, countDistinct, desc, eq, inArray, max, or, sql } from "drizzle-orm";
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { exclusiveContentCollections, exclusiveContentMedia, profileMedia, profiles, users } from "@/db/schema";
 import { getCurrentAdmin, safeAdminReturnTo } from "@/lib/auth";
 import { adminHasCapability } from "@/lib/admin-permissions";
 import { formatMediaBytes, getMediaQuotaState, getMediaUsage } from "@/lib/media";
-import { profilePublicPath } from "@/lib/profile";
 import { AdminPageHeading, AdminShell } from "../_components";
 import { AdminPagination, pageHref, readAdminPage } from "../pagination";
 import { AdminMediaImageProcessing } from "./AdminMediaImageProcessing";
 import { ApproveAllProfileMedia } from "./ApproveAllProfileMedia";
 import { ApproveAllExclusiveMedia } from "./ApproveAllExclusiveMedia";
 import { bulkMediaMessages } from "@/lib/media-bulk-review";
+import { MediaRecordLinks } from "./MediaRecordLinks";
 
 export const dynamic = "force-dynamic";
 
@@ -117,6 +117,7 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
   const admin = await getCurrentAdmin();
   if (!admin) redirect("/api/auth/github/start?return_to=/admin/medios");
   if (!adminHasCapability(admin, "media.moderate")) redirect("/admin/acceso-denegado?reason=permission");
+  const recordPermissions = { canAccounts: adminHasCapability(admin, "accounts.manage"), canProfiles: adminHasCapability(admin, "profiles.moderate"), canRecycle: adminHasCapability(admin, "profiles.recycle") };
 
   const [db, params, usage] = await Promise.all([getDb(), searchParams, getMediaUsage()]);
   const selectedProfileId = (params.perfil ?? "").trim().slice(0, 120);
@@ -159,6 +160,7 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
     profileSlug: string;
     profileHandle: string | null;
     profileStatus: string;
+    profileTrashedAt: string | null;
     ownerId: string;
     ownerEmail: string;
     ownerUsername: string | null;
@@ -170,6 +172,8 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
     linkedProfileName: string | null;
     linkedProfileSlug: string | null;
     linkedProfileHandle: string | null;
+    linkedProfileStatus: string | null;
+    linkedProfileTrashedAt: string | null;
     ownerId: string;
     ownerEmail: string;
     ownerUsername: string | null;
@@ -191,6 +195,7 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
       profileSlug: profiles.slug,
       profileHandle: profiles.handle,
       profileStatus: profiles.status,
+      profileTrashedAt: profiles.trashedAt,
       ownerId: users.id,
       ownerEmail: users.email,
       ownerUsername: users.username,
@@ -202,6 +207,8 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
       linkedProfileName: profiles.displayName,
       linkedProfileSlug: profiles.slug,
       linkedProfileHandle: profiles.handle,
+      linkedProfileStatus: profiles.status,
+      linkedProfileTrashedAt: profiles.trashedAt,
       ownerId: users.id,
       ownerEmail: users.email,
       ownerUsername: users.username,
@@ -300,6 +307,7 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
     slug: string;
     handle: string | null;
     status: string;
+    trashedAt: string | null;
     ownerId: string;
     ownerEmail: string;
     ownerUsername: string | null;
@@ -308,7 +316,7 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
   for (const row of publicRows) {
     const group = publicGroups.get(row.profileId);
     if (group) group.items.push(row);
-    else publicGroups.set(row.profileId, { id: row.profileId, name: row.profileName, slug: row.profileSlug, handle: row.profileHandle, status: row.profileStatus, ownerId: row.ownerId, ownerEmail: row.ownerEmail, ownerUsername: row.ownerUsername, items: [row] });
+    else publicGroups.set(row.profileId, { id: row.profileId, name: row.profileName, slug: row.profileSlug, handle: row.profileHandle, status: row.profileStatus, trashedAt: row.profileTrashedAt, ownerId: row.ownerId, ownerEmail: row.ownerEmail, ownerUsername: row.ownerUsername, items: [row] });
   }
 
   const exclusiveGroups = new Map<string, {
@@ -321,6 +329,8 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
     linkedProfileName: string | null;
     linkedProfileSlug: string | null;
     linkedProfileHandle: string | null;
+    linkedProfileStatus: string | null;
+    linkedProfileTrashedAt: string | null;
     items: ExclusiveRow[];
   }>();
   for (const row of exclusiveRows) {
@@ -336,6 +346,8 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
       linkedProfileName: row.linkedProfileName,
       linkedProfileSlug: row.linkedProfileSlug,
       linkedProfileHandle: row.linkedProfileHandle,
+      linkedProfileStatus: row.linkedProfileStatus,
+      linkedProfileTrashedAt: row.linkedProfileTrashedAt,
       items: [row],
     });
   }
@@ -421,20 +433,18 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
           const profilePhoto = group.items.filter((item) => item.media.isProfilePhoto);
           const gallery = group.items.filter((item) => !item.media.isProfilePhoto);
           const pending = group.items.filter((item) => item.media.moderationStatus === "pending").length;
-          const profileHref = profilePublicPath({ handle: group.handle, slug: group.slug });
           const accountHref = `/admin/cuentas/${encodeURIComponent(group.ownerId)}?return_to=${encodeURIComponent(currentHref)}`;
           return <section className="admin-media-profile-group" key={group.id}>
-            <header><div><p className="eyebrow">ANUNCIO</p><h2>{group.name}</h2><span><Link prefetch={false} className="admin-media-owner-link" href={accountHref}>{group.ownerUsername ? `@${group.ownerUsername}` : "Abrir cuenta propietaria"}</Link> · <a href={`mailto:${group.ownerEmail}`}>{group.ownerEmail}</a> · {listingStatusLabel(group.status)} · {group.items.length} archivo{group.items.length === 1 ? "" : "s"}{pending > 0 ? ` · ${pending} pendiente${pending === 1 ? "" : "s"}` : ""}</span></div><div><Link prefetch={false} className="button button-public-preview" href={profileHref} target="_blank">Ver anuncio público</Link><Link prefetch={false} className="button button-outline" href={`/admin/anuncios-publicaciones?q=${encodeURIComponent(group.name)}&return_to=${encodeURIComponent(currentHref)}`}>Abrir moderación</Link></div></header>
+            <header><div><p className="eyebrow">ANUNCIO</p><h2>{group.name}</h2><span>{recordPermissions.canAccounts ? <Link prefetch={false} className="admin-media-owner-link" href={accountHref}>{group.ownerUsername ? `@${group.ownerUsername}` : "Abrir cuenta propietaria"}</Link> : group.ownerUsername ? `@${group.ownerUsername}` : "Cuenta propietaria"} · <a href={`mailto:${group.ownerEmail}`}>{group.ownerEmail}</a> · {group.trashedAt ? "En papelera" : listingStatusLabel(group.status)} · {group.items.length} archivo{group.items.length === 1 ? "" : "s"}{pending > 0 ? ` · ${pending} pendiente${pending === 1 ? "" : "s"}` : ""}</span></div><MediaRecordLinks ownerId={group.ownerId} profile={group} returnTo={currentHref} {...recordPermissions} /></header>
             <ApproveAllProfileMedia profileId={group.id} files={group.items.map(item => item.media)} returnTo={currentHref} />
             {profilePhoto.length > 0 && <section><h3>Foto de perfil</h3><div className="admin-media-grid">{profilePhoto.map((item) => <PublicMediaCard key={item.media.id} media={item.media} profileName={group.name} returnTo={currentHref} />)}</div></section>}
             {gallery.length > 0 && <section><h3>Galería pública</h3><div className="admin-media-grid">{gallery.map((item) => <PublicMediaCard key={item.media.id} media={item.media} profileName={group.name} returnTo={currentHref} />)}</div></section>}
           </section>;
         }) : view === "exclusive" ? exclusivePageGroups.map((group) => {
           const pending = group.items.filter((item) => item.media.moderationStatus === "pending").length;
-          const accountHref = `/admin/cuentas/${encodeURIComponent(group.ownerId)}?return_to=${encodeURIComponent(currentHref)}`;
-          const profileHref = group.linkedProfileSlug ? profilePublicPath({ handle: group.linkedProfileHandle, slug: group.linkedProfileSlug }) : null;
+          const linkedProfile = group.linkedProfileId && group.linkedProfileSlug ? { id: group.linkedProfileId, slug: group.linkedProfileSlug, handle: group.linkedProfileHandle, status: group.linkedProfileStatus ?? "pending", trashedAt: group.linkedProfileTrashedAt } : null;
           return <section className="admin-media-profile-group exclusive-account-media-group" key={group.id}>
-            <header><div><p className="eyebrow">BIBLIOTECA PRIVADA DE CUENTA</p><h2>@{group.ownerUsername ?? group.ownerName ?? "usuario"}</h2><span>{group.linkedProfileName ? `Vinculada al anuncio ${group.linkedProfileName}` : "Sin anuncio vinculado"} · {group.items.length} archivo{group.items.length === 1 ? "" : "s"}{pending > 0 ? ` · ${pending} pendiente${pending === 1 ? "" : "s"}` : ""}</span></div><div><Link prefetch={false} className="button button-outline" href={accountHref}>Abrir cuenta</Link>{profileHref && <Link prefetch={false} className="button button-public-preview" href={profileHref} target="_blank">Ver anuncio vinculado</Link>}</div></header>
+            <header><div><p className="eyebrow">BIBLIOTECA PRIVADA DE CUENTA</p><h2>@{group.ownerUsername ?? group.ownerName ?? "usuario"}</h2><span>{group.linkedProfileName ? `Vinculada al anuncio ${group.linkedProfileName}${group.linkedProfileTrashedAt ? " · En papelera" : ` · ${listingStatusLabel(group.linkedProfileStatus ?? "pending")}`}` : "Sin anuncio vinculado"} · {group.items.length} archivo{group.items.length === 1 ? "" : "s"}{pending > 0 ? ` · ${pending} pendiente${pending === 1 ? "" : "s"}` : ""}</span></div><MediaRecordLinks ownerId={group.ownerId} profile={linkedProfile} returnTo={currentHref} {...recordPermissions} /></header>
             <section><h3>Contenido exclusivo</h3><p className="admin-media-group-hint">Este contenido pertenece a la cuenta, no se publica libremente y mantiene los accesos autorizados aunque se pause o elimine el anuncio asociado.</p><ApproveAllExclusiveMedia collectionId={group.id} files={group.items.map(item => item.media)} returnTo={currentHref} /><div className="admin-media-grid">{group.items.map((item) => <ExclusiveMediaCard key={item.media.id} media={item.media} ownerUsername={group.ownerUsername} returnTo={currentHref} />)}</div></section>
           </section>;
         }) : accountPageGroups.map((group) => {
@@ -444,17 +454,16 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
           const pending = allItems.filter((item) => item.media.moderationStatus === "pending").length;
           const images = allItems.filter((item) => item.media.mediaType === "image").length;
           const videos = allItems.length - images;
-          const accountHref = `/admin/cuentas/${encodeURIComponent(group.id)}?return_to=${encodeURIComponent(currentHref)}`;
           const focusParams = new URLSearchParams(listParams);
           focusParams.set("tipo", "accounts");
           focusParams.set("cuenta", group.id);
           focusParams.delete("page");
           const focused = selectedOwnerId === group.id;
           return <section className="admin-media-profile-group admin-media-account-group" key={group.id}>
-            <header><div><p className="eyebrow">CUENTA CON MEDIOS</p><h2>@{group.username ?? group.name ?? "usuario"}</h2><span><a href={`mailto:${group.email}`}>{group.email}</a> · {allItems.length} archivo{allItems.length === 1 ? "" : "s"} · {images} foto{images === 1 ? "" : "s"} · {videos} video{videos === 1 ? "" : "s"}{pending ? ` · ${pending} pendiente${pending === 1 ? "" : "s"}` : ""}</span></div><div><Link prefetch={false} className="button button-outline" href={accountHref}>Abrir cuenta</Link><Link prefetch={false} className="button button-public-preview" href={focused ? mediaHref(accountTabParams) : mediaHref(focusParams)}>{focused ? "Ver todas las cuentas" : "Ver medios de la cuenta"}</Link></div></header>
+            <header><div><p className="eyebrow">CUENTA CON MEDIOS</p><h2>@{group.username ?? group.name ?? "usuario"}</h2><span><a href={`mailto:${group.email}`}>{group.email}</a> · {allItems.length} archivo{allItems.length === 1 ? "" : "s"} · {images} foto{images === 1 ? "" : "s"} · {videos} video{videos === 1 ? "" : "s"}{pending ? ` · ${pending} pendiente${pending === 1 ? "" : "s"}` : ""}</span></div><div><MediaRecordLinks ownerId={group.id} returnTo={currentHref} {...recordPermissions} /><Link prefetch={false} className="button button-public-preview" href={focused ? mediaHref(accountTabParams) : mediaHref(focusParams)}>{focused ? "Ver todas las cuentas" : "Ver medios de la cuenta"}</Link></div></header>
             {focused && <>
-              {group.publicGroups.map((entry) => <section key={entry.id}><h3>Galería pública · {entry.name}</h3><ApproveAllProfileMedia profileId={entry.id} files={entry.items.map(item => item.media)} returnTo={currentHref} /><div className="admin-media-grid">{entry.items.map((item) => <PublicMediaCard key={item.media.id} media={item.media} profileName={entry.name} returnTo={currentHref} />)}</div></section>)}
-              {group.exclusiveGroups.map((entry) => <section key={entry.id}><h3>Contenido exclusivo</h3><ApproveAllExclusiveMedia collectionId={entry.id} files={entry.items.map(item => item.media)} returnTo={currentHref} /><div className="admin-media-grid">{entry.items.map((item) => <ExclusiveMediaCard key={item.media.id} media={item.media} ownerUsername={entry.ownerUsername} returnTo={currentHref} />)}</div></section>)}
+              {group.publicGroups.map((entry) => <section key={entry.id}><header className="admin-media-subgroup-heading"><h3>Galería pública · {entry.name}</h3><MediaRecordLinks ownerId={group.id} profile={entry} returnTo={currentHref} {...recordPermissions} showAccount={false} /></header><ApproveAllProfileMedia profileId={entry.id} files={entry.items.map(item => item.media)} returnTo={currentHref} /><div className="admin-media-grid">{entry.items.map((item) => <PublicMediaCard key={item.media.id} media={item.media} profileName={entry.name} returnTo={currentHref} />)}</div></section>)}
+              {group.exclusiveGroups.map((entry) => <section key={entry.id}><header className="admin-media-subgroup-heading"><h3>Contenido exclusivo{entry.linkedProfileName ? ` · ${entry.linkedProfileName}` : " · Sin anuncio vinculado"}</h3><MediaRecordLinks ownerId={group.id} profile={entry.linkedProfileId && entry.linkedProfileSlug ? { id: entry.linkedProfileId, slug: entry.linkedProfileSlug, handle: entry.linkedProfileHandle, status: entry.linkedProfileStatus ?? "pending", trashedAt: entry.linkedProfileTrashedAt } : null} returnTo={currentHref} {...recordPermissions} showAccount={false} /></header><ApproveAllExclusiveMedia collectionId={entry.id} files={entry.items.map(item => item.media)} returnTo={currentHref} /><div className="admin-media-grid">{entry.items.map((item) => <ExclusiveMediaCard key={item.media.id} media={item.media} ownerUsername={entry.ownerUsername} returnTo={currentHref} />)}</div></section>)}
             </>}
           </section>;
         })}

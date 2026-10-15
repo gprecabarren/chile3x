@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { useEffect, useState } from "react";
 import { DAY_MS } from "@/lib/email-verification-policy";
 

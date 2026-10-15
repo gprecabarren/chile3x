@@ -1,5 +1,5 @@
 import { desc, eq } from "drizzle-orm";
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { redirect } from "next/navigation";
 import { AccountIdentityFields } from "@/app/account-identity-fields";
 import { getDb } from "@/db";
@@ -7,13 +7,13 @@ import { accountAppleIdentities, accountGoogleIdentities, accountDeletionHistory
 import { authEventLabel, getAccountSocialAccess } from "@/lib/account-social-access";
 import { getCurrentAdmin, safeAdminReturnTo, sha256 } from "@/lib/auth";
 import { adminHasCapability } from "@/lib/admin-permissions";
-import { profilePublicPath } from "@/lib/profile";
 import { AdminPageHeading, AdminShell } from "../../_components";
 import { AdminPasswordField } from "../AdminPasswordField";
 import { formatRegionName } from "@/app/locations";
 import { creationSourceLabel } from "@/lib/creation-provenance";
 import { hasUnlimitedEscortListings } from "@/lib/profile-limits";
 import { emailVerificationDeadline, emailVerificationLabel, emailVerificationState, registrationMethodLabel } from "@/lib/email-verification-policy";
+import { MediaRecordLinks } from "../../medios/MediaRecordLinks";
 
 export const dynamic = "force-dynamic";
 
@@ -121,7 +121,7 @@ export default async function AdminAccountDetailsPage({ params, searchParams }: 
   ]);
 
   const requestedReturnTo = query.return_to ?? "";
-  const returnTo = requestedReturnTo.startsWith("/admin/") ? safeAdminReturnTo(requestedReturnTo) : "/admin/cuentas";
+  const returnTo = requestedReturnTo === "/admin" || requestedReturnTo.startsWith("/admin/") ? safeAdminReturnTo(requestedReturnTo) : "/admin/cuentas";
   const detailBaseHref = `/admin/cuentas/${encodeURIComponent(account.id)}`;
   const detailHref = `${detailBaseHref}?return_to=${encodeURIComponent(returnTo)}`;
   const accountName = account.displayName ?? account.email;
@@ -134,6 +134,7 @@ export default async function AdminAccountDetailsPage({ params, searchParams }: 
   const telegramMembership = telegramMembershipRows[0] ?? null;
   return <AdminShell user={admin}><div className="admin-content">
     <AdminPageHeading eyebrow="FICHA DE CUENTA" title={accountName} description={`Administra los datos, contraseña y anuncios de ${account.email}. Los cambios se realizan sin necesidad de conocer la contraseña actual.`} backHref={returnTo}>
+      <a className="button button-outline" href="#anuncios">Ver anuncios de esta cuenta ({ownedProfiles.length})</a>
       {!isProtectedAdmin && account.isActive && <Link prefetch={false} className="button button-primary" href={`${detailBaseHref}/crear-perfil?return_to=${encodeURIComponent(returnTo)}`}>Crear anuncio para esta cuenta</Link>}
     </AdminPageHeading>
     <p className="admin-profile-rule-note">{hasUnlimitedEscortListings(account) ? <>Excepción autorizada para esta cuenta: <strong>anuncios Escort sin límite de cantidad</strong> y varios anuncios de Agencia o Arriendo. Se mantienen todas las validaciones y revisiones.</> : <>Regla de publicación: una cuenta puede tener <strong>un Escort activo</strong> y varios anuncios de Agencia o Arriendo.</>} Los anuncios en papelera se revisan y restauran solo desde administración.</p>
@@ -165,7 +166,10 @@ export default async function AdminAccountDetailsPage({ params, searchParams }: 
       </section>
     </div>}
     {!isProtectedAdmin && <section className="admin-account-telegram"><div><p className="eyebrow">COMUNIDAD TELEGRAM</p><h2>Identidad y acceso</h2><p>El vínculo comprueba qué cuenta del sitio corresponde a la identidad de Telegram. El veto se aplica a la comunidad pública y a Miembros, sin afectar el inicio de sesión en Chile3X.</p></div>{telegramLink ? <div className="admin-account-telegram-body"><dl><div><dt>Identidad</dt><dd>{telegramLink.username ? `@${telegramLink.username}` : telegramLink.firstName || "Identidad sin nombre público"}</dd></div><div><dt>Vínculo</dt><dd>{telegramLinkStatus(telegramLink.status)}</dd></div><div><dt>Miembros</dt><dd>{telegramMembership ? telegramMembershipStatus(telegramMembership.status) : "Sin ingreso registrado"}</dd></div><div><dt>Vinculada</dt><dd>{new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(telegramLink.linkedAt))}</dd></div></dl>{telegramLink.revokeReason && <p className="admin-account-telegram-reason">Último motivo: {telegramLink.revokeReason}</p>}<div className="admin-account-telegram-actions">{telegramLink.status === "banned" ? <form action={`/api/admin/users/${encodeURIComponent(account.id)}/telegram`} method="post"><input name="return_to" type="hidden" value={detailHref} /><input name="intent" type="hidden" value="unban" /><button className="button button-outline" type="submit">Retirar veto de Telegram</button></form> : telegramLink.status === "linked" ? <details className="is-destructive"><summary>Vetar de Telegram</summary><form action={`/api/admin/users/${encodeURIComponent(account.id)}/telegram`} method="post"><input name="return_to" type="hidden" value={detailHref} /><input name="intent" type="hidden" value="ban" /><p>La identidad será expulsada y vetada de la comunidad pública y del espacio privado de Miembros.</p><label>Motivo<input name="reason" required minLength={5} maxLength={220} /></label><label>Escribe VETAR<input name="confirmation" required autoComplete="off" /></label><button className="button button-danger" type="submit">Confirmar veto</button></form></details> : <p>La persona puede generar un vínculo nuevo desde Mi cuenta cuando su cuenta esté activa.</p>}</div></div> : <p className="admin-media-empty">Esta cuenta todavía no tiene una identidad de Telegram vinculada.</p>}</section>}
-    <section className="admin-account-owned-profiles"><div><p className="eyebrow">ANUNCIOS ASOCIADOS</p><h2>Anuncios de esta cuenta</h2></div>{ownedProfiles.length ? <div>{ownedProfiles.map((profile) => { const moderationHref = `/admin/anuncios-publicaciones?q=${encodeURIComponent(account.email)}&return_to=${encodeURIComponent(detailHref)}`; const previewHref = `${profilePublicPath(profile)}?return_to=${encodeURIComponent(moderationHref)}`; const mediaHref = `/admin/cuentas/${encodeURIComponent(account.id)}/perfiles/${encodeURIComponent(profile.id)}/medios`; return <article key={profile.id}><div><span className={`account-status account-status-${profile.status}`}>{profile.trashedAt ? "En papelera" : statusLabel(profile.status)}</span><h3>{profile.displayName}</h3><p>{typeLabel(profile.type)} · {profile.city}, {formatRegionName(profile.region)}</p><p>{creationSourceLabel(profile.creationSource, profile.createdByAdminLogin)}</p></div><div>{profile.trashedAt ? <Link prefetch={false} className="button button-outline" href={`/admin/anuncios-publicaciones/papelera?q=${encodeURIComponent(profile.id)}`}>Abrir en papelera</Link> : <><Link prefetch={false} className="button button-public-preview" href={previewHref} target="_blank">Ver anuncio público</Link>{!isProtectedAdmin && account.isActive && <Link prefetch={false} className="button button-outline" href={mediaHref}>Agregar fotos y videos</Link>}<Link prefetch={false} className="button button-outline" href={moderationHref}>Abrir moderación</Link></>}</div></article>; })}</div> : <p className="admin-media-empty">Esta cuenta aún no tiene anuncios asociados.</p>}</section>
+    <section id="anuncios" className="admin-account-owned-profiles"><div><p className="eyebrow">ANUNCIOS ASOCIADOS</p><h2>Anuncios de esta cuenta</h2></div>{ownedProfiles.length ? <div>{ownedProfiles.map((profile) => <article key={profile.id}><div><span className={`account-status account-status-${profile.status}`}>{profile.trashedAt ? "En papelera" : statusLabel(profile.status)}</span><h3>{profile.displayName}</h3><p>{typeLabel(profile.type)} · {profile.city}, {formatRegionName(profile.region)}</p><p>{creationSourceLabel(profile.creationSource, profile.createdByAdminLogin)}</p></div><div>
+      <MediaRecordLinks ownerId={account.id} profile={profile} returnTo={`${detailHref}#anuncios`} canAccounts={false} canProfiles={adminHasCapability(admin, "profiles.moderate")} canRecycle={adminHasCapability(admin, "profiles.recycle")} showAccount={false} />
+      {!profile.trashedAt && !isProtectedAdmin && account.isActive && <Link prefetch={false} className="button button-outline" href={`/admin/cuentas/${encodeURIComponent(account.id)}/perfiles/${encodeURIComponent(profile.id)}/medios`}>Agregar fotos y videos</Link>}
+    </div></article>)}</div> : <p className="admin-media-empty">Esta cuenta aún no tiene anuncios asociados.</p>}</section>
     {!isProtectedAdmin && <section className="admin-account-control-panel"><div><p className="eyebrow">CONTROL DE CUENTA</p><h2>Disponibilidad y eliminación</h2><p>El bloqueo administrativo es independiente de la deshabilitación voluntaria. Quitar el bloqueo de Chile3X no reactiva una cuenta que la propia persona mantenga deshabilitada.</p></div><div className="admin-account-control-actions">
       <form action={`/api/admin/users/${encodeURIComponent(account.id)}/estado`} method="post"><input name="return_to" type="hidden" value={detailHref} /><input name="next_state" type="hidden" value={account.adminDisabledAt ? "active" : "disabled"} /><button className="button button-outline" type="submit">{account.adminDisabledAt ? "Quitar bloqueo administrativo" : "Deshabilitar como administrador"}</button></form>
       <details className="is-destructive"><summary>Eliminar cuenta permanentemente</summary><form action={`/api/admin/users/${encodeURIComponent(account.id)}/eliminar`} method="post"><input name="return_to" type="hidden" value="/admin/cuentas" /><p>Borra la cuenta, anuncios, medios y relaciones. No se puede deshacer. Solo quedará una huella criptográfica para detectar futuros registros con el mismo correo.</p><label>Confirma el correo<input name="email" type="email" required autoComplete="off" /></label><label>Escribe ELIMINAR<input name="confirmation" required autoComplete="off" /></label><button className="button button-danger" type="submit">Eliminar permanentemente</button></form></details>

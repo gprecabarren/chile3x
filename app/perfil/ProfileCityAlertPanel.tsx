@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { useMemo, useState } from "react";
 
 export function ProfileCityAlertPanel({ profileId, profileSlug, displayName, currentCity, availableCities, signedIn, viewerOwnsProfile, initialAlerts }: {

@@ -8,7 +8,7 @@ import { ProfileVerificationDocuments } from "@/app/mi-cuenta/ProfileVerificatio
 import { ProfileStoryManager } from "@/app/mi-cuenta/ProfileStoryManager";
 import { getDb } from "@/db";
 import { profileDetails, profileServices, profileTags, profiles, users } from "@/db/schema";
-import { getCurrentAdmin } from "@/lib/auth";
+import { getCurrentAdmin, safeAdminReturnTo } from "@/lib/auth";
 import { adminHasCapability } from "@/lib/admin-permissions";
 import { getMediaQuotaState, getMediaUsage, getProfileMedia } from "@/lib/media";
 import { getVerificationDocuments } from "@/lib/verification-documents";
@@ -28,7 +28,7 @@ function readMetadata(value: string | null): Record<string, string> {
 
 export default async function AdminEditProfilePage({ params, searchParams }: {
   params: Promise<{ profileId: string }>;
-  searchParams: Promise<{ notice?: string; error?: string; message?: string }>;
+  searchParams: Promise<{ notice?: string; error?: string; message?: string; return_to?: string }>;
 }) {
   const { profileId } = await params;
   const admin = await getCurrentAdmin();
@@ -51,8 +51,11 @@ export default async function AdminEditProfilePage({ params, searchParams }: {
     getSiteSettings(), getOwnerStories(profileId), searchParams,
   ]);
   const profile = row.profile;
+  const backHref = query.return_to?.startsWith("/admin") ? safeAdminReturnTo(query.return_to) : "/admin/anuncios-publicaciones";
+  const currentHref = `${editHref}?return_to=${encodeURIComponent(backHref)}`;
   return <AdminShell user={admin}><div className="admin-content admin-profile-editor">
-    <AdminPageHeading eyebrow="EDICIÓN ADMINISTRATIVA" title={profile.displayName} description={`Anuncio de ${row.ownerEmail}. Guardar conserva su estado y registra el cambio en el historial administrativo.`} backHref="/admin/anuncios-publicaciones">
+    <AdminPageHeading eyebrow="EDICIÓN ADMINISTRATIVA" title={profile.displayName} description={`Anuncio de ${row.ownerEmail}. Guardar conserva su estado y registra el cambio en el historial administrativo.`} backHref={backHref}>
+      {adminHasCapability(admin, "accounts.manage") && <Link prefetch={false} className="button button-outline" href={`/admin/cuentas/${encodeURIComponent(profile.ownerId)}?return_to=${encodeURIComponent(currentHref)}`}>Ver cuenta</Link>}
       <Link className="button button-public-preview" href={profilePublicPath(profile)} target="_blank">Ver / previsualizar anuncio</Link>
     </AdminPageHeading>
     <nav className="profile-editor-shortcuts" aria-label="Secciones del anuncio">

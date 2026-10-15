@@ -2,7 +2,7 @@ import { DirectoryStoryLayout } from "@/app/historias/StoryRail";
 import { getActiveStories } from "@/lib/stories";
 import type { Metadata } from "next";
 import { readDirectoryOrderSeed } from "@/lib/directory-order";
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { DirectoryFilters } from "@/app/directorio/DirectoryFilters";

@@ -4,7 +4,7 @@ import { HelpCenter } from "@/app/help/HelpCenter";
 import { getCurrentAdmin } from "@/lib/auth";
 import { ADMIN_CAPABILITY_LABELS, adminHasCapability, type AdminCapability } from "@/lib/admin-permissions";
 import { getStoredHelpTopics } from "@/lib/help-guides";
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { publicWhatsappContacts } from "@/lib/portal-whatsapp";
 import { getSiteSettings } from "@/lib/site-settings";
 import { privatePageMetadata } from "@/lib/seo";

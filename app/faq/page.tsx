@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { DirectoryShell } from "@/app/directorio/_components";
 import { getFaqEntries } from "@/lib/faq";
 import { safeJsonLd } from "@/lib/json-ld";

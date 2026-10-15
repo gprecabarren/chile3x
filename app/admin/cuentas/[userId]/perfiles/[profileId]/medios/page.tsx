@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { notFound, redirect } from "next/navigation";
 import { AdminPageHeading, AdminShell } from "@/app/admin/_components";
 import { ProfileMediaManager } from "@/app/mi-cuenta/ProfileMediaManager";

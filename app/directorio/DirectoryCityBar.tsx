@@ -5,18 +5,22 @@ import { useRouter } from "next/navigation";
 import Link from "@/app/NavigationLink";
 import { cityDirectory, regions } from "@/app/locations";
 import { clearPreferredCity, savePreferredCity } from "./location-client";
+import { beginUserNavigation } from "@/lib/user-navigation-progress";
 
-type DirectoryKind = "escort" | "agency" | "rental";
+type DirectoryKind = "escort" | "agency" | "rental" | "content";
+const normalizeCity = (value: string) => value.trim().toLocaleLowerCase("es-CL").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+const cityGroups = regions.map(region => ({ ...region, matches: cityDirectory.filter(city => city.regionSlug === region.id).map(city => ({ ...city, searchName: normalizeCity(city.city) })) }));
 
 export function DirectoryCityBar({ selectedCity, kind }: { selectedCity?: string; kind: DirectoryKind }) {
   const [search, setSearch] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDetailsElement>(null);
   const router = useRouter();
-  const basePath = kind === "agency" ? "/agencias" : kind === "rental" ? "/arriendos" : "/escorts";
-  const matchingRegions = useMemo(() => regions.map((region) => ({
-    ...region,
-    matches: cityDirectory.filter((city) => city.regionSlug === region.id && city.city.toLocaleLowerCase("es-CL").normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(search.trim().toLocaleLowerCase("es-CL").normalize("NFD").replace(/[\u0300-\u036f]/g, ""))),
-  })).filter((region) => region.matches.length), [search]);
+  const basePath = kind === "content" ? "/venta-contenido" : kind === "agency" ? "/agencias" : kind === "rental" ? "/arriendos" : "/escorts";
+  const matchingRegions = useMemo(() => {
+    const needle = normalizeCity(search);
+    return needle ? cityGroups.map(region => ({ ...region, matches: region.matches.filter(city => city.searchName.includes(needle)) })).filter(region => region.matches.length) : cityGroups;
+  }, [search]);
 
   function chooseCity(citySlug?: string) {
     const city = cityDirectory.find((item) => item.citySlug === citySlug);
@@ -32,15 +36,17 @@ export function DirectoryCityBar({ selectedCity, kind }: { selectedCity?: string
     } else clearPreferredCity();
     menuRef.current?.removeAttribute("open");
     const pathname = city && kind === "escort" ? `/escorts/${city.citySlug}` : basePath;
-    router.push(`${pathname}${params.size ? `?${params}` : ""}`);
+    const href = `${pathname}${params.size ? `?${params}` : ""}`;
+    beginUserNavigation(href);
+    router.push(href);
   }
 
   return <nav className="directory-city-bar" aria-label="Cambiar ciudad del directorio">
     <div className="directory-city-bar-inner">
       <div className="directory-city-breadcrumb"><Link href="/" className="directory-home-link">Inicio</Link><span className="directory-city-crumb">Directorio <span aria-hidden="true">/</span></span></div>
-      <details ref={menuRef} onKeyDown={(event) => { if (event.key === "Escape") menuRef.current?.removeAttribute("open"); }}>
+      <details ref={menuRef} onToggle={event => setMenuOpen(event.currentTarget.open)} onKeyDown={(event) => { if (event.key === "Escape") menuRef.current?.removeAttribute("open"); }}>
         <summary aria-label={`Cambiar ciudad, actual: ${selectedCity ?? "todo Chile"}`}><span aria-hidden="true">⌖</span>{selectedCity ?? "Todo Chile"}<span aria-hidden="true">⌄</span></summary>
-        <div className="directory-city-popover">
+        {menuOpen && <div className="directory-city-popover">
           <strong>Elegir ciudad o comuna</strong>
           <label className="sr-only" htmlFor="directory-city-search">Buscar ciudad o comuna</label>
           <input id="directory-city-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar ciudad o comuna…" autoComplete="off" />
@@ -52,7 +58,7 @@ export function DirectoryCityBar({ selectedCity, kind }: { selectedCity?: string
             </section>)}
             {!matchingRegions.length && <p className="directory-city-empty">No hay ciudades de cobertura con ese nombre.</p>}
           </div>
-        </div>
+        </div>}
       </details>
     </div>
   </nav>;

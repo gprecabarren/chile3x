@@ -12,6 +12,7 @@ import { DeferredClientFeatures } from "./DeferredClientFeatures";
 import { BrowserSessionBoundary } from "./BrowserSessionBoundary";
 import { BrowserSessionSetup } from "./BrowserSessionSetup";
 import { getBrowserSessionView } from "@/lib/browser-session-view";
+import { UserNavigationProgress } from "./UserNavigationProgress";
 
 export const dynamic = "force-dynamic";
 
@@ -83,6 +84,7 @@ export default async function RootLayout({
         <BrowserSessionSetup><BrowserSessionBoundary initial={sessionView} key={sessionView.identity ?? "anonymous"}>{!maintenanceEnabled || admin ? children : <MaintenanceScreen />}</BrowserSessionBoundary></BrowserSessionSetup>
         <AgeGate />
         <DeferredClientFeatures />
+        <UserNavigationProgress enabled={sessionView.mode !== "admin"} />
         {verificationDeadline !== null && Number.isFinite(verificationDeadline) && <EmailVerificationDeadline deadline={verificationDeadline} />}
       </body>
     </html>

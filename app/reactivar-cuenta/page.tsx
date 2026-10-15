@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { OfficialChile3xLogo } from "@/app/OfficialChile3xLogo";

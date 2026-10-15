@@ -1,5 +1,5 @@
 import { and, count, desc, eq, isNull, or, sql } from "drizzle-orm";
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { DateField } from "@/app/DateField";
 import { redirect } from "next/navigation";
 import { AccountIdentityFields } from "@/app/account-identity-fields";

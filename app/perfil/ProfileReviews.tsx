@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { useEffect, useRef, useState } from "react";
 import { trackAnalyticsEvent } from "@/app/AnalyticsEvent";
 import type { OwnPendingReview, PublicReview } from "@/lib/profile-interactions";

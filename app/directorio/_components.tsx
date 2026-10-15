@@ -133,7 +133,7 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
   );
 }
 
-export function DirectoryShell({ children, selectedCity, kind = "escort", advertiserWhatsapp }: { children: ReactNode; selectedCity?: string; kind?: "escort" | "agency" | "rental"; advertiserWhatsapp?: AdvertiserWhatsapp }) {
+export function DirectoryShell({ children, selectedCity, kind = "escort", advertiserWhatsapp }: { children: ReactNode; selectedCity?: string; kind?: "escort" | "agency" | "rental" | "content"; advertiserWhatsapp?: AdvertiserWhatsapp }) {
   return <PortalWhatsappScope advertiser={advertiserWhatsapp}><main className="directory-root"><PublicHeader /><DirectoryCityBar selectedCity={selectedCity} kind={kind} />{children}<PublicFooter /></main></PortalWhatsappScope>;
 }
 
@@ -144,7 +144,7 @@ export async function PublicFooter() {
     <footer className="public-footer">
       <div className="public-footer-brand"><Link className="public-footer-logo" href="/" aria-label="Chile3X, inicio"><Image src="/assets/chile3x-logo-primary-320-20260923.webp" alt="Chile3X" width={320} height={112} unoptimized /></Link><p>Directorio de escorts y damas de compañía para adultos. Los acuerdos ocurren directamente entre visitantes y anunciantes.</p></div>
       <div className="public-footer-navigation">
-        <div><strong>DIRECTORIO</strong><Link href="/escorts">Escorts</Link><Link href="/agencias">Agencias</Link><Link href="/arriendos">Arriendos</Link></div>
+        <div><strong>DIRECTORIO</strong><Link href="/escorts">Escorts</Link><Link href="/agencias">Agencias</Link><Link href="/arriendos">Arriendos</Link><Link href="/venta-contenido">Venta de contenido</Link></div>
         <div><strong>INFORMACIÓN</strong><Link href="/quienes-somos">Quiénes somos</Link><Link href="/noticias">Noticias</Link><Link href="/novedades">Novedades</Link><Link href="/faq">Preguntas frecuentes</Link><Link href="/contacto">Contacto</Link>{showSponsors && <Link href="/patrocinadores">Sitios asociados</Link>}<Link href="/terminos">Términos</Link><Link href="/privacidad">Privacidad</Link><Link href="/reglas-de-publicacion">Reglas de publicación</Link></div>
       </div>
       <div className="public-footer-extras">

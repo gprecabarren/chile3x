@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { formatCompactRegionName, getCityReferenceMap } from "@/app/locations";
 import { getCityPath } from "@/lib/directory";
 

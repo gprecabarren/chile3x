@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { DirectoryShell, PortalContactLinks } from "@/app/directorio/_components";
 import { getPortalContacts } from "@/lib/site-contacts";
 import { getSiteSettings } from "@/lib/site-settings";

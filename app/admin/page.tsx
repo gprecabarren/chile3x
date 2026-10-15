@@ -1,5 +1,5 @@
 import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { adminAuditLogs, adminNotifications, exclusiveContentMedia, profileMedia, profiles, users } from "@/db/schema";
@@ -109,7 +109,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
           title="Resumen de administración"
           description={canViewSummary ? "Consulta las prioridades del portal y administra tu acceso desde un único resumen." : "Consulta las herramientas disponibles para tu función y administra tus sesiones activas."}
         />
-        {moderationInbox && <ModerationInbox initial={moderationInbox} canProfiles={adminHasCapability(admin, "profiles.moderate")} canMedia={adminHasCapability(admin, "media.moderate")} canAudit={adminHasCapability(admin, "audit.view")} />}
+        {moderationInbox && <ModerationInbox initial={moderationInbox} canProfiles={adminHasCapability(admin, "profiles.moderate")} canMedia={adminHasCapability(admin, "media.moderate")} canAudit={adminHasCapability(admin, "audit.view")} canAccounts={adminHasCapability(admin, "accounts.manage")} />}
         {canViewSummary && <section className="admin-stat-grid" aria-label="Resumen del sitio">
           {summary.map((item) => (
             <Link

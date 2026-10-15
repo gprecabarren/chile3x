@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/d1";
+import { cache } from "react";
 
-export async function getDb() {
+export const getDb = cache(async function getDb() {
   const { env } = await import("cloudflare:workers");
 
   if (!env.DB) {
@@ -15,4 +16,4 @@ export async function getDb() {
   // repeated synchronous work competes with SSR's 10 ms CPU budget. Omitting
   // it does not change SQL, validation, migrations or query result mapping.
   return drizzle(env.DB);
-}
+});

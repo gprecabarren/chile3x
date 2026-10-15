@@ -23,11 +23,13 @@ test('account sidebar remains an ordinary account and includes accessible keyboa
  for(const expression of ['aria-modal','inert={mobileOpen','"Escape"','"Tab"','returnFocusTarget?.focus'])assert.ok(workspace.includes(expression));
  assert.match(css,/min-height:44px/);assert.match(css,/max-width:1099px/);assert.match(css,/prefers-reduced-motion/);
 });
-test('content sales directory fixes seller scope server-side, has canonical SEO, sitemap, and no menu entry',async()=>{
- const [page,directory,sitemap,filters,shell]=await Promise.all(['app/venta-contenido/page.tsx','lib/directory.ts','app/sitemap.ts','app/directorio/DirectoryFilters.tsx','app/directorio/_components.tsx'].map(source));
+test('content sales directory fixes seller scope server-side and is discoverable from footer and mobile directory only',async()=>{
+ const [page,directory,sitemap,filters,shell,menu]=await Promise.all(['app/venta-contenido/page.tsx','lib/directory.ts','app/sitemap.ts','app/directorio/DirectoryFilters.tsx','app/directorio/_components.tsx','app/directorio/PublicMobileMenu.tsx'].map(source));
  assert.match(page,/readDirectoryFilters\(query, \{ contentDirectory: true \}\)/);assert.match(directory,/filters.category === "contenido" \|\| filters.contentDirectory/);assert.match(directory,/filters.tier && !filters.contentDirectory/);
  assert.match(page,/CollectionPage/);assert.match(page,/BreadcrumbList/);assert.match(page,/directoryPageMetadata/);assert.match(sitemap,/siteUrl\}\/venta-contenido/);
- assert.doesNotMatch(shell,/href="\/venta-contenido"/);assert.match(filters,/contentDirectory && \(tag === "venta-contenido"/);assert.match(filters,/filtros=abiertos.*scroll: false/);
+ assert.match(page,/<DirectoryShell selectedCity=\{filters.city\} kind="content">/);
+ assert.match(await source('app/directorio/DirectoryCityBar.tsx'),/kind === "content" \? "\/venta-contenido"/);
+ assert.match(shell,/>Arriendos<\/Link><Link href="\/venta-contenido">Venta de contenido/);assert.match(menu,/>Arriendos<\/Link>\s*<Link href="\/venta-contenido" onClick=\{closeMenu\}>Venta de contenido/);assert.doesNotMatch(shell.slice(0,shell.indexOf('export function DirectoryShell')),/href="\/venta-contenido"/);assert.match(filters,/contentDirectory && \(tag === "venta-contenido"/);assert.match(filters,/filtros=abiertos.*scroll: false/);
 });
 test('moderation email outbox deduplicates batches and cascade-removes only jobs for deleted listings',async()=>{
  const db=new DatabaseSync(':memory:');

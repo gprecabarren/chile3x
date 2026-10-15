@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 
 export function readAdminPage(value: string | undefined) {
   const page = Number.parseInt(value ?? "", 10);

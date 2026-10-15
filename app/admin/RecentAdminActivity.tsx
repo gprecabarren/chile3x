@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { adminAuditLogs } from "@/db/schema";
 import { ADMIN_AUDIT_ACTIONS } from "@/lib/admin-audit";
 import { adminAuditDate, adminAuditInstant } from "@/lib/admin-audit-date";

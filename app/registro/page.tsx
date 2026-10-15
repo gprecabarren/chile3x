@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { AccountIdentityFields } from "@/app/account-identity-fields";
 import { OfficialChile3xLogo } from "@/app/OfficialChile3xLogo";
 import { RegistrationEmailField } from "@/app/registro/RegistrationEmailField";

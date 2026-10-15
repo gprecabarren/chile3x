@@ -34,7 +34,7 @@ export default async function ContentSalesPage({ searchParams }: { searchParams:
     { "@type": "CollectionPage", name: "Venta de contenido para adultos en Chile", description: "Perfiles con venta de contenido declarada, por ubicación y categoría de visibilidad.", url: `${siteUrl}/venta-contenido`, inLanguage: "es-CL", mainEntity: { "@type": "ItemList", numberOfItems: profiles.length, itemListElement: profiles.map((profile, index) => ({ "@type": "ListItem", position: (page - 1) * DIRECTORY_PAGE_SIZE + index + 1, name: profile.displayName, url: `${siteUrl}${profilePublicPath(profile)}` })) } },
     { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Chile3X", item: siteUrl }, { "@type": "ListItem", position: 2, name: "Venta de contenido", item: `${siteUrl}/venta-contenido` }] },
   ] };
-  return <DirectoryShell selectedCity={filters.city}>
+  return <DirectoryShell selectedCity={filters.city} kind="content">
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(schema) }} />
     <section className="directory-hero"><p className="eyebrow">CONTENIDO DIGITAL · MAYORES DE 18 AÑOS</p><h1>Venta de contenido <em>en Chile.</em></h1><p>Explora perfiles que ofrecen contenido digital por contacto directo, Arsmate, OnlyFans u otros canales declarados. Incluye personas dedicadas exclusivamente al contenido y escorts que también lo venden.</p></section>
     <section className="directory-content">

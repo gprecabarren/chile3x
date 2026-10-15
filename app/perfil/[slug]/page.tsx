@@ -3,7 +3,7 @@ import { MediaVideo } from "@/app/MediaVideo";
 import Image from "next/image";
 import { publicProfileAge } from "@/lib/profile-age";
 import { isContentOnly, publicProfileTypeLabel } from "@/lib/profile-content-category";
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { notFound, redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db";
@@ -144,7 +144,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   const availabilityStatus = getAvailabilityStatus(availability, new Date(), profile.type === "escort" ? "atiende" : "abre");
   const showCityAlerts = profile.isPublic && profile.type === "escort" && !isContentOnly(profile) && !profile.isDemo;
   const [relatedProfiles, stories, approvedReviewsPage, verificationDocuments, exclusiveContent, cityAlertCities, activeCityAlerts, viewerOwnsProfile, engagement, ownPendingReviews, adminWhatsappStatistics] = await Promise.all([
-    relatedProfileIds.length ? getPublicProfiles({ includeUnapproved: Boolean(admin), viewerId: viewer?.id, profileIds: relatedProfileIds }) : Promise.resolve([]),
+    relatedProfileIds.length ? getPublicProfiles({ includeUnapproved: Boolean(admin), viewerId: viewer?.id, profileIds: relatedProfileIds, coverOnly: true }) : Promise.resolve([]),
     getActiveStories({ profileId: profile.id }),
     getApprovedReviewsPage(profile.id),
     admin && profile.type === "escort" ? getVerificationDocuments(profile.id) : Promise.resolve([]),

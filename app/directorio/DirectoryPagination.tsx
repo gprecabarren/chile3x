@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import type { DirectoryQuery } from "@/lib/directory";
 
 export function DirectoryPagination({ path, query, page, hasNext, orderSeed }: { path: string; query: DirectoryQuery; page: number; hasNext: boolean; orderSeed?: number }) {

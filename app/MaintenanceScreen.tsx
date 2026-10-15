@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { OfficialChile3xLogo } from "@/app/OfficialChile3xLogo";
 
 export function MaintenanceScreen() {

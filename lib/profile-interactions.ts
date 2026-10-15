@@ -1,7 +1,7 @@
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { publicProfileCondition } from "@/lib/public-profile-visibility";
-import { favorites, profileLikes, profiles, reviews, users } from "@/db/schema";
+import { profiles, reviews, users } from "@/db/schema";
 
 export type ProfileEngagement = {
   favoritesCount: number;
@@ -28,18 +28,18 @@ export async function getOwnPendingReviews(profileId: string, authorId: string):
 
 export async function getProfileEngagement(profileId: string, viewerId?: string): Promise<ProfileEngagement> {
   const db = await getDb();
-  const [favoriteRows, likeRows, favoriteRecord, likeRecord] = await Promise.all([
-    db.select({ total: count() }).from(favorites).where(eq(favorites.profileId, profileId)),
-    db.select({ total: count() }).from(profileLikes).where(eq(profileLikes.profileId, profileId)),
-    viewerId ? db.select({ id: favorites.id }).from(favorites).where(and(eq(favorites.profileId, profileId), eq(favorites.userId, viewerId))).limit(1) : Promise.resolve([]),
-    viewerId ? db.select({ id: profileLikes.id }).from(profileLikes).where(and(eq(profileLikes.profileId, profileId), eq(profileLikes.userId, viewerId))).limit(1) : Promise.resolve([]),
-  ]);
+  // One bound read replaces two anonymous / four signed-in round trips.
+  const row = await db.get<{ favoritesCount: number; likesCount: number; viewerHasFavorite: number; viewerHasLike: number }>(sql`SELECT
+    (SELECT count(*) FROM favorites WHERE profile_id=${profileId}) favoritesCount,
+    (SELECT count(*) FROM profile_likes WHERE profile_id=${profileId}) likesCount,
+    ${viewerId ? sql`EXISTS(SELECT 1 FROM favorites WHERE profile_id=${profileId} AND user_id=${viewerId})` : sql`0`} viewerHasFavorite,
+    ${viewerId ? sql`EXISTS(SELECT 1 FROM profile_likes WHERE profile_id=${profileId} AND user_id=${viewerId})` : sql`0`} viewerHasLike`);
 
   return {
-    favoritesCount: Number(favoriteRows[0]?.total ?? 0),
-    likesCount: Number(likeRows[0]?.total ?? 0),
-    viewerHasFavorite: favoriteRecord.length > 0,
-    viewerHasLike: likeRecord.length > 0,
+    favoritesCount: Number(row?.favoritesCount ?? 0),
+    likesCount: Number(row?.likesCount ?? 0),
+    viewerHasFavorite: Boolean(row?.viewerHasFavorite),
+    viewerHasLike: Boolean(row?.viewerHasLike),
   };
 }
 

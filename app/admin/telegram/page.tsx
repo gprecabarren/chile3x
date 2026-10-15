@@ -1,5 +1,5 @@
 import { and, count, desc, eq, like, or, type SQL } from "drizzle-orm";
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import {

@@ -11,7 +11,7 @@ import { getVerificationDocuments } from "@/lib/verification-documents";
 import { ProfileVerificationDocuments } from "../../ProfileVerificationDocuments";
 import { ProfileSubmissionConfirmation } from "../../ProfileSubmissionConfirmation";
 import { getSiteSettings } from "@/lib/site-settings";
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { profilePublicPath } from "@/lib/profile";
 
 export const dynamic = "force-dynamic";

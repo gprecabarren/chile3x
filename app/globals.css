@@ -77,6 +77,12 @@
 .route-loading-hearts i:first-child { left: 5px; top: 0; }
 .route-loading-hearts i:last-child { right: 3px; bottom: -3px; color: #ff6d73; animation-delay: -.45s; }
 .route-loading-mark strong { color: #b9bfca; font-size: 10px; letter-spacing: .2em; text-transform: uppercase; }
+.user-navigation-progress { position:fixed; z-index:10010; left:50%; bottom:24px; transform:translateX(-50%); display:flex; align-items:center; gap:16px; width:max-content; max-width:min(560px,calc(100vw - 32px)); padding:16px 20px; border:1px solid #964454; border-radius:16px; background:#151b29; color:#fff; box-shadow:0 14px 45px #0008; box-sizing:border-box; pointer-events:none; }
+.user-navigation-progress .route-loading-hearts { flex:0 0 66px; }
+.user-navigation-progress > div { min-width:0; }.user-navigation-progress strong,.user-navigation-progress > div > span { display:block; line-height:1.5; overflow-wrap:break-word; }.user-navigation-progress strong { font-size:14px; }.user-navigation-progress > div > span { font-size:12px; color:#c1cada; margin-top:3px; }
+.user-navigation-progress button { pointer-events:auto; flex:0 0 36px; min-height:36px; border:1px solid #647086; border-radius:8px; background:#252e40; color:white; font-size:22px; }
+body:has(.route-loading) .user-navigation-progress { display:none; }
+@media(max-width:620px) { .user-navigation-progress { bottom:calc(18px + env(safe-area-inset-bottom)); padding:14px; gap:10px; }.user-navigation-progress .route-loading-hearts { flex-basis:54px; width:54px; }.user-navigation-progress strong { font-size:13px; } }
 @keyframes route-loading-reveal { to { opacity: 1; } }
 @keyframes route-heart { from { transform: translateY(2px) scale(.9); } to { transform: translateY(-3px) scale(1.05); } }
 

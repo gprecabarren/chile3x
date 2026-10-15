@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { authEventLabel, socialProviderLabels, type getAccountSocialAccess, type SocialProvider } from "@/lib/account-social-access";
 
 export function SocialAccessPanel({ access, hasPassword, xEnabled }: { access: Awaited<ReturnType<typeof getAccountSocialAccess>>; hasPassword: boolean; xEnabled: boolean }) {

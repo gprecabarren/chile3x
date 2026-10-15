@@ -191,6 +191,7 @@ type PublicProfileOptions = {
   handle?: string;
   slug?: string;
   includeAssociations?: boolean;
+  coverOnly?: boolean;
 };
 
 export async function getPublicProfiles(options: PublicProfileOptions = {}) {
@@ -231,7 +232,7 @@ export async function getPublicProfiles(options: PublicProfileOptions = {}) {
     options.includeAssociations
       ? db.select().from(agencyMembers).where(or(inArray(agencyMembers.agencyProfileId, ids), inArray(agencyMembers.memberProfileId, ids)))
       : Promise.resolve([]),
-    getApprovedMediaForProfiles(ids),
+    getApprovedMediaForProfiles(ids, options.coverOnly),
     ownerIds.length
       ? db.select({ userId: accountPresence.userId }).from(accountPresence).where(and(inArray(accountPresence.userId, ownerIds), gte(accountPresence.lastActiveAt, onlineCutoff)))
       : Promise.resolve([]),
@@ -384,7 +385,7 @@ export async function getPublicProfilePage(filters: DirectoryFilters, options: {
     .where(where).orderBy(...ordering).limit(DIRECTORY_PAGE_SIZE + 1).offset((page - 1) * DIRECTORY_PAGE_SIZE);
   const hasNext = ids.length > DIRECTORY_PAGE_SIZE;
   const pageIds = ids.slice(0, DIRECTORY_PAGE_SIZE);
-  const hydrated = pageIds.length ? await getPublicProfiles({ profileIds: pageIds.map((row) => row.id), viewerId: options.viewerId }) : [];
+  const hydrated = pageIds.length ? await getPublicProfiles({ profileIds: pageIds.map((row) => row.id), viewerId: options.viewerId, coverOnly: true }) : [];
   const byId = new Map(hydrated.map((profile) => [profile.id, profile]));
   return { profiles: pageIds.flatMap((row) => { const profile = byId.get(row.id); return profile ? [profile] : []; }), page, pageSize: DIRECTORY_PAGE_SIZE, hasNext, orderSeed, outOfRange: page > 1 && !pageIds.length };
 }
@@ -593,14 +594,14 @@ export async function getFeaturedProfiles(limit = 6, viewerId?: string) {
         eq(profiles.isDemo, true),
         sql`not ${contentOnlyCondition()}`,
       )).orderBy(desc(profiles.isFeatured), desc(profiles.updatedAt)).limit(limit);
-      const demoProfiles = await getPublicProfiles({ viewerId, type: "escort", profileIds: demoCandidates.map((candidate) => candidate.id) });
+      const demoProfiles = await getPublicProfiles({ viewerId, type: "escort", profileIds: demoCandidates.map((candidate) => candidate.id), coverOnly: true });
       return [...demoProfiles]
         .sort((left, right) => Number(right.isFeatured) - Number(left.isFeatured)
           || right.updatedAt.localeCompare(left.updatedAt))
         .slice(0, limit);
     }
 
-    const publicProfiles = await getPublicProfiles({ viewerId, type: "escort", profileIds: candidateIds });
+    const publicProfiles = await getPublicProfiles({ viewerId, type: "escort", profileIds: candidateIds, coverOnly: true });
     const viewTotals = new Map(viewedCandidates.map((candidate) => [candidate.profileId, Number(candidate.total)]));
 
     return [...publicProfiles]

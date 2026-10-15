@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { beginUserNavigation } from "@/lib/user-navigation-progress";
 import { regions } from "@/app/locations";
 import {
   additionalServices,
@@ -72,7 +73,9 @@ export function DirectoryFilters({ action, filters, pinnedCity, pinnedRegion, sh
     const destination = action === "/escorts" && value === "agency" ? "/agencias" : action === "/escorts" && value === "rental" ? "/arriendos" : action;
     if (destination !== action) params.delete("categoria");
     const anchor = pinnedCity && value ? `#${value}` : "";
-    router.push(`${destination}${params.size ? `?${params}` : ""}${anchor}`, { scroll: false });
+    const href = `${destination}${params.size ? `?${params}` : ""}${anchor}`;
+    beginUserNavigation(href);
+    router.push(href, { scroll: false });
   }
 
   return (
@@ -103,6 +106,7 @@ export function DirectoryFilters({ action, filters, pinnedCity, pinnedRegion, sh
           if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
           event.preventDefault();
           setMobileFilterOpen(true);
+          beginUserNavigation(window.matchMedia("(max-width: 620px)").matches ? `${action}?filtros=abiertos` : action);
           router.push(window.matchMedia("(max-width: 620px)").matches ? `${action}?filtros=abiertos` : action, { scroll: false });
         }}>Limpiar</a>
         <button className="quick-filter-apply" type="submit">Buscar</button>

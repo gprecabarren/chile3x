@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { AuthTurnstile } from "@/app/AuthTurnstile";
 import { OfficialChile3xLogo } from "@/app/OfficialChile3xLogo";
 import { TURNSTILE_AUTH_EMAIL_ACTION } from "@/lib/turnstile";

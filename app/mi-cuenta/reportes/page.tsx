@@ -1,6 +1,6 @@
 import { desc, eq, inArray } from "drizzle-orm";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/app/NavigationLink";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { profileReportEvidence, profileReports, profiles } from "@/db/schema";

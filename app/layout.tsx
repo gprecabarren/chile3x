@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./panel-foundations.css";
 import { AgeGate } from "./AgeGate";
 import { MaintenanceScreen } from "./MaintenanceScreen";
 import { getCurrentAdmin, getVerificationUser } from "@/lib/auth";
@@ -8,6 +9,8 @@ import { EmailVerificationDeadline } from "./EmailVerificationNotice";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { socialCardImage, socialCardImageUrl } from "@/lib/seo";
 import { DeferredClientFeatures } from "./DeferredClientFeatures";
+import { BrowserSessionBoundary } from "./BrowserSessionBoundary";
+import { getBrowserSessionView } from "@/lib/browser-session-view";
 
 export const dynamic = "force-dynamic";
 
@@ -65,9 +68,9 @@ export default async function RootLayout({
 }>) {
   const settings = await getSiteSettings();
   const maintenanceEnabled = settings.maintenance_mode === "enabled";
-  // Anonymous views have no user cookie and therefore no session DB lookup.
-  // Administrative sessions are only needed here during maintenance mode.
-  const [admin, user] = await Promise.all([maintenanceEnabled ? getCurrentAdmin() : Promise.resolve(null), getVerificationUser()]);
+  // Anonymous views require no session DB lookup. Signed-in identity checks
+  // are deduplicated with the header and protected route within this render.
+  const [admin, user, sessionView] = await Promise.all([maintenanceEnabled ? getCurrentAdmin() : Promise.resolve(null), getVerificationUser(), getBrowserSessionView()]);
   const verificationDeadline = user && ["grace", "blocked"].includes(emailVerificationState(user)) ? emailVerificationDeadline(user) : null;
 
   return (
@@ -76,7 +79,7 @@ export default async function RootLayout({
         <meta name="rating" content="adult" />
       </head>
       <body>
-        {!maintenanceEnabled || admin ? children : <MaintenanceScreen />}
+        <BrowserSessionBoundary initial={sessionView} key={sessionView.identity ?? "anonymous"}>{!maintenanceEnabled || admin ? children : <MaintenanceScreen />}</BrowserSessionBoundary>
         <AgeGate />
         <DeferredClientFeatures />
         {verificationDeadline !== null && Number.isFinite(verificationDeadline) && <EmailVerificationDeadline deadline={verificationDeadline} />}

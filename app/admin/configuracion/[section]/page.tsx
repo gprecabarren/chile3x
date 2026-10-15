@@ -12,6 +12,7 @@ import { readWhatsappContacts, WHATSAPP_TEXT_LIMITS } from "@/lib/portal-whatsap
 import { PortalWhatsappStats } from "@/app/admin/PortalWhatsappStats";
 import { getXAdminConfiguration, X_CALLBACK_URL } from "@/lib/x-settings";
 import { MailSettingsFields } from "../MailSettingsFields";
+import "../mail-settings.css";
 
 const sectionDetails = {
   operacion: { eyebrow: "OPERACIÓN", title: "Publicaciones y mantenimiento", description: "Controles del flujo diario y la disponibilidad del directorio." },
@@ -48,7 +49,7 @@ export default async function AdminSettingsSectionPage({ params, searchParams }:
     }
   }
 
-  return <AdminShell user={admin}><div className="admin-content">
+  return <AdminShell user={admin}><div className={`admin-content${name === "correo" ? " admin-mail-settings-page" : ""}`}>
     <AdminPageHeading {...details} backHref="/admin/configuracion" />
     {query.saved === "1" && <p className="admin-success" role="status">Configuración guardada.</p>}
     {name === "contacto" && query.saved === "1" && <p className="admin-note">Los enlaces se actualizan al cargar una página nueva. La caché pública puede tardar hasta 10 minutos en mostrar cambios; los WhatsApp de los anunciantes no se modifican.</p>}

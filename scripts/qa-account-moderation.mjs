@@ -24,7 +24,24 @@ if(mode==='seed') {
  writeFileSync(manifest,JSON.stringify(fixture));console.log('Disposable local account/admin fixtures ready.');db.close();
 } else if(mode==='serve') {
  const fixture=JSON.parse(readFileSync(manifest));assert.ok(fixture.prefix.startsWith('qa_account_'));db.close();
- for(const [role,port] of [['owner',3001],['admin',3002]])createServer(async(req,res)=>{try{const headers=new Headers();for(const [key,value] of Object.entries(req.headers))if(value&&!['host','cookie','connection','content-length','accept-encoding'].includes(key))headers.set(key,Array.isArray(value)?value.join(','):value);headers.set('cookie',fixture.cookies[role]);headers.set('authorization','qa-loopback');const payload=await fetch('http://127.0.0.1:3000'+req.url,{method:req.method,headers,redirect:'manual'});res.writeHead(payload.status,Object.fromEntries([...payload.headers].filter(([name])=>!['content-encoding','content-length','transfer-encoding','set-cookie'].includes(name))));res.end(Buffer.from(await payload.arrayBuffer()));}catch{res.writeHead(502);res.end('Local QA upstream unavailable.');}}).listen(port,'127.0.0.1',()=>console.log('Local '+role+' preview on '+port));
+ let sharedRole='owner',failSessionCheck=false;
+ for(const [role,port] of [['owner',3001],['admin',3002],['shared',3003]])createServer(async(req,res)=>{
+  try {
+   // Disposable same-origin switch for cross-tab display QA; never a production endpoint.
+   if(role==='shared'&&/^\/__qa\/mode\/(owner|admin)$/.test(req.url??'')) {
+    sharedRole=req.url.endsWith('/admin')?'admin':'owner';res.writeHead(200,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify({mode:sharedRole}));return;
+   }
+   if(role==='shared'&&/^\/__qa\/session-state\/(fail|ready)$/.test(req.url??'')) {failSessionCheck=req.url.endsWith('/fail');res.writeHead(200);res.end('Local session-check fixture updated.');return;}
+   if(role==='shared'&&failSessionCheck&&req.url==='/api/auth/session/state'){res.writeHead(503,{'content-type':'application/json','cache-control':'no-store'});res.end('{"error":"qa_unavailable"}');return;}
+   const headers=new Headers();
+   for(const [key,value] of Object.entries(req.headers))if(value&&!['host','cookie','connection','content-length','accept-encoding'].includes(key))headers.set(key,Array.isArray(value)?value.join(','):value);
+   if(headers.get('origin')===`http://127.0.0.1:${port}`)headers.set('origin','http://127.0.0.1:3000');
+   headers.set('cookie',fixture.cookies[role==='shared'?sharedRole:role]);headers.set('authorization','qa-loopback');
+   let body;if(!['GET','HEAD'].includes(req.method??'GET')){const chunks=[];for await(const chunk of req)chunks.push(chunk);body=Buffer.concat(chunks);}
+   const payload=await fetch('http://127.0.0.1:3000'+req.url,{method:req.method,headers,body,redirect:'manual'});
+   res.writeHead(payload.status,Object.fromEntries([...payload.headers].filter(([name])=>!['content-encoding','content-length','transfer-encoding','set-cookie'].includes(name))));res.end(Buffer.from(await payload.arrayBuffer()));
+  }catch{res.writeHead(502);res.end('Local QA upstream unavailable.');}
+ }).listen(port,'127.0.0.1',()=>console.log('Local '+role+' preview on '+port));
 } else if(mode==='cleanup') {
  const f=JSON.parse(readFileSync(manifest));assert.ok(f.prefix.startsWith('qa_account_'));
  for(const id of f.users)assert.ok(id.startsWith(f.prefix));

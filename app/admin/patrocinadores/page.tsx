@@ -6,6 +6,7 @@ import { adminHasCapability } from "@/lib/admin-permissions";
 import { getSiteSettings } from "@/lib/site-settings";
 import { listAdminSponsorGroups } from "@/lib/sponsors";
 import { AdminPageHeading, AdminShell } from "../_components";
+import "./sponsors-admin.css";
 
 export const dynamic = "force-dynamic";
 
@@ -57,24 +58,28 @@ export default async function AdminSponsorsPage({ searchParams }: { searchParams
       </form>
     </section>
 
-    <section className="admin-sponsor-create-layout">
+    <section className="admin-sponsor-create-layout" aria-label="Crear secciones y sitios asociados">
+      <details className="admin-sponsor-create" id="sponsor-create-group">
+      <summary><span><span className="eyebrow">NUEVO GRUPO</span><span className="admin-sponsor-create-title">Crear una sección</span><span className="admin-sponsor-create-description">Organiza los sitios asociados en grupos y define su orden.</span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></summary>
       <form className="admin-settings-form admin-sponsor-create-group" action="/api/admin/patrocinadores/grupos" method="post">
-        <div><p className="eyebrow">NUEVO GRUPO</p><h2>Crear una sección</h2><small>El orden vertical define qué grupo aparece primero en la página.</small></div>
         <label>Nombre<input name="name" required maxLength={80} placeholder="Santiago" /></label>
         <label>URL amigable<input name="slug" maxLength={72} placeholder="se genera automáticamente" /></label>
-        <label>Descripción<textarea name="description" maxLength={240} rows={3} placeholder="Sitios asociados en Santiago y alrededores." /></label>
+        <label className="admin-field-wide">Descripción<textarea name="description" maxLength={240} rows={3} placeholder="Sitios asociados en Santiago y alrededores." /></label>
         <label>Orden vertical<input name="sort_order" type="number" min={-9999} max={9999} defaultValue={groups.length * 10} /></label>
         <label className="check-label"><input name="is_active" type="checkbox" defaultChecked /> Grupo visible</label>
-        <button className="button button-primary">Crear grupo</button>
+        <div className="admin-sponsor-create-actions"><small>Un número menor coloca el grupo antes en la página.</small><button className="button button-primary" type="submit">Crear grupo</button></div>
       </form>
+      </details>
 
+      <details className="admin-sponsor-create" id="sponsor-create-card">
+      <summary><span><span className="eyebrow">NUEVO SITIO</span><span className="admin-sponsor-create-title">Crear una tarjeta</span><span className="admin-sponsor-create-description">Añade un sitio con su enlace e imagen. El logo es opcional.</span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></summary>
       <form className="admin-settings-form admin-sponsor-create-card" action="/api/admin/patrocinadores" method="post" encType="multipart/form-data">
-        <div><p className="eyebrow">NUEVO SITIO</p><h2>Crear una tarjeta</h2><small>La imagen principal es obligatoria. El logo es opcional.</small></div>
+        {!groups.length && <p className="admin-sponsor-create-hint admin-field-wide">Crea primero una sección para poder añadir tarjetas.</p>}
         <label>Grupo<select name="group_id" required defaultValue=""><option value="" disabled>Selecciona un grupo</option><GroupOptions groups={groups} /></select></label>
         <label>Nombre<input name="name" required maxLength={100} /></label>
         <label>Título visible (opcional)<input name="headline" maxLength={100} placeholder="Puede quedar vacío" /></label>
         <label>Subtítulo (opcional)<input name="subtitle" maxLength={160} placeholder="Puede quedar vacío" /></label>
-        <label>Enlace de destino<input name="destination_url" type="url" required maxLength={500} placeholder="https://..." /></label>
+        <label className="admin-field-wide">Enlace de destino<input name="destination_url" type="url" required maxLength={500} placeholder="https://..." /></label>
         <label>Texto del botón<input name="cta_label" list="sponsor-cta-options" required maxLength={40} defaultValue="Conocer más" /></label>
         <label>Descripción accesible de la imagen<input name="image_alt" required maxLength={180} placeholder="Fachada o identidad visual de…" /></label>
         <label>Diseño<select name="display_mode" defaultValue="overlay"><option value="overlay">Texto sobre imagen</option><option value="image">Imagen protagonista</option><option value="brand">Logo o banner centrado</option></select></label>
@@ -83,9 +88,9 @@ export default async function AdminSponsorsPage({ searchParams }: { searchParams
         <label>Logo opcional<input name="logo" type="file" accept="image/jpeg,image/png,image/webp" /></label>
         <label className="check-label"><input name="is_active" type="checkbox" defaultChecked /> Tarjeta visible</label>
         <label className="check-label"><input name="is_sponsored" type="checkbox" /> Enlace pagado o patrocinado</label>
-        <small>Marca “patrocinado” cuando exista pago o compensación; el enlace recibirá la señal SEO correspondiente.</small>
-        <button className="button button-primary" disabled={!groups.length}>Crear tarjeta</button>
+        <div className="admin-sponsor-create-actions"><small>Marca “patrocinado” cuando exista pago o compensación; el enlace recibirá la señal SEO correspondiente.</small><button className="button button-primary" type="submit" disabled={!groups.length}>Crear tarjeta</button></div>
       </form>
+      </details>
     </section>
 
     <section className="admin-sponsor-groups" aria-labelledby="sponsor-groups-title">

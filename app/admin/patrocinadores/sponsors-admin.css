@@ -1,0 +1,36 @@
+.admin-sponsors .admin-sponsor-create-layout { grid-template-columns:minmax(0,1fr); gap:14px; }
+.admin-sponsor-create { min-width:0; border:1px solid #384359; border-radius:12px; background:#111722; }
+.admin-sponsor-create > summary { display:flex; align-items:center; justify-content:space-between; gap:20px; min-height:108px; padding:22px 24px; border-radius:12px; color:#fff; cursor:pointer; list-style:none; }
+.admin-sponsor-create > summary::-webkit-details-marker { display:none; }
+.admin-sponsor-create > summary > span { display:grid; gap:7px; min-width:0; }
+.admin-sponsor-create > summary .eyebrow { margin:0; color:#ff787f; font-size:10px; font-weight:800; letter-spacing:.12em; }
+.admin-sponsor-create-title { font-size:22px; font-weight:650; line-height:1.3; letter-spacing:-.04em; }
+.admin-sponsor-create-description { color:#abb8cd; font-size:12px; line-height:1.6; }
+.admin-sponsor-create > summary > svg { width:22px; height:22px; flex:0 0 22px; color:#ff929f; transition:transform .15s ease; }
+.admin-sponsor-create[open] > summary > svg { transform:rotate(180deg); }
+.admin-sponsor-create > summary:hover { background:#172031; }
+.admin-sponsor-create > summary:focus-visible { outline:2px solid #ff929f; outline-offset:3px; }
+.admin-sponsors .admin-sponsor-create .admin-settings-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; margin:0; padding:24px; border:0; border-top:1px solid #344057; border-radius:0 0 12px 12px; background:transparent; }
+.admin-sponsors form label:not(.check-label) { display:grid; align-content:start; gap:8px; min-width:0; color:#e3e9f2; font-size:13px; font-weight:650; line-height:1.5; }
+.admin-sponsors form :is(input:not([type="checkbox"]),select,textarea) { box-sizing:border-box; width:100%; min-width:0; max-width:100%; min-height:46px; margin:0; padding:11px 13px; border:1px solid #48556d; border-radius:8px; color:#f3f5fa; background:#0a101a; color-scheme:dark; font:inherit; font-weight:400; line-height:1.5; }
+.admin-sponsors form textarea { min-height:110px; resize:vertical; }
+.admin-sponsors form :is(input,textarea)::placeholder { color:#8f9db2; opacity:1; }
+.admin-sponsors form :is(input,select,textarea):focus-visible { outline:2px solid #ff929f; outline-offset:2px; border-color:#ff929f; }
+.admin-sponsors form input[type="file"] { overflow:hidden; padding:8px; font-size:12px; }
+.admin-sponsors form input[type="file"]::file-selector-button { max-width:100%; margin:0 10px 0 0; padding:7px 10px; border:1px solid #52617b; border-radius:6px; color:#e9effa; background:#222e42; font:inherit; cursor:pointer; }
+.admin-sponsors form .check-label { display:flex; align-items:center; align-self:center; gap:9px; min-height:44px; margin:0; color:#dce5f2; font-size:12px; font-weight:600; line-height:1.5; }
+.admin-sponsors form input[type="checkbox"] { width:17px; height:17px; flex:0 0 17px; margin:0; accent-color:#e41424; }
+.admin-sponsor-create .admin-field-wide, .admin-sponsor-create-actions { grid-column:1 / -1; }
+.admin-sponsor-create-actions { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; padding-top:18px; border-top:1px solid #344057; }
+.admin-sponsor-create-actions small { flex:1 1 260px; max-width:680px; }
+.admin-sponsor-create-actions .button { flex:0 0 auto; min-height:44px; }
+.admin-sponsor-create-hint { margin:0; padding:12px 14px; border:1px solid #64503d; border-radius:8px; color:#f1d7a5; background:#241e16; font-size:13px; line-height:1.6; }
+@media(max-width:720px) {
+ .admin-sponsor-create > summary { min-height:100px; padding:18px; gap:14px; }
+ .admin-sponsor-create-title { font-size:20px; }
+ .admin-sponsors .admin-sponsor-create .admin-settings-form { grid-template-columns:minmax(0,1fr); gap:18px; padding:18px; }
+ .admin-sponsor-create-actions { align-items:stretch; flex-direction:column; }
+ .admin-sponsor-create-actions small { flex:auto; }
+ .admin-sponsor-create-actions .button { width:100%; }
+}
+@media(prefers-reduced-motion:reduce) { .admin-sponsor-create > summary > svg { transition:none; } }

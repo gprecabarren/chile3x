@@ -73,3 +73,23 @@ test("the public page is canonical, structured, conditional and responsive", asy
   assert.match(mediaRoute, /publiclyVisible/);
   assert.match(mediaRoute, /private, no-store/);
 });
+
+test("sponsor creation uses two closed native disclosures and consistently themed fields", async () => {
+  const [page, styles] = await Promise.all([
+    source("app/admin/patrocinadores/page.tsx"),
+    source("app/admin/patrocinadores/sponsors-admin.css"),
+  ]);
+  assert.match(page, /import "\.\/sponsors-admin\.css"/);
+  const disclosures = page.match(/<details className="admin-sponsor-create"[^>]*>/g) ?? [];
+  assert.equal(disclosures.length, 2);
+  assert.ok(disclosures.every(tag => !/\bopen\b/.test(tag)));
+  assert.match(page, /id="sponsor-create-group"/);
+  assert.match(page, /id="sponsor-create-card"/);
+  assert.match(page, /name="background" type="file"[^>]*required/);
+  assert.match(styles, /summary:focus-visible/);
+  assert.match(styles, /\[open\] > summary > svg/);
+  assert.match(styles, /textarea\) \{[^}]*color-scheme:dark/);
+  assert.match(styles, /::file-selector-button/);
+  assert.match(styles, /@media\(max-width:720px\)/);
+  assert.match(styles, /grid-template-columns:minmax\(0,1fr\)/);
+});

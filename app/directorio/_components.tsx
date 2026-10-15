@@ -1,7 +1,7 @@
 import Link from "@/app/NavigationLink";
 import Image from "next/image";
 import { publicProfileAge } from "@/lib/profile-age";
-import { isContentOnly, publicProfileTypeLabel, profileMatchesDirectoryCategory } from "@/lib/profile-content-category";
+import { isContentOnly, sellsContent, publicProfileTypeLabel, profileMatchesDirectoryCategory } from "@/lib/profile-content-category";
 import { cookies } from "next/headers";
 import type { ReactNode } from "react";
 import { getCurrentAdmin, getCurrentUser, getSessionCookieName, getUserSessionCookieName, type AccountUser } from "@/lib/auth";
@@ -257,6 +257,7 @@ type CityProfileSectionsProps = {
   profiles: PublicProfile[];
   selectedCategory?: string;
   paginated?: boolean;
+  contentDirectory?: boolean;
 };
 
 function CityProfileSection({ id, title, description, profiles, tier }: { id: string; title: string; description: string; profiles: PublicProfile[]; tier?: Tier }) {
@@ -271,14 +272,14 @@ function CityProfileSection({ id, title, description, profiles, tier }: { id: st
   </details>;
 }
 
-export function CityProfileSections({ city, profiles, selectedCategory, paginated = false }: CityProfileSectionsProps) {
-  const escorts = profiles.filter((profile) => profile.type === "escort" && !isContentOnly(profile));
+export function CityProfileSections({ city, profiles, selectedCategory, paginated = false, contentDirectory = false }: CityProfileSectionsProps) {
+  const escorts = profiles.filter((profile) => profile.type === "escort" && (contentDirectory ? sellsContent(profile) : !isContentOnly(profile)));
   const sections: { id: string; title: string; description: string; profiles: PublicProfile[]; tier?: Tier }[] = [
     { id: "vip", title: "VIP", description: "Perfiles de élite con máxima visibilidad.", profiles: escorts.filter((profile) => profile.tier === "vip"), tier: "vip" },
     { id: "premium", title: "Premium", description: "Perfiles con visibilidad intermedia y presentación destacada.", profiles: escorts.filter((profile) => profile.tier === "premium"), tier: "premium" },
     { id: "bronze", title: "Bronze", description: "Perfiles con visibilidad estándar en el directorio.", profiles: escorts.filter((profile) => profile.tier === "bronze"), tier: "bronze" },
     { id: "masajes", title: "Masajes", description: "Escorts con la etiqueta Masajes; también aparecen en su categoría de visibilidad", profiles: escorts.filter((profile) => profile.tags.includes("masajes")) },
-    { id: "contenido", title: "Venta de contenido", description: "Contenido por contacto directo o en otras plataformas; no requiere una galería privada en Chile3X", profiles: profiles.filter((profile) => profileMatchesDirectoryCategory(profile, "contenido")) },
+    { id: "contenido", title: "Venta de contenido", description: "Contenido por contacto directo o en otras plataformas", profiles: profiles.filter((profile) => profileMatchesDirectoryCategory(profile, "contenido")) },
     { id: "agency", title: "Agencias", description: "Agencias visibles en la ciudad", profiles: profiles.filter((profile) => profile.type === "agency") },
     { id: "rental", title: "Arriendos", description: "Arriendos visibles en la ciudad", profiles: profiles.filter((profile) => profile.type === "rental") },
   ];
@@ -286,7 +287,7 @@ export function CityProfileSections({ city, profiles, selectedCategory, paginate
   return <section className="city-profile-sections" aria-label={`Publicaciones en ${city}`}>
     {paginated && <p className="city-section-page-note">Los recuentos corresponden a esta página. Selecciona una categoría en los filtros para consultar todos sus resultados.</p>}
     {(selectedCategory ? sections.filter((section) => section.id === selectedCategory) : sections.slice(0, 3)).map(({ id, title, description, profiles: sectionProfiles, tier }) => <CityProfileSection key={id} id={id} title={title} description={description} profiles={sectionProfiles} tier={tier} />)}
-    {!selectedCategory && <><div className="city-section-divider"><h3>También en {city}</h3><span aria-hidden="true" /></div>
+    {!selectedCategory && !contentDirectory && <><div className="city-section-divider"><h3>También en {city}</h3><span aria-hidden="true" /></div>
     {sections.slice(3).map(({ id, title, description, profiles: sectionProfiles, tier }) => <CityProfileSection key={id} id={id} title={title} description={description} profiles={sectionProfiles} tier={tier} />)}</>}
   </section>;
 }

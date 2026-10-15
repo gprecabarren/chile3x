@@ -12,7 +12,7 @@ const [layoutSource, dashboardSource, cssSource, panelCssSource, adminLayoutSour
   readFile(new URL("../app/admin/_components.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/admin/AdminWorkspace.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/mi-cuenta/_components.tsx", import.meta.url), "utf8"),
-  readFile(new URL("../app/mi-cuenta/AccountMobileNavigation.tsx", import.meta.url), "utf8"),
+  readFile(new URL("../app/mi-cuenta/AccountWorkspace.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/directorio/_components.tsx", import.meta.url), "utf8"),
 ]);
 
@@ -49,10 +49,10 @@ test("the mobile administration menu closes after selecting a section", () => {
 });
 
 test("the mobile account menu closes after selecting a section", () => {
-  assert.match(accountShellSource, /<AccountMobileNavigation>/);
+  assert.match(accountShellSource, /<AccountWorkspace/);
   assert.match(accountMobileNavigationSource, /target\.closest\("a\[href\]"\)/);
-  assert.match(accountMobileNavigationSource, /removeAttribute\("open"\)/);
-  assert.match(panelCssSource, /\.account-header > \.account-desktop-navigation \{ display: none; \}/);
+  assert.match(accountMobileNavigationSource, /setMobileOpen\(false\)/);
+  assert.match(accountMobileNavigationSource, /inert=\{mobileOpen/);
 });
 
 test("profile navigation cannot be interrupted halfway through a smooth return to the top", () => {

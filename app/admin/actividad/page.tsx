@@ -171,11 +171,11 @@ export default async function AdminActivityPage({ searchParams }: { searchParams
   const where = conditions.length ? and(...conditions) : undefined;
   const notificationFilters = {
     q: (params.notify_q ?? "").trim().slice(0, 100),
-    kind: ["account_registered", "profile_created", "profile_updated"].includes(params.notify_kind ?? "") ? params.notify_kind! : "",
+    kind: ["account_registered", "profile_created", "profile_updated", "media_uploaded"].includes(params.notify_kind ?? "") ? params.notify_kind! : "",
     state: params.notify_state === "read" || params.notify_state === "unread" ? params.notify_state : "",
   };
   const notificationConditions: SQL[] = [];
-  if (notificationFilters.kind) notificationConditions.push(eq(adminNotifications.kind, notificationFilters.kind as "account_registered" | "profile_created" | "profile_updated"));
+  if (notificationFilters.kind) notificationConditions.push(eq(adminNotifications.kind, notificationFilters.kind as "account_registered" | "profile_created" | "profile_updated" | "media_uploaded"));
   if (notificationFilters.state === "read") notificationConditions.push(isNotNull(adminNotifications.readAt));
   if (notificationFilters.state === "unread") notificationConditions.push(isNull(adminNotifications.readAt));
   if (notificationFilters.q) {
@@ -253,18 +253,18 @@ export default async function AdminActivityPage({ searchParams }: { searchParams
       <p>Hora mostrada en Chile continental. Los eventos nuevos se identifican por la cuenta interna y el usuario de GitHub.</p>
     </section>
     {params.notice === "notifications_read" && <p className="admin-success" role="status">Las notificaciones seleccionadas quedaron marcadas como leídas.</p>}
-    <details className="admin-notification-center">
+    <details className="admin-notification-center" id="notificaciones" open={Boolean(params.notify_state || params.notify_kind || params.notify_q)}>
       <summary><span><strong>Notificaciones del sitio</strong><small>Registros, anuncios nuevos y modificaciones hechas por usuarios</small></span><b>{Number(unreadNotifications?.total ?? 0)} nuevas</b></summary>
       <form className="admin-notification-filters" method="get">
         <label>Buscar<input type="search" name="notify_q" defaultValue={notificationFilters.q} placeholder="Cuenta o anuncio" /></label>
-        <label>Tipo<select name="notify_kind" defaultValue={notificationFilters.kind}><option value="">Todos</option><option value="account_registered">Nuevas cuentas</option><option value="profile_created">Anuncios creados</option><option value="profile_updated">Anuncios modificados</option></select></label>
+        <label>Tipo<select name="notify_kind" defaultValue={notificationFilters.kind}><option value="">Todos</option><option value="account_registered">Nuevas cuentas</option><option value="profile_created">Anuncios creados</option><option value="profile_updated">Anuncios modificados</option><option value="media_uploaded">Fotos y videos recibidos</option></select></label>
         <label>Estado<select name="notify_state" defaultValue={notificationFilters.state}><option value="">Leídas y nuevas</option><option value="unread">Solo nuevas</option><option value="read">Solo leídas</option></select></label>
         <button className="button button-primary" type="submit">Filtrar</button>
         {(notificationFilters.q || notificationFilters.kind || notificationFilters.state) && <Link className="button button-outline" href="/admin/actividad">Limpiar</Link>}
       </form>
       <form className="admin-notification-read-all" action="/api/admin/notificaciones" method="post"><input type="hidden" name="intent" value="all" /><input type="hidden" name="return_to" value="/admin/actividad?notice=notifications_read" /><button type="submit">Marcar todas como leídas</button></form>
       {notificationRows.length ? <div className="admin-notification-list">{notificationRows.map((notification) => <article className={notification.readAt ? "is-read" : "is-unread"} key={notification.id}>
-        <div><span>{notification.kind === "account_registered" ? "Nueva cuenta" : notification.kind === "profile_created" ? "Anuncio creado" : "Anuncio modificado"}</span><strong>{notification.profileName ?? notification.actorName ?? (notification.actorUsername ? `@${notification.actorUsername}` : notification.actorEmail) ?? "Usuario de Chile3X"}</strong><p>{notification.summary}</p><time dateTime={activityInstant(notification.createdAt)}>{activityDate(notification.createdAt)}</time></div>
+        <div><span>{notification.kind === "account_registered" ? "Nueva cuenta" : notification.kind === "profile_created" ? "Anuncio creado" : notification.kind === "media_uploaded" ? "Fotos o videos recibidos" : "Anuncio modificado"}</span><strong>{notification.profileName ?? notification.actorName ?? (notification.actorUsername ? `@${notification.actorUsername}` : notification.actorEmail) ?? "Usuario de Chile3X"}</strong><p>{notification.summary}</p><time dateTime={activityInstant(notification.createdAt)}>{activityDate(notification.createdAt)}</time></div>
         <nav>{notification.actorUserId && <Link href={`/admin/cuentas/${encodeURIComponent(notification.actorUserId)}`}>Ver cuenta</Link>}{notification.profileId && <Link href={`/admin/anuncios-publicaciones?q=${encodeURIComponent(notification.profileName ?? notification.profileId)}`}>Ver anuncio</Link>}{!notification.readAt && <form action="/api/admin/notificaciones" method="post"><input type="hidden" name="notification_id" value={notification.id} /><input type="hidden" name="return_to" value="/admin/actividad?notice=notifications_read" /><button type="submit">Marcar leída</button></form>}</nav>
       </article>)}</div> : <p className="admin-media-empty">No hay notificaciones que coincidan con estos filtros.</p>}
     </details>

@@ -60,7 +60,7 @@ export function publicPageMetadata({
 
 /** Keep paginated directory pages discoverable without indexing filter permutations. */
 export function directoryPageMetadata(base: Metadata, path: string, query: Record<string, string | string[] | undefined>, page: number): Metadata {
-  const filtered = Object.entries(query).some(([key, value]) => key !== "pagina" && key !== "cerca" && key !== "orden" && Boolean(Array.isArray(value) ? value.length : value));
+  const filtered = Object.entries(query).some(([key, value]) => key !== "pagina" && key !== "cerca" && key !== "orden" && key !== "filtros" && Boolean(Array.isArray(value) ? value.length : value));
   return {
     ...base,
     alternates: { canonical: !filtered && page > 1 ? `${path}?pagina=${page}` : path },

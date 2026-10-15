@@ -1,7 +1,8 @@
 import { getDb } from "@/db";
 import { adminNotifications } from "@/db/schema";
+import { enqueueModerationEmail } from "@/lib/moderation-mail-jobs";
 
-export type AdminNotificationKind = "account_registered" | "profile_created" | "profile_updated";
+export type AdminNotificationKind = "account_registered" | "profile_created" | "profile_updated" | "media_uploaded";
 
 export async function createAdminNotification(input: {
   kind: AdminNotificationKind;
@@ -17,6 +18,7 @@ export async function createAdminNotification(input: {
       profileId: input.profileId ?? null,
       summary: input.summary.slice(0, 300),
     });
+    if (input.profileId) await enqueueModerationEmail(input.profileId, input.kind);
   } catch (error) {
     // A notification must never make the user-facing action fail. The primary
     // record remains the source of truth and the failure stays observable.

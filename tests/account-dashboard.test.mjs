@@ -32,10 +32,11 @@ test('email verification stays above every account page independently of activit
 });
 
 test('account identity links back to the dashboard and truncates long email addresses', async () => {
-  const [shell, css] = await Promise.all(['app/mi-cuenta/_components.tsx', 'public/assets/panels-20260923.css'].map(source));
+  const [shell, css] = await Promise.all(['app/mi-cuenta/_components.tsx', 'app/mi-cuenta/account-workspace.css'].map(source));
   assert.match(shell, /<Link className="account-home-link" href="\/mi-cuenta" title=\{user.email\} aria-label=/);
-  assert.match(css, /\.account-header \.account-home-link \{[^}]*min-width: 0;[^}]*max-width: 290px;[^}]*overflow: hidden;[^}]*text-overflow: ellipsis;[^}]*white-space: nowrap;/);
-  assert.match(css, /\.account-home-link:focus-visible/);
+  assert.match(css, /\.account-sidebar-identity > a \{[^}]*min-width:0/);
+  assert.match(css, /text-overflow:ellipsis; white-space:nowrap/);
+  assert.match(css, /:focus-visible/);
 });
 
 test('dashboard data is owner-scoped, excludes trash and preserves daily rather than raw clicks', async () => {

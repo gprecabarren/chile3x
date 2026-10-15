@@ -6,7 +6,7 @@ import { profilePublicFacts } from '../lib/profile-public-facts.ts';
 import { profileSeoTitle, profileSeoDescription } from '../lib/profile-seo-content.ts';
 const source = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('escort submissions require a listed gender and an integer adult age, drafts can be incomplete', () => {
+test('escort submissions always require an integer adult age, including drafts', () => {
   assert.match(profileDemographicsError('escort', '', '', true), /género/);
   assert.match(profileDemographicsError('escort', 'Femenino', '', true), /edad/);
   for (const age of ['0', '17', '100', '1234', '28.5', '-28', 'hola']) {
@@ -17,7 +17,7 @@ test('escort submissions require a listed gender and an integer adult age, draft
     for (const age of ['18', '28', '99']) assert.equal(profileDemographicsError('escort', gender, age, true), null);
   }
   assert.match(profileDemographicsError('escort', 'Inventado', '28', false), /género válido/);
-  assert.equal(profileDemographicsError('escort', '', '', false), null);
+  assert.match(profileDemographicsError('escort', '', '', false), /edad es obligatoria/);
   for (const type of ['agency', 'rental']) assert.equal(profileDemographicsError(type, '', '', true), null);
 });
 

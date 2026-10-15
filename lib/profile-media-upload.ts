@@ -1,5 +1,6 @@
 import { and, eq, ne } from "drizzle-orm";
 import { getDb } from "@/db";
+import { createAdminNotification } from "@/lib/admin-notifications";
 import { profileMedia } from "@/db/schema";
 import { validatePreparedVideo } from "@/lib/video-validation";
 import {
@@ -82,6 +83,7 @@ export async function uploadProfileMedia(input: {
     throw new ProfileMediaUploadError(`Falló el registro de la foto o video en la galería. No se confirmó la carga. Código de soporte: ${reference}.`, 500);
   }
   const totalBytes = usage.bytes + data.byteLength;
+  if (moderationStatus === "pending") await createAdminNotification({ kind: "media_uploaded", actorUserId: uploadedBy, profileId, summary: `Se recibió ${mediaType === "video" ? "un video" : "una foto"} pendiente de revisión${uploadKind === "profile_photo" ? " como foto principal" : " en la galería"}.` });
   return {
     media: { id, url: `/media/${id}`, mediaType, contentType, moderationStatus, visibility: "public" as const, isProfilePhoto: uploadKind === "profile_photo", byteSize: data.byteLength },
     quota: { bytes: totalBytes, ...getMediaQuotaState(totalBytes) },

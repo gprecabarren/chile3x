@@ -1,7 +1,8 @@
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { profiles, users } from "@/db/schema";
+import { profileDetails, profiles, users } from "@/db/schema";
+import { publicProfileAge } from "@/lib/profile-age";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { sendPortalEmail } from "@/lib/account-email";
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
@@ -66,6 +67,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     trashedAt: profiles.trashedAt,
   }).from(profiles).innerJoin(users, eq(profiles.ownerId, users.id)).where(eq(profiles.id, profileId)).limit(1);
   if (!existingProfile) return new Response("Perfil no encontrado.", { status: 404 });
+  if (status === "approved" && existingProfile.type === "escort") {
+    const [details] = await db.select({ metadata: profileDetails.metadata }).from(profileDetails).where(eq(profileDetails.profileId, profileId)).limit(1);
+    let metadata: Record<string,string> = {}; try { metadata = JSON.parse(details?.metadata || "{}"); } catch { /* Reject malformed age. */ }
+    if (publicProfileAge(existingProfile.type, metadata) === null) return new Response("No se puede publicar: la edad es obligatoria y debe estar entre 18 y 99 años. Completa la edad desde Editar anuncio.", { status: 400 });
+  }
   const healthReviewStatus = existingProfile.type === "escort" ? requestedHealthReviewStatus : "not_requested";
   if (typeof healthReviewStatus !== "string" || !allowedHealthReview.has(healthReviewStatus)) return new Response("Estado de revisión médica no válido.", { status: 400 });
   if (existingProfile.trashedAt) return new Response("El anuncio está en la papelera. Restáuralo antes de cambiar su estado.", { status: 409 });

@@ -11,6 +11,7 @@ const sections = [
   ["x", "Inicio con X", "Credenciales, estado y requisitos del acceso con X (Twitter)."],
   ["apple", "Inicio con Apple", "Credenciales, secretos y activación del acceso con Apple."],
   ["contacto", "Contacto y redes", "Soporte principal, WhatsApp del equipo, panel flotante y estadísticas."],
+  ["correo", "Configuración de correo", "Remitentes, envío, recepción y alertas de moderación. Independiente del historial."],
   ["contenido", "FAQ y reglas", "Edita las preguntas frecuentes y las reglas de publicación."],
   ["ayuda", "Bot de ayuda beta", "Activa u oculta Johnny Sins y el buscador gratuito de Mi cuenta."],
   ["medios", "Fotos de galería", "Marca de agua y desenfoque facial para futuras fotos públicas."],

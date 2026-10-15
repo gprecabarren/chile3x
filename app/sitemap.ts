@@ -14,6 +14,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     { url: siteUrl, changeFrequency: "weekly", priority: 1 },
     { url: `${siteUrl}/escorts`, changeFrequency: "daily", priority: 0.9 },
+    { url: `${siteUrl}/venta-contenido`, changeFrequency: "daily", priority: 0.8 },
     { url: `${siteUrl}/agencias`, changeFrequency: "weekly", priority: 0.7 },
     { url: `${siteUrl}/arriendos`, changeFrequency: "weekly", priority: 0.7 },
     { url: `${siteUrl}/quienes-somos`, lastModified: new Date("2026-09-14T00:00:00-03:00"), changeFrequency: "monthly", priority: 0.8 },

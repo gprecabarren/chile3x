@@ -13,6 +13,8 @@ import { OperationalPanel } from "./OperationalPanel";
 import { emailVerificationFilter } from "@/lib/email-verification-admin";
 import { RecentAdminActivity } from "./RecentAdminActivity";
 import { canViewEmailHistory } from "@/lib/email-history-policy";
+import { getModerationInbox } from "@/lib/moderation-inbox";
+import { ModerationInbox } from "./ModerationInbox";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +34,8 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
   }
 
   const params = await searchParams;
+  const canModerate = adminHasCapability(admin, "profiles.moderate") || adminHasCapability(admin, "media.moderate");
+  const moderationInbox = canModerate ? await getModerationInbox(admin) : null;
   const canViewSummary = adminHasCapability(admin, "private.view");
   const canViewOperations = adminHasCapability(admin, "settings.manage");
   const filters = readOperationalFilters(params);
@@ -105,6 +109,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
           title="Resumen de administración"
           description={canViewSummary ? "Consulta las prioridades del portal y administra tu acceso desde un único resumen." : "Consulta las herramientas disponibles para tu función y administra tus sesiones activas."}
         />
+        {moderationInbox && <ModerationInbox initial={moderationInbox} canProfiles={adminHasCapability(admin, "profiles.moderate")} canMedia={adminHasCapability(admin, "media.moderate")} canAudit={adminHasCapability(admin, "audit.view")} />}
         {canViewSummary && <section className="admin-stat-grid" aria-label="Resumen del sitio">
           {summary.map((item) => (
             <Link

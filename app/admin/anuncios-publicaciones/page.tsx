@@ -77,6 +77,7 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
   if (q) {
     const searchValue = "%" + q + "%";
     filters.push(or(
+      sql`lower(${profiles.id}) like ${searchValue}`,
       sql`lower(${profiles.displayName}) like ${searchValue}`,
       sql`lower(${profiles.handle}) like ${searchValue}`,
       sql`lower(${users.email}) like ${searchValue}`,

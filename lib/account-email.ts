@@ -9,6 +9,7 @@ import { emailVerificationState } from "@/lib/email-verification-policy";
 import { isReservedPublicAccountIdentity } from "@/lib/admin-email";
 import { beginEmailHistory, finishEmailHistory } from "@/lib/email-history";
 import { emailErrorCode, type EmailAttempt } from "@/lib/email-history-policy";
+import { readMailCredentials } from "@/lib/mail-credentials";
 
 export type AccountTokenPurpose = "verify_email" | "reset_password";
 
@@ -52,6 +53,7 @@ type AccountEmailMessage = {
   text: string;
   html: string;
   replyTo?: string;
+  senderName?: string;
 };
 
 export type PortalEmailNotification = {
@@ -65,7 +67,7 @@ export type PortalEmailNotification = {
     href: string;
   };
   note?: string;
-  kind?: "account_verification" | "password_reset" | "profile_approved" | "account_disabled" | "city_alert" | "portal_notification";
+  kind?: "account_verification" | "password_reset" | "profile_approved" | "account_disabled" | "city_alert" | "portal_notification" | "moderation_alert";
 };
 
 async function sendWithAppsScript(message: AccountEmailMessage, relayUrl?: string, relaySecret?: string) {
@@ -84,6 +86,7 @@ async function sendWithAppsScript(message: AccountEmailMessage, relayUrl?: strin
         text: message.text,
         html: message.html,
         replyTo: message.replyTo,
+        senderName: message.senderName,
       }),
       signal: AbortSignal.timeout(10_000),
     });
@@ -121,7 +124,8 @@ export async function sendPortalEmail({ email, displayName, subject, heading, me
   try {
   const { env } = await import("cloudflare:workers");
   const settings = await getSiteSettings();
-  const replyTo = settings.contact_email.trim().toLowerCase();
+  if (settings.mail_delivery_mode === "disabled") return finish(false, null, "Los envíos están pausados por configuración administrativa.", true);
+  const replyTo = (settings.mail_reply_to || settings.contact_email).trim().toLowerCase();
   const name = displayName?.trim().replace(/[\r\n]+/g, " ") || "";
   const safeName = escapeHtml(name);
   const safeHeading = escapeHtml(heading);
@@ -132,25 +136,28 @@ export async function sendPortalEmail({ email, displayName, subject, heading, me
   const greeting = name ? `Hola ${name},\n\n` : "";
   const text = `${greeting}${message}${action ? `\n\n${action.label}: ${action.href}` : ""}${note ? `\n\n${note}` : ""}`;
   const html = `<main style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px;color:#171922"><p style="color:#d4151d;font-size:12px;font-weight:700;letter-spacing:.08em">CHILE3X</p><h1 style="font-family:Georgia,serif;font-weight:400">${safeHeading}</h1>${safeName ? `<p>Hola ${safeName},</p>` : ""}<p>${safeMessage}</p>${action ? `<p style="margin:28px 0"><a href="${safeActionHref}" style="display:inline-block;padding:13px 18px;background:#d4151d;color:#fff;text-decoration:none;font-weight:700">${safeActionLabel}</a></p>` : ""}${safeNote ? `<p style="font-size:13px;color:#5d6272">${safeNote}</p>` : ""}</main>`;
-  const emailMessage: AccountEmailMessage = { email, subject, text, html, replyTo: isEmail(replyTo) ? replyTo : undefined };
+  const emailMessage: AccountEmailMessage = { email, subject, text, html, replyTo: isEmail(replyTo) ? replyTo : undefined, senderName: settings.mail_sender_name };
 
   // Preserve the configured primary relay. Its acknowledgement is acceptance,
   // not evidence that the recipient read the message or saw it in their inbox.
-  const relay = await sendWithAppsScript(emailMessage, env.GOOGLE_APPS_SCRIPT_URL, env.GOOGLE_APPS_SCRIPT_SECRET);
+  const credentials = settings.mail_delivery_mode !== "cloudflare" ? await readMailCredentials() : null;
+  const relay = credentials ? await sendWithAppsScript(emailMessage, settings.mail_google_relay_url || credentials.fallbackUrl, credentials.secret) : { attempted: false, accepted: false, code: "DISABLED" };
   if (relay.attempted) attempts.push({ provider: "google_relay", accepted: relay.accepted, code: relay.code });
   if (relay.accepted) {
     return finish(true, "google_relay", "El relay principal aceptó el envío; recepción y lectura no confirmadas.");
   }
 
-  if (!env.EMAIL) return finish(false, null, "No había una alternativa de entrega disponible.");
+  if (settings.mail_delivery_mode === "google" || !env.EMAIL) return finish(false, null, "El servicio seleccionado no pudo completar el envío; no se utilizó una alternativa deshabilitada.");
   try {
-    const result = await env.EMAIL.send({
+    const cloudflareMessage = {
       to: email,
-      from: { email: "noreply@chile3x.cl", name: "Chile3X" },
+      from: { email: settings.mail_sender_address, name: settings.mail_sender_name },
+      replyTo: isEmail(replyTo) ? replyTo : undefined,
       subject,
       html,
       text,
-    });
+    };
+    const result = await env.EMAIL.send(cloudflareMessage);
     attempts.push({ provider: "cloudflare_email", accepted: true, code: "ACCEPTED", messageId: result?.messageId });
     return finish(true, "cloudflare_email", "El servicio alternativo aceptó el envío; recepción y lectura no confirmadas.");
   } catch (error) {

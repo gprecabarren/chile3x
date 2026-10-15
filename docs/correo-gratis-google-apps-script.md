@@ -31,7 +31,7 @@ function doPost(event) {
       subject: payload.subject.slice(0, 180),
       body: payload.text,
       htmlBody: payload.html,
-      name: "Chile3X",
+      name: typeof payload.senderName === "string" ? payload.senderName.replace(/[\r\n]/g, " ").slice(0, 60) : "Chile3X",
       replyTo: isEmail(payload.replyTo) ? payload.replyTo : undefined,
     });
 

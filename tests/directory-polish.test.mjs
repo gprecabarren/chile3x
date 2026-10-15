@@ -13,7 +13,7 @@ const [directory, cityPage, profile, registration, googleButton, css] = await Pr
 
 test("city tiers and other listing types have a concise semantic divider", () => {
   assert.match(directory, /selectedCategory \? sections\.filter\(\(section\) => section\.id === selectedCategory\) : sections\.slice\(0, 3\)/);
-  assert.match(directory, /!selectedCategory && <><div className="city-section-divider"><h3>También en \{city\}<\/h3>/);
+  assert.match(directory, /!selectedCategory && !contentDirectory && <><div className="city-section-divider"><h3>También en \{city\}<\/h3>/);
   assert.match(directory, /city-section-divider[\s\S]*?sections\.slice\(3\)\.map/);
   assert.match(directory, /Los recuentos corresponden a esta página/);
   assert.match(css, /\.city-section-divider span \{[^}]*height: 1px/);

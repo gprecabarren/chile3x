@@ -12,7 +12,8 @@ const stub='data:text/javascript,'+encodeURIComponent(`
  export const getDb=async()=>{};
  export const createOpaqueToken=()=>'', sha256=async()=>'';
  export const recordOperationalEvent=async input=>globalThis.__emailTest.operations.push(input);
- export const getSiteSettings=async()=>{if(globalThis.__emailTest.settingsFail)throw Error('secret');return {contact_email:'support@example.test'};},siteBaseUrl=x=>x;
+ export const getSiteSettings=async()=>{if(globalThis.__emailTest.settingsFail)throw Error('secret');return {contact_email:'support@example.test',mail_delivery_mode:globalThis.__emailTest.mode||'auto',mail_sender_name:'Chile3X',mail_sender_address:'noreply@chile3x.cl',mail_reply_to:'',mail_google_relay_url:''};},siteBaseUrl=x=>x;
+ export const readMailCredentials=async()=>({secret:env.GOOGLE_APPS_SCRIPT_SECRET,fallbackUrl:env.GOOGLE_APPS_SCRIPT_URL});
  export const emailVerificationState=()=>'';
  export const isReservedPublicAccountIdentity=async()=>false;
  export const beginEmailHistory=async input=>{globalThis.__emailTest.history.push({id:String(globalThis.__emailTest.history.length),...input});return globalThis.__emailTest.history.at(-1).id;};

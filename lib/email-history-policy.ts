@@ -7,6 +7,7 @@ export const EMAIL_KINDS = {
   account_disabled: "Cuenta deshabilitada",
   city_alert: "Alerta de ciudad",
   portal_notification: "Notificación del portal",
+  moderation_alert: "Alerta de moderación al equipo",
 } as const;
 export type EmailKind = keyof typeof EMAIL_KINDS;
 export const EMAIL_STATUSES = { sending: "En proceso / sin resultado", accepted: "Aceptado por el servicio", failed: "Envío fallido", skipped: "Envío omitido" } as const;

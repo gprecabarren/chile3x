@@ -1,0 +1,33 @@
+import type { SiteSettings } from "@/lib/site-settings";
+import { readMailCredentials } from "@/lib/mail-credentials";
+
+export async function MailSettingsFields({ values }: { values: SiteSettings }) {
+  let status = { relayConfigured: false, encryptionReady: false, error: false };
+  try { const credentials = await readMailCredentials(); status = { relayConfigured: Boolean(credentials.secret && (values.mail_google_relay_url || credentials.fallbackUrl)), encryptionReady: credentials.encryptionReady, error: false }; } catch { status.error = true; }
+  const toggle = (name: keyof SiteSettings, label: string) => <label key={name}>{label}<select name={name} defaultValue={values[name]}><option value="enabled">Activado</option><option value="disabled">Desactivado</option></select></label>;
+  return <>
+    <section className="admin-settings-section"><div><p>CORREO SALIENTE</p><h2>Envíos y remitente</h2><span>No confundir con Historial correos, donde se consultan los intentos y resultados. Estos ajustes afectan a los próximos envíos del sistema.</span></div><div className="admin-settings-grid">
+      <label>Servicio de envío<select name="mail_delivery_mode" defaultValue={values.mail_delivery_mode}><option value="auto">Automático: Google con alternativa Cloudflare</option><option value="google">Solo Google Apps Script / Workspace</option><option value="cloudflare">Solo Cloudflare Email</option><option value="disabled">Pausar todos los envíos</option></select><small>Pausar impide enviar verificaciones y recuperación de contraseña. Los intentos omitidos siguen registrados.</small></label>
+      <label>Nombre del remitente<input name="mail_sender_name" maxLength={60} required defaultValue={values.mail_sender_name} /></label>
+      <label>Correo oficial del portal<input name="contact_email" type="email" required maxLength={180} defaultValue={values.contact_email} /><small>Actualiza el enlace de correo de la página y el destino predeterminado de respuestas. No cambia por sí solo la cuenta que envía desde Google.</small></label>
+      <label>Dirección remitente de Cloudflare<input name="mail_sender_address" type="email" maxLength={180} required defaultValue={values.mail_sender_address} /><small>Debe pertenecer a un dominio verificado para envío. Google usa la cuenta que autorizó el relay, no esta dirección.</small></label>
+      <label>Responder a<input name="mail_reply_to" type="email" maxLength={180} defaultValue={values.mail_reply_to} placeholder={values.contact_email} /><small>Vacío: utiliza el correo oficial de Contacto y redes.</small></label>
+      <label className="admin-field-full">URL del relay de Google<input name="mail_google_relay_url" type="url" maxLength={300} defaultValue={values.mail_google_relay_url} placeholder="https://script.google.com/macros/s/…/exec" /><small>Vacío conserva la URL protegida configurada en el servidor. Al cambiarla, introduce también su secreto.</small></label>
+      <label>Nuevo secreto del relay<input name="mail_relay_secret" type="password" minLength={32} maxLength={512} autoComplete="new-password" placeholder="Vacío conserva el secreto actual" /><small>Se almacena cifrado, nunca se vuelve a mostrar y no se incluye en auditoría.</small></label>
+      <div className="admin-note"><p>Relay: {status.error ? "no se pudo verificar la configuración" : status.relayConfigured ? "configurado" : "pendiente"}. Cifrado para cambios desde el panel: {status.encryptionReady ? "disponible" : "requiere configuración técnica"}.</p><p>Para migrar a un correo empresarial debes verificar el dominio o autorizar un relay de Google Workspace. Guardar estos datos no crea buzones ni modifica DNS automáticamente.</p></div>
+    </div></section>
+    <section className="admin-settings-section"><div><p>AVISOS AL EQUIPO</p><h2>Alertas de moderación por correo</h2><span>Se agrupan cargas del mismo anuncio durante cinco minutos para evitar un correo por cada foto. Los avisos se procesan en ciclos de hasta cinco minutos y quedan en Historial correos. No adjuntan fotos ni documentos privados.</span></div><div className="admin-settings-grid">
+      {toggle("mail_alerts_enabled", "Recibir alertas de moderación")}
+      <label>Destinatario del equipo<input name="mail_alert_recipient" type="email" required maxLength={180} defaultValue={values.mail_alert_recipient} /></label>
+      {toggle("mail_alert_new_profile", "Anuncios nuevos enviados a revisión")}{toggle("mail_alert_updated_profile", "Anuncios editados que requieren reaprobación")}{toggle("mail_alert_media", "Nuevas fotos y videos pendientes")}
+    </div></section>
+    <section className="admin-settings-section"><div><p>CORREO ENTRANTE</p><h2>Buzón y recepción</h2><span>El buzón se consulta en su proveedor. El portal no almacena el contenido de correos recibidos, ni sus adjuntos o contraseña.</span></div><div className="admin-settings-grid">
+      <label>Proveedor del buzón<input name="mail_inbound_provider" maxLength={180} defaultValue={values.mail_inbound_provider} placeholder="Gmail, Google Workspace, Microsoft 365…" /></label>
+      <label>Enlace HTTPS al webmail<input name="mail_webmail_url" type="url" maxLength={180} defaultValue={values.mail_webmail_url} /></label>
+      <label>Recepción mediante Cloudflare<select name="mail_inbound_mode" defaultValue={values.mail_inbound_mode}><option value="disabled">No reenviar desde este Worker</option><option value="forward">Reenviar la dirección configurada</option></select></label>
+      <label>Dirección de entrada del dominio<input name="mail_inbound_address" type="email" maxLength={180} defaultValue={values.mail_inbound_address} placeholder="contacto@chile3x.cl" /></label>
+      <label>Destino verificado del reenvío<input name="mail_inbound_destination" type="email" maxLength={180} required defaultValue={values.mail_inbound_destination} /><small>Debe verificarse en Cloudflare Email Routing y ser distinto de la dirección de entrada.</small></label>
+    </div><p className="admin-note">Para recibir mediante el dominio: activa Email Routing, verifica el destino y dirige la regla exacta de entrada a este Worker. Revisa los registros MX, SPF, DKIM y DMARC con tu proveedor. Si el buzón ya usa Workspace o Microsoft 365, conserva sus MX: no los reemplaces sin planificar la migración. SMTP e IMAP se administran en el proveedor; esta pantalla no es un cliente de correo.</p><p><a href="https://developers.cloudflare.com/email-routing/" target="_blank" rel="noreferrer">Documentación de recepción</a> · <a href="https://developers.cloudflare.com/email-service/" target="_blank" rel="noreferrer">Documentación de envío y dominio</a></p>
+    </section>
+  </>;
+}

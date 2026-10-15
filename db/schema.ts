@@ -605,7 +605,7 @@ export const profileMedia = sqliteTable("profile_media", {
   isProfilePhoto: integer("is_profile_photo", { mode: "boolean" }).notNull().default(false),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt,
-}, (table) => [index("profile_media_profile_idx").on(table.profileId, table.sortOrder)]);
+}, (table) => [index("profile_media_profile_idx").on(table.profileId, table.sortOrder), index("profile_media_pending_review_idx").on(table.profileId).where(sql`${table.moderationStatus} = 'pending'`)]);
 
 // A view is stored once per profile, browser and Chilean calendar day. The
 // browser key is an opaque first-party cookie; no IP address is retained.
@@ -658,7 +658,7 @@ export const profileContactEvents = sqliteTable("profile_contact_events", {
 // trail and can therefore be marked as read without altering that history.
 export const adminNotifications = sqliteTable("admin_notifications", {
   id: text("id").primaryKey(),
-  kind: text("kind", { enum: ["account_registered", "profile_created", "profile_updated"] }).notNull(),
+  kind: text("kind", { enum: ["account_registered", "profile_created", "profile_updated", "media_uploaded"] }).notNull(),
   actorUserId: text("actor_user_id").references(() => users.id, { onDelete: "set null" }),
   profileId: text("profile_id").references(() => profiles.id, { onDelete: "set null" }),
   summary: text("summary").notNull(),
@@ -668,7 +668,18 @@ export const adminNotifications = sqliteTable("admin_notifications", {
   index("admin_notifications_unread_created_idx").on(table.readAt, table.createdAt),
   index("admin_notifications_kind_created_idx").on(table.kind, table.createdAt),
   index("admin_notifications_actor_created_idx").on(table.actorUserId, table.createdAt),
+  index("admin_notifications_profile_created_idx").on(table.profileId, table.readAt, table.createdAt),
 ]);
+
+// Private site messages are scoped to one listing. Participant and listing
+export const moderationEmailJobs = sqliteTable("moderation_email_jobs", {
+  id: text("id").primaryKey(),
+  profileId: text("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull(),
+  state: text("state").notNull().default("pending"),
+  createdAt,
+  finishedAt: text("finished_at"),
+}, table => [index("moderation_email_jobs_pending_idx").on(table.state, table.createdAt)]);
 
 // Private site messages are scoped to one listing. Participant and listing
 // references are detached on permanent deletion so the remaining participant
@@ -891,7 +902,7 @@ export const exclusiveContentMedia = sqliteTable("exclusive_content_media", {
   moderationStatus: text("moderation_status", { enum: ["pending", "approved", "rejected"] }).notNull().default("pending"),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt,
-}, (table) => [index("exclusive_content_media_collection_idx").on(table.collectionId, table.sortOrder)]);
+}, (table) => [index("exclusive_content_media_collection_idx").on(table.collectionId, table.sortOrder), index("exclusive_content_pending_review_idx").on(table.collectionId).where(sql`${table.moderationStatus} = 'pending'`)]);
 
 export const exclusiveContentAccess = sqliteTable("exclusive_content_access", {
   id: text("id").primaryKey(),

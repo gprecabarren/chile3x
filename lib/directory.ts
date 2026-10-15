@@ -29,6 +29,8 @@ type QueryValue = string | string[] | undefined;
 export type DirectoryQuery = Record<string, QueryValue>;
 
 export type DirectoryFilters = {
+  contentDirectory?: boolean;
+  expanded?: boolean;
   name?: string;
   category?: "vip" | "premium" | "bronze" | "masajes" | "contenido" | "agency" | "rental";
   online: boolean;
@@ -130,7 +132,12 @@ function numberQuery(value: string | undefined) {
   return Number(value);
 }
 
-export function readDirectoryFilters(query: DirectoryQuery, pinned?: { region?: string; city?: string; type?: ProfileType }): DirectoryFilters {
+export function readDirectoryFilters(query: DirectoryQuery, pinned?: { region?: string; city?: string; type?: ProfileType; contentDirectory?: boolean }): DirectoryFilters {
+  if (pinned?.contentDirectory) {
+    const scopedQuery = { ...query, tipo: "escort", categoria: ["vip", "premium", "bronze"].includes(one(query, "categoria") ?? "") ? one(query, "categoria") : undefined, incluido: undefined, adicional: undefined };
+    const filters = readDirectoryFilters(scopedQuery, { ...pinned, contentDirectory: false, type: "escort" });
+    return { ...filters, contentDirectory: true, tags: filters.tags.filter(tag => tag !== "venta-contenido" && tag !== "masajes") };
+  }
   const requestedTags = values(query, "tag").filter((value) => allowedTags.includes(value as (typeof allowedTags)[number]));
   const requestedCategory = one(query, "categoria");
   const category = (["vip", "premium", "bronze", "masajes", "contenido", "agency", "rental"] as const).find((value) => value === requestedCategory && (!pinned?.type || pinned.type === "escort" && value !== "agency" && value !== "rental"))
@@ -145,6 +152,7 @@ export function readDirectoryFilters(query: DirectoryQuery, pinned?: { region?: 
   const invalidCombination = requestedTags.includes("milf") && requestedTags.includes("trans");
 
   return {
+    expanded: one(query, "filtros") === "abiertos",
     name: one(query, "nombre")?.slice(0, 80),
     category,
     online: one(query, "online") === "1",
@@ -341,11 +349,11 @@ export async function getPublicProfilePage(filters: DirectoryFilters, options: {
     conditions.push(sql`not ${contentOnly}`);
     conditions.push(exists(db.select({ id: profileTags.id }).from(profileTags).where(and(eq(profileTags.profileId, profiles.id), eq(profileTags.tag, "masajes")))));
   }
-  if (filters.category === "contenido") {
+  if (filters.category === "contenido" || filters.contentDirectory) {
     conditions.push(eq(profiles.type, "escort"));
     conditions.push(or(contentOnly, exists(db.select({ id: profileTags.id }).from(profileTags).where(and(eq(profileTags.profileId, profiles.id), eq(profileTags.tag, "venta-contenido")))))!);
   }
-  if (filters.tier) conditions.push(sql`not ${contentOnly}`);
+  if (filters.tier && !filters.contentDirectory) conditions.push(sql`not ${contentOnly}`);
   if (filters.tier) conditions.push(eq(profiles.tier, filters.tier));
   if (filters.verified) conditions.push(eq(profiles.verificationStatus, "reviewed"));
   if (filters.online) {
@@ -370,7 +378,7 @@ export async function getPublicProfilePage(filters: DirectoryFilters, options: {
   for (let index = -8; index < 0; index++) suffix = sql`((${suffix} * 131 + coalesce(unicode(lower(substr(${profiles.id}, ${index}, 1))), 0)) % 2147483647)`;
   const ordering = [sql`((${suffix} * ${orderSeed}) % 2147483647)`, asc(profiles.id)];
   if (options.preferredCity && !filters.city) ordering.unshift(sql`case when ${profiles.city} = ${options.preferredCity} then 0 else 1 end`);
-  const needsMetadata = Boolean(filters.category === "masajes" || filters.category === "contenido" || filters.tier || filters.nationality || filters.gender || filters.skinColor || filters.hairColor || filters.bodyType || filters.bustSize || filters.language || filters.ageMin || filters.ageMax);
+  const needsMetadata = Boolean(filters.contentDirectory || filters.category === "masajes" || filters.category === "contenido" || filters.tier || filters.nationality || filters.gender || filters.skinColor || filters.hairColor || filters.bodyType || filters.bustSize || filters.language || filters.ageMin || filters.ageMax);
   const idsBase = db.select({ id: profiles.id }).from(profiles);
   const ids = await (needsMetadata ? idsBase.leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id)) : idsBase)
     .where(where).orderBy(...ordering).limit(DIRECTORY_PAGE_SIZE + 1).offset((page - 1) * DIRECTORY_PAGE_SIZE);
@@ -495,8 +503,8 @@ export function filterPublicProfiles(profilesToFilter: PublicProfile[], filters:
     if (filters.region && profile.region !== filters.region) return false;
     if (filters.city && profile.city !== filters.city) return false;
     if (filters.type && profile.type !== filters.type) return false;
-    if (!profileMatchesDirectoryCategory(profile, filters.category)) return false;
-    if (filters.tier && (isContentOnly(profile) || profile.tier !== filters.tier)) return false;
+    if (filters.contentDirectory ? !sellsContent(profile) || (filters.tier && profile.tier !== filters.tier) : !profileMatchesDirectoryCategory(profile, filters.category)) return false;
+    if (filters.tier && ((!filters.contentDirectory && isContentOnly(profile)) || profile.tier !== filters.tier)) return false;
     if (filters.online && !profile.isOnline) return false;
     if (filters.verified && profile.verificationStatus !== "reviewed") return false;
     if (!matchesText(profile.displayName, filters.name)) return false;

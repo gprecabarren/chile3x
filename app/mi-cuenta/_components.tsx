@@ -2,7 +2,7 @@ import Link from "@/app/NavigationLink";
 import type { ReactNode } from "react";
 import type { AccountUser } from "@/lib/auth";
 import { OfficialChile3xLogo } from "@/app/OfficialChile3xLogo";
-import { AccountMobileNavigation } from "./AccountMobileNavigation";
+import { AccountWorkspace } from "./AccountWorkspace";
 import { AccountNavigationLink } from "./AccountNavigationLink";
 import { PresenceHeartbeat } from "@/app/PresenceHeartbeat";
 import { countUnreadMessages } from "@/lib/internal-messages";
@@ -39,23 +39,16 @@ function AccountNavigation({ user, helpEnabled }: { user: AccountUser; helpEnabl
 export async function AccountShell({ user, children, showActivityNotices = true }: { user: AccountUser; children: ReactNode; showActivityNotices?: boolean }) {
   const [unreadMessages, pendingReviews, settings] = await Promise.all([countUnreadMessages(user.id), countPendingReceivedReviews(user.id), getSiteSettings()]);
   const helpEnabled = settings.account_help_enabled === "enabled";
+  const brand = <div className="account-sidebar-brand"><Link href="/" aria-label="Ver sitio público Chile3X"><OfficialChile3xLogo priority /></Link><Link className="account-brand-home" href="/mi-cuenta">MI CUENTA</Link></div>;
+  const identity = <><div className="account-sidebar-identity"><span aria-hidden="true">{(user.displayName || user.email).slice(0, 1).toUpperCase()}</span><Link className="account-home-link" href="/mi-cuenta" title={user.email} aria-label={`Ir a mi cuenta: ${user.email}`}><strong>{user.displayName || "Mi cuenta"}</strong><small>{user.email}</small></Link></div><form action="/api/auth/session/logout" method="post"><button type="submit" title="Cerrar la sesión de esta cuenta">Cerrar sesión</button></form></>;
   return (
-    <MessageNotifications initialUnread={unreadMessages} initialPendingReviews={pendingReviews}><main className="account-root">
-      <header className="account-header">
-        <div className="account-brand"><Link href="/" aria-label="Chile3X, inicio"><OfficialChile3xLogo priority /></Link><Link className="account-brand-home" href="/mi-cuenta"><small>MI CUENTA</small></Link></div>
-        <div className="account-desktop-navigation"><AccountNavigation user={user} helpEnabled={helpEnabled} /></div>
-        <div className="account-user">
-          <Link className="account-home-link" href="/mi-cuenta" title={user.email} aria-label={`Ir a mi cuenta: ${user.email}`}>{user.role === "admin" ? user.displayName ?? "Administración" : user.email}</Link>
-          <form action="/api/auth/session/logout" method="post"><button type="submit" title="Cerrar la sesión de esta cuenta">Cerrar sesión</button></form>
-        </div>
-      <AccountMobileNavigation><AccountNavigation user={user} helpEnabled={helpEnabled} /></AccountMobileNavigation>
-      </header>
+    <MessageNotifications initialUnread={unreadMessages} initialPendingReviews={pendingReviews}><AccountWorkspace brand={brand} navigation={<AccountNavigation user={user} helpEnabled={helpEnabled} />} identity={identity}>
       <PresenceHeartbeat />
       {emailVerificationState(user) === "grace" && <EmailVerificationNotice deadline={emailVerificationDeadline(user)} />}
       {showActivityNotices && <UnreadMessagesNotice />}
       {showActivityNotices && <PendingReviewsNotice />}
       {children}
-    </main></MessageNotifications>
+    </AccountWorkspace></MessageNotifications>
   );
 }
 

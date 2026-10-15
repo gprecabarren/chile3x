@@ -1,5 +1,6 @@
 /** Cloudflare Worker entry point for the vinext-starter template. */
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
+import type { ForwardableEmailMessage } from "@cloudflare/workers-types";
 import handler from "vinext/server/app-router-entry";
 import { hasPrivateSession, isCacheableDocument, preventPrivateCaching, publicCacheKey, PUBLIC_PAGE_CACHE_SECONDS } from "./public-cache";
 import type { TelegramQueueMessage } from "../lib/telegram";
@@ -10,6 +11,7 @@ import { limitMultipartUpload } from "./upload-limits";
 import { purgeExpiredStoryRecords } from "./story-cleanup";
 import { enforceExclusiveBrowserSession } from "./session-isolation";
 import { handleDataRetentionScheduled, purgeMediaDeletionJobs } from "./data-retention";
+import { forwardConfiguredInbound, handleModerationMailScheduled } from "./moderation-mail";
 
 const availableCitySlugs = new Set(cityDirectory.map(city => city.citySlug));
 
@@ -145,10 +147,14 @@ const worker = {
     await handleTelegramQueue(batch, env);
   },
   async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
+    await handleModerationMailScheduled(env).catch(() => console.error("Moderation mail processing failed; next cycle will inspect pending jobs."));
     await Promise.all([handleTelegramScheduled(env), handleEmailVerificationScheduled(env), handleDataRetentionScheduled(env), purgeMediaDeletionJobs(env).catch(()=>console.error("La limpieza de archivos se reintentará en el siguiente ciclo.")), purgeExpiredStoryRecords(env).then(result => {
       if (result.retryNeeded) console.warn("Story cleanup needs retry", { removed: result.removed });
     }).catch(() => { console.error("Scheduled story cleanup failed; will retry on the next cron."); })]);
   },
-} satisfies ExportedHandler<Env, TelegramQueueMessage>;
+  async email(message: ForwardableEmailMessage, env: Env): Promise<void> {
+    await forwardConfiguredInbound(message, env);
+  },
+};
 
-export default worker;
+export default worker satisfies ExportedHandler<Env, TelegramQueueMessage>;

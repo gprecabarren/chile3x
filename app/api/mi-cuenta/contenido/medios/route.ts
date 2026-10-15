@@ -6,6 +6,7 @@ import { assertSameOrigin, getCurrentUser, hasTesterAutoApproval } from "@/lib/a
 import { getOrCreateExclusiveContentCollection } from "@/lib/exclusive-content";
 import { validatePreparedVideo } from "@/lib/video-validation";
 import { MediaUploadRequestError, readMediaUploadForm } from "@/lib/media-upload-form";
+import { createAdminNotification } from "@/lib/admin-notifications";
 import {
   detectImageType,
   detectVideoType,
@@ -82,6 +83,7 @@ export async function POST(request: NextRequest) {
       throw cause;
     }
     const total = usage.bytes + data.byteLength;
+    if (moderationStatus === "pending") await createAdminNotification({ kind: "media_uploaded", actorUserId: user.id, profileId: collection.profileId, summary: `Se recibió ${mediaType === "video" ? "un video" : "una foto"} de contenido exclusivo pendiente de moderación.` });
     return NextResponse.json({
       media: { id, url: `/contenido/${id}`, mediaType, contentType, moderationStatus, byteSize: data.byteLength },
       quota: { bytes: total, ...getMediaQuotaState(total) },

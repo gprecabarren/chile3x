@@ -1,7 +1,8 @@
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { profileMedia, users } from "@/db/schema";
+import { dataDeletionJobs, profileMedia, profiles, users } from "@/db/schema";
+import { CollaborationConflict, expectedVersion, guardedBatch, conflictResponse } from "@/lib/collaboration";
 import { recordAdminAudit } from "@/lib/admin-audit";
 import { adminHasCapability } from "@/lib/admin-permissions";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
@@ -22,8 +23,10 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   if (!owner?.isActive) return error("La cuenta propietaria está deshabilitada.", 403);
   const { env } = await import("cloudflare:workers");
   if (!env.MEDIA) return error("El almacenamiento no está disponible.", 503);
-  await env.MEDIA.delete(record.media.r2Key);
-  await (await getDb()).delete(profileMedia).where(eq(profileMedia.id, mediaId));
+  const db=await getDb();let revision:number|undefined;
+  try{const result=await guardedBatch(expectedVersion(await request.formData(),`profile:${profileId}`),[db.insert(dataDeletionJobs).values({id:crypto.randomUUID(),r2Key:record.media.r2Key}).onConflictDoNothing(),db.delete(profileMedia).where(eq(profileMedia.id,mediaId)),db.select({revision:profiles.revision}).from(profiles).where(eq(profiles.id,profileId))],admin.id);const rows=result.at(-1);if(Array.isArray(rows)&&rows[0]&&typeof rows[0].revision==='number')revision=rows[0].revision;}
+  catch(cause){if(cause instanceof CollaborationConflict)return conflictResponse();throw cause;}
+  try{await env.MEDIA.delete(record.media.r2Key);await db.delete(dataDeletionJobs).where(eq(dataDeletionJobs.r2Key,record.media.r2Key));}catch{console.error("Deferred administrative storage cleanup",{mediaId});}
   await recordAdminAudit(admin, {
     category: "media", action: "media.public_delete", entityType: "public_media", entityId: mediaId,
     entityLabel: `${record.media.mediaType === "video" ? "Video" : "Foto"} · ${record.profile.displayName}`,
@@ -31,5 +34,5 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     before: { profileId, moderationStatus: record.media.moderationStatus, mediaType: record.media.mediaType, byteSize: record.media.byteSize },
   });
   const usage = await getMediaUsage();
-  return NextResponse.json({ ok: true, quota: { ...usage, ...getMediaQuotaState(usage.bytes) } });
+  return NextResponse.json({ ok: true,revision, quota: { ...usage, ...getMediaQuotaState(usage.bytes) } });
 }

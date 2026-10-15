@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { assertSameOrigin, getCurrentAdmin, safeAdminReturnTo } from "@/lib/auth";
 import { adminHasCapability } from "@/lib/admin-permissions";
 import { permanentlyDeleteTrashedProfile, restoreProfile, trashProfile } from "@/lib/profile-trash";
+import { CollaborationConflict, expectedVersion, conflictResponse } from "@/lib/collaboration";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ profileId: string }> }) {
   try { assertSameOrigin(request); } catch { return new Response("Solicitud no válida.", { status: 403 }); }
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (action !== "trash" && action !== "restore" && action !== "delete") return new Response("Acción no válida.", { status: 400 });
   const expectedConfirmation = action === "trash" ? "PAPELERA" : action === "restore" ? "RESTAURAR" : "ELIMINAR DEFINITIVAMENTE";
   if (formData.get("confirmation") !== expectedConfirmation) return new Response("Confirma la acción escribiendo la palabra indicada.", { status: 400 });
-  const result = action === "trash" ? await trashProfile(profileId, admin, "admin") : action === "restore" ? await restoreProfile(profileId, admin) : await permanentlyDeleteTrashedProfile(profileId, admin);
+  let result;try{const version=expectedVersion(formData,`profile:${profileId}`);result=action==="trash"?await trashProfile(profileId,admin,"admin",version):action==="restore"?await restoreProfile(profileId,admin,version):await permanentlyDeleteTrashedProfile(profileId,admin,version);}catch(error){if(error instanceof CollaborationConflict)return conflictResponse();throw error;}
   const destination = new URL(returnTo, request.url);
   destination.searchParams.set("notice", result === "ok" ? action === "trash" ? "trashed" : action === "restore" ? "restored" : "deleted" : result);
   return NextResponse.redirect(destination, 303);

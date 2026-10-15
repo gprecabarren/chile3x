@@ -1,6 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
+import { CollaborationConflict, expectedVersion, guardedBatch, conflictResponse } from "@/lib/collaboration";
 import { exclusiveContentCollections, exclusiveContentMedia, users } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { adminHasCapability } from "@/lib/admin-permissions";
@@ -49,8 +50,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const targetPredicate = sql`exists (select 1 from json_each(${reviewedTargets}) as reviewed where json_extract(reviewed.value, '$.id') = ${exclusiveContentMedia.id} and json_extract(reviewed.value, '$.r2Key') = ${exclusiveContentMedia.r2Key} and json_extract(reviewed.value, '$.state') = ${exclusiveContentMedia.moderationStatus})`;
   const unchangedFiles = sql`(select count(*) from ${exclusiveContentMedia} where ${scope} and ${targetPredicate}) = ${targets.length}`;
   const liveCollection = sql`exists (select 1 from ${exclusiveContentCollections} inner join ${users} on ${users.id} = ${exclusiveContentCollections.ownerId} where ${exclusiveContentCollections.id} = ${collectionId} and ${users.isActive} = 1)`;
-  const result = await db.update(exclusiveContentMedia).set({ moderationStatus: "approved" }).where(and(scope, targetPredicate, unchangedFiles, liveCollection));
-  if (result.meta.changes !== targets.length) return destination("changed");
+  try{await guardedBatch(expectedVersion(form,`library:${collectionId}`),[db.update(exclusiveContentMedia).set({moderationStatus:"approved"}).where(and(scope,targetPredicate,unchangedFiles,liveCollection))],admin.id);}catch(error){if(error instanceof CollaborationConflict)return conflictResponse();throw error;}
   await recordAdminAudit(admin, {
     category: "media", action: "media.exclusive_bulk_approve", entityType: "exclusive_collection", entityId: collectionId,
     entityLabel: collection.ownerName ?? collection.username ?? "Biblioteca privada",

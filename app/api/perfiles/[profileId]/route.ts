@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { assertSameOrigin, getCurrentUser } from "@/lib/auth";
 import { ProfileValidationError, readProfileSubmission, updateProfile } from "@/lib/profile-submission";
+import { CollaborationConflict, expectedVersion, conflictResponse, mutationRedirect } from "@/lib/collaboration";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ profileId: string }> }) {
   try {
@@ -17,10 +18,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try {
     const formData = await request.formData();
     const submission = readProfileSubmission(formData);
-    const result = await updateProfile(profileId, user.id, submission);
+    const result = await updateProfile(profileId, user.id, submission, {version:expectedVersion(formData,`profile:${profileId}`)});
     const notice = result.contactOnly ? "contacts_saved" : submission.intent === "submit" ? "submitted" : "saved";
-    return NextResponse.redirect(new URL(result.updated ? `/mi-cuenta/${profileId}/editar?notice=${notice}` : "/mi-cuenta?notice=error", request.url), 303);
+    return mutationRedirect(request,new URL(result.updated ? `/mi-cuenta/${profileId}/editar?notice=${notice}` : "/mi-cuenta?notice=error", request.url));
   } catch (error) {
+    if (error instanceof CollaborationConflict) return conflictResponse();
     if (error instanceof ProfileValidationError) {
       const destination = new URL(`/mi-cuenta/${profileId}/editar`, request.url);
       destination.searchParams.set("error", "validation");

@@ -5,9 +5,14 @@ import {
   sqliteTable,
   text,
   uniqueIndex,
+  check,
 } from "drizzle-orm/sqlite-core";
 
 const createdAt = text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`);
+
+export const collaborationGuards=sqliteTable("collaboration_guards",{id:text("id").primaryKey(),allowed:integer("allowed").notNull()},table=>[check("collaboration_conflict",sql`${table.allowed}=1`)]);
+export const reviewReservations=sqliteTable("review_reservations",{resourceKey:text("resource_key").primaryKey(),actorId:text("actor_id").notNull().references(()=>users.id,{onDelete:"cascade"}),token:text("token").notNull(),expiresAt:integer("expires_at").notNull()},table=>[index("review_reservations_expiry_idx").on(table.expiresAt)]);
+export const settingsRevision=sqliteTable("settings_revision",{id:text("id").primaryKey(),revision:integer("revision").notNull().default(0)});
 
 export const helpGuides = sqliteTable("help_guides", {
   id: text("id").primaryKey(),
@@ -97,6 +102,7 @@ export const forumRateLimits = sqliteTable("forum_rate_limits", {
 });
 
 export const users = sqliteTable("users", {
+  revision: integer("revision").notNull().default(0),
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
   // Public account identifier. It is intentionally separate from an
@@ -500,6 +506,7 @@ export const accountDeletionHistory = sqliteTable("account_deletion_history", {
 ]);
 
 export const profiles = sqliteTable("profiles", {
+  revision: integer("revision").notNull().default(0),
   id: text("id").primaryKey(),
   ownerId: text("owner_id").notNull().references(() => users.id),
   creationSource: text("creation_source", { enum: ["self", "admin", "unknown"] }).notNull().default("unknown"),
@@ -884,6 +891,7 @@ export const newsMedia = sqliteTable("news_media", {
 // public preview, while the library and buyer access remain available if that
 // announcement is paused or deleted.
 export const exclusiveContentCollections = sqliteTable("exclusive_content_collections", {
+  revision: integer("revision").notNull().default(0),
   id: text("id").primaryKey(),
   ownerId: text("owner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   profileId: text("profile_id").references(() => profiles.id, { onDelete: "set null" }),

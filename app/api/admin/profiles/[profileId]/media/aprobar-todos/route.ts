@@ -1,6 +1,7 @@
 import { and, eq, isNull, or, sql } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
+import { CollaborationConflict, expectedVersion, guardedBatch, conflictResponse } from "@/lib/collaboration";
 import { profileMedia, profiles, users } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { adminHasCapability } from "@/lib/admin-permissions";
@@ -52,11 +53,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   // Immutable R2 keys change on replacement. If even one reviewed file was
   // replaced/deleted concurrently, neither statement modifies any file.
   const unchangedFiles = sql`(select count(*) from ${profileMedia} where ${scope} and ${targetPredicate}) = ${targets.length}`;
-  const result = await db.batch([
+  let result;try{result = await guardedBatch(expectedVersion(form,`profile:${profileId}`),[
     db.update(profileMedia).set({ moderationStatus: "approved" }).where(and(scope, targetPredicate, liveProfile, unchangedFiles)),
     db.update(profileMedia).set({ isProfilePhoto: cover ? sql`case when ${profileMedia.id} = ${cover.id} then 1 else 0 end` : false }).where(and(scope, eq(profileMedia.moderationStatus, "approved"), cover ? or(eq(profileMedia.isProfilePhoto, true), eq(profileMedia.id, cover.id)) : isNull(profileMedia.id), liveProfile, unchangedFiles)),
-  ]);
-  if (result[0].meta.changes !== targets.length) return destination("changed");
+  ],admin.id);}catch(error){if(error instanceof CollaborationConflict)return conflictResponse();throw error;}
+  if (!result.length) return destination("changed");
   await recordAdminAudit(admin, {
     category: "media", action: "media.public_bulk_approve", entityType: "profile", entityId: profileId, entityLabel: profile.displayName,
     summary: `Aprobó ${targets.length} archivos de ${profile.displayName} en una revisión conjunta.`,

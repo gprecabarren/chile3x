@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { inArray } from "drizzle-orm";
 import { getDb } from "@/db";
+import { CollaborationConflict, expectedVersion, guardedBatch, conflictResponse, mutationRedirect } from "@/lib/collaboration";
 import { siteSettings, telegramConfiguration } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { validateFaqEntries } from "@/lib/faq";
@@ -154,18 +155,18 @@ export async function POST(request: NextRequest) {
     .from(siteSettings)
     .where(inArray(siteSettings.key, rows.map((row) => row.key)));
   const before = Object.fromEntries(previousRows.map((row) => [row.key, row.value]));
-  for (const row of rows) {
-    await db.insert(siteSettings).values(row).onConflictDoUpdate({
+  const statements=rows.map(row=>db.insert(siteSettings).values(row).onConflictDoUpdate({
       target: siteSettings.key,
       set: { value: row.value, updatedBy: admin.id, updatedAt: row.updatedAt },
-    });
-  }
+    }));
   if (Object.hasOwn(values, "contact_telegram")) {
-    await db.insert(telegramConfiguration).values({ id: TELEGRAM_CONFIG_ID, publicCommunityUrl: values.contact_telegram, updatedBy: admin.id, updatedAt }).onConflictDoUpdate({ target: telegramConfiguration.id, set: { publicCommunityUrl: values.contact_telegram, updatedBy: admin.id, updatedAt } });
+    // The canonical site setting and Telegram mirror are committed together.
   }
+  const [first,...rest]=statements;if(!first)return new Response("No se recibieron cambios.",{status:400});
+  try{await guardedBatch(expectedVersion(formData,"settings:site"),[first,...rest,...(Object.hasOwn(values,"contact_telegram")?[db.insert(telegramConfiguration).values({id:TELEGRAM_CONFIG_ID,publicCommunityUrl:values.contact_telegram,updatedBy:admin.id,updatedAt}).onConflictDoUpdate({target:telegramConfiguration.id,set:{publicCommunityUrl:values.contact_telegram,updatedBy:admin.id,updatedAt}})]:[])],admin.id);}catch(error){if(error instanceof CollaborationConflict)return conflictResponse();throw error;}
   await recordAdminAudit(admin, { category: "settings", action: "settings.update", summary: `Modificó ${rows.length} ${rows.length === 1 ? "ajuste" : "ajustes"} del sitio.`, entityType: "settings", entityId: configurationReturnTo(formData), entityLabel: "Configuración del sitio", before, after: Object.fromEntries(rows.map((row) => [row.key, row.value])), metadata: { changedKeys: rows.map((row) => row.key) } });
 
   const url = new URL(configurationReturnTo(formData), request.url);
   url.searchParams.set("saved", "1");
-  return NextResponse.redirect(url, 303);
+  return mutationRedirect(request,url);
 }

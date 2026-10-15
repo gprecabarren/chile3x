@@ -10,6 +10,7 @@ import { profilePublicPath } from "@/lib/profile";
 import { notifyProfileCitySubscribers } from "@/lib/profile-city-alerts";
 import { recordAdminAudit } from "@/lib/admin-audit";
 import { adminHasCapability } from "@/lib/admin-permissions";
+import { CollaborationConflict, expectedVersion, guardedBatch, conflictResponse, mutationRedirect } from "@/lib/collaboration";
 
 const allowedStatuses = new Set(["draft", "pending", "approved", "paused", "rejected", "expired"]);
 const allowedVerification = new Set(["unreviewed", "in_review", "reviewed"]);
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const now = new Date().toISOString();
-  await db.update(profiles).set({
+  try { await guardedBatch(expectedVersion(formData,`profile:${profileId}`),[db.update(profiles).set({
     status: status as typeof profiles.$inferInsert.status,
     verificationStatus: verificationStatus as typeof profiles.$inferInsert.verificationStatus,
     verifiedAt: verificationStatus === "reviewed"
@@ -91,7 +92,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     healthReviewStatus: healthReviewStatus as typeof profiles.$inferInsert.healthReviewStatus,
     ...(featuredInput === null ? {} : { isFeatured: featuredInput === "on" }),
     updatedAt: now,
-  }).where(eq(profiles.id, profileId));
+  }).where(eq(profiles.id, profileId))],admin.id); }
+  catch(error) { if(error instanceof CollaborationConflict)return conflictResponse();throw error; }
 
   const nextFeatured = featuredInput === null ? existingProfile.isFeatured : featuredInput === "on";
   await recordAdminAudit(admin, {
@@ -129,5 +131,5 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (cityNotifications > 0) console.info("Profile city subscribers notified", { profileId, cityNotifications });
   }
 
-  return NextResponse.redirect(new URL(safeReturnTo(formData.get("return_to")) ?? "/admin/anuncios-publicaciones", request.url), 303);
+  return mutationRedirect(request,new URL(safeReturnTo(formData.get("return_to")) ?? "/admin/anuncios-publicaciones", request.url));
 }

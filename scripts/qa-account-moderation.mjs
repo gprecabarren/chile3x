@@ -22,10 +22,19 @@ if(mode==='seed') {
   if(i!==3) db.prepare('INSERT INTO profile_tags(id,profile_id,tag) VALUES(?,?,?)').run(prefix+'_tag'+i,profile,'venta-contenido');
  }
  writeFileSync(manifest,JSON.stringify(fixture));console.log('Disposable local account/admin fixtures ready.');db.close();
+} else if(mode==='extend') {
+ const fixture=JSON.parse(readFileSync(manifest));assert.ok(/^qa_account_[a-f0-9]+$/.test(fixture.prefix));
+ const id=fixture.prefix+'_u5';assert.ok(!fixture.users.includes(id));
+ const secret=randomBytes(24).toString('hex'),session=fixture.prefix+'_s5';
+ db.prepare('INSERT INTO users(id,email,display_name,role,is_active,email_verified_at) VALUES(?,?,?,?,1,?)').run(id,id+'@example.invalid','Administración QA B','admin',new Date().toISOString());
+ db.prepare('INSERT INTO auth_sessions(id,user_id,token_hash,auth_method,expires_at) VALUES(?,?,?,?,?)').run(session,id,createHash('sha256').update(secret).digest('hex'),'github',new Date(Date.now()+12*3600000).toISOString());
+ db.prepare('INSERT INTO admin_github_access(id,github_login,user_id,access_level,is_active) VALUES(?,?,?,?,1)').run(fixture.prefix+'_grant_b',fixture.prefix+'_b',id,'administrator');
+ fixture.users.push(id);fixture.cookies.admin2='chile3x_admin_session='+session+'.'+secret;writeFileSync(manifest,JSON.stringify(fixture));db.close();console.log('Second disposable local administrator ready.');
 } else if(mode==='serve') {
+ const upstream=process.argv.includes('--dev')?'http://localhost:3004':'http://127.0.0.1:3000';
  const fixture=JSON.parse(readFileSync(manifest));assert.ok(fixture.prefix.startsWith('qa_account_'));db.close();
  let sharedRole='owner',failSessionCheck=false;
- for(const [role,port] of [['owner',3001],['admin',3002],['shared',3003]])createServer(async(req,res)=>{
+ for(const [role,port] of [['owner',3001],['admin',3002],['shared',3003],['admin2',3005]])createServer(async(req,res)=>{
   try {
    // Disposable same-origin switch for cross-tab display QA; never a production endpoint.
    if(role==='shared'&&/^\/__qa\/mode\/(owner|admin)$/.test(req.url??'')) {
@@ -35,19 +44,27 @@ if(mode==='seed') {
    if(role==='shared'&&failSessionCheck&&req.url==='/api/auth/session/state'){res.writeHead(503,{'content-type':'application/json','cache-control':'no-store'});res.end('{"error":"qa_unavailable"}');return;}
    const headers=new Headers();
    for(const [key,value] of Object.entries(req.headers))if(value&&!['host','cookie','connection','content-length','accept-encoding'].includes(key))headers.set(key,Array.isArray(value)?value.join(','):value);
-   if(headers.get('origin')===`http://127.0.0.1:${port}`)headers.set('origin','http://127.0.0.1:3000');
+   if(headers.get('origin')===`http://127.0.0.1:${port}`)headers.set('origin',upstream);
    const browserCookies=(req.headers.cookie??'').split(';').map(value=>value.trim()).filter(value=>value.startsWith('__Host-chile3x_browser='));
    headers.set('cookie',[fixture.cookies[role==='shared'?sharedRole:role],...browserCookies].join('; '));headers.set('authorization','qa-loopback');
    let body;if(!['GET','HEAD'].includes(req.method??'GET')){const chunks=[];for await(const chunk of req)chunks.push(chunk);body=Buffer.concat(chunks);}
-   const payload=await fetch('http://127.0.0.1:3000'+req.url,{method:req.method,headers,body,redirect:'manual'});
+   const payload=await fetch(upstream+req.url,{method:req.method,headers,body,redirect:'manual'});
    const responseHeaders=Object.fromEntries([...payload.headers].filter(([name])=>!['content-encoding','content-length','transfer-encoding','set-cookie'].includes(name)));
    const setupCookies=payload.headers.getSetCookie().filter(value=>value.startsWith('__Host-chile3x_browser='));
-   res.writeHead(payload.status,{...responseHeaders,...(setupCookies.length?{'set-cookie':setupCookies}:{})});res.end(Buffer.from(await payload.arrayBuffer()));
+   const previewOrigin=`http://127.0.0.1:${port}`;
+   if(responseHeaders.location?.startsWith(upstream))responseHeaders.location=responseHeaders.location.replace(upstream,previewOrigin);
+   let responseBody=Buffer.from(await payload.arrayBuffer());
+   if(payload.headers.get('content-type')?.includes('application/json')){
+    const result=JSON.parse(responseBody.toString('utf8'));
+    if(typeof result.redirectTo==='string'&&result.redirectTo.startsWith(upstream))result.redirectTo=result.redirectTo.replace(upstream,previewOrigin);
+    responseBody=Buffer.from(JSON.stringify(result));
+   }
+   res.writeHead(payload.status,{...responseHeaders,...(setupCookies.length?{'set-cookie':setupCookies}:{})});res.end(responseBody);
   }catch{res.writeHead(502);res.end('Local QA upstream unavailable.');}
  }).listen(port,'127.0.0.1',()=>console.log('Local '+role+' preview on '+port));
 } else if(mode==='cleanup') {
  const f=JSON.parse(readFileSync(manifest));assert.ok(f.prefix.startsWith('qa_account_'));
  for(const id of f.users)assert.ok(id.startsWith(f.prefix));
- db.exec('BEGIN');for(const id of f.profiles)db.prepare('DELETE FROM profiles WHERE id=?').run(id);db.prepare('DELETE FROM admin_audit_logs WHERE actor_user_id=?').run(f.users[0]);db.prepare('DELETE FROM admin_notifications WHERE actor_user_id IN (SELECT value FROM json_each(?))').run(JSON.stringify(f.users));db.prepare('DELETE FROM admin_github_access WHERE user_id=?').run(f.users[0]);for(const id of f.users)db.prepare('DELETE FROM users WHERE id=?').run(id);
+ db.exec('BEGIN');for(const id of f.profiles)db.prepare('DELETE FROM profiles WHERE id=?').run(id);for(const id of f.users){db.prepare('DELETE FROM admin_audit_logs WHERE actor_user_id=?').run(id);db.prepare('DELETE FROM admin_github_access WHERE user_id=?').run(id);}db.prepare('DELETE FROM admin_notifications WHERE actor_user_id IN (SELECT value FROM json_each(?))').run(JSON.stringify(f.users));for(const id of f.users)db.prepare('DELETE FROM users WHERE id=?').run(id);
  db.prepare("DELETE FROM site_settings WHERE key LIKE 'mail_%'").run();for(const row of f.settings)db.prepare('INSERT INTO site_settings(key,value,updated_by,updated_at) VALUES(?,?,?,?)').run(row.key,row.value,row.updated_by,row.updated_at);db.exec('COMMIT');db.close();console.log('Removed disposable local fixtures and restored previous local mail configuration.');
 } else throw Error('Use seed, serve or cleanup.');

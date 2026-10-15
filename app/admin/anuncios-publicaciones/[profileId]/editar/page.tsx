@@ -1,6 +1,7 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import Link from "@/app/NavigationLink";
+import { ReviewScope } from "@/app/admin/ReviewScope";
 import { AdminPageHeading, AdminShell } from "@/app/admin/_components";
 import { ProfileForm } from "@/app/mi-cuenta/ProfileForm";
 import { ProfileMediaManager } from "@/app/mi-cuenta/ProfileMediaManager";
@@ -53,7 +54,7 @@ export default async function AdminEditProfilePage({ params, searchParams }: {
   const profile = row.profile;
   const backHref = query.return_to?.startsWith("/admin") ? safeAdminReturnTo(query.return_to) : "/admin/anuncios-publicaciones";
   const currentHref = `${editHref}?return_to=${encodeURIComponent(backHref)}`;
-  return <AdminShell user={admin}><div className="admin-content admin-profile-editor">
+  return <AdminShell user={admin}><div className="admin-content admin-profile-editor"><ReviewScope resource={`profile:${profileId}`} revision={profile.revision}>
     <AdminPageHeading eyebrow="EDICIÓN ADMINISTRATIVA" title={profile.displayName} description={`Anuncio de ${row.ownerEmail}. Guardar conserva su estado y registra el cambio en el historial administrativo.`} backHref={backHref}>
       {adminHasCapability(admin, "accounts.manage") && <Link prefetch={false} className="button button-outline" href={`/admin/cuentas/${encodeURIComponent(profile.ownerId)}?return_to=${encodeURIComponent(currentHref)}`}>Ver cuenta</Link>}
       <Link className="button button-public-preview" href={profilePublicPath(profile)} target="_blank">Ver / previsualizar anuncio</Link>
@@ -80,5 +81,5 @@ export default async function AdminEditProfilePage({ params, searchParams }: {
       details: { contactPhone: row.details?.contactPhone ?? "", contactEmail: row.details?.contactEmail ?? "", referenceLocation: row.details?.referenceLocation ?? "", schedule: row.details?.schedule ?? "", priceAmount: row.details?.priceAmount, currency: row.details?.currency ?? "CLP", metadata: readMetadata(row.details?.metadata ?? "{}") },
       tags: tags.map(item => item.tag), servicesIncluded: services.filter(item => item.kind === "included").map(item => item.service), servicesAdditional: services.filter(item => item.kind === "additional").map(item => item.service),
     }} /></section>}
-  </div></AdminShell>;
+  </ReviewScope></div></AdminShell>;
 }

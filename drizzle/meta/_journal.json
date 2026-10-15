@@ -365,6 +365,13 @@
       "when": 1792017600000,
       "tag": "0051_email_delivery_history",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "6",
+      "when": 1792098000000,
+      "tag": "0056_admin_collaboration",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getDb } from "@/db";
+import { CollaborationConflict, expectedVersion, guardedBatch, conflictResponse, mutationRedirect } from "@/lib/collaboration";
 import { siteSettings } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { adminHasCapability } from "@/lib/admin-permissions";
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
   const db = await getDb();
   const [first, ...rest] = rows.map(row => db.insert(siteSettings).values(row).onConflictDoUpdate({ target: siteSettings.key, set: { value: row.value, updatedBy: admin.id, updatedAt } }));
   if (!first) return new Response("No se recibieron cambios.", { status: 400 });
-  await db.batch([first, ...rest]);
+  try{await guardedBatch(expectedVersion(form,"settings:site"),[first,...rest],admin.id);}catch(error){if(error instanceof CollaborationConflict)return conflictResponse();throw error;}
   await recordAdminAudit(admin, { category: "settings", action: "settings.update", summary: "Actualizó la configuración de correo y alertas de moderación.", entityType: "settings", entityId: "/admin/configuracion/correo", entityLabel: "Configuración de correo", before: Object.fromEntries(Object.keys(values).map(key => [key, current[key as keyof typeof current]])), after: { ...values, secretChanged: Boolean(rawSecret) } });
-  return NextResponse.redirect(new URL("/admin/configuracion/correo?saved=1", request.url), 303);
+  return mutationRedirect(request,new URL("/admin/configuracion/correo?saved=1",request.url));
 }

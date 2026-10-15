@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getDb } from "@/db";
+import { CollaborationConflict, expectedVersion, guardedBatch, conflictResponse, mutationRedirect } from "@/lib/collaboration";
 import { siteSettings, xAuthAttempts, xRegistrationIntents } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { adminHasCapability } from "@/lib/admin-permissions";
@@ -37,10 +38,10 @@ export async function POST(request: NextRequest) {
     } catch { return new Response("Falta la clave de cifrado del servidor. El secreto no se guardó.", { status: 503 }); }
   }
   const db = await getDb();
-  await db.batch([
+  try{await guardedBatch(expectedVersion(form,"settings:site"),[
     db.delete(xAuthAttempts), db.delete(xRegistrationIntents),
     ...rows.map(row => db.insert(siteSettings).values(row).onConflictDoUpdate({ target: siteSettings.key, set: { value: row.value, updatedBy: admin.id, updatedAt } })),
-  ]);
+  ],admin.id);}catch(error){if(error instanceof CollaborationConflict)return conflictResponse();throw error;}
   await recordAdminAudit(admin, { category: "settings", action: "settings.update", summary: `Actualizó el acceso con X (${status === "enabled" ? "activado" : "deshabilitado"}).`, entityType: "settings", entityId: "/admin/configuracion/x", entityLabel: "Inicio con X", before: { status: currentSettings.x_sign_in_status, clientId: credentials.clientId, secretConfigured: Boolean(credentials.clientSecret) }, after: { status, clientId: effectiveClientId, secretChanged: Boolean(newSecret) }, metadata: { changedKeys: rows.map(row => row.key) } });
-  return NextResponse.redirect(new URL("/admin/configuracion/x?saved=1", request.url), 303);
+  return mutationRedirect(request,new URL("/admin/configuracion/x?saved=1",request.url));
 }

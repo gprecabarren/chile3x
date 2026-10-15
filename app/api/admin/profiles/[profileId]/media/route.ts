@@ -8,6 +8,7 @@ import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { ProfileMediaUploadError, uploadProfileMedia } from "@/lib/profile-media-upload";
 import { MediaUploadRequestError, readMediaUploadForm } from "@/lib/media-upload-form";
 import { MAX_IMAGE_BYTES, MAX_VIDEO_BYTES } from "@/lib/media";
+import { CollaborationConflict, expectedVersion, conflictResponse } from "@/lib/collaboration";
 
 export const dynamic = "force-dynamic";
 const error = (message: string, status: number) => NextResponse.json({ error: message }, { status });
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!(file instanceof File)) return error("Selecciona una foto o video para subir.", 400);
     const uploadKind = formData.get("upload_kind") === "profile_photo" ? "profile_photo" : "gallery";
     try {
-      const result = await uploadProfileMedia({ profileId, file, uploadKind, uploadedBy: admin.id, moderationStatus: "approved" });
+      const result = await uploadProfileMedia({ profileId, file, uploadKind, uploadedBy: admin.id, moderationStatus: "approved",version:expectedVersion(formData,`profile:${profileId}`),adminActorId:admin.id });
       await recordAdminAudit(admin, {
         category: "media", action: "media.public_approve", entityType: "public_media", entityId: result.media.id,
         entityLabel: `${result.media.mediaType === "video" ? "Video" : "Foto"} · ${row.displayName}`,
@@ -42,6 +43,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       throw cause;
     }
   } catch (cause) {
+    if(cause instanceof CollaborationConflict)return conflictResponse();
     if (cause instanceof MediaUploadRequestError) return error(cause.message, cause.status);
     const reference = `CARGA-${crypto.randomUUID().slice(0,8)}`;
     console.error("Admin profile media upload failed", { reference, cause });

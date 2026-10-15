@@ -6,6 +6,7 @@ import { permanentlyDeleteAccount } from "@/lib/account-deletion";
 import { recordAdminAudit } from "@/lib/admin-audit";
 import { adminHasCapability } from "@/lib/admin-permissions";
 import { assertSameOrigin, getCurrentAdmin, safeAdminReturnTo } from "@/lib/auth";
+import { CollaborationConflict, expectedVersion, conflictResponse } from "@/lib/collaboration";
 
 function destination(request: Request, path: string, notice: string) {
   const url = new URL(path, request.url);
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return destination(request, returnTo, "delete_confirmation");
   }
 
-  const result = await permanentlyDeleteAccount(target.id, { kind: "admin", adminId: admin.id });
+  let result;try{result=await permanentlyDeleteAccount(target.id,{kind:"admin",adminId:admin.id},expectedVersion(formData,`account:${userId}`));}catch(error){if(error instanceof CollaborationConflict)return conflictResponse();throw error;}
   if (!result) return destination(request, returnTo, "delete_error");
   await recordAdminAudit(admin, {
     category: "accounts",

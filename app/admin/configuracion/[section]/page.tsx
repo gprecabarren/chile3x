@@ -13,6 +13,8 @@ import { PortalWhatsappStats } from "@/app/admin/PortalWhatsappStats";
 import { getXAdminConfiguration, X_CALLBACK_URL } from "@/lib/x-settings";
 import { MailSettingsFields } from "../MailSettingsFields";
 import "../mail-settings.css";
+import { currentRevision } from "@/lib/collaboration";
+import { ReviewScope } from "@/app/admin/ReviewScope";
 
 const sectionDetails = {
   operacion: { eyebrow: "OPERACIÓN", title: "Publicaciones y mantenimiento", description: "Controles del flujo diario y la disponibilidad del directorio." },
@@ -31,6 +33,7 @@ type SectionName = keyof typeof sectionDetails;
 export const dynamic = "force-dynamic";
 
 export default async function AdminSettingsSectionPage({ params, searchParams }: { params: Promise<{ section: string }>; searchParams: Promise<{ saved?: string }> }) {
+  const revision=await currentRevision("settings:site");
   const [{ section }, admin, values, query] = await Promise.all([params, getCurrentAdmin(), getSiteSettings(), searchParams]);
   if (!admin) redirect(`/api/auth/github/start?return_to=/admin/configuracion/${section}`);
   if (!adminHasCapability(admin, "settings.manage")) redirect("/admin/acceso-denegado?reason=permission");
@@ -49,7 +52,7 @@ export default async function AdminSettingsSectionPage({ params, searchParams }:
     }
   }
 
-  return <AdminShell user={admin}><div className={`admin-content${name === "correo" ? " admin-mail-settings-page" : ""}`}>
+  return <AdminShell user={admin}><div className={`admin-content${name === "correo" ? " admin-mail-settings-page" : ""}`}><ReviewScope resource="settings:site" revision={revision ?? 0}>
     <AdminPageHeading {...details} backHref="/admin/configuracion" />
     {query.saved === "1" && <p className="admin-success" role="status">Configuración guardada.</p>}
     {name === "contacto" && query.saved === "1" && <p className="admin-note">Los enlaces se actualizan al cargar una página nueva. La caché pública puede tardar hasta 10 minutos en mostrar cambios; los WhatsApp de los anunciantes no se modifican.</p>}
@@ -100,5 +103,5 @@ export default async function AdminSettingsSectionPage({ params, searchParams }:
       <button className="button button-primary" type="submit">Guardar cambios</button>
     </form>
     {name === "contacto" && <PortalWhatsappStats />}
-  </div></AdminShell>;
+  </ReviewScope></div></AdminShell>;
 }

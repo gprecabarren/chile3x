@@ -1,5 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import Link from "@/app/NavigationLink";
+import { ReviewScope } from "@/app/admin/ReviewScope";
 import { redirect } from "next/navigation";
 import { AccountIdentityFields } from "@/app/account-identity-fields";
 import { getDb } from "@/db";
@@ -61,6 +62,7 @@ export default async function AdminAccountDetailsPage({ params, searchParams }: 
   if (!adminHasCapability(admin, "accounts.manage")) redirect("/admin/acceso-denegado?reason=permission");
 
   const [account] = await db.select({
+    revision: users.revision,
     id: users.id,
     displayName: users.displayName,
     email: users.email,
@@ -132,7 +134,7 @@ export default async function AdminAccountDetailsPage({ params, searchParams }: 
   const accountRoleLabel = account.role === "tester" ? "Cuenta de tester" : "Cuenta de anunciante";
   const telegramLink = telegramLinks[0] ?? null;
   const telegramMembership = telegramMembershipRows[0] ?? null;
-  return <AdminShell user={admin}><div className="admin-content">
+  return <AdminShell user={admin}><div className="admin-content"><ReviewScope resource={`account:${account.id}`} revision={account.revision}>
     <AdminPageHeading eyebrow="FICHA DE CUENTA" title={accountName} description={`Administra los datos, contraseña y anuncios de ${account.email}. Los cambios se realizan sin necesidad de conocer la contraseña actual.`} backHref={returnTo}>
       <a className="button button-outline" href="#anuncios">Ver anuncios de esta cuenta ({ownedProfiles.length})</a>
       {!isProtectedAdmin && account.isActive && <Link prefetch={false} className="button button-primary" href={`${detailBaseHref}/crear-perfil?return_to=${encodeURIComponent(returnTo)}`}>Crear anuncio para esta cuenta</Link>}
@@ -175,5 +177,5 @@ export default async function AdminAccountDetailsPage({ params, searchParams }: 
       <details className="is-destructive"><summary>Eliminar cuenta permanentemente</summary><form action={`/api/admin/users/${encodeURIComponent(account.id)}/eliminar`} method="post"><input name="return_to" type="hidden" value="/admin/cuentas" /><p>Borra la cuenta, anuncios, medios y relaciones. No se puede deshacer. Solo quedará una huella criptográfica para detectar futuros registros con el mismo correo.</p><label>Confirma el correo<input name="email" type="email" required autoComplete="off" /></label><label>Escribe ELIMINAR<input name="confirmation" required autoComplete="off" /></label><button className="button button-danger" type="submit">Eliminar permanentemente</button></form></details>
     </div></section>}
     {!isProtectedAdmin && <section className="admin-account-history"><div><p className="eyebrow">HISTORIAL DE REGISTRO</p><h2>Registros anteriores del mismo correo</h2><p>La comparación usa una huella criptográfica; no conserva el correo de las cuentas eliminadas.</p></div>{deletionHistory.length ? <ol>{deletionHistory.map((entry) => <li key={entry.id}><strong>Cuenta anterior creada {new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(entry.originalCreatedAt))}</strong><span>Eliminada {new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(entry.deletedAt))} por {entry.deletedBy === "admin" ? "un administrador" : "la persona usuaria"}.</span></li>)}</ol> : <p className="admin-media-empty">No existen eliminaciones anteriores asociadas a este correo.</p>}<p className="admin-account-reregistered">Registro actual: {new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(account.createdAt))}{deletionHistory.length ? " · El correo se volvió a registrar después de una eliminación." : ""}</p></section>}
-  </div></AdminShell>;
+  </ReviewScope></div></AdminShell>;
 }

@@ -28,7 +28,7 @@ test('X private settings cannot become public, never prefill secrets and require
   assert.doesNotMatch(defaults, /x_oauth_client_secret/); assert.match(defaults, /x_sign_in_status: "disabled"/);
   assert.match(route, /assertSameOrigin\(request\)/); assert.match(route, /adminHasCapability\(admin, "settings.manage"\)/);
   assert.match(route, /x_activation_confirmed/); assert.match(route, /encryptXClientSecret\(newSecret/);
-  assert.match(route, /db.batch\(/); assert.match(route, /db.delete\(xAuthAttempts\)/); assert.match(route, /db.delete\(xRegistrationIntents\)/);
+  assert.match(route, /guardedBatch\(expectedVersion/); assert.match(route, /db.delete\(xAuthAttempts\)/); assert.match(route, /db.delete\(xRegistrationIntents\)/);
   assert.match(route, /recordAdminAudit/); assert.doesNotMatch(route, /after:\s*\{[^}]*:\s*newSecret/);
   const page = await source('app/admin/configuracion/[section]/page.tsx');
   assert.match(page, /name="x_oauth_client_secret" type="password"/);

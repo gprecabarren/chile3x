@@ -1,4 +1,4 @@
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { createAccountToken, sendAccountEmail } from "@/lib/account-email";
 import { readAccountIdentity } from "@/lib/account-data";
@@ -9,6 +9,7 @@ import { accountTokens, authSessions, users } from "@/db/schema";
 import { recordAdminAudit } from "@/lib/admin-audit";
 import { adminHasCapability } from "@/lib/admin-permissions";
 import { DAY_MS, EMAIL_GRACE_DAYS } from "@/lib/email-verification-policy";
+import { CollaborationConflict, expectedVersion, guardedBatch, conflictResponse } from "@/lib/collaboration";
 
 function redirectWithNotice(request: Request, returnTo: string, notice: string) {
   const url = new URL(returnTo, request.url);
@@ -56,6 +57,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   if (!target) return redirectWithNotice(request, "/admin/cuentas", "account_missing");
   if (target.id === admin.id || target.role === "admin") return redirectWithNotice(request, returnTo, "account_error");
+  const version = (()=>{try{return expectedVersion(formData,`account:${userId}`);}catch{return null;}})();
+  if(!version)return conflictResponse();
+  async function save(statements: Parameters<typeof guardedBatch>[1]) {
+    try { await guardedBatch(version!,statements,admin!.id); return null; }
+    catch(error){if(error instanceof CollaborationConflict)return conflictResponse();throw error;}
+  }
 
   if (action === "email_exempt" || action === "email_require") {
     const reason = formValue(formData, "reason").trim();
@@ -68,12 +75,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       emailVerificationBlockedAt: null, emailVerificationNoticeAt: null, emailVerificationNoticeAttemptAt: null,
     };
     // An exception never certifies ownership of an email or overrides a ban.
-    await db.update(users).set(changes).where(eq(users.id, target.id));
+    const conflict=await save([db.update(users).set(changes).where(eq(users.id,target.id))]);if(conflict)return conflict;
     await recordAdminAudit(admin, { category: "accounts", action: exempt ? "account.email_verification_exempt" : "account.email_verification_required", summary: `${exempt ? "Autorizó una excepción" : "Retiró la excepción y otorgó 7 días"} de verificación de correo para ${target.displayName ?? target.email}.`, entityType: "account", entityId: target.id, entityLabel: target.displayName ?? target.email, before: { exemptAt: target.emailVerificationExemptAt }, after: changes, metadata: { reason, emailVerified: false } });
     return redirectWithNotice(request, returnTo, "email_policy_updated");
   }
 
   if (action === "send_reset") {
+    const conflict=await save([db.update(users).set({revision:sql`${users.revision}+1`}).where(eq(users.id,target.id))]);if(conflict)return conflict;
     const token = await createAccountToken(target.id, "reset_password");
     const delivered = await sendAccountEmail({ email: target.email, displayName: target.displayName, purpose: "reset_password", token });
     await recordAdminAudit(admin, { category: "accounts", action: "account.reset_link", summary: `${delivered ? "Envió" : "Intentó enviar"} un enlace de recuperación a ${target.email}.`, entityType: "account", entityId: target.id, entityLabel: target.displayName ?? target.email, outcome: delivered ? "success" : "failure", metadata: { delivery: delivered ? "delivered" : "failed" } });
@@ -83,9 +91,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (action === "set_password") {
     const password = formValue(formData, "password");
     if (password.length < MIN_PASSWORD_LENGTH) return redirectWithNotice(request, returnTo, "password_invalid");
-    await db.update(users).set({ passwordHash: await hashPassword(password) }).where(eq(users.id, target.id));
-    await db.delete(authSessions).where(eq(authSessions.userId, target.id));
-    await db.delete(accountTokens).where(and(eq(accountTokens.userId, target.id), eq(accountTokens.purpose, "reset_password")));
+    const conflict=await save([db.update(users).set({passwordHash:await hashPassword(password)}).where(eq(users.id,target.id)),db.delete(authSessions).where(eq(authSessions.userId,target.id)),db.delete(accountTokens).where(and(eq(accountTokens.userId,target.id),eq(accountTokens.purpose,"reset_password")))]);if(conflict)return conflict;
     await recordAdminAudit(admin, { category: "accounts", action: "account.password_update", summary: `Cambió la contraseña de la cuenta ${target.displayName ?? target.email} y cerró sus sesiones.`, entityType: "account", entityId: target.id, entityLabel: target.displayName ?? target.email, metadata: { sessionsRevoked: true, resetTokensRevoked: true } });
     return redirectWithNotice(request, returnTo, "password_updated");
   }
@@ -113,7 +119,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       city: identity.city,
       phone: identity.phone || null,
     };
-    await db.update(users).set(nextDetails).where(eq(users.id, target.id));
+    const conflict=await save([db.update(users).set(nextDetails).where(eq(users.id,target.id))]);if(conflict)return conflict;
     await recordAdminAudit(admin, { category: "accounts", action: "account.details_update", summary: `Modificó los datos de la cuenta ${displayName}.`, entityType: "account", entityId: target.id, entityLabel: displayName, before: { displayName: target.displayName, firstName: target.firstName, documentType: target.documentType, documentNumber: target.documentNumber, foreignCountry: target.foreignCountry, birthDate: target.birthDate, city: target.city, phone: target.phone }, after: nextDetails });
     return redirectWithNotice(request, returnTo, "details_saved");
   }

@@ -1,5 +1,6 @@
 import { and, count, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import Link from "@/app/NavigationLink";
+import { ReviewScope } from "@/app/admin/ReviewScope";
 import { redirect } from "next/navigation";
 import { formatRegionName } from "@/app/locations";
 import { getDb } from "@/db";
@@ -115,6 +116,7 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
     contactWhatsapp: profiles.contactWhatsapp,
     contactPhone: profileDetails.contactPhone,
     updatedAt: profiles.updatedAt,
+    revision: profiles.revision,
   }).from(profiles)
     .innerJoin(users, eq(profiles.ownerId, users.id))
     .leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id));
@@ -201,7 +203,7 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
             const editHref = `/admin/anuncios-publicaciones/${encodeURIComponent(profile.id)}/editar`;
             const whatsappHref = adminWhatsappHref(profile.contactWhatsapp ?? profile.contactPhone, profile.displayName);
             const callHref = adminCallHref(profile.contactPhone ?? profile.contactWhatsapp);
-            return <article className="admin-profile-card" key={profile.id}>
+            return <ReviewScope key={profile.id} resource={`profile:${profile.id}`} revision={profile.revision}><article className="admin-profile-card">
               <header><div><p className="eyebrow">{profileTypeLabel[profile.type] ?? profile.type}</p><h2>{profile.displayName}</h2><p>{profile.city}, {formatRegionName(profile.region)}</p></div>
                 <div className="admin-profile-card-links">{adminHasCapability(admin, "accounts.manage") && <Link prefetch={false} className="button button-outline" href={accountHref}>Ver cuenta</Link>}<Link prefetch={false} className="button button-primary" href={editHref}>Editar anuncio</Link><Link prefetch={false} className="button button-public-preview" href={profilePreviewHref} target="_blank">Ver / previsualizar anuncio</Link><Link prefetch={false} className="button button-outline" href={editHref + "#fotos-y-videos"}>Gestionar fotos y videos</Link>{adminHasCapability(admin, "private.view") && profile.type === "escort" && <Link prefetch={false} className="button button-outline" href={editHref + "#documentos-privados"}>Documentos privados</Link>}<Link prefetch={false} className="button button-outline" href={editHref + "#historias"}>Historias y estados</Link><Link prefetch={false} className="button button-outline" href={mediaHref(profile.id, adminReturnTo)}>Revisar medios{publicMedia.total > 0 ? " (" + publicMedia.total + ")" : ""}</Link>{exclusiveMedia && <Link prefetch={false} className="button button-outline" href={mediaHref(profile.id, adminReturnTo, { type: "exclusive" })}>Contenido exclusivo{exclusiveMedia.total > 0 ? " (" + exclusiveMedia.total + ")" : ""}</Link>}{whatsappHref && <a className="button contact-whatsapp" href={whatsappHref} target="_blank" rel="noreferrer">WhatsApp</a>}{callHref && <a className="button contact-call" href={callHref}>Llamar</a>}</div>
                 {adminHasCapability(admin, "reviews.moderate") && <Link prefetch={false} className="button button-outline" href={`/admin/resenas?perfil=${encodeURIComponent(profile.id)}`}>Comentarios</Link>}
@@ -214,7 +216,7 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
               <form className="admin-profile-card-review" action={"/api/admin/profiles/" + profile.id + "/status"} method="post"><input type="hidden" name="return_to" value={adminReturnTo} /><label>Publicación<select name="status" defaultValue={profile.status} aria-label={"Publicación de " + profile.displayName}>{Object.entries(statusLabel).map(([value, label]) => <option value={value} key={value} disabled={value === "approved" && !profile.ownerIsActive}> {label}</option>)}</select></label><label>Verificación<select name="verification_status" defaultValue={profile.verificationStatus} aria-label={"Verificación de " + profile.displayName}>{Object.entries(verificationLabel).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>{profile.type === "escort" && <label>Revisión médica<select name="health_review_status" defaultValue={profile.healthReviewStatus} aria-label={"Revisión médica de " + profile.displayName}>{Object.entries(healthReviewLabel).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>}<button className="button button-primary" type="submit">Guardar estados</button></form>
               {profile.type === "escort" && adminHasCapability(admin, "private.view") && <div className="admin-profile-card-documents"><strong>Documentos privados</strong><div className="admin-profile-document-links">{documents.length > 0 ? documents.map((kind) => <a key={kind} href={"/api/perfiles/" + profile.id + "/documentos/" + kind}>{kind === "identity" ? "Carnet" : "Examen médico"}</a>) : <small>Sin documentos privados adjuntos.</small>}</div></div>}
               {adminHasCapability(admin, "profiles.recycle") && <details className="profile-trash-control is-destructive"><summary>🗑 Enviar a la papelera</summary><form action={`/api/admin/profiles/${profile.id}/papelera`} method="post"><input type="hidden" name="action" value="trash" /><input type="hidden" name="return_to" value={adminReturnTo} /><p>El anuncio dejará de ser público. Podrá restaurarse únicamente desde la papelera administrativa.</p><label>Escribe PAPELERA<input name="confirmation" required autoComplete="off" /></label><button className="button button-danger" type="submit">Confirmar envío a papelera</button></form></details>}
-            </article>;
+            </article></ReviewScope>;
           })}
         </section>
         <AdminPagination pathname="/admin/anuncios-publicaciones" params={linkParams} currentPage={page} totalItems={total} pageSize={PAGE_SIZE} label="Anuncios" />

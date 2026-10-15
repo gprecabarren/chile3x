@@ -4,19 +4,20 @@ import { adminAuditLogs, profileMedia, profileStatuses, profileVerificationFiles
 import type { AccountUser, AdminUser } from "@/lib/auth";
 import { recordOperationalEvent } from "@/lib/operations";
 import { hasUnlimitedEscortListings } from "@/lib/profile-limits";
+import { guardedBatch, type ReviewVersion } from "@/lib/collaboration";
 
 export type ProfileTrashResult = "ok" | "not_found" | "already_trashed" | "not_trashed" | "escort_conflict" | "storage_cleanup_failed";
 
-export async function trashProfile(profileId: string, actor: AccountUser | AdminUser, kind: "self" | "admin"): Promise<ProfileTrashResult> {
+export async function trashProfile(profileId: string, actor: AccountUser | AdminUser, kind: "self" | "admin", version?:ReviewVersion): Promise<ProfileTrashResult> {
   const db = await getDb();
-  const [profile] = await db.select({ id: profiles.id, ownerId: profiles.ownerId, displayName: profiles.displayName, type: profiles.type, status: profiles.status, trashedAt: profiles.trashedAt })
+  const [profile] = await db.select({ revision: profiles.revision, id: profiles.id, ownerId: profiles.ownerId, displayName: profiles.displayName, type: profiles.type, status: profiles.status, trashedAt: profiles.trashedAt })
     .from(profiles).where(eq(profiles.id, profileId)).limit(1);
   if (!profile || (kind === "self" && profile.ownerId !== actor.id)) return "not_found";
   if (profile.trashedAt) return "already_trashed";
 
   const now = new Date().toISOString();
   const adminLogin = kind === "admin" ? (actor as AdminUser).githubLogin : null;
-  await db.batch([
+  await guardedBatch(version??{key:`profile:${profileId}`,revision:profile.revision},[
     db.update(profiles).set({ trashedAt: now, trashedByKind: kind, trashedByActorId: actor.id, trashedByAdminLogin: adminLogin, updatedAt: now })
       .where(and(eq(profiles.id, profileId), isNull(profiles.trashedAt))),
     db.insert(adminAuditLogs).values({
@@ -31,13 +32,13 @@ export async function trashProfile(profileId: string, actor: AccountUser | Admin
       beforeData: JSON.stringify({ trashedAt: null, status: profile.status }),
       afterData: JSON.stringify({ trashedAt: now, status: profile.status, origin: kind }),
     }),
-  ]);
+  ],kind==="admin"?actor.id:undefined);
   return "ok";
 }
 
-export async function restoreProfile(profileId: string, admin: AdminUser): Promise<ProfileTrashResult> {
+export async function restoreProfile(profileId: string, admin: AdminUser, version?:ReviewVersion): Promise<ProfileTrashResult> {
   const db = await getDb();
-  const [profile] = await db.select({ id: profiles.id, ownerId: profiles.ownerId, displayName: profiles.displayName, type: profiles.type, status: profiles.status, trashedAt: profiles.trashedAt, trashedByKind: profiles.trashedByKind, trashedByAdminLogin: profiles.trashedByAdminLogin })
+  const [profile] = await db.select({ revision:profiles.revision, id: profiles.id, ownerId: profiles.ownerId, displayName: profiles.displayName, type: profiles.type, status: profiles.status, trashedAt: profiles.trashedAt, trashedByKind: profiles.trashedByKind, trashedByAdminLogin: profiles.trashedByAdminLogin })
     .from(profiles).where(eq(profiles.id, profileId)).limit(1);
   if (!profile) return "not_found";
   if (!profile.trashedAt) return "not_trashed";
@@ -52,7 +53,7 @@ export async function restoreProfile(profileId: string, admin: AdminUser): Promi
   }
   const now = new Date().toISOString();
   try {
-    await db.batch([
+    await guardedBatch(version??{key:`profile:${profileId}`,revision:profile.revision},[
       db.update(profiles).set({ trashedAt: null, trashedByKind: null, trashedByActorId: null, trashedByAdminLogin: null, updatedAt: now })
         .where(and(eq(profiles.id, profileId), isNotNull(profiles.trashedAt))),
       db.insert(adminAuditLogs).values({
@@ -63,7 +64,7 @@ export async function restoreProfile(profileId: string, admin: AdminUser): Promi
         beforeData: JSON.stringify({ trashedAt: profile.trashedAt, origin: profile.trashedByKind, adminLogin: profile.trashedByAdminLogin }),
         afterData: JSON.stringify({ trashedAt: null, status: profile.status }),
       }),
-    ]);
+    ],admin.id);
   } catch (error) {
     if (String(error).includes("escort_profile_owner_conflict")) return "escort_conflict";
     throw error;
@@ -71,9 +72,9 @@ export async function restoreProfile(profileId: string, admin: AdminUser): Promi
   return "ok";
 }
 
-export async function permanentlyDeleteTrashedProfile(profileId: string, admin: AdminUser): Promise<ProfileTrashResult> {
+export async function permanentlyDeleteTrashedProfile(profileId: string, admin: AdminUser, version?:ReviewVersion): Promise<ProfileTrashResult> {
   const db = await getDb();
-  const [profile] = await db.select({ id: profiles.id, displayName: profiles.displayName, type: profiles.type, status: profiles.status, ownerId: profiles.ownerId, trashedAt: profiles.trashedAt })
+  const [profile] = await db.select({ revision:profiles.revision, id: profiles.id, displayName: profiles.displayName, type: profiles.type, status: profiles.status, ownerId: profiles.ownerId, trashedAt: profiles.trashedAt })
     .from(profiles).where(eq(profiles.id, profileId)).limit(1);
   if (!profile) return "not_found";
   if (!profile.trashedAt) return "not_trashed";
@@ -87,7 +88,7 @@ export async function permanentlyDeleteTrashedProfile(profileId: string, admin: 
   ]);
   const objectKeys = [...new Set([...media, ...stories, ...documents, ...evidence].map((row) => row.key).filter((key): key is string => Boolean(key)))];
   const deletionId = `audit_${crypto.randomUUID()}`;
-  await db.batch([
+  await guardedBatch(version??{key:`profile:${profileId}`,revision:profile.revision},[
     db.delete(profiles).where(and(eq(profiles.id, profileId), isNotNull(profiles.trashedAt))),
     db.insert(adminAuditLogs).values({
       id: deletionId, actorUserId: admin.id, actorGithubLogin: admin.githubLogin,
@@ -97,7 +98,7 @@ export async function permanentlyDeleteTrashedProfile(profileId: string, admin: 
       beforeData: JSON.stringify({ type: profile.type, status: profile.status, trashedAt: profile.trashedAt, objectCount: objectKeys.length }),
       afterData: JSON.stringify({ deleted: true }),
     }),
-  ]);
+  ],admin.id);
   if (objectKeys.length) {
     try {
       const { env } = await import("cloudflare:workers");

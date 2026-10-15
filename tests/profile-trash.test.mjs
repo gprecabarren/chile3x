@@ -45,7 +45,8 @@ test("trash and permanent deletion are admin-authorized, audited and hidden from
   assert.match(userRoute, /getCurrentUser\(\)/);
   assert.doesNotMatch(userRoute, /restoreProfile/);
   assert.match(trash, /profile\.ownerId !== actor\.id/);
-  assert.match(trash, /db\.batch\(/);
+  assert.match(trash, /guardedBatch\(/);
+  assert.match(await source("lib/collaboration.ts"),/db\.batch\(/);
   assert.match(trash, /db\.delete\(profiles\)/);
   assert.match(trash, /profileReportEvidence/);
   assert.doesNotMatch(trash, /db\.delete\(exclusiveContentCollections\)/);

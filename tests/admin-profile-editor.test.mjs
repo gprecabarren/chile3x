@@ -11,7 +11,8 @@ test('admin editor and save endpoint require moderation; owner controls remain s
   ]);
   for (const value of [page, route]) { assert.match(value, /getCurrentAdmin\(\)/); assert.match(value, /adminHasCapability\(admin, "profiles.moderate"\)/); assert.match(value, /isNull\(profiles.trashedAt\)/); }
   assert.match(route, /assertSameOrigin\(request\)/);
-  assert.match(route, /updateProfile\(profileId, before.profile.ownerId, submission, \{ adminEditor: true \}\)/);
+  assert.match(route, /updateProfile\(profileId, before.profile.ownerId, submission, \{ adminEditor: true, version, actorId:admin.id \}\)/);
+  assert.match(route,/expectedVersion\(form,`profile:\$\{profileId\}`\)/);
   assert.match(route, /profile.details_update/);
   assert.match(update, /options.adminEditor \? existing.profile.status/);
   assert.match(update, /options.adminEditor \? sql`\$\{profiles.verificationStatus\}`/);

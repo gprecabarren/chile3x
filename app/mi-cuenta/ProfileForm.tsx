@@ -58,6 +58,7 @@ type ProfileFormInitial = {
 };
 
 type ProfileFormProps = {
+  review?: {key:string;revision:number};
   action: string;
   submitLabel: string;
   initial?: ProfileFormInitial;
@@ -83,7 +84,7 @@ function metadataValue(initial: ProfileFormInitial | undefined, key: string) {
   return initial?.details.metadata?.[key] ?? "";
 }
 
-export function ProfileForm({ action, submitLabel, initial, allowEscort = true, adminAssisted = false, adminEdit = false }: ProfileFormProps) {
+export function ProfileForm({ action, submitLabel, initial, allowEscort = true, adminAssisted = false, adminEdit = false, review }: ProfileFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const optionalRef = useRef<HTMLDetailsElement>(null);
   const storageKey = `chile3x-profile-draft:${action}`;
@@ -204,6 +205,7 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
         setUnderageNotice(true);
       }
     }}>
+      {review && <><input type="hidden" name="review_key" value={review.key} /><input type="hidden" name="review_revision" value={review.revision} /></>}
       <div className="profile-form-actions profile-form-actions-top">
         {!adminEdit && <button className="button button-outline" name="intent" type="submit" value="draft" formNoValidate>Guardar borrador</button>}
         <button className="button button-primary" name="intent" type="submit" value="submit">{submitLabel}</button>

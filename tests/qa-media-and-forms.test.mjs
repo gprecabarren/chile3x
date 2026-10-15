@@ -31,7 +31,7 @@ test('bulk approval is same-origin, permission scoped, snapshot based and transa
  const route=await source('app/api/admin/profiles/[profileId]/media/aprobar-todos/route.ts');
  assert.match(route,/assertSameOrigin\(request\)/);assert.match(route,/adminHasCapability\(admin, "media\.moderate"\)/);
  assert.match(route,/mediaReviewVersion\(file\) !== entry.version/);assert.match(route,/review_confirmed/);
- assert.match(route,/db\.batch\(/);assert.match(route,/unchangedFiles/);assert.match(route,/recordAdminAudit\(admin/);
+ assert.match(route,/guardedBatch\(expectedVersion/);assert.match(await source('lib/collaboration.ts'),/db\.batch\(/);assert.match(route,/unchangedFiles/);assert.match(route,/recordAdminAudit\(admin/);
  assert.doesNotMatch(route,/db\.update\(profiles\)|exclusiveContentMedia|sendPortalEmail/);
 });
 test('manual privacy regions reject outside-image, excessive, zero-sized or nonfinite selections',()=>{

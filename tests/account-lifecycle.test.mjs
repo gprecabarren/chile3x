@@ -45,7 +45,8 @@ test("approved contact-only edits stay published while other changes return to r
   const submission = await source("lib/profile-submission.ts");
   assert.match(submission, /const contactOnly = existing\.profile\.status === "approved"/);
   assert.match(submission, /contactOnly \? "approved"/);
-  assert.match(submission, /if \(!contactOnly\) await replaceProfileCollections/);
+  assert.match(submission, /const collectionUpdates = !contactOnly/);
+  assert.match(submission, /guardedBatch\([\s\S]*profileUpdate,detailsUpdate,\.\.\.collectionUpdates/);
 });
 
 test("large admin lists paginate in SQL and do not prefetch every detail", async () => {

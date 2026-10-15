@@ -90,19 +90,20 @@ export async function getMediaUsage() {
   // All binary uploads share the same private R2 bucket. Count every table
   // that owns an object so the quota warning stays meaningful as features
   // such as reports and stories are used.
-  // One round trip; UNION ALL retains every file even when byte sizes match.
-  // Exclude migrated profile-exclusive rows exactly as before (no double count).
-  const totals = await db.get<{ bytes: number; files: number }>(sql`SELECT coalesce(sum(bytes),0) bytes, coalesce(sum(files),0) files FROM (
-    SELECT coalesce(sum(${forumAttachments.byteSize}),0) bytes, count(*) files FROM ${forumAttachments}
-    UNION ALL SELECT coalesce(sum(${profileMedia.byteSize}),0), count(*) FROM ${profileMedia} WHERE ${profileMedia.visibility}='public'
-    UNION ALL SELECT coalesce(sum(${profileStatuses.byteSize}),0), count(*) FROM ${profileStatuses}
-    UNION ALL SELECT coalesce(sum(${profileVerificationFiles.byteSize}),0), count(*) FROM ${profileVerificationFiles}
-    UNION ALL SELECT coalesce(sum(${newsMedia.byteSize}),0), count(*) FROM ${newsMedia}
-    UNION ALL SELECT coalesce(sum(${profileReportEvidence.byteSize}),0), count(*) FROM ${profileReportEvidence}
-    UNION ALL SELECT coalesce(sum(${exclusiveContentMedia.byteSize}),0), count(*) FROM ${exclusiveContentMedia}
-    UNION ALL SELECT coalesce(sum(${sponsors.backgroundByteSize}+${sponsors.logoByteSize}),0), count(*)+coalesce(sum(case when ${sponsors.logoR2Key} is not null then 1 else 0 end),0) FROM ${sponsors}
-  )`);
-  return { bytes: Number(totals?.bytes ?? 0), files: Number(totals?.files ?? 0) };
+  // One round trip, but separate statements: D1 deliberately limits compound
+  // SELECTs more strictly than desktop SQLite. An eight-way UNION failed on
+  // the real Worker even though ordinary SQLite tests accepted it.
+  const totals=await db.batch([
+    db.select({bytes:sql<number>`coalesce(sum(${forumAttachments.byteSize}),0)`,files:sql<number>`count(*)`}).from(forumAttachments),
+    db.select({bytes:sql<number>`coalesce(sum(${profileMedia.byteSize}),0)`,files:sql<number>`count(*)`}).from(profileMedia).where(eq(profileMedia.visibility,"public")),
+    db.select({bytes:sql<number>`coalesce(sum(${profileStatuses.byteSize}),0)`,files:sql<number>`count(*)`}).from(profileStatuses),
+    db.select({bytes:sql<number>`coalesce(sum(${profileVerificationFiles.byteSize}),0)`,files:sql<number>`count(*)`}).from(profileVerificationFiles),
+    db.select({bytes:sql<number>`coalesce(sum(${newsMedia.byteSize}),0)`,files:sql<number>`count(*)`}).from(newsMedia),
+    db.select({bytes:sql<number>`coalesce(sum(${profileReportEvidence.byteSize}),0)`,files:sql<number>`count(*)`}).from(profileReportEvidence),
+    db.select({bytes:sql<number>`coalesce(sum(${exclusiveContentMedia.byteSize}),0)`,files:sql<number>`count(*)`}).from(exclusiveContentMedia),
+    db.select({bytes:sql<number>`coalesce(sum(${sponsors.backgroundByteSize}+${sponsors.logoByteSize}),0)`,files:sql<number>`count(*)+coalesce(sum(case when ${sponsors.logoR2Key} is not null then 1 else 0 end),0)`}).from(sponsors),
+  ]);
+  return totals.reduce((sum,[row])=>({bytes:sum.bytes+Number(row?.bytes??0),files:sum.files+Number(row?.files??0)}),{bytes:0,files:0});
 }
 
 export async function getApprovedMediaForProfiles(profileIds: string[], coverOnly = false) {

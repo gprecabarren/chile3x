@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { permanentlyDeleteAccount } from "@/lib/account-deletion";
+import { CollaborationConflict } from "@/lib/collaboration";
 import { assertSameOrigin, getCurrentUser, getUserSessionCookieName, getUserSessionDuration, sessionCookieOptions } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
@@ -15,7 +16,9 @@ export async function POST(request: NextRequest) {
   if (email !== user.email.toLowerCase() || formData.get("confirmation") !== "ELIMINAR") {
     return NextResponse.redirect(new URL("/mi-cuenta/datos-personales?notice=delete_confirmation", request.url), 303);
   }
-  const deleted = await permanentlyDeleteAccount(user.id, { kind: "user" });
+  let deleted;
+  try{deleted=await permanentlyDeleteAccount(user.id,{kind:"user"});}
+  catch(error){if(error instanceof CollaborationConflict)return NextResponse.redirect(new URL('/mi-cuenta/datos-personales?notice=delete_conflict',request.url),303);throw error;}
   if (!deleted) return NextResponse.redirect(new URL("/mi-cuenta/datos-personales?notice=delete_error", request.url), 303);
   const response = NextResponse.redirect(new URL("/registro?notice=account_deleted", request.url), 303);
   response.cookies.set({ name: getUserSessionCookieName(), value: "", ...sessionCookieOptions(getUserSessionDuration()), maxAge: 0 });

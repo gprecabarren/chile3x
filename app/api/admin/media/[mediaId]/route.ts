@@ -1,11 +1,12 @@
 import { and, eq, ne } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { profileMedia } from "@/db/schema";
+import { dataDeletionJobs, profileMedia } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { findProfileMedia } from "@/lib/media";
 import { recordAdminAudit } from "@/lib/admin-audit";
 import { adminHasCapability } from "@/lib/admin-permissions";
+import { CollaborationConflict, expectedVersion, guardedBatch, conflictResponse } from "@/lib/collaboration";
 
 export const dynamic = "force-dynamic";
 
@@ -34,22 +35,23 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!record) return NextResponse.redirect(destination(request, formData, "missing"), 303);
   const action = formData.get("action");
   const db = await getDb();
+  const version=(()=>{try{return expectedVersion(formData,`profile:${record.media.profileId}`);}catch{return null;}})();
+  if(!version)return conflictResponse();
+  async function save(statements:Parameters<typeof guardedBatch>[1]){try{await guardedBatch(version!,statements,admin!.id);return null;}catch(error){if(error instanceof CollaborationConflict)return conflictResponse();throw error;}}
   if (action === "approve") {
-    if (record.media.isProfilePhoto) {
-      await db.update(profileMedia).set({ isProfilePhoto: false }).where(and(
+    const otherCovers=record.media.isProfilePhoto?[db.update(profileMedia).set({ isProfilePhoto: false }).where(and(
         eq(profileMedia.profileId, record.media.profileId),
         eq(profileMedia.isProfilePhoto, true),
         ne(profileMedia.id, mediaId),
         eq(profileMedia.moderationStatus, "approved"),
-      ));
-    }
-    await db.update(profileMedia).set({ moderationStatus: "approved" }).where(eq(profileMedia.id, mediaId));
+      ))]:[];
+    const conflict=await save([db.update(profileMedia).set({moderationStatus:"approved"}).where(eq(profileMedia.id,mediaId)),...otherCovers]);if(conflict)return conflict;
     await recordAdminAudit(admin, { category: "media", action: "media.public_approve", summary: `Aprobó ${record.media.mediaType === "video" ? "un video" : "una foto"} de la galería de ${record.profile.displayName}.`, entityType: "public_media", entityId: mediaId, entityLabel: `${record.media.mediaType === "video" ? "Video" : "Foto"} · ${record.profile.displayName}`, before: { moderationStatus: record.media.moderationStatus, isProfilePhoto: record.media.isProfilePhoto }, after: { moderationStatus: "approved", isProfilePhoto: record.media.isProfilePhoto }, metadata: { profileId: record.profile.id } });
     return NextResponse.redirect(destination(request, formData, "approved"), 303);
   }
 
   if (action === "unapprove") {
-    await db.update(profileMedia).set({ moderationStatus: "pending" }).where(eq(profileMedia.id, mediaId));
+    const conflict=await save([db.update(profileMedia).set({moderationStatus:"pending"}).where(eq(profileMedia.id,mediaId))]);if(conflict)return conflict;
     await recordAdminAudit(admin, { category: "media", action: "media.public_unapprove", summary: `Devolvió a revisión ${record.media.mediaType === "video" ? "un video" : "una foto"} de ${record.profile.displayName}.`, entityType: "public_media", entityId: mediaId, entityLabel: `${record.media.mediaType === "video" ? "Video" : "Foto"} · ${record.profile.displayName}`, before: { moderationStatus: record.media.moderationStatus }, after: { moderationStatus: "pending" }, metadata: { profileId: record.profile.id } });
     return NextResponse.redirect(destination(request, formData, "unapproved"), 303);
   }
@@ -57,8 +59,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (action === "delete") {
     const { env } = await import("cloudflare:workers");
     if (!env.MEDIA) return new Response("El almacenamiento no está disponible.", { status: 503 });
-    await env.MEDIA.delete(record.media.r2Key);
-    await db.delete(profileMedia).where(eq(profileMedia.id, mediaId));
+    const conflict=await save([db.insert(dataDeletionJobs).values({id:`delete_${crypto.randomUUID()}`,r2Key:record.media.r2Key}).onConflictDoNothing(),db.delete(profileMedia).where(eq(profileMedia.id,mediaId))]);if(conflict)return conflict;
+    try{await env.MEDIA.delete(record.media.r2Key);await db.delete(dataDeletionJobs).where(eq(dataDeletionJobs.r2Key,record.media.r2Key));}catch{console.error("Deferred reviewed media storage cleanup",{mediaId});}
     await recordAdminAudit(admin, { category: "media", action: "media.public_delete", summary: `Eliminó ${record.media.mediaType === "video" ? "un video" : "una foto"} de la galería de ${record.profile.displayName}.`, entityType: "public_media", entityId: mediaId, entityLabel: `${record.media.mediaType === "video" ? "Video" : "Foto"} · ${record.profile.displayName}`, before: { moderationStatus: record.media.moderationStatus, mediaType: record.media.mediaType, byteSize: record.media.byteSize, isProfilePhoto: record.media.isProfilePhoto }, metadata: { profileId: record.profile.id } });
     return NextResponse.redirect(destination(request, formData, "deleted"), 303);
   }

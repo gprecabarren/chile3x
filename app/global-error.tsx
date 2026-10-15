@@ -1,0 +1,5 @@
+"use client";
+/* eslint-disable @next/next/no-html-link-for-pages -- Root failure recovery must not depend on the failed router. */
+export default function GlobalError({error}:{error:Error&{digest?:string}}){
+ return <html lang="es"><body style={{margin:0,background:'#090c13',color:'#f2f4f8',fontFamily:'system-ui,sans-serif'}}><main style={{maxWidth:680,margin:'10vh auto',padding:24}} role="alert"><p>CHILE3X</p><h1>No pudimos completar la carga</h1><p>No repitas un guardado o una carga sin comprobar antes su estado. Puedes volver al panel o intentar cargar la página de nuevo.</p>{error.digest&&<p>Referencia: {error.digest}</p>}<p><a style={{color:'#ff9ba5',marginRight:20}} href="/">Ir al inicio</a><a style={{color:'#ff9ba5',marginRight:20}} href="/mi-cuenta">Mi cuenta</a><a style={{color:'#ff9ba5'}} href="/admin">Administración</a></p><button type="button" onClick={()=>location.reload()} style={{padding:'12px 18px',borderRadius:8,font:'inherit'}}>Volver a cargar</button></main></body></html>;
+}

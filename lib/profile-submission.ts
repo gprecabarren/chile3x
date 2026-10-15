@@ -1,5 +1,6 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/db";
+import { guardedBatch, type ReviewVersion } from "@/lib/collaboration";
 import { listingPeriods, profileDetails, profileServices, profileTags as profileTagRows, profiles, users } from "@/db/schema";
 import { createAdminNotification } from "@/lib/admin-notifications";
 import { hasUnlimitedEscortListings } from "@/lib/profile-limits";
@@ -474,7 +475,7 @@ export async function createProfile(ownerId: string, submission: ProfileSubmissi
   return id;
 }
 
-export async function updateProfile(profileId: string, ownerId: string, submission: ProfileSubmission, options: { adminEditor?: boolean } = {}) {
+export async function updateProfile(profileId: string, ownerId: string, submission: ProfileSubmission, options: { adminEditor?: boolean; version?: ReviewVersion; actorId?: string } = {}) {
   const db = await getDb();
   const [existing] = await db.select({ profile: profiles, details: profileDetails }).from(profiles)
     .leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id))
@@ -545,7 +546,7 @@ export async function updateProfile(profileId: string, ownerId: string, submissi
   // Editing must not silently publish pending listings or unpublish approved ones.
   const status = options.adminEditor ? existing.profile.status : contactOnly ? "approved" : existing.profile.status === "paused" ? "paused" : submission.intent === "submit" || existing.profile.status === "approved" ? "pending" : existing.profile.status;
 
-  const updated = await db.update(profiles).set({
+  const profileUpdate = db.update(profiles).set({
     status: options.adminEditor ? sql`${profiles.status}` : status,
     handle,
     displayName: submission.displayName,
@@ -559,14 +560,20 @@ export async function updateProfile(profileId: string, ownerId: string, submissi
     tier: submission.tier,
     verificationStatus: options.adminEditor ? sql`${profiles.verificationStatus}` : contactOnly ? existing.profile.verificationStatus : status === "pending" ? "in_review" : "unreviewed",
     updatedAt,
-  }).where(and(eq(profiles.id, profileId), eq(profiles.ownerId, ownerId), isNull(profiles.trashedAt))).returning({ id: profiles.id });
-  if (!updated.length) return { updated: false, contactOnly: false };
-
-  await db.insert(profileDetails).values({ profileId, ...submission.details, updatedAt }).onConflictDoUpdate({
+  }).where(and(eq(profiles.id, profileId), eq(profiles.ownerId, ownerId), isNull(profiles.trashedAt)));
+  const detailsUpdate = db.insert(profileDetails).values({ profileId, ...submission.details, updatedAt }).onConflictDoUpdate({
     target: profileDetails.profileId,
     set: { ...submission.details, updatedAt },
   });
-  if (!contactOnly) await replaceProfileCollections(profileId, submission);
+  const services=[...submission.servicesIncluded.map(service=>({id:`srv_${crypto.randomUUID()}`,profileId,service,kind:"included" as const})),...submission.servicesAdditional.map(service=>({id:`srv_${crypto.randomUUID()}`,profileId,service,kind:"additional" as const}))];
+  const serviceWrites=[];for(let start=0;start<services.length;start+=20)serviceWrites.push(db.insert(profileServices).values(services.slice(start,start+20)));
+  const collectionUpdates = !contactOnly ? [
+    db.delete(profileTagRows).where(eq(profileTagRows.profileId,profileId)),
+    db.delete(profileServices).where(eq(profileServices.profileId,profileId)),
+    ...(submission.tags.length?[db.insert(profileTagRows).values(submission.tags.map(tag=>({id:`tag_${crypto.randomUUID()}`,profileId,tag})))]:[]),
+    ...serviceWrites,
+  ] : [];
+  await guardedBatch(options.version ?? {key:`profile:${profileId}`,revision:existing.profile.revision}, [profileUpdate,detailsUpdate,...collectionUpdates],options.actorId);
   if (!options.adminEditor) await createAdminNotification({
     kind: "profile_updated",
     actorUserId: ownerId,

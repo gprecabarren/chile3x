@@ -13,6 +13,7 @@ import { BrowserSessionBoundary } from "./BrowserSessionBoundary";
 import { BrowserSessionSetup } from "./BrowserSessionSetup";
 import { getBrowserSessionView } from "@/lib/browser-session-view";
 import { UserNavigationProgress } from "./UserNavigationProgress";
+import { AdminCollaboration } from "./AdminCollaboration";
 
 export const dynamic = "force-dynamic";
 
@@ -85,6 +86,7 @@ export default async function RootLayout({
         <AgeGate />
         <DeferredClientFeatures />
         <UserNavigationProgress enabled={sessionView.mode !== "admin"} />
+        <AdminCollaboration adminMode={sessionView.mode === "admin"} />
         {verificationDeadline !== null && Number.isFinite(verificationDeadline) && <EmailVerificationDeadline deadline={verificationDeadline} />}
       </body>
     </html>

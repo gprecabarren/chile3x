@@ -2,6 +2,7 @@ import { and, eq, inArray, isNull } from "drizzle-orm";
 import { getDb } from "@/db";
 import {
   accountDeletionHistory,
+  accountAppleIdentities,
   dataDeletionJobs,
   emailDeliveryLogs,
   exclusiveContentCollections,
@@ -21,24 +22,20 @@ import { sha256 } from "@/lib/auth";
 import { createTelegramOutboxValues, dispatchTelegramJob } from "@/lib/telegram";
 import { revokeAppleGrantForUser } from "@/lib/apple-account";
 import { recordOperationalEvent } from "@/lib/operations";
+import { guardedBatch, type ReviewVersion } from "@/lib/collaboration";
 
 export type AccountDeletionActor = { kind: "user" } | { kind: "admin"; adminId: string };
 
-export async function permanentlyDeleteAccount(userId: string, actor: AccountDeletionActor) {
+export async function permanentlyDeleteAccount(userId: string, actor: AccountDeletionActor, version?:ReviewVersion) {
   const db = await getDb();
-  const [account] = await db.select({ id: users.id, email: users.email, role: users.role, createdAt: users.createdAt })
+  const [account] = await db.select({ revision:users.revision, id: users.id, email: users.email, role: users.role, createdAt: users.createdAt })
     .from(users).where(eq(users.id, userId)).limit(1);
   if (!account || account.role === "admin") return null;
 
   // Apple expects the authorization grant to be revoked when an account is
   // permanently deleted. An external outage must not trap personal data in
   // Chile3X, so revocation is best-effort and independently observable.
-  try {
-    await revokeAppleGrantForUser(userId);
-  } catch (error) {
-    console.error("Apple grant revocation failed during account deletion", { userId, error });
-    await recordOperationalEvent({ category: "authentication", eventName: "apple.revoke", outcome: "failure", detail: "No fue posible revocar el acceso externo de Apple durante la eliminación local." });
-  }
+  const [appleGrant]=await db.select({encrypted:accountAppleIdentities.refreshTokenEncrypted}).from(accountAppleIdentities).where(eq(accountAppleIdentities.userId,userId)).limit(1);
 
   const [publicObjects, storyObjects, verificationObjects, reportObjects, exclusiveObjects, telegramLinks] = await Promise.all([
     db.select({ key: profileMedia.r2Key }).from(profileMedia).innerJoin(profiles, eq(profileMedia.profileId, profiles.id)).where(eq(profiles.ownerId, userId)),
@@ -70,7 +67,7 @@ export async function permanentlyDeleteAccount(userId: string, actor: AccountDel
   const telegramLink = telegramLinks[0];
   const telegramJob = telegramLink ? createTelegramOutboxValues({ kind: "revoke_member", entityId: telegramLink.id, payload: { formerUserId: userId, telegramUserId: telegramLink.telegramUserId, reason: "Cuenta eliminada permanentemente." } }) : null;
   if (telegramJob) {
-    await db.batch([
+    await guardedBatch(version??{key:`account:${userId}`,revision:account.revision},[
       historyStatement,
       ...fileJobs,
       db.delete(emailDeliveryLogs).where(eq(emailDeliveryLogs.recipient, account.email.trim().toLowerCase())),
@@ -78,18 +75,19 @@ export async function permanentlyDeleteAccount(userId: string, actor: AccountDel
       db.delete(profiles).where(eq(profiles.ownerId, userId)),
       db.delete(users).where(eq(users.id, userId)),
       db.delete(messageConversations).where(and(isNull(messageConversations.visitorUserId), isNull(messageConversations.ownerUserId))),
-    ]);
+    ],actor.kind==="admin"?actor.adminId:undefined);
     await dispatchTelegramJob(telegramJob.id);
   } else {
-    await db.batch([
+    await guardedBatch(version??{key:`account:${userId}`,revision:account.revision},[
       historyStatement,
       ...fileJobs,
       db.delete(emailDeliveryLogs).where(eq(emailDeliveryLogs.recipient, account.email.trim().toLowerCase())),
       db.delete(profiles).where(eq(profiles.ownerId, userId)),
       db.delete(users).where(eq(users.id, userId)),
       db.delete(messageConversations).where(and(isNull(messageConversations.visitorUserId), isNull(messageConversations.ownerUserId))),
-    ]);
+    ],actor.kind==="admin"?actor.adminId:undefined);
   }
+  try {await revokeAppleGrantForUser(userId,appleGrant?.encrypted??null);}catch(error){console.error("Apple grant revocation failed after account deletion",{userId,error});await recordOperationalEvent({category:"authentication",eventName:"apple.revoke",outcome:"failure",detail:"No fue posible revocar el acceso externo de Apple después de la eliminación local."});}
 
   if (objectKeys.length) {
     try {

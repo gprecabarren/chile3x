@@ -23,7 +23,9 @@ const statusLabel = { pending: "En revisión", approved: "Publicada", rejected: 
 function formatBytes(bytes: number) { return bytes < 1_000_000 ? `${Math.round(bytes / 1_000)} KB` : bytes < 1_000_000_000 ? `${(bytes / 1_000_000).toFixed(1)} MB` : `${(bytes / 1_000_000_000).toFixed(2)} GB`; }
 function candidateId(file: File, index: number) { return `${file.name}-${file.size}-${file.lastModified}-${index}-${crypto.randomUUID()}`; }
 
-export function ProfileMediaManager({ profileId, initialMedia, initialQuota, mediaSettings, adminMode = false }: { profileId: string; initialMedia: MediaItem[]; initialQuota: Quota; mediaSettings: MediaSettings; adminMode?: boolean }) {
+export function ProfileMediaManager({ profileId, initialMedia, initialQuota, mediaSettings, adminMode = false, initialRevision }: { profileId: string; initialMedia: MediaItem[]; initialQuota: Quota; mediaSettings: MediaSettings; adminMode?: boolean;initialRevision?:number }) {
+  const managerRoot=useRef<HTMLElement>(null),savedRevision=useRef<{id:string;revision:number}|null>(null);
+  function reviewFields(){const data=new FormData();if(!adminMode&&initialRevision===undefined)return data;const scope=managerRoot.current?.closest<HTMLElement>('[data-review-resource]');data.set('review_key',`profile:${profileId}`);data.set('review_revision',String(savedRevision.current?.id===profileId?savedRevision.current.revision:initialRevision??scope?.dataset.reviewRevision??''));return data;}
   const [media, setMedia] = useState(initialMedia); const [quota, setQuota] = useState(initialQuota);
   const mediaApi = adminMode ? `/api/admin/profiles/${profileId}/media` : `/api/perfiles/${profileId}/media`;
   const [notice, setNotice] = useState(""); const [isBusy, setIsBusy] = useState(false); const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -87,9 +89,10 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
       if (result.qualityWarning) setQualityWarning(result.qualityWarning);
     }
     if (candidate) updateCandidate(candidate.id, { status: "uploading", detail: adminMode ? "Subiendo y aprobando…" : "Subiendo a revisión…" });
-    const data = new FormData(); data.set("file", prepared); data.set("upload_kind", uploadKind);
-    const payload = await uploadMediaRequest<{ error?: string; media?: MediaItem; quota?: Quota }>(mediaApi, data);
+    const data = reviewFields(); data.set("file", prepared); data.set("upload_kind", uploadKind);
+    const payload = await uploadMediaRequest<{ error?: string; media?: MediaItem; quota?: Quota;revision?:number }>(mediaApi, data);
     if (!payload.media || !payload.quota) throw new Error("El servidor no confirmó el archivo guardado. Revisa la galería antes de reintentar para evitar duplicados.");
+    if(typeof payload.revision==='number')savedRevision.current={id:profileId,revision:payload.revision};
     setMedia((current) => [...(uploadKind === "profile_photo" && payload.media!.moderationStatus === "approved" ? current.map((item) => item.isProfilePhoto && item.moderationStatus === "approved" ? { ...item, isProfilePhoto: false } : item) : current), payload.media!]); setQuota(payload.quota);
     if (candidate) updateCandidate(candidate.id, { status: "completed", detail: adminMode ? "Aprobado." : "Enviada a revisión." });
   }
@@ -149,8 +152,9 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
   async function remove(mediaId: string) {
     if (isBusy) return; setIsBusy(true); setNotice("");
     try {
-      const response = await fetch(`${mediaApi}/${mediaId}`, { method: "DELETE" }); const payload = await response.json() as { error?: string; quota?: Quota };
+      const response = await fetch(`${mediaApi}/${mediaId}`, { method: "DELETE",body:adminMode?reviewFields():undefined }); const payload = await response.json() as { error?: string; quota?: Quota;revision?:number };
       if (!response.ok || !payload.quota) throw new Error(payload.error ?? "No se pudo eliminar el archivo.");
+      if(typeof payload.revision==='number')savedRevision.current={id:profileId,revision:payload.revision};
       setMedia((current) => current.filter((item) => item.id !== mediaId)); setQuota(payload.quota); setNotice("El archivo se eliminó del almacenamiento privado.");
     } catch (cause) { setNotice(cause instanceof Error ? cause.message : "No se pudo eliminar el archivo."); } finally { setIsBusy(false); }
   }
@@ -163,7 +167,7 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
   const watermarkCount = selectedPhotos.filter(candidate => candidate.watermark).length + (stagedPhoto && photoWatermark ? 1 : 0);
   const blurCount = selectedPhotos.filter(candidate => candidate.blurFaces).length + (stagedPhoto && photoBlurFaces ? 1 : 0);
 
-  return <section className="profile-media-manager" id="fotos-y-videos" tabIndex={-1}>
+  return <section ref={managerRoot} className="profile-media-manager" id="fotos-y-videos" tabIndex={-1}>
     <div className="profile-media-manager-heading"><div><p className="eyebrow">MEDIOS DEL ANUNCIO</p><h2>Fotos y videos</h2><span>{adminMode ? "Puedes subir foto principal y galería para esta cuenta. Los archivos que cargues como administrador se aprueban inmediatamente; los que suba la persona usuaria mantienen su revisión habitual." : "Separa tu foto principal de la galería pública. Todo material llega primero a revisión. El contenido exclusivo se administra desde la sección Contenido de tu cuenta."}</span></div><strong>{images.length}/10 fotos<br />{videos.length}/3 videos</strong></div>
     <p className={`media-quota media-quota-${quota.level}`}><b>Uso de R2: {formatBytes(quota.bytes)}</b>{quota.message}</p>{notice && <p className="media-manager-notice" role="status">{notice}</p>}
     <p className="media-manager-independent-notice">Las fotos y videos se guardan por separado. Subir, reemplazar o eliminar un archivo no retira un anuncio publicado; solo el material nuevo espera aprobación. No necesitas guardar nuevamente los datos del anuncio.</p>

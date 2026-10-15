@@ -8,6 +8,7 @@ import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { recordAdminAudit } from "@/lib/admin-audit";
 import { adminHasCapability } from "@/lib/admin-permissions";
 import { createTelegramOutboxValues, dispatchTelegramJob } from "@/lib/telegram";
+import { CollaborationConflict, expectedVersion, guardedBatch, conflictResponse } from "@/lib/collaboration";
 
 function redirectWithNotice(request: Request, notice: string, returnTo = "/admin/cuentas") {
   const url = new URL(returnTo, request.url);
@@ -48,18 +49,21 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const isActive = !adminDisabledAt && !target.selfDisabledAt;
   const [telegramLink] = nextState === "disabled" ? await db.select({ id: telegramAccountLinks.id, telegramUserId: telegramAccountLinks.telegramUserId }).from(telegramAccountLinks).where(eq(telegramAccountLinks.userId, userId)).limit(1) : [];
   const telegramJob = telegramLink ? createTelegramOutboxValues({ kind: "revoke_member", userId, entityId: telegramLink.id, payload: { userId, telegramUserId: telegramLink.telegramUserId, reason: "Cuenta deshabilitada por la administración." } }) : null;
+  let version;try{version=expectedVersion(formData,`account:${userId}`);}catch{return conflictResponse();}
+  try {
   if (telegramLink && telegramJob) {
-    await db.batch([
+    await guardedBatch(version,[
       db.update(users).set({ adminDisabledAt, isActive }).where(and(eq(users.id, userId), eq(users.role, target.role))),
+      ...(nextState==="disabled"?[db.delete(authSessions).where(eq(authSessions.userId,userId))]:[]),
       db.update(telegramAccountLinks).set({ status: "revoked", revokedAt: now, revokeReason: "Cuenta deshabilitada por la administración.", updatedAt: now }).where(eq(telegramAccountLinks.id, telegramLink.id)),
       db.insert(telegramOutboxJobs).values(telegramJob),
-    ]);
+    ],admin.id);
     await dispatchTelegramJob(telegramJob.id);
   } else {
-    await db.update(users).set({ adminDisabledAt, isActive }).where(and(eq(users.id, userId), eq(users.role, target.role)));
+    await guardedBatch(version,[db.update(users).set({ adminDisabledAt, isActive }).where(and(eq(users.id, userId), eq(users.role, target.role))),...(nextState==="disabled"?[db.delete(authSessions).where(eq(authSessions.userId,userId))]:[])],admin.id);
   }
+  }catch(error){if(error instanceof CollaborationConflict)return conflictResponse();throw error;}
   if (nextState === "disabled") {
-    await db.delete(authSessions).where(eq(authSessions.userId, userId));
     if (!target.adminDisabledAt) {
       const settings = await getSiteSettings();
       const contactUrl = new URL("/contacto", siteBaseUrl(settings.site_url)).toString();

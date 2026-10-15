@@ -4,9 +4,11 @@ import { accountAppleIdentities } from "@/db/schema";
 import { decryptAppleRefreshToken, revokeAppleRefreshToken } from "@/lib/apple-oauth";
 import { getSiteSettings } from "@/lib/site-settings";
 
-export async function revokeAppleGrantForUser(userId: string) {
-  const [identity] = await (await getDb()).select({ refreshTokenEncrypted: accountAppleIdentities.refreshTokenEncrypted })
-    .from(accountAppleIdentities).where(eq(accountAppleIdentities.userId, userId)).limit(1);
+export async function revokeAppleGrantForUser(userId: string, capturedEncryptedToken?:string|null) {
+  // A deletion may capture the encrypted grant before its atomic commit and
+  // revoke it afterwards. A rejected/stale deletion must not revoke access.
+  const [identity] = capturedEncryptedToken===undefined ? await (await getDb()).select({ refreshTokenEncrypted: accountAppleIdentities.refreshTokenEncrypted })
+    .from(accountAppleIdentities).where(eq(accountAppleIdentities.userId, userId)).limit(1) : [{refreshTokenEncrypted:capturedEncryptedToken}];
   if (!identity?.refreshTokenEncrypted) return false;
   const [settings, workers] = await Promise.all([getSiteSettings(), import("cloudflare:workers")]);
   const privateKey = workers.env.APPLE_PRIVATE_KEY?.trim() ?? "";

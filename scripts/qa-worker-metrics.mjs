@@ -23,6 +23,10 @@ child.stdout.on('data', chunk => {
     const request = record.event?.request;
     const path = request?.url ? new URL(request.url).pathname : '';
     if (path.startsWith('/perfil/') || record.outcome?.includes('exceeded')) console.log(JSON.stringify({ path, outcome: record.outcome, status: record.event?.response?.status, cpuMs: record.cpuTimeMs, wallMs: record.wallTimeMs, exceptionNames: record.exceptions?.map(item => item.name) }));
+    if (process.argv.includes('--admin-render') && (path.startsWith('/admin/anuncios-publicaciones/') || path.startsWith('/admin/cuentas/') || record.logs?.some(item=>item.level==='error') || record.exceptions?.length)) {
+      const clean=value=>String(value).replace(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi,'[correo]').slice(0,3500);
+      console.log(JSON.stringify({path,status:record.event?.response?.status,outcome:record.outcome,errors:record.logs?.filter(item=>item.level==='error').map(item=>item.message?.map(clean)),exceptions:record.exceptions?.map(item=>({name:item.name,message:clean(item.message)}))}));
+    }
   }
 });
 // CLI diagnostic text can contain account identifiers. Surface status only.

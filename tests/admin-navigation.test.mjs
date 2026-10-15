@@ -10,7 +10,8 @@ test('admin navigation keeps permissions on the server and does not replace norm
  assert.match(shell,/href="\/admin\/correos">Historial correos<\/AdminSidebarLink>/);
  assert.match(shell,/aria-label="Ir al resumen de administración">ADMINISTRADOR<\/Link>/);
  assert.match(shell,/href="\/" aria-label="Ver sitio público Chile3X"/);
- for(const counter of ['pendingCount','pendingMedia','pendingReports','pendingBugs','pendingTelegram'])assert.ok(shell.includes(`${counter} > 0 && <b>{${counter}}</b>`));
+ for(const counter of ['pendingCount','pendingMedia','pendingReports','pendingBugs','pendingTelegram'])assert.ok(shell.includes(`initial={${counter}}`));
+ assert.match(source('app/admin/AdminPendingCount.tsx'),/chile3x:moderation-counts/);
 });
 test('mobile drawer has keyboard focus containment, Escape/overlay closure and background isolation',()=>{
  const text=source('app/admin/AdminWorkspace.tsx');assert.match(text,/aria-modal/);assert.match(text,/inert=\{mobileOpen/);assert.match(text,/event.key==='Escape'/);assert.match(text,/event.key!=='Tab'/);assert.match(text,/previousOverflow/);assert.match(text,/returnFocusTarget\?\.focus/);assert.match(text,/closest\('a\[href\]'\)/);

@@ -1,11 +1,12 @@
 import { and, eq, isNull } from "drizzle-orm";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getDb } from "@/db";
 import { profileDetails, profiles, users } from "@/db/schema";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { adminHasCapability } from "@/lib/admin-permissions";
 import { recordAdminAudit } from "@/lib/admin-audit";
 import { ProfileValidationError, readProfileSubmission, updateProfile } from "@/lib/profile-submission";
+import { CollaborationConflict, expectedVersion, conflictResponse, mutationRedirect } from "@/lib/collaboration";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ profileId: string }> }) {
   try { assertSameOrigin(request); } catch { return new Response("Solicitud no válida.", { status: 403 }); }
@@ -21,8 +22,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!before) return new Response("Anuncio no encontrado.", { status: 404 });
   if (!before.ownerActive) return new Response("Reactiva la cuenta propietaria antes de editar el anuncio.", { status: 403 });
   try {
-    const submission = readProfileSubmission(await request.formData());
-    const result = await updateProfile(profileId, before.profile.ownerId, submission, { adminEditor: true });
+    const form = await request.formData();
+    const version = expectedVersion(form,`profile:${profileId}`);
+    const submission = readProfileSubmission(form);
+    const result = await updateProfile(profileId, before.profile.ownerId, submission, { adminEditor: true, version, actorId:admin.id });
     if (!result.updated) return new Response("El anuncio ya no está disponible para editar.", { status: 409 });
     const [savedState] = await db.select({ status: profiles.status, verificationStatus: profiles.verificationStatus }).from(profiles).where(eq(profiles.id, profileId)).limit(1);
     await recordAdminAudit(admin, {
@@ -34,9 +37,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     });
     destination.searchParams.set("notice", "saved");
   } catch (error) {
+    if (error instanceof CollaborationConflict) return conflictResponse();
     destination.searchParams.set("error", error instanceof ProfileValidationError ? "validation" : "server");
     destination.searchParams.set("message", error instanceof ProfileValidationError ? error.message : "No se pudo confirmar el guardado. Revisa el anuncio antes de repetirlo.");
     if (!(error instanceof ProfileValidationError)) console.error("Administrative listing edit failed", { profileId, error });
   }
-  return NextResponse.redirect(destination, 303);
+  return mutationRedirect(request,destination);
 }

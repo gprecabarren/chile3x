@@ -6,6 +6,7 @@ import { assertSameOrigin, getCurrentUser, hasTesterAutoApproval } from "@/lib/a
 import { ProfileMediaUploadError, uploadProfileMedia } from "@/lib/profile-media-upload";
 import { MediaUploadRequestError, readMediaUploadForm } from "@/lib/media-upload-form";
 import { MAX_IMAGE_BYTES, MAX_VIDEO_BYTES } from "@/lib/media";
+import { CollaborationConflict, conflictResponse, expectedVersion } from "@/lib/collaboration";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const result = await uploadProfileMedia({
         profileId, file, uploadKind: formData.get("upload_kind") === "profile_photo" ? "profile_photo" : "gallery",
         uploadedBy: user.id, moderationStatus: hasTesterAutoApproval(user) ? "approved" : "pending",
+        version:formData.has('review_revision')?expectedVersion(formData,`profile:${profileId}`):undefined,
       });
       return NextResponse.json(result, { status: 201 });
     } catch (cause) {
@@ -33,6 +35,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       throw cause;
     }
   } catch (cause) {
+    if(cause instanceof CollaborationConflict)return conflictResponse();
     if (cause instanceof MediaUploadRequestError) return error(cause.message, cause.status);
     const reference = `CARGA-${crypto.randomUUID().slice(0,8)}`;
     console.error("Profile media upload failed", { reference, cause });

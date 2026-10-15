@@ -1,5 +1,6 @@
 import { and, count, desc, eq, isNull, or, sql } from "drizzle-orm";
 import Link from "@/app/NavigationLink";
+import { ReviewScope } from "@/app/admin/ReviewScope";
 import { DateField } from "@/app/DateField";
 import { redirect } from "next/navigation";
 import { AccountIdentityFields } from "@/app/account-identity-fields";
@@ -156,6 +157,7 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const page = Math.min(requestedPage, totalPages);
   const rows = await db.select({
+    revision: users.revision,
     id: users.id,
     displayName: users.displayName,
     email: users.email,
@@ -237,13 +239,13 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
         const pendingProfileCount = Number(user.pendingProfileCount ?? 0);
         const whatsappHref = adminWhatsappHref(user.phone, user.displayName ?? "");
         const callHref = adminCallHref(user.phone);
-        return <article className="admin-account-card" key={user.id}>
+        return <ReviewScope key={user.id} resource={`account:${user.id}`} revision={user.revision}><article className="admin-account-card">
           <header><div><p className="eyebrow">{roleLabel(user.role)}</p><h3>{user.displayName ?? "Sin nombre"}</h3><a href={`mailto:${user.email}`}>{user.email}</a></div><div className="admin-account-state-badges"><span className={`account-status ${user.isActive ? "account-status-approved" : "account-status-rejected"}`}>{user.isActive ? "Activa" : "Deshabilitada"}</span>{user.selfDisabledAt && <span className="account-status account-status-paused">Por la persona</span>}{user.adminDisabledAt && <span className="account-status account-status-rejected">Por administración</span>}</div></header>
           <dl><div><dt>Ciudad</dt><dd>{user.city || "Sin ciudad"}</dd></div><div><dt>Creación</dt><dd>{formattedDate}</dd></div><div><dt>Origen</dt><dd>{creationSourceLabel(user.creationSource, user.createdByAdminLogin)}</dd></div><div><dt>Anuncios asociados</dt><dd>{user.profileCount > 0 ? <Link prefetch={false} className="admin-profile-count-link" href={accountProfilesHref(user.email, detailsHref)}>Ver {user.profileCount} anuncio{user.profileCount === 1 ? "" : "s"}</Link> : "Sin anuncios"}</dd></div></dl>
           {pendingProfileCount > 0 && <Link prefetch={false} className="admin-account-pending-link" href={accountProfilesHref(user.email, detailsHref, "pending")}>{pendingProfileCount} anuncio{pendingProfileCount === 1 ? "" : "s"} pendiente{pendingProfileCount === 1 ? "" : "s"} de revisión</Link>}
           <p className={emailVerificationState(user) === "blocked" ? "form-alert" : "admin-profile-rule-note"}>{emailVerificationLabel(user)} · Registro: {user.role === "admin" ? "GitHub" : registrationMethodLabel(user.registrationAuthMethod)}</p>
           <div className="admin-account-card-actions"><Link prefetch={false} className="button button-primary" href={detailsHref}>Ver detalles</Link>{user.role !== "admin" && user.isActive && <Link prefetch={false} className="button button-outline" href={`${detailsBaseHref}/crear-perfil?return_to=${encodeURIComponent(currentAccountsHref)}`}>Crear anuncio</Link>}{whatsappHref && <a className="button contact-whatsapp" href={whatsappHref} target="_blank" rel="noreferrer">WhatsApp</a>}{callHref && <a className="button contact-call" href={callHref}>Llamar</a>}{user.role !== "admin" && <form action={`/api/admin/users/${user.id}/estado`} method="post"><input name="next_state" type="hidden" value={user.adminDisabledAt ? "active" : "disabled"} /><input name="return_to" type="hidden" value={currentAccountsHref} /><button className="button button-outline" type="submit">{user.adminDisabledAt ? "Quitar bloqueo administrativo" : "Deshabilitar como administrador"}</button></form>}</div>
-        </article>;
+        </article></ReviewScope>;
       })}{total === 0 && <section className="admin-no-results">No hay cuentas que coincidan con esta combinación de filtros. Prueba quitando uno o más criterios.</section>}</section>
       <AdminPagination pathname="/admin/cuentas" params={currentQuery} currentPage={page} totalItems={total} pageSize={PAGE_SIZE} label="Cuentas" />
     </section>

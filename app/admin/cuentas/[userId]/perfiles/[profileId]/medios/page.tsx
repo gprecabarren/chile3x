@@ -1,5 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import Link from "@/app/NavigationLink";
+import { ReviewScope } from "@/app/admin/ReviewScope";
 import { notFound, redirect } from "next/navigation";
 import { AdminPageHeading, AdminShell } from "@/app/admin/_components";
 import { ProfileMediaManager } from "@/app/mi-cuenta/ProfileMediaManager";
@@ -24,6 +25,7 @@ export default async function AdminProfileMediaPage({ params, searchParams }: {
   if (!adminHasCapability(admin, "accounts.manage") || !adminHasCapability(admin, "media.moderate")) redirect("/admin/acceso-denegado?reason=permission");
   const db = await getDb();
   const [profile] = await db.select({
+    revision: profiles.revision,
     id: profiles.id, type: profiles.type, displayName: profiles.displayName, status: profiles.status, ownerId: profiles.ownerId,
     ownerEmail: users.email, ownerActive: users.isActive,
   }).from(profiles).innerJoin(users, eq(profiles.ownerId, users.id))
@@ -32,7 +34,7 @@ export default async function AdminProfileMediaPage({ params, searchParams }: {
   const [media, usage, settings, query, documents] = await Promise.all([getProfileMedia(profileId), getMediaUsage(), getSiteSettings(), searchParams, getVerificationDocuments(profileId)]);
   const accountHref = `/admin/cuentas/${encodeURIComponent(userId)}`;
   const moderationHref = `/admin/anuncios-publicaciones?q=${encodeURIComponent(profile.ownerEmail)}&return_to=${encodeURIComponent(accountHref)}`;
-  return <AdminShell user={admin}><div className="admin-content">
+  return <AdminShell user={admin}><div className="admin-content"><ReviewScope resource={`profile:${profileId}`} revision={profile.revision}>
     <AdminPageHeading eyebrow="CREACIÓN ASISTIDA · MEDIOS" title={`Fotos y videos de ${profile.displayName}`} description={`Cuenta propietaria: ${profile.ownerEmail}. Las cargas de administración se aprueban al instante, pero el anuncio solo será público al aprobarlo en moderación.`} backHref={accountHref} />
     {query.notice === "profile_created" && <p className="admin-success" role="status">El anuncio se creó para esta cuenta. Ahora agrega la foto principal y los archivos de galería.</p>}
     {query.notice === "profile_submitted" && <p className="admin-success" role="status">Anuncio guardado y enviado a revisión. Debe aprobarse desde moderación antes de aparecer en el directorio. Mientras tanto puedes adjuntar sus fotos, videos y documentos privados opcionales.</p>}
@@ -41,5 +43,5 @@ export default async function AdminProfileMediaPage({ params, searchParams }: {
     {profile.ownerActive && profile.type === "escort" && <ProfileVerificationDocuments profileId={profileId} initialDocuments={documents} />}
     <div className="profile-form-actions"><Link prefetch={false} className="button button-primary" href={moderationHref}>Abrir moderación y publicar</Link><Link prefetch={false} className="button button-outline" href={accountHref}>Volver a la cuenta</Link></div>
     <p className="admin-create-profile-note">Estado actual del anuncio: {profile.status === "approved" ? "Publicado" : profile.status === "pending" ? "En revisión" : profile.status === "draft" ? "Borrador" : profile.status}. Las fotos y videos que suba después la persona propietaria seguirán el flujo normal de revisión.</p>
-  </div></AdminShell>;
+  </ReviewScope></div></AdminShell>;
 }

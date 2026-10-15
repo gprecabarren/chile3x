@@ -1,7 +1,8 @@
 import { and, eq, ne } from "drizzle-orm";
 import { getDb } from "@/db";
 import { createAdminNotification } from "@/lib/admin-notifications";
-import { profileMedia } from "@/db/schema";
+import { profileMedia, profiles } from "@/db/schema";
+import { CollaborationConflict, currentRevision, guardedBatch, type ReviewVersion } from "@/lib/collaboration";
 import { validatePreparedVideo } from "@/lib/video-validation";
 import {
   detectImageType, detectVideoType, extensionForImageType, extensionForVideoType,
@@ -20,8 +21,12 @@ export async function uploadProfileMedia(input: {
   uploadKind: "profile_photo" | "gallery";
   uploadedBy: string;
   moderationStatus: "pending" | "approved";
+  version?: ReviewVersion;
+  adminActorId?: string;
 }) {
   const { profileId, file, uploadKind, uploadedBy, moderationStatus } = input;
+  const revision=input.version?.revision??await currentRevision(`profile:${profileId}`);
+  if(revision===null)throw new ProfileMediaUploadError("El anuncio ya no está disponible.",409);
   if (file.size === 0) throw new ProfileMediaUploadError("El archivo llegó vacío. Descarga el original en tu dispositivo y vuelve a seleccionarlo.");
   if (file.size > Math.max(MAX_IMAGE_BYTES, MAX_VIDEO_BYTES)) {
     throw new ProfileMediaUploadError(`El archivo supera el máximo: fotos de hasta ${MAX_IMAGE_BYTES / 1_000_000} MB y videos de hasta ${MAX_VIDEO_BYTES / 1_000_000} MB.`);
@@ -66,25 +71,27 @@ export async function uploadProfileMedia(input: {
   }
   const db = await getDb();
   const sortOrder = activeMedia.reduce((latest, media) => Math.max(latest, media.sortOrder), -1) + 1;
+  let savedRevision=revision;
   try {
-    await db.insert(profileMedia).values({ id, profileId, mediaType, r2Key, byteSize: data.byteLength, contentType, moderationStatus, visibility: "public", isProfilePhoto: uploadKind === "profile_photo", sortOrder });
-    if (moderationStatus === "approved" && uploadKind === "profile_photo") {
-      await db.update(profileMedia).set({ isProfilePhoto: false }).where(and(
+    const covers=moderationStatus === "approved" && uploadKind === "profile_photo" ? [db.update(profileMedia).set({ isProfilePhoto: false }).where(and(
         eq(profileMedia.profileId, profileId), eq(profileMedia.isProfilePhoto, true), eq(profileMedia.moderationStatus, "approved"),
         // The newly uploaded photo must remain the selected cover.
         ne(profileMedia.id, id),
-      ));
-    }
+      ))]:[];
+    const results=await guardedBatch({key:`profile:${profileId}`,revision},[db.insert(profileMedia).values({id,profileId,mediaType,r2Key,byteSize:data.byteLength,contentType,moderationStatus,visibility:"public",isProfilePhoto:uploadKind==="profile_photo",sortOrder}),...covers,db.select({revision:profiles.revision}).from(profiles).where(eq(profiles.id,profileId))],input.adminActorId);
+    const rows=results.at(-1);if(Array.isArray(rows)&&rows[0]&&typeof rows[0].revision==='number')savedRevision=rows[0].revision;
   } catch (cause) {
     const reference = `CARGA-${crypto.randomUUID().slice(0,8)}`;
-    console.error("Media registration failed", { reference, profileId, cause });
+    if(!(cause instanceof CollaborationConflict))console.error("Media registration failed", { reference, profileId, cause });
     try { await db.delete(profileMedia).where(eq(profileMedia.id, id)); await env.MEDIA.delete(r2Key); }
     catch (cleanupCause) { console.error("Media cleanup failed", { reference, profileId, cleanupCause }); }
+    if(cause instanceof CollaborationConflict)throw cause;
     throw new ProfileMediaUploadError(`Falló el registro de la foto o video en la galería. No se confirmó la carga. Código de soporte: ${reference}.`, 500);
   }
   const totalBytes = usage.bytes + data.byteLength;
   if (moderationStatus === "pending") await createAdminNotification({ kind: "media_uploaded", actorUserId: uploadedBy, profileId, summary: `Se recibió ${mediaType === "video" ? "un video" : "una foto"} pendiente de revisión${uploadKind === "profile_photo" ? " como foto principal" : " en la galería"}.` });
   return {
+    revision:savedRevision,
     media: { id, url: `/media/${id}`, mediaType, contentType, moderationStatus, visibility: "public" as const, isProfilePhoto: uploadKind === "profile_photo", byteSize: data.byteLength },
     quota: { bytes: totalBytes, ...getMediaQuotaState(totalBytes) },
   };

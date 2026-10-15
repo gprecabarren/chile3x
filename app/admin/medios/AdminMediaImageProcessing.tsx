@@ -4,12 +4,13 @@ import { MAX_IMAGE_UPLOAD_BYTES } from "@/lib/image-upload-policy";
 import { uploadMediaRequest } from "@/lib/upload-response";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { prepareGalleryImage } from "@/app/mi-cuenta/watermark-image";
 import { FacePrivacyEditor } from "@/app/mi-cuenta/FacePrivacyEditor";
 import type { FacePrivacyRegion } from "@/lib/face-privacy";
 
 export function AdminMediaImageProcessing({ mediaId, profileName }: { mediaId: string; profileName: string }) {
+  const root=useRef<HTMLDetailsElement>(null);
   const [watermark, setWatermark] = useState(false);
   const [blur, setBlur] = useState(false);
   const [preview, setPreview] = useState<{ file: File; url: string; facesBlurred: number } | null>(null);
@@ -58,12 +59,13 @@ export function AdminMediaImageProcessing({ mediaId, profileName }: { mediaId: s
     setBusy(true); setMessage("Guardando imagen procesada…");
     try {
       const data = new FormData(); data.set("file", preview.file); data.set("watermark", watermark ? "yes" : "no"); data.set("blur", blur ? "yes" : "no");
+      const scope=root.current?.closest<HTMLElement>('[data-review-resource]');data.set('review_key',scope?.dataset.reviewResource??'');data.set('review_revision',scope?.dataset.reviewRevision??'');
       await uploadMediaRequest(`/api/admin/media/${encodeURIComponent(mediaId)}/procesar`, data);
       window.location.reload();
     } catch (error) { setMessage(error instanceof Error ? error.message : "No se pudo guardar la imagen."); setBusy(false); }
   }
 
-  return <details className="admin-media-processing">
+  return <details ref={root} className="admin-media-processing">
     <summary>Marca de agua y difuminado</summary>
     <p>Procesa solo esta foto de {profileName}. La imagen original se reemplazará únicamente cuando confirmes la vista previa.</p>
     <div className="admin-media-processing-options">

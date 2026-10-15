@@ -30,6 +30,7 @@ const messages: Record<string, string> = {
   shown: "El anuncio volvió a estar visible según su estado de moderación.",
   trashed: "El anuncio fue eliminado de tu panel y enviado a la papelera administrativa. Solo administración puede restaurarlo.",
   trash_confirmation: "Para eliminar un anuncio, escribe ELIMINAR en la confirmación.",
+  trash_conflict: "El anuncio cambió mientras se procesaba la solicitud. No lo eliminamos. Revisa su estado antes de volver a confirmar.",
   reactivated: "Tu cuenta fue restablecida correctamente.",
   closed: "La creación de anuncios está cerrada temporalmente.",
   invite_sent: "La invitación fue enviada. La escort debe aceptarla antes de que la asociación sea pública.",
@@ -74,7 +75,7 @@ export default async function AccountHome({ searchParams }: { searchParams: Prom
   ];
   const selected = filters.some(filter => filter.value === params.estado) ? params.estado! : "all";
   const shown = rows.filter(row => selected === "all" || (selected === "hidden" ? Boolean(row.ownerHiddenAt) : selected === "approved" ? row.status === "approved" && !row.ownerHiddenAt : row.status === selected));
-  const usernameError = params.notice?.startsWith("username_") && params.notice !== "username_saved";
+  const usernameError = params.notice==='trash_conflict'||(params.notice?.startsWith("username_") && params.notice !== "username_saved");
 
   return <AccountShell user={user} showActivityNotices={false}><div className="account-content account-dashboard-content">
     {params.created === "1" && <AnalyticsEvent event="sign_up" parameters={{ method: "email" }} dedupeKey="email" />}

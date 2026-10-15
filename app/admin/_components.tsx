@@ -9,6 +9,8 @@ import { ADMIN_ACCESS_LABELS, adminHasCapability } from "@/lib/admin-permissions
 import { canViewEmailHistory } from "@/lib/email-history-policy";
 import { AdminWorkspace } from "./AdminWorkspace";
 import { AdminSidebarLink } from "./AdminSidebarLink";
+import { adminDisplayLogin } from "@/lib/admin-presentation";
+import { AdminPendingCount } from "./AdminPendingCount";
 
 async function getPendingProfilesCount() {
   try {
@@ -88,15 +90,15 @@ function AdminNavigation({
   return (
     <nav aria-label="Administración">
       <AdminSidebarLink href="/admin">Resumen</AdminSidebarLink>
-      {adminHasCapability(user, "profiles.moderate") && <AdminSidebarLink className={pendingCount > 0 ? "admin-nav-alert" : undefined} href="/admin/anuncios-publicaciones">Anuncios{pendingCount > 0 && <b>{pendingCount}</b>}</AdminSidebarLink>}
-      {adminHasCapability(user, "media.moderate") && <AdminSidebarLink className={pendingMedia > 0 ? "admin-nav-alert" : undefined} href="/admin/medios">Medios{pendingMedia > 0 && <b>{pendingMedia}</b>}</AdminSidebarLink>}
+      {adminHasCapability(user, "profiles.moderate") && <AdminSidebarLink className={pendingCount > 0 ? "admin-nav-alert" : undefined} href="/admin/anuncios-publicaciones">Anuncios<AdminPendingCount key={pendingCount} kind="pendingProfiles" initial={pendingCount} /></AdminSidebarLink>}
+      {adminHasCapability(user, "media.moderate") && <AdminSidebarLink className={pendingMedia > 0 ? "admin-nav-alert" : undefined} href="/admin/medios">Medios<AdminPendingCount key={pendingMedia} kind="pendingMedia" initial={pendingMedia} /></AdminSidebarLink>}
       {adminHasCapability(user, "reviews.moderate") && <AdminSidebarLink href="/admin/resenas">Reseñas</AdminSidebarLink>}
-      {adminHasCapability(user, "reports.manage") && <AdminSidebarLink className={pendingReports > 0 ? "admin-nav-alert" : undefined} href="/admin/reportes">Reportes{pendingReports > 0 && <b>{pendingReports}</b>}</AdminSidebarLink>}
-      {adminHasCapability(user, "bugs.manage") && <AdminSidebarLink className={pendingBugs > 0 ? "admin-nav-alert" : undefined} href="/admin/bugs">Testers{pendingBugs > 0 && <b>{pendingBugs}</b>}</AdminSidebarLink>}
+      {adminHasCapability(user, "reports.manage") && <AdminSidebarLink className={pendingReports > 0 ? "admin-nav-alert" : undefined} href="/admin/reportes">Reportes<AdminPendingCount key={pendingReports} kind="pendingReports" initial={pendingReports} /></AdminSidebarLink>}
+      {adminHasCapability(user, "bugs.manage") && <AdminSidebarLink className={pendingBugs > 0 ? "admin-nav-alert" : undefined} href="/admin/bugs">Testers<AdminPendingCount key={pendingBugs} kind="pendingBugs" initial={pendingBugs} /></AdminSidebarLink>}
       {adminHasCapability(user, "accounts.manage") && <AdminSidebarLink href="/admin/cuentas">Cuentas</AdminSidebarLink>}
       {adminHasCapability(user, "news.manage") && <AdminSidebarLink href="/admin/noticias">Noticias</AdminSidebarLink>}
       {adminHasCapability(user, "settings.manage") && <AdminSidebarLink href="/admin/patrocinadores">Sitios asociados</AdminSidebarLink>}
-      {adminHasCapability(user, "telegram.view") && <AdminSidebarLink className={pendingTelegram > 0 ? "admin-nav-alert" : undefined} href="/admin/telegram">Telegram{pendingTelegram > 0 && <b>{pendingTelegram}</b>}</AdminSidebarLink>}
+      {adminHasCapability(user, "telegram.view") && <AdminSidebarLink className={pendingTelegram > 0 ? "admin-nav-alert" : undefined} href="/admin/telegram">Telegram<AdminPendingCount key={pendingTelegram} kind="pendingTelegram" initial={pendingTelegram} /></AdminSidebarLink>}
       {adminHasCapability(user, "audit.view") && <AdminSidebarLink href="/admin/actividad">Actividad</AdminSidebarLink>}
       {canViewEmailHistory(user) && <AdminSidebarLink href="/admin/correos">Historial correos</AdminSidebarLink>}
       {adminHasCapability(user, "settings.manage") && <AdminSidebarLink href="/admin/configuracion">Configuración</AdminSidebarLink>}
@@ -108,6 +110,7 @@ function AdminNavigation({
 }
 
 export async function AdminShell({ user, children }: { user: AdminUser; children: ReactNode }) {
+  const displayLogin=adminDisplayLogin(user);
   const [pendingCount, pendingMedia, pendingReports, pendingBugs, pendingTelegram] = await Promise.all([
     adminHasCapability(user, "profiles.moderate") ? getPendingProfilesCount() : 0,
     adminHasCapability(user, "media.moderate") ? getPendingMediaCount() : 0,
@@ -116,7 +119,7 @@ export async function AdminShell({ user, children }: { user: AdminUser; children
     adminHasCapability(user, "telegram.view") ? getOpenTelegramCasesCount() : 0,
   ]);
   const brand=<div className="admin-sidebar-brand"><Link href="/" aria-label="Ver sitio público Chile3X"><OfficialChile3xLogo priority /></Link><Link className="admin-home-link" href="/admin" aria-label="Ir al resumen de administración">ADMINISTRADOR</Link></div>;
-  const identity=<><div className="admin-sidebar-identity"><span className="admin-sidebar-avatar" aria-hidden="true">{user.githubLogin.slice(0,1).toUpperCase()}</span><div><strong title={`@${user.githubLogin}`}>@{user.githubLogin}</strong><small>{ADMIN_ACCESS_LABELS[user.accessLevel]} · Sesión administrativa</small></div></div><form action="/api/auth/logout" method="post"><button type="submit" title="Cerrar la sesión administrativa">Cerrar sesión administrador</button></form></>;
+  const identity=<><div className="admin-sidebar-identity"><span className="admin-sidebar-avatar" aria-hidden="true">{displayLogin.slice(0,1).toUpperCase()}</span><div><strong title={`@${displayLogin}`}>@{displayLogin}</strong><small>{ADMIN_ACCESS_LABELS[user.accessLevel]} · Sesión administrativa</small></div></div><form action="/api/auth/logout" method="post"><button type="submit" title="Cerrar la sesión administrativa">Cerrar sesión administrador</button></form></>;
   return <AdminWorkspace brand={brand} identity={identity} navigation={<AdminNavigation user={user} pendingCount={pendingCount} pendingMedia={pendingMedia} pendingReports={pendingReports} pendingBugs={pendingBugs} pendingTelegram={pendingTelegram} />}>{children}</AdminWorkspace>;
 }
 

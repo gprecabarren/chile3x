@@ -40,7 +40,10 @@ export function BrowserSessionBoundary({ initial, children }: { initial: Session
           setState({ phase: "changed", current: actual });
           // A full public reload discards cached role-specific controls.
           // Never auto-reload an old admin URL into a fresh GitHub OAuth flow.
-          if (!protectedView) window.location.reload();
+          // A late successful OAuth response can reach the denial page before
+          // its cookie. Re-render that public error surface with fresh auth;
+          // the page still checks the grant/reason before resuming the panel.
+          if (!protectedView || (pathname === "/admin/acceso-denegado" && actual.mode === "admin")) window.location.reload();
         } else setState(previous => previous.phase === "changed" ? { ...previous, current: actual } : { phase: "ready", current: actual });
       } catch {
         if (!stopped && version === requestVersion) setState(previous => previous.phase === "changed" ? previous : { ...previous, phase: mode ? "offline" : "ready" });

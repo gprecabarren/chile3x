@@ -158,6 +158,13 @@ test('anonymous public views use a full reload on login, never cached private na
  await harness({mode:null,identity:null},async h=>{h.setResponse({status:200,view:admin});await h.fire('focus');assert.equal(h.w.location.reloads,1);},'/escorts');
 });
 
+test('a late successful admin login refreshes a stale denial page instead of interrupting OAuth recovery',async()=>{
+ await harness(account,async h=>{
+  h.setResponse({status:200,view:admin});await h.fire('focus');
+  assert.equal(h.w.location.reloads,1);assert.equal(h.nodes().some(n=>n.type==='private-child'),false);
+ },'/admin/acceso-denegado');
+});
+
 let resumeSource=ts.transpileModule(await readFile(file('app/admin/acceso-denegado/ResumeAdminSession.tsx'),'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext,jsx:ts.JsxEmit.ReactJSX}}).outputText;
 resumeSource=resumeSource.replace(/from "([^"\n]+)"/g,(_whole,name)=>`from ${JSON.stringify(name==='@/lib/session-view-policy'?file('lib/session-view-policy.ts').href:reactStub)}`);
 const {ResumeAdminSession}=await import(moduleUrl(resumeSource));

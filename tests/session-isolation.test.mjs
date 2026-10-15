@@ -6,7 +6,8 @@ import { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';
 import { drizzle } from 'drizzle-orm/d1';
 import * as schema from '../db/schema.ts';
-import { browserSessionState, parseSessionToken, sessionMatchesMode } from '../lib/session-policy.ts';
+import { BROWSER_SESSION_COOKIE, browserSessionKey, needsBrowserSessionKey, browserSessionState, parseSessionToken, sessionMatchesMode } from '../lib/session-policy.ts';
+import { ensureBrowserSession } from '../public/assets/browser-session-bootstrap-v1.js';
 
 const url = path => new URL('../'+path, import.meta.url).href;
 const stub = 'data:text/javascript,'+encodeURIComponent(`
@@ -26,26 +27,36 @@ const auth=await import(authUrl);
 let completionSource=await readFile(new URL('../lib/apple-session-completion.ts',import.meta.url),'utf8');
 completionSource=completionSource.replace(/from "([^"\n]+)"/g,(_match,path)=>'from '+JSON.stringify(path==='drizzle-orm'?import.meta.resolve('drizzle-orm'):path==='@/db/schema'?url('db/schema.ts'):path==='@/lib/auth'?authUrl:path==='@/lib/session-policy'?url('lib/session-policy.ts'):stub));
 const completion=await import('data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(completionSource)).toString('base64'));
+let isolationSource=await readFile(new URL('../worker/session-isolation.ts',import.meta.url),'utf8');
+isolationSource=isolationSource.replace(/from "([^"\n]+)"/g,(_match,path)=>'from '+JSON.stringify(path==='../lib/auth'?authUrl:url('lib/session-policy.ts')));
+const isolation=await import('data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(isolationSource)).toString('base64'));
+let setupSource=await readFile(new URL('../app/api/auth/session/browser/route.ts',import.meta.url),'utf8');
+setupSource=setupSource.replace(/from "([^"\n]+)"/g,(_match,path)=>'from '+JSON.stringify(path==='next/server'?import.meta.resolve('next/server.js'):path==='@/lib/auth'?authUrl:url('lib/session-policy.ts')));
+const setup=await import('data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(setupSource)).toString('base64'));
 const hash=secret=>createHash('sha256').update(secret).digest('hex');
+const browserCookie=`${BROWSER_SESSION_COOKIE}=${'A'.repeat(43)}`;
+const browserSessionMigration=await readFile(new URL('../drizzle/0055_atomic_browser_sessions.sql',import.meta.url),'utf8');
 
 function fixture(cookie='') {
  const sqlite = new DatabaseSync(':memory:');
  sqlite.exec(`CREATE TABLE users(id TEXT PRIMARY KEY,email TEXT,username TEXT,display_name TEXT,role TEXT,is_active INT,created_at TEXT,email_verified_at TEXT,email_verification_deadline TEXT,email_verification_exempt_at TEXT);
- CREATE TABLE auth_sessions(id TEXT PRIMARY KEY,user_id TEXT,token_hash TEXT,auth_method TEXT,ip_address TEXT,user_agent TEXT,country_code TEXT,region TEXT,city TEXT,timezone TEXT,last_seen_at TEXT,expires_at TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+ CREATE TABLE auth_sessions(id TEXT PRIMARY KEY,user_id TEXT,token_hash TEXT UNIQUE,auth_method TEXT,ip_address TEXT,user_agent TEXT,country_code TEXT,region TEXT,city TEXT,timezone TEXT,last_seen_at TEXT,expires_at TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP);
  CREATE TABLE admin_github_access(id TEXT,user_id TEXT,access_level TEXT,github_login TEXT,is_protected_owner INT,is_active INT,protected_email TEXT);
  CREATE TABLE admin_github_identities(id TEXT,user_id TEXT,github_email TEXT);
  CREATE TABLE account_google_identities(id TEXT,user_id TEXT,google_email TEXT);
  CREATE TABLE account_apple_identities(id TEXT,user_id TEXT,apple_email TEXT);
  CREATE TABLE auth_session_completions(id TEXT PRIMARY KEY,user_id TEXT,token_hash TEXT,return_to TEXT,previous_sessions TEXT,expires_at TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP);`);
+ sqlite.exec(browserSessionMigration);
  const now=new Date().toISOString(), expires=new Date(Date.now()+3600000).toISOString();
  for(const [id,role,method] of [['user','advertiser','password'],['admin','admin','github']]) {
   sqlite.prepare('INSERT INTO users VALUES(?,?,?,?,?,1,?,?,NULL,NULL)').run(id,id+'@example.invalid',id,'QA '+id,role,now,now);
   sqlite.prepare('INSERT INTO auth_sessions(id,user_id,token_hash,auth_method,last_seen_at,expires_at) VALUES(?,?,?,?,?,?)').run(id,id,hash('secret-'+id),method,now,expires);
  }
  sqlite.prepare('INSERT INTO admin_github_access(id,user_id,access_level,github_login,is_protected_owner,is_active) VALUES(?,?,?,?,1,1)').run('grant','admin','owner','qa-admin');
- const binding={prepare(sql){return {bind(...args){const statement=sqlite.prepare(sql);return {async raw(){statement.setReturnArrays(true);return statement.all(...args)},async run(){return {success:true,meta:statement.run(...args)}},async all(){return {results:statement.all(...args)}}};}}}};
+ const prepare=(sql,args=[])=>({bind:(...values)=>prepare(sql,values),execute(){return {success:true,results:sqlite.prepare(sql).all(...args),meta:{}}},async raw(){const statement=sqlite.prepare(sql);statement.setReturnArrays(true);return statement.all(...args)},async run(){return {success:true,meta:sqlite.prepare(sql).run(...args)}},async all(){return {results:sqlite.prepare(sql).all(...args)}}});
+ const binding={prepare,async batch(statements){sqlite.exec('BEGIN');try{const results=statements.map(statement=>statement.execute());sqlite.exec('COMMIT');return results;}catch(error){sqlite.exec('ROLLBACK');throw error;}}};
  globalThis.__sessionIsolation={headers:new Headers({cookie}),db:drizzle(binding,{schema})};
- return {sqlite,setCookie(value){globalThis.__sessionIsolation.headers=new Headers({cookie:value})},close(){sqlite.close();delete globalThis.__sessionIsolation;}};
+ return {sqlite,binding,setCookie(value){globalThis.__sessionIsolation.headers=new Headers({cookie:value})},close(){sqlite.close();delete globalThis.__sessionIsolation;}};
 }
 
 test('strict token and cookie policy reject ambiguity without reinterpreting credentials',()=>{
@@ -92,10 +103,10 @@ test('delayed Apple completion revokes the newer same-browser login and consumes
  const f=fixture();try {
   const proofs=await auth.captureBrowserSessionProofs(new Request('https://chile3x.cl/start',{headers:{cookie:'chile3x_admin_session=admin.secret-admin'}}));
   const ticket=await completion.createAppleSessionCompletion('user','/mi-cuenta',proofs);
-  const later=await auth.createAdminSession('admin',new Request('https://chile3x.cl/github',{headers:{cookie:'chile3x_admin_session=admin.secret-admin'}}));
+  const later=await auth.createAdminSession('admin',new Request('https://chile3x.cl/github',{headers:{cookie:browserCookie+'; chile3x_admin_session=admin.secret-admin'}}));
   const record=await completion.consumeAppleSessionCompletion(ticket);assert.ok(record);
   assert.equal(await completion.consumeAppleSessionCompletion(ticket),null);
-  const token=await auth.createUserSession(record.userId,new Request('https://chile3x.cl/api/auth/apple/finish',{headers:{cookie:`chile3x_admin_session=${later}`}}),'apple');
+  const token=await auth.createUserSession(record.userId,new Request('https://chile3x.cl/api/auth/apple/finish',{headers:{cookie:`${browserCookie}; chile3x_admin_session=${later}`}}),'apple');
   await auth.revokeAuthAttemptSessions(record.previousSessions);
   f.setCookie(`chile3x_admin_session=${later}`);assert.equal(await auth.getCurrentAdmin(),null);
   f.setCookie(`chile3x_user_session=${token}`);assert.equal((await auth.getCurrentUser()).id,'user');
@@ -118,8 +129,8 @@ test('an old conflicting administrative grant can still be revoked without widen
 test('both session switch directions revoke the presented identity but preserve another device',async()=>{
  for(const mode of ['account','admin']) {
   const opposite=mode==='account'?'admin':'user'; const target=mode==='account'?'user':'admin';const f=fixture();try {
-   f.sqlite.prepare('INSERT INTO auth_sessions(id,user_id,token_hash,auth_method,last_seen_at,expires_at) SELECT ?,user_id,token_hash,auth_method,last_seen_at,expires_at FROM auth_sessions WHERE id=?').run('other-device',opposite);
-   const request=new Request('https://chile3x.cl/auth',{headers:{cookie:`chile3x_${mode==='account'?'admin':'user'}_session=${opposite}.secret-${opposite}`}});
+   f.sqlite.prepare('INSERT INTO auth_sessions(id,user_id,token_hash,auth_method,last_seen_at,expires_at) SELECT ?,user_id,?,auth_method,last_seen_at,expires_at FROM auth_sessions WHERE id=?').run('other-device',hash('another-device-secret'),opposite);
+   const request=new Request('https://chile3x.cl/auth',{headers:{cookie:`${browserCookie}; chile3x_${mode==='account'?'admin':'user'}_session=${opposite}.secret-${opposite}`}});
    const token=await (mode==='account'?auth.createUserSession(target,request):auth.createAdminSession(target,request));
    assert.equal(f.sqlite.prepare('SELECT id FROM auth_sessions WHERE id=?').get(opposite),undefined);
    assert.ok(f.sqlite.prepare('SELECT id FROM auth_sessions WHERE id=?').get('other-device'));
@@ -129,6 +140,109 @@ test('both session switch directions revoke the presented identity but preserve 
    assert.equal(cookies[0].value,token);assert.equal(cookies[1].maxAge,0);assert.notEqual(cookies[0].name,cookies[1].name);
   }finally{f.close();}
  }
+});
+
+test('overlapping admin and account logins from one cookie snapshot leave only one valid credential',async()=>{
+ const f=fixture();try {
+  const cookie=`__Host-chile3x_browser=${'A'.repeat(43)}; chile3x_admin_session=admin.secret-admin`;
+  const [accountToken,adminToken]=await Promise.all([
+   auth.createUserSession('user',new Request('https://chile3x.cl/auth',{headers:{cookie}})),
+   auth.createAdminSession('admin',new Request('https://chile3x.cl/auth',{headers:{cookie}})),
+  ]);
+  f.setCookie(`chile3x_user_session=${accountToken}`);const account=await auth.getCurrentUser();
+  f.setCookie(`chile3x_admin_session=${adminToken}`);const admin=await auth.getCurrentAdmin();
+  assert.equal(Number(Boolean(account))+Number(Boolean(admin)),1);
+  assert.ok(f.sqlite.prepare("SELECT id FROM auth_sessions WHERE id='user'").get(),'another device must remain signed in');
+ }finally{f.close();}
+});
+
+test('anonymous simultaneous logins share one browser slot across identities and methods',async()=>{
+ const f=fixture();try {
+  for(let round=0;round<12;round++) {
+   const tokens=await Promise.all(['password','google','apple','x','github','reactivation'].map(method=>{
+    const request=new Request('https://chile3x.cl/auth',{headers:{cookie:browserCookie}});
+    return method==='github'?auth.createAdminSession('admin',request):auth.createUserSession('user',request,method);
+   }));
+   assert.equal(f.sqlite.prepare('SELECT count(*) n FROM auth_sessions WHERE browser_key_hash=?').get(hash('A'.repeat(43))).n,1);
+   let valid=0;for(const [i,token] of tokens.entries()) {f.setCookie(`chile3x_${i===4?'admin':'user'}_session=${token}`);valid+=Number(Boolean(await(i===4?auth.getCurrentAdmin():auth.getCurrentUser())));}
+   assert.equal(valid,1,'replaying returned credentials separately must not restore both identities');
+  }
+ }finally{f.close();}
+});
+
+test('different browser slots remain independent and old logout/proofs cannot revoke a rotated winner',async()=>{
+ const f=fixture();try {
+  const otherCookie=`${BROWSER_SESSION_COOKIE}=${'B'.repeat(43)}`;
+  const first=await auth.createUserSession('user',new Request('https://chile3x.cl/auth',{headers:{cookie:browserCookie}}));
+  const remote=await auth.createUserSession('user',new Request('https://chile3x.cl/auth',{headers:{cookie:otherCookie}}));
+  const winner=await auth.createAdminSession('admin',new Request('https://chile3x.cl/auth',{headers:{cookie:browserCookie+'; chile3x_user_session='+first}}));
+  await auth.deleteCurrentSession(first);
+  await auth.revokeAuthAttemptSessions(JSON.stringify([{id:parseSessionToken(first).id,hash:hash(parseSessionToken(first).secret)}]));
+  f.setCookie('chile3x_user_session='+remote);assert.equal((await auth.getCurrentUser()).id,'user');
+  f.setCookie('chile3x_admin_session='+winner);assert.equal((await auth.getCurrentAdmin()).id,'admin');
+  await auth.deleteCurrentSession(winner);assert.equal(await auth.getCurrentAdmin(),null);
+  const next=await auth.createUserSession('user',new Request('https://chile3x.cl/auth',{headers:{cookie:browserCookie}}));
+  f.setCookie('chile3x_user_session='+next);assert.equal((await auth.getCurrentUser()).id,'user');
+ }finally{f.close();}
+});
+
+test('failed atomic replacement rolls back presented-session revocation and enforces the unique browser index',async()=>{
+ const f=fixture();try {
+  f.sqlite.exec("CREATE TRIGGER qa_fail_session BEFORE INSERT ON auth_sessions WHEN NEW.id NOT IN ('user','admin') BEGIN SELECT RAISE(ABORT,'qa_insert_failure'); END;");
+  await assert.rejects(()=>auth.createUserSession('user',new Request('https://chile3x.cl/auth',{headers:{cookie:browserCookie+'; chile3x_admin_session=admin.secret-admin'}})),/qa_insert_failure/);
+  f.setCookie('chile3x_admin_session=admin.secret-admin');assert.equal((await auth.getCurrentAdmin()).id,'admin');
+  f.sqlite.exec('DROP TRIGGER qa_fail_session');
+  await auth.createUserSession('user',new Request('https://chile3x.cl/auth',{headers:{cookie:browserCookie}}));
+  assert.throws(()=>f.sqlite.prepare('INSERT INTO auth_sessions(id,user_id,token_hash,browser_key_hash) VALUES(?,?,?,?)').run('duplicate','admin',hash('duplicate'),hash('A'.repeat(43))),/UNIQUE constraint/);
+ }finally{f.close();}
+});
+
+test('browser association rejects duplicate, encoded and missing keys; the key alone is never an identity',async()=>{
+ for(const cookie of ['',`${BROWSER_SESSION_COOKIE}=`,`${browserCookie}; ${browserCookie}`,`${BROWSER_SESSION_COOKIE}=${'A'.repeat(42)}%41`,`${BROWSER_SESSION_COOKIE}=x.y`])assert.equal(browserSessionKey(cookie),null);
+ assert.equal(browserSessionKey(browserCookie),'A'.repeat(43));
+ const f=fixture(browserCookie);try {
+  assert.equal(await auth.getCurrentUser(),null);assert.equal(await auth.getCurrentAdmin(),null);
+  for(const cookie of ['',`${browserCookie}; ${browserCookie}`]) await assert.rejects(()=>auth.createUserSession('user',new Request('https://chile3x.cl/auth',{headers:{cookie}})),/confirmar este navegador/);
+  assert.equal(f.sqlite.prepare('SELECT count(*) n FROM auth_sessions').get().n,2);
+ }finally{f.close();}
+});
+
+test('preflight blocks unprepared credential submissions before side effects but never requires cookies on Apple form_post',async()=>{
+ const noDatabase={batch(){throw Error('no database should be accessed')}};
+ for(const path of ['/api/auth/login','/api/auth/register','/api/auth/google','/api/auth/reactivate','/api/mi-cuenta/accesos']) {
+  assert.ok(needsBrowserSessionKey(path));
+  const response=await isolation.enforceExclusiveBrowserSession(new Request('https://chile3x.cl'+path,{method:'POST',headers:{accept:'application/json'}}),noDatabase);
+  assert.equal(response.status,409);assert.equal(response.headers.get('set-cookie'),null);
+  assert.equal((await response.json()).error,'browser_session_required');
+ }
+ for(const path of ['/ingresar','/registro','/mi-cuenta','/api/auth/apple/callback','/api/auth/session/browser','/perfil/example']) assert.equal(await isolation.enforceExclusiveBrowserSession(new Request('https://chile3x.cl'+path,{method:path.endsWith('callback')?'POST':'GET'}),noDatabase),null);
+ const gate=await isolation.enforceExclusiveBrowserSession(new Request('https://chile3x.cl/api/auth/github/start'),noDatabase);
+ assert.match(await gate.text(),/browser-session-bootstrap-v1\.js/);assert.equal(gate.headers.get('set-cookie'),null);assert.match(gate.headers.get('cache-control'),/no-store/);
+});
+
+test('parallel first-time tabs serialize bootstrap and receive one shared key, without exposing it in JSON',async()=>{
+ let queue=Promise.resolve(),jar='',issued=0,calls=0;
+ const locks={request(name,options,callback){assert.equal(name,'chile3x:browser-session-setup:v1');const result=queue.then(()=>{options.signal.throwIfAborted();return callback();});queue=result.catch(()=>{});return result;}};
+ const fetcher=async(path,options)=>{
+  calls++;assert.equal(path,'/api/auth/session/browser');
+  const response=await setup.POST(new Request('https://chile3x.cl'+path,{...options,headers:{...options.headers,origin:'https://chile3x.cl',cookie:jar}}));
+  const cookie=response.headers.get('set-cookie');if(cookie){issued++;jar=cookie.split(';')[0];assert.match(cookie,/HttpOnly/i);assert.match(cookie,/Secure/i);assert.match(cookie,/SameSite=lax/i);assert.match(cookie,/Path=\//);assert.doesNotMatch(cookie,/Domain=/i);}
+  const body=await response.clone().text();assert.doesNotMatch(body,/token|identity|secret|browser_key/);
+  return response;
+ };
+ await Promise.all(Array.from({length:5},()=>ensureBrowserSession(new AbortController().signal,locks,fetcher)));
+ assert.equal(issued,1);assert.equal(calls,6);assert.ok(browserSessionKey(jar));
+ const forbidden=await setup.POST(new Request('https://chile3x.cl/api/auth/session/browser',{method:'POST',headers:{origin:'https://other.invalid','x-chile3x-browser-check':'prepare'}}));
+ assert.equal(forbidden.status,403);assert.equal(forbidden.headers.get('set-cookie'),null);
+});
+
+test('blocked cookies, unavailable cross-tab coordination and missing confirmation fail closed without loops',async()=>{
+ const locks={request:(_name,_options,callback)=>callback()};let calls=0;
+ const fetcher=async(path,options)=>{calls++;return setup.POST(new Request('https://chile3x.cl'+path,{...options,headers:{...options.headers,origin:'https://chile3x.cl'}}));};
+ await assert.rejects(()=>ensureBrowserSession(new AbortController().signal,locks,fetcher),/cookies necesarias/);assert.equal(calls,2);
+ await assert.rejects(()=>ensureBrowserSession(new AbortController().signal,null,fetcher),/Actualízalo/);assert.equal(calls,2);
+ const confirmation=await setup.POST(new Request('https://chile3x.cl/api/auth/session/browser',{method:'POST',headers:{origin:'https://chile3x.cl','x-chile3x-browser-check':'confirm'}}));
+ assert.equal(confirmation.status,409);assert.equal(confirmation.headers.get('set-cookie'),null);
 });
 
 test('Apple cross-site callback revokes initiation-bound proofs without needing SameSite cookies',async()=>{

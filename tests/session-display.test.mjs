@@ -98,7 +98,7 @@ test('visibility, restored pages and history navigation recheck the real identit
   h.setResponse({status:200,view:admin});const e=new Event(event);if(event==='storage')Object.defineProperty(e,'key',{value:'chile3x:session-check:v1'});h.w.dispatchEvent(e);await h.flush();assert.equal(h.nodes().some(n=>n.type==='private-child'),false);
  });
  await harness(admin,async h=>{
-  h.d.visibilityState='hidden';await h.fire('visibilitychange',h.d);assert.ok(h.nodes().find(n=>n.props?.className==='browser-session-boundary').props.inert);
+  h.d.visibilityState='hidden';await h.fire('visibilitychange',h.d);assert.equal(h.nodes().find(n=>n.props?.className==='browser-session-boundary').props.inert,undefined);
   h.setResponse({status:200,view:account});h.d.visibilityState='visible';await h.fire('visibilitychange',h.d);assert.equal(h.nodes().some(n=>n.type==='private-child'),false);
  });
 });
@@ -116,6 +116,7 @@ test('network failure blocks interactions without logging the person out, and re
 
 test('an older matching response cannot reveal the panel while a newer check is pending',async()=>{
  await harness(account,async h=>{
+  h.setResponse({status:503});await h.fire('focus');
   let releaseOld,releaseNew;
   h.setResponse({status:200,view:account,wait:new Promise(resolve=>{releaseOld=resolve;})});
   h.w.dispatchEvent(new Event('focus'));await h.flush();
@@ -123,6 +124,17 @@ test('an older matching response cannot reveal the panel while a newer check is 
   h.w.dispatchEvent(new Event('pageshow'));releaseOld();await h.flush();
   assert.equal(h.nodes().find(n=>n.props?.className==='browser-session-boundary').props['aria-hidden'],true);
   releaseNew();await h.flush();assert.equal(h.nodes().some(n=>n.type==='private-child'),false);
+ });
+});
+
+test('routine focus and page checks are silent, including while a slow matching request is pending',async()=>{
+ await harness(account,async h=>{
+  let release;h.setResponse({status:200,view:account,wait:new Promise(resolve=>{release=resolve;})});
+  await h.fire('focus');
+  const wrapper=h.nodes().find(n=>n.props?.className==='browser-session-boundary');
+  assert.equal(wrapper.props['aria-hidden'],undefined);assert.equal(wrapper.props.inert,undefined);
+  assert.equal(h.nodes().some(n=>n.props?.className==='session-change-screen session-check-screen'),false);
+  release();await h.flush();assert.ok(h.nodes().some(n=>n.type==='private-child'));
  });
 });
 
@@ -144,4 +156,29 @@ test('a changed panel always offers the current identity destination, even after
 
 test('anonymous public views use a full reload on login, never cached private navigation',async()=>{
  await harness({mode:null,identity:null},async h=>{h.setResponse({status:200,view:admin});await h.fire('focus');assert.equal(h.w.location.reloads,1);},'/escorts');
+});
+
+let resumeSource=ts.transpileModule(await readFile(file('app/admin/acceso-denegado/ResumeAdminSession.tsx'),'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext,jsx:ts.JsxEmit.ReactJSX}}).outputText;
+resumeSource=resumeSource.replace(/from "([^"\n]+)"/g,(_whole,name)=>`from ${JSON.stringify(name==='@/lib/session-view-policy'?file('lib/session-view-policy.ts').href:reactStub)}`);
+const {ResumeAdminSession}=await import(moduleUrl(resumeSource));
+
+test('GitHub failure recovery confirms a late admin cookie before showing an error, never resumes a public account',async()=>{
+ const original={window:globalThis.window,fetch:globalThis.fetch};
+ try {
+  for(const views of [[{mode:null,identity:null},admin],[account,account,account]]) {
+   let state=false,effect,redirect=null,calls=0;
+   globalThis.__sessionDisplayClient={useState:()=>[state,value=>{state=value;}],useEffect:fn=>{effect=fn;}};
+   // reactStub assigns the effect directly; its accessor mirrors useEffect.
+   Object.defineProperty(globalThis.__sessionDisplayClient,'effect',{set(fn){effect=fn;},get(){return effect;},configurable:true});
+   globalThis.window={setTimeout,clearTimeout,location:{replace(value){redirect=value;}}};
+   globalThis.fetch=async()=>({ok:true,json:async()=>views[Math.min(calls++,views.length-1)]});
+   const render=()=>ResumeAdminSession({initialConfirmed:false,failureMessage:'qa-provider-failure'});
+   assert.equal(flatten(render()).find(n=>n.type==='h1').props.children,'Confirmando acceso administrativo');
+   const cleanup=effect();
+   await new Promise(resolve=>setTimeout(resolve,1300));
+   if(views[1].mode==='admin'){assert.equal(redirect,'/admin');assert.equal(state,false);}
+   else{assert.equal(redirect,null);assert.equal(state,true);assert.equal(calls,3);}
+   cleanup();
+  }
+ }finally {Object.assign(globalThis,original);delete globalThis.__sessionDisplayClient;}
 });

@@ -13,7 +13,7 @@ export function BrowserSessionBoundary({ initial, children }: { initial: Session
   const pathname = usePathname();
   const { mode, identity } = initial;
   const protectedView = isProtectedSessionPath(pathname);
-  const [state, setState] = useState<CheckState>({ phase: mode && protectedView ? "checking" : "ready", current: null });
+  const [state, setState] = useState<CheckState>({ phase: "ready", current: null });
   const announced = useRef(false);
   const retry = useRef<() => void>(() => {});
 
@@ -50,14 +50,15 @@ export function BrowserSessionBoundary({ initial, children }: { initial: Session
         if (!stopped && queued) { queued = false; void verify(); }
       }
     }
-    const check = () => void verify(true);
-    retry.current = check;
+    // Focus/history checks are silent. The server already verified this render;
+    // only a confirmed mismatch or failure should interrupt the current page.
+    const check = () => void verify();
+    retry.current = () => void verify(true);
     const visibility = () => {
       if (document.visibilityState === "visible") check();
       else if (mode && protectedView) {
         requestVersion++;
         activeController?.abort();
-        setState(previous => previous.phase === "changed" ? previous : { ...previous, phase: "checking" });
       }
     };
     const storage = (event: StorageEvent) => { if (event.key === SYNC_KEY) check(); };

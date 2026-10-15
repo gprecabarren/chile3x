@@ -11,7 +11,8 @@
 .account-sidebar nav > a { display:flex; align-items:center; gap:12px; width:100%; min-height:44px; padding:11px 12px; border:1px solid transparent; border-radius:8px; color:#cbd5e4; font-size:13px; font-weight:600; line-height:1.4; text-decoration:none; }
 .account-sidebar nav > a > svg { width:19px; height:19px; flex:0 0 19px; }
 .account-sidebar nav > a > span { min-width:0; overflow-wrap:anywhere; }
-.account-sidebar nav > a:hover, .account-sidebar nav > a.is-current { background:#3b202e; border-color:#97515e; color:#fff; }
+.account-sidebar nav > a.is-current { background:#3b202e; border-color:#97515e; color:#fff; }
+@media(hover:hover) and (pointer:fine) { .account-sidebar nav > a:hover:not(.is-current) { background:#1b2535; border-color:#3c495e; color:#fff; } }
 .account-sidebar nav small { font-size:10px; color:#bfc6d4; }
 .account-sidebar .account-legal-links { margin:12px 0 0; padding:12px; border-top:1px solid #343d50; font-size:12px; }
 .account-sidebar .account-legal-links summary { cursor:pointer; }

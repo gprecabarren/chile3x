@@ -10,6 +10,7 @@ import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { socialCardImage, socialCardImageUrl } from "@/lib/seo";
 import { DeferredClientFeatures } from "./DeferredClientFeatures";
 import { BrowserSessionBoundary } from "./BrowserSessionBoundary";
+import { BrowserSessionSetup } from "./BrowserSessionSetup";
 import { getBrowserSessionView } from "@/lib/browser-session-view";
 
 export const dynamic = "force-dynamic";
@@ -79,7 +80,7 @@ export default async function RootLayout({
         <meta name="rating" content="adult" />
       </head>
       <body>
-        <BrowserSessionBoundary initial={sessionView} key={sessionView.identity ?? "anonymous"}>{!maintenanceEnabled || admin ? children : <MaintenanceScreen />}</BrowserSessionBoundary>
+        <BrowserSessionSetup><BrowserSessionBoundary initial={sessionView} key={sessionView.identity ?? "anonymous"}>{!maintenanceEnabled || admin ? children : <MaintenanceScreen />}</BrowserSessionBoundary></BrowserSessionSetup>
         <AgeGate />
         <DeferredClientFeatures />
         {verificationDeadline !== null && Number.isFinite(verificationDeadline) && <EmailVerificationDeadline deadline={verificationDeadline} />}

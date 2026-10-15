@@ -8,7 +8,7 @@ import type { AdminAccessLevel } from "@/lib/admin-permissions";
 import { sessionContextFromHeaders, sessionContextFromRequest, type SessionAuthMethod } from "@/lib/session-context";
 import { emailVerificationState, type EmailVerificationRecord } from "@/lib/email-verification-policy";
 import { hasAdministrativeEmailConflict, isReservedPublicAccountIdentity } from "@/lib/admin-email";
-import { ADMIN_SESSION_COOKIE, USER_SESSION_COOKIE, browserSessionState, parseSessionToken, sessionMatchesMode, type SessionMode } from "@/lib/session-policy";
+import { ADMIN_SESSION_COOKIE, USER_SESSION_COOKIE, browserSessionKey, browserSessionState, parseSessionToken, sessionMatchesMode, type SessionMode } from "@/lib/session-policy";
 
 const ADMIN_SESSION_DURATION_SECONDS = 60 * 60 * 12;
 const USER_SESSION_DURATION_SECONDS = 60 * 60 * 24 * 30;
@@ -154,19 +154,35 @@ async function createSession(userId: string, durationSeconds: number, request: R
     const [grant] = await db.select({ id: adminGithubAccess.id, protectedEmail: adminGithubAccess.protectedEmail }).from(adminGithubAccess).where(and(eq(adminGithubAccess.userId, userId), eq(adminGithubAccess.isActive, true))).limit(1);
     if (!grant || await hasAdministrativeEmailConflict(userId,grant.protectedEmail)) throw new Error("El acceso administrativo no está autorizado o su correo está vinculado a una cuenta pública.");
   }
-  // Revoke only credentials presented by this browser, not other devices.
-  await deleteBrowserSessions(request);
-
-  await db.delete(authSessions).where(and(eq(authSessions.userId, userId), lte(authSessions.expiresAt, now)));
-  await db.insert(authSessions).values({
+  const browserKey = browserSessionKey(request.headers.get("cookie"));
+  const previous = browserSessionState(request.headers.get("cookie"));
+  if (!browserKey || previous.conflict) throw new Error("No pudimos confirmar este navegador. Vuelve a abrir la página de acceso e inténtalo nuevamente.");
+  const browserKeyHash = await sha256(browserKey);
+  const values = {
     id,
     userId,
     tokenHash: await sha256(secret),
+    browserKeyHash,
     authMethod,
     ...context,
     lastSeenAt: now,
     expiresAt,
-  });
+    createdAt: now,
+  };
+  const proofs = await Promise.all(previous.entries.slice(0, 8).flatMap(entry => {
+    const token = parseSessionToken(entry.value);
+    return token ? [sha256(token.secret).then(hash => ({ id: token.id, hash }))] : [];
+  }));
+  const revocations = proofs.map(proof => db.delete(authSessions).where(and(eq(authSessions.id, proof.id), eq(authSessions.tokenHash, proof.hash))));
+  // The unique browser slot and token rotation happen in one D1 transaction.
+  // Two requests holding the same old cookie cannot leave two valid bearers.
+  // Upsert rotates the primary ID too, so stale responses/proofs cannot revoke
+  // the winner; credentials on other browsers remain completely independent.
+  await db.batch([
+    db.delete(authSessions).where(and(eq(authSessions.userId, userId), lte(authSessions.expiresAt, now))),
+    ...revocations,
+    db.insert(authSessions).values(values).onConflictDoUpdate({ target: authSessions.browserKeyHash, set: values }),
+  ]);
 
   return `${id}.${secret}`;
 }

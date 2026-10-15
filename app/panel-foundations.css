@@ -52,6 +52,9 @@ textarea { font-weight:400 !important; }
 .admin-workspace .admin-toolbar-brand .admin-home-link,
 .account-workspace .account-toolbar-brand .account-brand-home { min-height:40px; border-radius:9px; }
 @media(max-width:620px) {
+ .account-workspace .account-sidebar-head { padding:16px; gap:12px; }
+ .account-workspace .account-sidebar-head .account-sidebar-brand { gap:12px; }
+ .account-workspace .account-sidebar-head .account-brand-home { width:fit-content; justify-self:center; min-height:28px; padding:4px 14px; font-size:10px; font-weight:650; letter-spacing:.02em; }
  .admin-workspace .admin-root .admin-content,
  .account-workspace .account-root .account-content { width:calc(100% - 28px); margin-inline:14px; }
  .account-workspace .account-root .account-content { padding:30px 0 60px; }

@@ -36,10 +36,13 @@ if(mode==='seed') {
    const headers=new Headers();
    for(const [key,value] of Object.entries(req.headers))if(value&&!['host','cookie','connection','content-length','accept-encoding'].includes(key))headers.set(key,Array.isArray(value)?value.join(','):value);
    if(headers.get('origin')===`http://127.0.0.1:${port}`)headers.set('origin','http://127.0.0.1:3000');
-   headers.set('cookie',fixture.cookies[role==='shared'?sharedRole:role]);headers.set('authorization','qa-loopback');
+   const browserCookies=(req.headers.cookie??'').split(';').map(value=>value.trim()).filter(value=>value.startsWith('__Host-chile3x_browser='));
+   headers.set('cookie',[fixture.cookies[role==='shared'?sharedRole:role],...browserCookies].join('; '));headers.set('authorization','qa-loopback');
    let body;if(!['GET','HEAD'].includes(req.method??'GET')){const chunks=[];for await(const chunk of req)chunks.push(chunk);body=Buffer.concat(chunks);}
    const payload=await fetch('http://127.0.0.1:3000'+req.url,{method:req.method,headers,body,redirect:'manual'});
-   res.writeHead(payload.status,Object.fromEntries([...payload.headers].filter(([name])=>!['content-encoding','content-length','transfer-encoding','set-cookie'].includes(name))));res.end(Buffer.from(await payload.arrayBuffer()));
+   const responseHeaders=Object.fromEntries([...payload.headers].filter(([name])=>!['content-encoding','content-length','transfer-encoding','set-cookie'].includes(name)));
+   const setupCookies=payload.headers.getSetCookie().filter(value=>value.startsWith('__Host-chile3x_browser='));
+   res.writeHead(payload.status,{...responseHeaders,...(setupCookies.length?{'set-cookie':setupCookies}:{})});res.end(Buffer.from(await payload.arrayBuffer()));
   }catch{res.writeHead(502);res.end('Local QA upstream unavailable.');}
  }).listen(port,'127.0.0.1',()=>console.log('Local '+role+' preview on '+port));
 } else if(mode==='cleanup') {

@@ -34,3 +34,10 @@ test('mobile Telegram layouts and hidden news uploads cannot inherit overflowing
  assert.match(css,/\.browser-session-boundary\[data-session-checking="true"\] \* \{ visibility:hidden !important/);
  assert.match(css,/\.session-check-screen \{ position:fixed/);
 });
+
+test('touch navigation cannot keep a second active-looking hover, admin selection is gray and mobile account branding is compact',async()=>{
+ const [admin,account,css]=await Promise.all([source('app/admin/admin-workspace.css'),source('app/mi-cuenta/account-workspace.css'),source('app/panel-foundations.css')]);
+ for(const sheet of [admin,account])assert.match(sheet,/@media\(hover:hover\) and \(pointer:fine\)[^\n]+:hover:not\(\.is-current\)/);
+ assert.match(admin,/nav a\.is-current \{[^}]*background:#263145/);
+ assert.match(css,/\.account-sidebar-head \.account-brand-home \{ width:fit-content;[^}]*min-height:28px/);
+});

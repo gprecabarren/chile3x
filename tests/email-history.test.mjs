@@ -82,7 +82,7 @@ test('global history is paginated, permission checked, retained for 90 days and 
  assert.match(page,/json_each/);assert.match(page,/Historial global de correos/);assert.doesNotMatch(page,/eq\(emailDeliveryLogs.userId, admin.id\)/);
  assert.match(recording,/account.accessLevel === "owner"/);assert.match(recording,/protectedEmail/);assert.doesNotMatch(recording,/input\.(html|text|token|action|message)/);
  assert.match(retention,/email_delivery_logs.*RETENTION_DAYS.emailHistory/);assert.match(deletion,/db.delete\(emailDeliveryLogs\)/);
- assert.match(denied,/Boolean\(admin && \(!reason \|\| loginError\)\)/);assert.match(denied,/resumeSession && <ResumeAdminSession/);assert.match(callback,/oauth_invalid/);assert.match(callback,/oauth_provider/);
+ assert.match(denied,/Boolean\(admin && \(!reason \|\| loginError\)\)/);assert.match(denied,/resumeSession \|\| loginError \? <ResumeAdminSession/);assert.match(callback,/oauth_invalid/);assert.match(callback,/oauth_provider/);
 });
 
 test('real history storage classifies normal, admin and owner recipients, cascades deletion and does not resurrect removed rows',async()=>{

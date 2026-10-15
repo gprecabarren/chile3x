@@ -1,6 +1,22 @@
 export const ADMIN_SESSION_COOKIE = "chile3x_admin_session";
 export const USER_SESSION_COOKIE = "chile3x_user_session";
+// A host-only, HttpOnly random coordination key, never an authentication token.
+export const BROWSER_SESSION_COOKIE = "__Host-chile3x_browser";
 export type SessionMode = "admin" | "account";
+
+export function browserSessionKey(cookieHeader: string | null) {
+  const values = (cookieHeader ?? "").split(";").map(part => part.trim()).flatMap(part => {
+    const separator = part.indexOf("=");
+    return separator >= 0 && part.slice(0, separator) === BROWSER_SESSION_COOKIE ? [part.slice(separator + 1)] : [];
+  });
+  return values.length === 1 && /^[A-Za-z0-9_-]{43}$/.test(values[0]) ? values[0] : null;
+}
+
+/** Bootstrap before credentials/registration side effects, not in an auth POST. */
+export function needsBrowserSessionKey(pathname: string) {
+  return ["/ingresar", "/registro", "/reactivar-cuenta", "/admin", "/mi-cuenta"].some(path => pathname === path || pathname.startsWith(path + "/"))
+    || ["/api/auth/login", "/api/auth/register", "/api/auth/google", "/api/auth/reactivate", "/api/auth/github/start", "/api/auth/github/callback", "/api/auth/apple/start", "/api/auth/apple/finish", "/api/auth/x/start", "/api/auth/x/callback", "/api/mi-cuenta/accesos"].includes(pathname);
+}
 
 export function parseSessionToken(value: string | null | undefined) {
   if (!value || value.length > 400) return null;

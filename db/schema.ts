@@ -141,6 +141,7 @@ export const authSessions = sqliteTable("auth_sessions", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   tokenHash: text("token_hash").notNull().unique(),
+  browserKeyHash: text("browser_key_hash"),
   authMethod: text("auth_method", { enum: ["password", "google", "apple", "x", "github", "reactivation", "unknown"] }).notNull().default("unknown"),
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),
@@ -152,6 +153,7 @@ export const authSessions = sqliteTable("auth_sessions", {
   expiresAt: text("expires_at").notNull(),
   createdAt,
 }, (table) => [
+  uniqueIndex("auth_sessions_browser_key_unique").on(table.browserKeyHash),
   index("auth_sessions_user_expires_idx").on(table.userId, table.expiresAt),
   index("auth_sessions_user_last_seen_idx").on(table.userId, table.lastSeenAt),
 ]);

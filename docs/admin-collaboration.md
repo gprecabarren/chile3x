@@ -18,6 +18,8 @@ El cálculo global de almacenamiento utilizaba ocho SELECT unidos. SQLite de esc
 
 Se añaden límites de error para el panel administrativo, páginas normales y layout raíz, con referencia de diagnóstico y acciones de recuperación. La recuperación advierte comprobar si un guardado ya ocurrió antes de repetirlo. Los registros de render no incluyen cuerpo, cookies, parámetros de consulta ni parámetros SQL. Los conflictos esperados no se registran como fallos de almacenamiento.
 
+La comprobación real detectó también una carrera entre dos despliegues: una pestaña podía recibir el documento anterior y solicitar un chunk ya reemplazado. Se añade una recuperación inline, sin dependencias de React ni archivos externos, para una página vacía persistente o un arranque detenido por un script fallido. Solo ofrece recarga manual; no lee datos de formularios, cookies o almacenamiento y no repite peticiones. Las pestañas ocultas no se revisan. El bootstrap también cubre una caída del propio chunk del límite de error.
+
 ## Migración y despliegue
 
 Aplicar **solo** `drizzle/0056_admin_collaboration.sql` una vez, después de comprobar `pragma_table_info` y `sqlite_master`. No ejecutar ciegamente todas las migraciones históricas sobre una base donde 0052–0055 ya se aplicaron manualmente.

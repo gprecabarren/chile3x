@@ -14,6 +14,7 @@ import { BrowserSessionSetup } from "./BrowserSessionSetup";
 import { getBrowserSessionView } from "@/lib/browser-session-view";
 import { UserNavigationProgress } from "./UserNavigationProgress";
 import { AdminCollaboration } from "./AdminCollaboration";
+import { LOAD_RECOVERY_SCRIPT } from "@/lib/load-recovery";
 
 export const dynamic = "force-dynamic";
 
@@ -80,6 +81,7 @@ export default async function RootLayout({
     <html lang="es">
       <head>
         <meta name="rating" content="adult" />
+        <script id="portal-load-recovery-bootstrap" dangerouslySetInnerHTML={{__html:LOAD_RECOVERY_SCRIPT}} />
       </head>
       <body>
         <BrowserSessionSetup><BrowserSessionBoundary initial={sessionView} key={sessionView.identity ?? "anonymous"}>{!maintenanceEnabled || admin ? children : <MaintenanceScreen />}</BrowserSessionBoundary></BrowserSessionSetup>

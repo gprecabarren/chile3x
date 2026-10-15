@@ -62,7 +62,7 @@ export async function getApprovedReviewsPage(profileId: string, page = 1, pageSi
   const safePage = Number.isFinite(page) ? Math.max(1, Math.trunc(page)) : 1;
   const safePageSize = Number.isFinite(pageSize) ? Math.min(50, Math.max(1, Math.trunc(pageSize))) : PUBLIC_REVIEWS_PAGE_SIZE;
   const conditions = and(eq(reviews.profileId, profileId), eq(reviews.status, "approved"));
-  const [rows, totals] = await Promise.all([
+  const [rows, totals] = await db.batch([
     db.select({
     id: reviews.id,
     body: reviews.body,

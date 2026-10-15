@@ -226,16 +226,15 @@ export async function getPublicProfiles(options: PublicProfileOptions = {}) {
     row.profile.ownerId === options.previewOwnerId || options.includeUnapproved && options.includePendingMedia
   )).map(row => row.profile.id);
   const onlineCutoff = new Date(Date.now() - 3 * 60_000).toISOString();
-  const [tags, services, memberships, mediaByProfile, presenceRows, previewMedia] = await Promise.all([
-    db.select().from(profileTags).where(inArray(profileTags.profileId, ids)),
-    db.select().from(profileServices).where(inArray(profileServices.profileId, ids)),
-    options.includeAssociations
-      ? db.select().from(agencyMembers).where(or(inArray(agencyMembers.agencyProfileId, ids), inArray(agencyMembers.memberProfileId, ids)))
-      : Promise.resolve([]),
+  const [[tags, services, memberships, presenceRows], mediaByProfile, previewMedia] = await Promise.all([
+    db.batch([
+      db.select().from(profileTags).where(inArray(profileTags.profileId, ids)),
+      db.select().from(profileServices).where(inArray(profileServices.profileId, ids)),
+      db.select().from(agencyMembers).where(options.includeAssociations
+        ? or(inArray(agencyMembers.agencyProfileId, ids), inArray(agencyMembers.memberProfileId, ids)) : sql`0`),
+      db.select({ userId: accountPresence.userId }).from(accountPresence).where(and(inArray(accountPresence.userId, ownerIds), gte(accountPresence.lastActiveAt, onlineCutoff))),
+    ]),
     getApprovedMediaForProfiles(ids, options.coverOnly),
-    ownerIds.length
-      ? db.select({ userId: accountPresence.userId }).from(accountPresence).where(and(inArray(accountPresence.userId, ownerIds), gte(accountPresence.lastActiveAt, onlineCutoff)))
-      : Promise.resolve([]),
     previewMediaIds.length ? db.select().from(profileMedia).where(and(
       inArray(profileMedia.profileId, previewMediaIds), eq(profileMedia.visibility, "public"),
       inArray(profileMedia.moderationStatus, ["approved", "pending"]),

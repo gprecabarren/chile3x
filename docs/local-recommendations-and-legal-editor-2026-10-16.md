@@ -19,6 +19,8 @@ Permite editar título/SEO, descripción, resumen, aviso final, secciones, subt�
 
 «Guardar borrador» no modifica el documento público. «Publicar nueva versión» requiere confirmación, conserva el documento anterior y actualiza versión, fecha chilena y metadatos públicos. «Recuperar texto publicado» descarta únicamente el borrador. Las operaciones quedan en la auditoría con la identidad administrativa real y rechazan revisiones antiguas con 409, sin sobrescribir texto.
 
+Si falla temporalmente la consulta de coordinación, su aviso se limpia cuando una consulta posterior termina bien. Esa recuperación no borra errores de guardado ni avisos de conflicto entre revisiones.
+
 El despliegue conserva exactamente los textos, fuentes, versión 2026.10.14.3 y fecha previamente publicados. No agrega una identidad legal. Las publicaciones de prueba se hicieron exclusivamente en D1 local y se restauran después.
 
 Los documentos públicos no comparten caché de HTML, para que la siguiente petición vea la publicación nueva. El sitemap usa la fecha real de la versión publicada. Los borradores, editor y API son privados/noindex. El formato admite texto escapado y enlaces limitados; no ejecuta HTML arbitrario. Tamaño del cuerpo y del documento limitados antes de guardar.

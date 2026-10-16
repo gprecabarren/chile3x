@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import "./collaboration.css";
+const REFRESH_FAILURE_MESSAGE='No pudimos comprobar las revisiones del equipo. Tus datos se conservan; el servidor volverá a comprobarlos al guardar.';
 
 export function AdminCollaboration({adminMode}:{adminMode:boolean}) {
   const pathname=usePathname(),search=useSearchParams();
@@ -23,8 +24,8 @@ export function AdminCollaboration({adminMode}:{adminMode:boolean}) {
       refreshing=true;
       try{for(const key of leases.keys())await lease(key,'renew');const params=new URLSearchParams();keys.forEach(key=>params.append('key',key));
         const response=await fetch(`/api/admin/colaboracion?${params}`,{cache:'no-store',signal:AbortSignal.any([controller.signal,AbortSignal.timeout(15_000)])});if(!response.ok)throw Error();
-        const result=await response.json();window.dispatchEvent(new CustomEvent('chile3x:review-state',{detail:result}));window.dispatchEvent(new CustomEvent('chile3x:moderation-counts',{detail:result.summary}));failedRefreshes=0;nextRefresh=0;
-      }catch{nextRefresh=Date.now()+Math.min(120_000,30_000*2**failedRefreshes++);if(!controller.signal.aborted)announce('No pudimos comprobar las revisiones del equipo. Tus datos se conservan; el servidor volverá a comprobarlos al guardar.');}
+        const result=await response.json();window.dispatchEvent(new CustomEvent('chile3x:review-state',{detail:result}));window.dispatchEvent(new CustomEvent('chile3x:moderation-counts',{detail:result.summary}));failedRefreshes=0;nextRefresh=0;setMessage(previous=>previous===REFRESH_FAILURE_MESSAGE?'':previous);
+      }catch{nextRefresh=Date.now()+Math.min(120_000,30_000*2**failedRefreshes++);if(!controller.signal.aborted)announce(REFRESH_FAILURE_MESSAGE);}
       finally{refreshing=false;}
     }
     function action(event:Event){const {key,intent}=(event as CustomEvent).detail;if(!adminMode||!['claim','release'].includes(intent)||leasePending.has(key))return;leasePending.add(key);void lease(key,intent).then(()=>{nextRefresh=0;return refresh();}).catch(()=>announce('No se pudo completar la reserva.')).finally(()=>leasePending.delete(key));}

@@ -101,7 +101,7 @@ test('real SQLite transactions exercise stale reviews, simultaneous saves, owner
 test('storage reads avoid D1 compound SELECT limits and UI keeps conflicts in place',async()=>{
  const read=path=>readFile(new URL('../'+path,import.meta.url),'utf8');
  assert.doesNotMatch((await read('lib/media.ts')).split('export async function getMediaUsage()')[1].split('export async function getApprovedMediaForProfiles')[0],/UNION ALL/);
- const client=await read('app/AdminCollaboration.tsx');assert.match(client,/pending\.has\(form\)/);assert.match(client,/visibilityState!=='visible'/);assert.match(client,/30_000/);assert.match(client,/if\(!response.ok\)/);assert.doesNotMatch(client,/form\.reset\(|setInterval\([^,]+,\s*[1-9]_000/);
+ const client=await read('app/AdminCollaboration.tsx');assert.match(client,/pending\.has\(form\)/);assert.match(client,/visibilityState!=='visible'/);assert.match(client,/30_000/);assert.match(client,/if\(!response.ok\)/);assert.match(client,/previous===REFRESH_FAILURE_MESSAGE\?'':previous/);assert.doesNotMatch(client,/form\.reset\(|setInterval\([^,]+,\s*[1-9]_000/);
 });
 
 test('streamed render failures have independent recovery screens and bounded private diagnostics',async()=>{

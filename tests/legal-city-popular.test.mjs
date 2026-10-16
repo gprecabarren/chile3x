@@ -89,6 +89,11 @@ test('SQLite exercises local ranking, publication isolation, revisions, permissi
   });
  }finally{hooks.deregister();sqlite.close();delete globalThis.__legalCityDb;delete globalThis.__legalCityAdmin;}
 });
+test('local footer copy is concise and city-panel spacing matches the 28px review gap',async()=>{
+ const block=await source('app/perfil/CityPopularProfiles.tsx'),css=await source('app/perfil/popular-city.css');
+ assert.doesNotMatch(block,/sin salir de Chile3X|Todavía no hay otros anuncios públicos disponibles/);assert.match(block,/Otras publicaciones de la misma ciudad\./);assert.match(block,/cards\.length>0&&<ol/);
+ assert.match(css,/\.profile-city-alert-panel:has\(\+ \.city-popular-profiles\)\{margin-bottom:28px\}/);assert.match(css,/margin:0 auto 1\.2rem/);assert.doesNotMatch(css,/margin-top:2rem|margin:2\.8rem/);
+});
 test('SEO and loading contracts keep the footer server-rendered and public legal data separate',async()=>{
  const profile=await source('app/perfil/[slug]/page.tsx'),block=await source('app/perfil/CityPopularProfiles.tsx'),editor=await source('app/admin/documentos-legales/LegalEditor.tsx');
  assert.match(profile,/<Suspense fallback=\{<CityPopularFallback/);assert.ok(profile.lastIndexOf('<CityPopularProfiles')>profile.indexOf('<CityAlertSignup'));

@@ -28,6 +28,7 @@ export function AdminCollaboration({adminMode}:{adminMode:boolean}) {
       finally{refreshing=false;}
     }
     function action(event:Event){const {key,intent}=(event as CustomEvent).detail;if(!adminMode||!['claim','release'].includes(intent)||leasePending.has(key))return;leasePending.add(key);void lease(key,intent).then(()=>{nextRefresh=0;return refresh();}).catch(()=>announce('No se pudo completar la reserva.')).finally(()=>leasePending.delete(key));}
+    function forceRefresh(){nextRefresh=0;void refresh();}
     async function submit(event:SubmitEvent){
       const form=event.target;if(!(form instanceof HTMLFormElement)||event.defaultPrevented||form.method.toLowerCase()!=='post')return;
       const scope=form.closest<HTMLElement>('[data-review-resource]'),key=form.querySelector<HTMLInputElement>('input[name="review_key"]')?.value??scope?.dataset.reviewResource;
@@ -50,8 +51,10 @@ export function AdminCollaboration({adminMode}:{adminMode:boolean}) {
     }
     // Bubble phase respects validation/cancellation performed by the form itself.
     document.addEventListener('submit',submit);window.addEventListener('chile3x:review-action',action);document.addEventListener('visibilitychange',refresh);
+    window.addEventListener('chile3x:review-refresh',forceRefresh);
     const timer=adminMode?setInterval(refresh,30_000):null;void refresh();
     return()=>{controller.abort();if(timer)clearInterval(timer);document.removeEventListener('submit',submit);window.removeEventListener('chile3x:review-action',action);document.removeEventListener('visibilitychange',refresh);
+      window.removeEventListener('chile3x:review-refresh',forceRefresh);
       for(const [key,token] of leases){const body=new FormData();body.set('key',key);body.set('token',token);body.set('intent','release');void fetch('/api/admin/colaboracion',{method:'POST',body,keepalive:true}).catch(()=>{});}
     };
   },[adminMode,pathname,search]);

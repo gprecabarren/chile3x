@@ -8,7 +8,8 @@ import test from 'node:test';
 const pathUrl = path => JSON.stringify(new URL(`../${path}`,import.meta.url).href);
 const fixtureModule = `data:text/javascript,${encodeURIComponent(`
  const state = () => globalThis.__emailRouteQA;
- export const users={}, accountAppleIdentities={},accountGoogleIdentities={},accountXIdentities={},accountAuthEvents={},xRegistrationIntents={};
+ export const users={}, accountAppleIdentities={},accountGoogleIdentities={},accountXIdentities={},accountAuthEvents={},xRegistrationIntents={},accountLegalAcceptances={};
+ export async function getLegalVersionSummary(){return {terms:{version:'2026.10.14.3'},privacy:{version:'2026.10.14.3'}};}
  export const and=(...x)=>x, eq=(...x)=>x;
  export const TURNSTILE_AUTH_LOGIN_ACTION='login', TURNSTILE_AUTH_REGISTER_ACTION='register';
  export const ACCOUNT_REACTIVATION_COOKIE='reactivate', ACCOUNT_REACTIVATION_DURATION_SECONDS=600;
@@ -16,7 +17,7 @@ const fixtureModule = `data:text/javascript,${encodeURIComponent(`
  export const NextRequest=Request;
  export const NextResponse={redirect(url,status){const response=new Response(null,{status,headers:{location:url.toString()}}); response.cookies={set(...args){state().cookies.push(args)},delete(){}};return response;}};
  export function assertSameOrigin(request){if(request.headers.get('origin')!==new URL(request.url).origin)throw Error('origin');}
- export async function getDb(){return {select(){return {from(){return {where(){return {limit:async()=>state().existing?[state().existing]:[]}}}}}},insert(){return {values:async value=>{state().inserted.push(value)}}}};}
+ export async function getDb(){return {select(){return {from(){return {where(){return {limit:async()=>state().existing?[state().existing]:[]}}}}}},insert(table){return {values:async value=>{(table===accountLegalAcceptances?state().acceptances:state().inserted).push(value)}}},batch:async statements=>Promise.all(statements)};}
  export const safeAccountReturnTo=value=>value?.startsWith('/mi-cuenta')?value:'/mi-cuenta';
  export const sessionCookieOptions=()=>({httpOnly:true,sameSite:'lax'}),getUserSessionCookieName=()=> 'local-user-session',getUserSessionDuration=()=>2592000;
  export async function createUserSession(id,request,method){state().sessions.push({id,method});return 'test-only-session';}
@@ -36,17 +37,17 @@ const fixtureModule = `data:text/javascript,${encodeURIComponent(`
 `)}`;
 async function loadRoute(path) {
  let source=await readFile(new URL(`../${path}`,import.meta.url),'utf8');
- source=source.replace(/from "([^"\n]+)"/g,(_match,name)=>`from ${name==='@/lib/email-verification-policy'?pathUrl('lib/email-verification-policy.ts'):JSON.stringify(fixtureModule)}`);
+ source=source.replace(/from (["'])([^"'\n]+)\1/g,(_match,_quote,name)=>`from ${name==='@/lib/email-verification-policy'?pathUrl('lib/email-verification-policy.ts'):JSON.stringify(fixtureModule)}`);
  return import(`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(source)).toString('base64')}`);
 }
 const register = await loadRoute('app/api/auth/register/route.ts');
 const login = await loadRoute('app/api/auth/login/route.ts');
 function fixture(overrides={}) {
- globalThis.__emailRouteQA={existing:null,inserted:[],cookies:[],sessions:[],reactivations:0,passwordCorrect:true,captchaValid:true,delivered:false,mailThrows:false,...overrides};
+ globalThis.__emailRouteQA={existing:null,inserted:[],acceptances:[],cookies:[],sessions:[],reactivations:0,passwordCorrect:true,captchaValid:true,delivered:false,mailThrows:false,...overrides};
  return globalThis.__emailRouteQA;
 }
 function request(path, values={}) {
- const form=new FormData();for(const [key,value] of Object.entries({display_name:'Test local',email:'test@example.invalid',password:'test-only-not-used',password_confirmation:'test-only-not-used',adult_confirmed:'yes',legal_confirmed:'yes',return_to:'/mi-cuenta',...values}))form.set(key,value);
+ const form=new FormData();for(const [key,value] of Object.entries({display_name:'Test local',email:'test@example.invalid',password:'test-only-not-used',password_confirmation:'test-only-not-used',adult_confirmed:'yes',legal_confirmed:'yes',terms_version:'2026.10.14.3',privacy_version:'2026.10.14.3',return_to:'/mi-cuenta',...values}))form.set(key,value);
  const request=new Request('https://chile3x.cl'+path,{method:'POST',body:form,headers:{origin:'https://chile3x.cl'}});request.cookies={get(){return undefined;}};return request;
 }
 test('password registration creates an immediate session with a 7-day deadline even if mail delivery fails', async(t)=>{
@@ -55,9 +56,13 @@ test('password registration creates an immediate session with a 7-day deadline e
   const state=fixture({mailThrows}); const started=Date.now(); const response=await register.POST(request('/api/auth/register'));
   assert.equal(response.status,303);assert.match(response.headers.get('location'),/^https:\/\/chile3x.cl\/mi-cuenta\?/);
   assert.equal(state.inserted.length,1);assert.equal(state.inserted[0].emailVerifiedAt,null);assert.equal(state.inserted[0].registrationAuthMethod,'password');
+  assert.equal(state.acceptances.length,1);assert.equal(state.acceptances[0].termsVersion,'2026.10.14.3');assert.equal(state.acceptances[0].userId,state.inserted[0].id);
   assert.ok(Date.parse(state.inserted[0].emailVerificationDeadline)>=started+7*86400000);
   assert.equal(state.sessions.length,1);assert.equal(state.sessions[0].method,'password');assert.equal(state.cookies[0][0].value,'test-only-session');
  }}finally{delete globalThis.__emailRouteQA;}
+});
+test('stale legal forms cannot create accounts or record acceptance of unseen versions',async()=>{
+ try{const state=fixture();const response=await register.POST(request('/api/auth/register',{terms_version:'old'}));assert.match(response.headers.get('location'),/error=legal_updated/);assert.equal(state.inserted.length,0);assert.equal(state.acceptances.length,0);assert.equal(state.sessions.length,0);}finally{delete globalThis.__emailRouteQA;}
 });
 test('password login admits grace, restricts expired accounts and never overrides administrative/self blocks', async()=>{
  try {for(const [changes,destination] of [

@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Suspense } from 'react';
+import { CityPopularProfiles,CityPopularFallback } from '../CityPopularProfiles';
 import { MediaVideo } from "@/app/MediaVideo";
 import Image from "next/image";
 import { publicProfileAge } from "@/lib/profile-age";
@@ -225,6 +227,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
       {(admin || viewerOwnsProfile) && <div className="profile-reviews-management"><Link className="button button-outline" href={admin ? `/admin/resenas?perfil=${encodeURIComponent(profile.id)}` : `/mi-cuenta/comentarios?perfil=${encodeURIComponent(profile.id)}`} prefetch={false}>Gestionar comentarios de este anuncio</Link></div>}
       {profile.isPublic && <ProfileReviews profileId={profile.id} profileSlug={profileRouteValue} signedIn={Boolean(viewer)} viewerOwnsProfile={viewerOwnsProfile} reviews={approvedReviewsPage.reviews} totalReviews={approvedReviewsPage.total} initialHasMore={approvedReviewsPage.hasMore} ownPendingReviews={ownPendingReviews} />}
       {showCityAlerts && <ProfileCityAlertPanel profileId={profile.id} profileSlug={profileRouteValue} displayName={profile.displayName} currentCity={profile.city} availableCities={cityAlertCities} signedIn={Boolean(viewer)} viewerOwnsProfile={viewerOwnsProfile} initialAlerts={activeCityAlerts} />}
+      <Suspense fallback={<CityPopularFallback city={profile.city}/>}><CityPopularProfiles city={profile.city} profileId={profile.id} viewerId={viewer?.id} directoryHref={isContentOnly(profile)?`/venta-contenido?ciudad=${encodeURIComponent(profile.city)}`:profile.type==='escort'?getCityPath(profile.city):`/${profile.type==='rental'?'arriendos':'agencias'}?ciudad=${encodeURIComponent(profile.city)}`} directoryLabel={`Ver ${isContentOnly(profile)?'venta de contenido':profile.type==='escort'?'escorts':profile.type==='rental'?'arriendos':'agencias'} en ${profile.city}`}/></Suspense>
     </DirectoryShell></ProfilePhotoViewer>
   );
 }

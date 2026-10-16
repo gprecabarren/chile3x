@@ -102,6 +102,7 @@ function AdminNavigation({
       {adminHasCapability(user, "audit.view") && <AdminSidebarLink href="/admin/actividad">Actividad</AdminSidebarLink>}
       {canViewEmailHistory(user) && <AdminSidebarLink href="/admin/correos">Historial correos</AdminSidebarLink>}
       {adminHasCapability(user, "settings.manage") && <AdminSidebarLink href="/admin/configuracion">Configuración</AdminSidebarLink>}
+      {adminHasCapability(user, "settings.manage") && <AdminSidebarLink href="/admin/documentos-legales">Términos y privacidad</AdminSidebarLink>}
       {adminHasCapability(user, "forum.manage") && <AdminSidebarLink href="/foro">Foro <small>beta privada</small></AdminSidebarLink>}
       {adminHasCapability(user, "admins.manage") && <AdminSidebarLink href="/admin/administradores">Administradores</AdminSidebarLink>}
       <AdminSidebarLink href="/admin/ayuda">Ayuda <small>beta</small></AdminSidebarLink>

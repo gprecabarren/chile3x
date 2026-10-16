@@ -70,7 +70,9 @@ test('advertiser WhatsApp uses its own tracked contact and appears ahead of team
   assert.match(menu,/advertiser && !advertiser.href/);
 });
 test('legal documents have visible versions, current story expiry, and no blanket anonymous-message claim',()=>{
-  const terms=source('app/terminos/page.tsx'),privacy=source('app/privacidad/page.tsx');
-  for(const text of [terms,privacy]){assert.match(text,/version="2026.10.14.3"/); assert.match(text,/texto.*24 horas/);assert.doesNotMatch(text,/conservarse por más tiempo|historial anonimizado/);}
+  const defaults=source('lib/legal-defaults.ts'),terms=defaults.split('"privacy":')[0],privacy=defaults.split('"privacy":')[1];
+  assert.match(source('lib/legal-document.ts'),/INITIAL_LEGAL_VERSION='2026.10.14.3'/);
+  for(const key of ['terminos','privacidad'])assert.match(source(`app/${key}/page.tsx`),/getPublishedLegalDocument/);
+  for(const text of [terms,privacy]){assert.match(text,/texto.*24 horas/);assert.doesNotMatch(text,/conservarse por más tiempo|historial anonimizado/);}
   assert.match(privacy,/no se guardan como conversación en la base de datos/);
 });

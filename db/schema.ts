@@ -14,6 +14,10 @@ export const collaborationGuards=sqliteTable("collaboration_guards",{id:text("id
 export const reviewReservations=sqliteTable("review_reservations",{resourceKey:text("resource_key").primaryKey(),actorId:text("actor_id").notNull().references(()=>users.id,{onDelete:"cascade"}),token:text("token").notNull(),expiresAt:integer("expires_at").notNull()},table=>[index("review_reservations_expiry_idx").on(table.expiresAt)]);
 export const settingsRevision=sqliteTable("settings_revision",{id:text("id").primaryKey(),revision:integer("revision").notNull().default(0)});
 
+export const legalDocuments=sqliteTable('legal_documents',{id:text('id',{enum:['terms','privacy']}).primaryKey(),publishedJson:text('published_json'),draftJson:text('draft_json'),version:text('version').notNull().default('2026.10.14.3'),publishedAt:text('published_at').notNull().default('2026-10-14'),updatedBy:text('updated_by'),updatedAt:text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),revision:integer('revision').notNull().default(0)});
+export const legalDocumentVersions=sqliteTable('legal_document_versions',{id:text('id').primaryKey(),documentId:text('document_id').notNull().references(()=>legalDocuments.id),version:text('version').notNull(),documentJson:text('document_json').notNull(),publishedAt:text('published_at').notNull(),publishedBy:text('published_by')},table=>[uniqueIndex('legal_document_version_unique').on(table.documentId,table.version)]);
+export const accountLegalAcceptances=sqliteTable('account_legal_acceptances',{id:text('id').primaryKey(),userId:text('user_id').notNull().references(()=>users.id,{onDelete:'cascade'}),termsVersion:text('terms_version').notNull(),privacyVersion:text('privacy_version').notNull(),acceptedAt:text('accepted_at').notNull().default(sql`CURRENT_TIMESTAMP`)},table=>[index('account_legal_acceptances_user_idx').on(table.userId)]);
+
 export const helpGuides = sqliteTable("help_guides", {
   id: text("id").primaryKey(),
   audience: text("audience", { enum: ["account", "admin", "all"] }).notNull(),
@@ -542,6 +546,7 @@ export const profiles = sqliteTable("profiles", {
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
   index("profiles_status_region_city_idx").on(table.status, table.region, table.city),
+  index("profiles_city_public_candidates_idx").on(table.city,table.status,table.isDemo),
   index("profiles_public_directory_page_idx").on(table.type, table.tier, table.isFeatured, table.updatedAt, table.id)
     .where(sql`${table.status} = 'approved' and ${table.ownerHiddenAt} is null and ${table.trashedAt} is null`),
   index("profiles_owner_idx").on(table.ownerId),
@@ -614,7 +619,7 @@ export const profileMedia = sqliteTable("profile_media", {
   isProfilePhoto: integer("is_profile_photo", { mode: "boolean" }).notNull().default(false),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt,
-}, (table) => [index("profile_media_profile_idx").on(table.profileId, table.sortOrder), index("profile_media_pending_review_idx").on(table.profileId).where(sql`${table.moderationStatus} = 'pending'`)]);
+}, (table) => [index("profile_media_profile_idx").on(table.profileId, table.sortOrder), index("profile_media_pending_review_idx").on(table.profileId).where(sql`${table.moderationStatus} = 'pending'`),index('profile_media_public_cover_idx').on(table.profileId,sql`${table.isProfilePhoto} desc`,table.sortOrder,table.id).where(sql`${table.visibility}='public' and ${table.moderationStatus}='approved' and ${table.mediaType}='image'`)]);
 
 // A view is stored once per profile, browser and Chilean calendar day. The
 // browser key is an opaque first-party cookie; no IP address is retained.
@@ -627,6 +632,7 @@ export const profileViews = sqliteTable("profile_views", {
 }, (table) => [
   uniqueIndex("profile_view_daily_unique").on(table.profileId, table.viewerKey, table.viewedOn),
   index("profile_views_profile_day_idx").on(table.profileId, table.viewedOn),
+  index("profile_views_profile_timestamp_idx").on(table.profileId,table.viewedAt),
 ]);
 
 // Portal help is independent of advertiser contacts. Daily aggregates only:

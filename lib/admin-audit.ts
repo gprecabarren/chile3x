@@ -21,6 +21,9 @@ export const ADMIN_AUDIT_CATEGORIES = {
 } as const;
 
 export const ADMIN_AUDIT_ACTIONS = {
+  "legal.draft": "Guardó un borrador legal",
+  "legal.publish": "Publicó una versión legal",
+  "legal.discard": "Descartó un borrador legal",
   "forum.rules_update": "Actualizó las normas del foro",
   "forum.watch_update": "Cambió el seguimiento de un tema",
   "forum.notifications_read": "Leyó notificaciones propias del foro",
@@ -114,6 +117,7 @@ export const ADMIN_AUDIT_ACTIONS = {
 } as const;
 
 export const ADMIN_AUDIT_ENTITY_TYPES = {
+  legal_document: "Documento legal",
   forum_section: "Sección del foro",
   forum_topic: "Tema del foro",
   forum_post: "Respuesta del foro",

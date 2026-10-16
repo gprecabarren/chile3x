@@ -1,7 +1,8 @@
 import { and, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { accountAppleIdentities, accountAuthEvents, accountGoogleIdentities, accountXIdentities, xRegistrationIntents, users } from "@/db/schema";
+import { accountAppleIdentities, accountAuthEvents, accountGoogleIdentities, accountXIdentities, xRegistrationIntents, users,accountLegalAcceptances } from "@/db/schema";
+import { getLegalVersionSummary } from '@/lib/legal-documents';
 import { assertSameOrigin, createUserSession, setUserSessionCookie, hashPassword, safeAccountReturnTo } from "@/lib/auth";
 import { requestVerificationEmail } from "@/lib/account-email";
 import { DAY_MS, EMAIL_GRACE_DAYS } from "@/lib/email-verification-policy";
@@ -72,6 +73,8 @@ export async function POST(request: NextRequest) {
 
     if (formData.get("adult_confirmed") !== "yes") return redirectWithError(request, "adult", formData);
     if (formData.get("legal_confirmed") !== "yes") return redirectWithError(request, "legal", formData);
+    const legalVersions=await getLegalVersionSummary();
+    if(formData.get('terms_version')!==legalVersions.terms.version||formData.get('privacy_version')!==legalVersions.privacy.version)return redirectWithError(request,'legal_updated',formData);
     if (displayName.length < 2) return redirectWithError(request, "display_name", formData);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return redirectWithError(request, "email", formData);
     if (!identity) return redirectWithError(request, "identity", formData);
@@ -114,6 +117,7 @@ export async function POST(request: NextRequest) {
     if (xRegistration) {
       await db.batch([
         db.insert(users).values(userValues),
+        db.insert(accountLegalAcceptances).values({id:crypto.randomUUID(),userId,termsVersion:legalVersions.terms.version,privacyVersion:legalVersions.privacy.version}),
         db.insert(accountXIdentities).values({ id: `x_identity_${crypto.randomUUID()}`, userId, xSubject: xRegistration.subject, xUsername: xRegistration.username }),
         db.delete(xRegistrationIntents).where(eq(xRegistrationIntents.id, xRegistration.id)),
         db.insert(accountAuthEvents).values({ id: `auth_event_${crypto.randomUUID()}`, userId, provider: "x", action: "linked", createdAt: new Date().toISOString() }),
@@ -121,7 +125,7 @@ export async function POST(request: NextRequest) {
       createdEmail = email;
       createdPasswordSession = await createUserSession(userId, request, "x");
       if (!providerEmailVerified) await requestVerificationEmail({ id: userId, email, displayName });
-    } else await db.insert(users).values(userValues);
+    } else await db.batch([db.insert(users).values(userValues),db.insert(accountLegalAcceptances).values({id:crypto.randomUUID(),userId,termsVersion:legalVersions.terms.version,privacyVersion:legalVersions.privacy.version})]);
     if (!providerRegistration) {
       createdEmail = email;
       createdPasswordSession = await createUserSession(userId, request, "password");

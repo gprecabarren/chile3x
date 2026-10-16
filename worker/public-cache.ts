@@ -28,6 +28,8 @@ export function publicCacheKey(request: Request, deploymentVersion = CACHE_VERSI
     if (name.startsWith("next-") || name.startsWith("x-vinext-")) return null;
   }
   const path = url.pathname;
+  // Legal publication must be visible on the next request, including anonymously.
+  if(path==='/terminos'||path==='/privacidad')return null;
   // Directory entry requests generate a new random order. Caching their HTML
   // would give everyone the same seed for ten minutes, including on reload.
   // Other public pages retain their existing anonymous cache policy.

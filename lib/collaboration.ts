@@ -7,11 +7,11 @@ import type { AdminUser } from "@/lib/auth";
 
 export const CONFLICT_MESSAGE = "Esta información cambió desde que abriste la página, o está reservada por otra persona. No guardamos ni repetimos tu acción. Conservamos lo que escribiste: consulta la versión actual antes de continuar.";
 export class CollaborationConflict extends Error { constructor() { super(CONFLICT_MESSAGE); } }
-export type ResourceKey = `profile:${string}` | `account:${string}` | `library:${string}` | "settings:site";
+export type ResourceKey = `profile:${string}` | `account:${string}` | `library:${string}` | `legal:${'terms'|'privacy'}` | "settings:site";
 export type ReviewVersion = { key: ResourceKey; revision: number };
 
 export function resourceKey(value: unknown): ResourceKey | null {
-  return typeof value === "string" && /^(?:(?:profile|account|library):[\w-]{1,120}|settings:site)$/.test(value) ? value as ResourceKey : null;
+  return typeof value === "string" && /^(?:(?:profile|account|library):[\w-]{1,120}|legal:(?:terms|privacy)|settings:site)$/.test(value) ? value as ResourceKey : null;
 }
 export function canReview(admin: AdminUser, key: ResourceKey) {
   if (key.startsWith("profile:")) return adminHasCapability(admin,"profiles.moderate") || adminHasCapability(admin,"media.moderate");
@@ -24,6 +24,7 @@ export function revisionExpression(key: ResourceKey): SQL {
   if (key.startsWith("profile:")) return sql`(select revision from profiles where id=${id})`;
   if (key.startsWith("account:")) return sql`(select revision from users where id=${id} and role!='admin')`;
   if (key.startsWith("library:")) return sql`(select revision from exclusive_content_collections where id=${id})`;
+  if (key.startsWith("legal:")) return sql`(select revision from legal_documents where id=${id})`;
   return sql`(select revision from settings_revision where id='site')`;
 }
 export async function currentRevision(key: ResourceKey) {

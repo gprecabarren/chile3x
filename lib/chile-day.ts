@@ -7,3 +7,8 @@ const dayFormatter = new Intl.DateTimeFormat("en-CA", {
 export function chileanDay(date = new Date()) {
   return dayFormatter.format(date);
 }
+
+/** Legacy calendar dates stay literal; timestamped publications use Chile time. */
+export function storedChileanDay(value:string) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value)?value:chileanDay(new Date(value));
+}

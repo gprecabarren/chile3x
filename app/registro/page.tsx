@@ -22,6 +22,7 @@ import { APPLE_REGISTRATION_COOKIE, readAppleRegistrationIntent } from "@/lib/ap
 import { getXAuthConfig, readXRegistrationIntent } from "@/lib/x-auth";
 import { X_REGISTRATION_COOKIE } from "@/lib/x-oauth";
 import { XSignInButton } from "@/app/XSignInButton";
+import { getLegalVersionSummary } from '@/lib/legal-documents';
 
 export const metadata: Metadata = privatePageMetadata({
   title: "Crear cuenta de anunciante",
@@ -42,6 +43,7 @@ const messages: Record<string, string> = {
   server: "No fue posible crear la cuenta en este momento. Inténtalo nuevamente en unos minutos.",
   antispam: "No pudimos validar la protección de seguridad. Inténtalo nuevamente.",
   legal: "Debes aceptar los Términos y condiciones y la Política de privacidad.",
+  legal_updated: "Los textos legales cambiaron desde que abriste el formulario. Revisa las versiones vigentes y vuelve a marcar su aceptación; tus demás datos se conservaron.",
   apple_unavailable: "El registro con Apple todavía no está habilitado.",
   apple_invalid: "Apple no entregó una respuesta válida. Inténtalo nuevamente.",
   apple_state: "La solicitud de Apple venció o ya fue utilizada. Inicia el proceso nuevamente.",
@@ -73,6 +75,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
   const providerEmailVerified = Boolean(providerIdentity?.email);
   const returnTo = safeAccountReturnTo(params.return_to ?? null);
   const settings = await getSiteSettings();
+  const legalVersions=await getLegalVersionSummary();
   const whatsappHref = getPortalWhatsappLink(settings.contact_whatsapp, "Hola, quisiera solicitar que el equipo de Chile3X me cree una cuenta de anunciante.");
   const loginHref = `/ingresar?return_to=${encodeURIComponent(returnTo)}`;
 
@@ -97,11 +100,13 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
     {params.error && <p className="form-alert" role="alert">{messages[params.error] ?? messages.server}{params.error === "duplicate_rut" && <> <Link href="/recuperar-clave">Recuperar contraseña</Link></>}</p>}
     <form action="/api/auth/register" method="post" className="auth-form">
       <input name="return_to" type="hidden" value={returnTo} />
+      <input name="terms_version" type="hidden" value={legalVersions.terms.version}/><input name="privacy_version" type="hidden" value={legalVersions.privacy.version}/>
       <label>Nombre visible <small>(nombre que se verá dentro del sitio; puede ser un apodo)</small><input name="display_name" required minLength={2} maxLength={80} autoComplete="nickname" defaultValue={saved?.displayName || ""} placeholder="Ej. Vale" /><small>Se mostrará en tus comentarios y reseñas. No utilizamos tu nombre completo para identificarte públicamente.</small></label>
       <AccountIdentityFields values={saved ? { fullName: saved.fullName || providerIdentity?.fullName, documentType: saved.documentType, documentNumber: saved.documentNumber, foreignCountry: saved.foreignCountry, birthDate: saved.birthDate, region: saved.region, city: saved.city, phone: saved.phone } : providerIdentity ? { fullName: providerIdentity.fullName } : undefined} />
       <RegistrationEmailField defaultValue={providerIdentity?.email ?? saved?.email ?? ""} locked={providerEmailVerified} />
       {!providerIdentity && <RegistrationPasswordFields />}
-      <RegistrationConsentFields adultConfirmed={saved?.adultConfirmed} legalConfirmed={saved?.legalConfirmed} />
+      <RegistrationConsentFields adultConfirmed={saved?.adultConfirmed} legalConfirmed={params.error==='legal_updated'?false:saved?.legalConfirmed} />
+      <small className="auth-registration-note">Textos vigentes: Términos {legalVersions.terms.version} · Privacidad {legalVersions.privacy.version}.</small>
       <AuthTurnstile action={TURNSTILE_AUTH_REGISTER_ACTION} />
       {!providerName && <p className="auth-registration-note">Entra y prepara tu anuncio al registrarte. Tendrás 7 días para verificar tu correo desde Mi cuenta.</p>}
       <button className="button button-primary" type="submit">{providerName ? `Crear cuenta con ${providerName}` : "Crear cuenta"}</button>

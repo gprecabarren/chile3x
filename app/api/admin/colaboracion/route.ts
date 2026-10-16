@@ -19,6 +19,7 @@ export async function GET(request: Request) {
     case when k.value like 'profile:%' then (select revision from profiles where id=substr(k.value,9))
       when k.value like 'account:%' then (select revision from users where id=substr(k.value,9) and role!='admin')
       when k.value like 'library:%' then (select revision from exclusive_content_collections where id=substr(k.value,9))
+      when k.value like 'legal:%' then (select revision from legal_documents where id=substr(k.value,7))
       else (select revision from settings_revision where id='site') end revision,
     r.actor_id actorId,coalesce(g.github_login,u.display_name,'Administración') actor,r.expires_at expiresAt
     from json_each(${JSON.stringify(keys)}) k left join review_reservations r on r.resource_key=k.value and r.expires_at>${Date.now()}

@@ -45,7 +45,7 @@ test("WhatsApp contact tracing is privacy-minimized and available to administrat
   const [contact, activity, privacy] = await Promise.all([
     source("app/api/perfiles/[profileId]/contacto/route.ts"),
     source("app/admin/actividad/page.tsx"),
-    source("app/privacidad/page.tsx"),
+    source("lib/legal-defaults.ts"),
   ]);
   assert.match(contact, /analyticsConsent \? user\?\.id/);
   assert.match(contact, /chile3x_analytics_consent/);
@@ -57,7 +57,7 @@ test("WhatsApp contact tracing is privacy-minimized and available to administrat
 
 test("manual city selection replaces GPS and persists only a chosen city", async () => {
   const [selector, locationClient, homeLocation, directory, shell, home, worker, privacy] = await Promise.all([
-    source("app/directorio/DirectoryCityBar.tsx"), source("app/directorio/location-client.ts"), source("app/HomeLocationSummary.tsx"), source("lib/directory.ts"), source("app/directorio/_components.tsx"), source("app/page.tsx"), source("worker/index.ts"), source("app/privacidad/page.tsx"),
+    source("app/directorio/DirectoryCityBar.tsx"), source("app/directorio/location-client.ts"), source("app/HomeLocationSummary.tsx"), source("lib/directory.ts"), source("app/directorio/_components.tsx"), source("app/page.tsx"), source("worker/index.ts"), source("lib/legal-defaults.ts"),
   ]);
   assert.match(selector, /position|chooseCity/);
   assert.match(selector, /cityDirectory/);

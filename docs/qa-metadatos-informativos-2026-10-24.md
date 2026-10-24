@@ -38,6 +38,16 @@ Build, tipos y pruebas; validaciones unitarias de alcance, imágenes, campos, ro
 
 Resultados: 438 pruebas aprobadas; 112 vistas de lectura (siete páginas, ocho tamaños, dos temas) sin desbordamiento horizontal y 16 vistas del editor entre 320 y 1920px sin recortes de campos o acciones. En 390px los cuerpos de las siete páginas conservan 16px; en escritorio los cuerpos de lectura son de 20px. Evidencias locales en `outputs/qa-info-reading-responsive-20261024.json`, `outputs/qa-info-seo-responsive-20261024.json` y capturas con prefijo `qa-info-`.
 
+## Publicación y respaldo
+
+- Código funcional respaldado y subido a `origin/main`: `6a16deaa241f3f60eaf87de7204ecd7f61f52bbc`. Incluye los cambios acumulados del sitio desde el 16 de octubre; los archivos locales ajenos al proyecto no se incluyeron.
+- Versión de Cloudflare comprobada: `10dfaade-7043-41b5-981b-59228f15837a`. Hoja compartida publicada: `/assets/index-BWkXJy4H.css`. No se cambiaron plan, bindings, valores del dashboard, configuración visual ni datos públicos durante el despliegue.
+- Comparación de producción: título, descripción, canónica, robots, H1, datos estructurados y contenido informativo conservados en las siete páginas de referencia.
+- Quince comprobaciones públicas adicionales correctas, incluidas las áreas privadas, favicon/estilos y ausencia de rutas locales o sourcemaps públicos.
+- API nueva: GET sin sesión devuelve 401 en las cinco páginas; noindex y no-store presentes. La página administradora no entrega campos protegidos sin sesión.
+- Comprobación DOM en FAQ publicada: cuerpo de respuesta de 20px, pregunta de 22px y columnas agrupadas de 1100px/360px, sin desbordamiento.
+- El commit documental posterior a esta publicación no cambia el bundle desplegado. Cloudflare y Git son mecanismos separados: publicar no crea ni sube commits automáticamente.
+
 ## Referencias
 
 - Rank Math: https://rankmath.com/kb/score-100-in-tests/ — su puntuación tampoco garantiza posiciones.

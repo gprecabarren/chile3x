@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 /* eslint-disable @next/next/no-img-element -- ephemeral R2 stories bypass image optimization intentionally. */
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -131,11 +132,11 @@ function StoryViewer({ group: initialGroup, startAt, onClose, onViewed }: { grou
   return createPortal(<div className="story-viewer" role="dialog" aria-modal="true" aria-label={`Historia de ${group.profileName}`}>
     <div className="story-viewer-panel" ref={panelRef}>
       <div className="story-viewer-progress" aria-hidden="true">{group.stories.map((item, itemIndex) => <span key={item.id}><i style={{ width: `${(itemIndex < index ? 1 : itemIndex === index ? progress : 0) * 100}%` }} /></span>)}</div>
-      <header><div><b>{group.profileName}</b><span>{group.city} · {storyTimeLabel(story.expiresAt)}</span><time dateTime={story.createdAt}>Subida: {storyUploadLabel(story.createdAt)} · hora de Chile</time></div><button type="button" onClick={onClose} aria-label="Cerrar historia">×</button></header>
-      <div className="story-viewer-toolbar"><a className="story-viewer-profile-link" href={profileHref(group)}>Ver anuncio</a><button type="button" onClick={() => setPaused((value) => !value)} aria-pressed={paused}>{paused ? "Continuar" : "Pausar"}</button><span className="story-countdown" aria-label={`Tiempo restante: ${remaining} segundos`}><span aria-hidden="true">◷</span> {ready ? `${remaining} s` : "Cargando…"}</span><small>{index + 1}/{group.stories.length}</small></div>
+      <header><div><b>{group.profileName}</b><span>{group.city} · {storyTimeLabel(story.expiresAt)}</span><time dateTime={story.createdAt}>Subida: {storyUploadLabel(story.createdAt)} · hora de Chile</time></div><ActionButton type="button" onClick={onClose} aria-label="Cerrar historia">×</ActionButton></header>
+      <div className="story-viewer-toolbar"><a className="story-viewer-profile-link" href={profileHref(group)}>Ver anuncio</a><ActionButton type="button" onClick={() => setPaused((value) => !value)} aria-pressed={paused}>{paused ? "Continuar" : "Pausar"}</ActionButton><span className="story-countdown" aria-label={`Tiempo restante: ${remaining} segundos`}><span aria-hidden="true">◷</span> {ready ? `${remaining} s` : "Cargando…"}</span><small>{index + 1}/{group.stories.length}</small></div>
       <div className={`story-viewer-content story-viewer-${story.storyType}`}>{story.storyType === "video" && story.imageUrl ? <video key={story.id} ref={videoRef} data-story-id={story.id} src={story.imageUrl} controls playsInline autoPlay muted preload="metadata" aria-label={`Historia de video de ${group.profileName}`} onLoadedMetadata={event => { const duration = event.currentTarget.duration; if (Number.isFinite(duration) && duration > 0) setClock({ id: story.id, elapsed: 0, total: duration * 1000 }); }} onTimeUpdate={event => { const video = event.currentTarget; if (Number.isFinite(video.duration) && video.duration > 0) setClock({ id: story.id, elapsed: video.currentTime * 1000, total: video.duration * 1000 }); }} onLoadedData={() => setLoadedId(story.id)} onPlay={() => setPaused(false)} onPause={() => { if (videoRef.current?.dataset.storyId === story.id) setPaused(true); }} onEnded={() => index < group.stories.length - 1 ? setIndex(value => value + 1) : onClose()} onError={() => setFailedId(story.id)} /> : story.storyType === "image" && story.imageUrl ? <img key={story.id} src={story.imageUrl} alt={`Historia de ${group.profileName}`} onLoad={() => setLoadedId(story.id)} onError={() => setFailedId(story.id)} /> : <p>{story.body}</p>}{failedId === story.id && <p className="story-image-error" role="status">No se pudo cargar {story.storyType === "video" ? "este video" : "esta foto"}. Revisa la conexión o pasa a la siguiente historia.</p>}{story.storyType !== "text" && story.body && <span>{story.body}</span>}</div>
-      <button className="story-viewer-previous" type="button" onClick={() => setIndex((value) => Math.max(0, value - 1))} disabled={index === 0} aria-label="Historia anterior">‹</button>
-      <button className="story-viewer-next" type="button" onClick={() => index < group.stories.length - 1 ? setIndex((value) => value + 1) : onClose()} aria-label="Historia siguiente">›</button>
+      <ActionButton className="story-viewer-previous" type="button" onClick={() => setIndex((value) => Math.max(0, value - 1))} disabled={index === 0} aria-label="Historia anterior">‹</ActionButton>
+      <ActionButton className="story-viewer-next" type="button" onClick={() => index < group.stories.length - 1 ? setIndex((value) => value + 1) : onClose()} aria-label="Historia siguiente">›</ActionButton>
     </div>
   </div>, document.body);
 }
@@ -149,8 +150,8 @@ function StoryActivityPanel({ stories }: { stories: PublicStory[] }) {
   if (!activity.length) return null;
   return <aside id="directory-activity" className="story-activity-panel" aria-label="Última actividad">
     <header><h2>Última actividad</h2><span>24 h</span></header>
-    <div>{activity.slice(0, visible).map((story) => <article key={story.id} className="story-activity-item"><button type="button" className="story-activity-avatar" aria-label={`Ver historias de ${story.profileName} desde actividad`} onClick={() => setOpen(groups.get(story.profileId) ?? null)}>{story.profileImageUrl ? <img src={story.profileImageUrl} alt="" loading="lazy" /> : story.profileName.slice(0, 1)}</button><a href={profileHref(story)}><strong>{story.profileName}</strong><small>{story.city} · {activityTimeLabel(story.createdAt)}</small><p>{story.body}</p></a></article>)}</div>
-    {activity.length > visible && <button className="story-activity-more" type="button" onClick={() => setVisible((value) => value + 8)}>Ver más actividad</button>}
+    <div>{activity.slice(0, visible).map((story) => <article key={story.id} className="story-activity-item"><ActionButton type="button" className="story-activity-avatar" aria-label={`Ver historias de ${story.profileName} desde actividad`} onClick={() => setOpen(groups.get(story.profileId) ?? null)}>{story.profileImageUrl ? <img src={story.profileImageUrl} alt="" loading="lazy" /> : story.profileName.slice(0, 1)}</ActionButton><a href={profileHref(story)}><strong>{story.profileName}</strong><small>{story.city} · {activityTimeLabel(story.createdAt)}</small><p>{story.body}</p></a></article>)}</div>
+    {activity.length > visible && <ActionButton className="story-activity-more" type="button" onClick={() => setVisible((value) => value + 8)}>Ver más actividad</ActionButton>}
     {open && <StoryViewer group={open} startAt={0} onClose={close} />}
   </aside>;
 }
@@ -203,7 +204,7 @@ export function StoryRail({ stories, city, profileOnly = false, compactRegion = 
     <div className="story-bubble-list">{orderedGroups.map((group) => {
       const avatar = group.profileImageUrl;
       const viewed = group.stories.every((story) => seenIds.includes(story.id));
-      return <div className="story-bubble-card" key={group.profileId}><button className={`story-bubble${viewed ? " is-viewed" : ""}`} type="button" onClick={() => openGroup(group)} aria-label={`Ver historias de ${group.profileName}${viewed ? ", ya vistas" : ""}`}><span className={`story-bubble-avatar${avatar ? " has-image" : ""}`}>{avatar ? <img src={avatar} alt="" loading="lazy" /> : group.profileName.slice(0, 1)}</span><strong>{group.profileName}</strong>{!profileOnly && !city && <small>{group.city}</small>}</button></div>;
+      return <div className="story-bubble-card" key={group.profileId}><ActionButton className={`story-bubble${viewed ? " is-viewed" : ""}`} type="button" onClick={() => openGroup(group)} aria-label={`Ver historias de ${group.profileName}${viewed ? ", ya vistas" : ""}`}><span className={`story-bubble-avatar${avatar ? " has-image" : ""}`}>{avatar ? <img src={avatar} alt="" loading="lazy" /> : group.profileName.slice(0, 1)}</span><strong>{group.profileName}</strong>{!profileOnly && !city && <small>{group.city}</small>}</ActionButton></div>;
     })}</div>
     {open && <StoryViewer key={open.group.profileId} group={open.group} startAt={open.index} onClose={close} onViewed={markStorySeen} />}
   </section>;
@@ -225,9 +226,9 @@ export function DirectoryStoryLayout({ stories, city, children, listingsLabel = 
   }
   return <div className={`directory-stories-layout${hasActivity ? " has-activity" : ""}${activityOpen && hasActivity ? " is-activity-open" : ""}`}>
     <StoryRail stories={active} city={city} />
-    {hasActivity && <div ref={tabsRef} className="directory-activity-tabs" role="group" aria-label="Vista del directorio"><button type="button" aria-pressed={!activityOpen} aria-controls="directory-listings" onClick={() => showListings()}>▦ {listingsLabel}</button><button type="button" aria-pressed={activityOpen} aria-controls="directory-activity" onClick={() => setActivityOpen(true)}>◷ Actividad</button></div>}
+    {hasActivity && <div ref={tabsRef} className="directory-activity-tabs" role="group" aria-label="Vista del directorio"><ActionButton type="button" aria-pressed={!activityOpen} aria-controls="directory-listings" onClick={() => showListings()}>▦ {listingsLabel}</ActionButton><ActionButton type="button" aria-pressed={activityOpen} aria-controls="directory-activity" onClick={() => setActivityOpen(true)}>◷ Actividad</ActionButton></div>}
     <div ref={resultsRef} className="directory-live-layout"><div id="directory-listings" className="directory-main-results">{children}</div>{hasActivity && <StoryActivityPanel stories={active} />}</div>
-    {hasActivity && activityOpen && <div className="directory-activity-tabs directory-activity-footer" role="group" aria-label="Vista del directorio, final"><button type="button" aria-pressed={false} aria-controls="directory-listings" onClick={() => showListings(true)}>▦ {listingsLabel}</button><button type="button" aria-pressed={true} aria-controls="directory-activity">◷ Actividad</button></div>}
+    {hasActivity && activityOpen && <div className="directory-activity-tabs directory-activity-footer" role="group" aria-label="Vista del directorio, final"><ActionButton type="button" aria-pressed={false} aria-controls="directory-listings" onClick={() => showListings(true)}>▦ {listingsLabel}</ActionButton><ActionButton type="button" aria-pressed={true} aria-controls="directory-activity">◷ Actividad</ActionButton></div>}
   </div>;
 }
 
@@ -238,5 +239,5 @@ export function ProfileStoryTrigger({ stories }: { stories: PublicStory[] }) {
   const close = useCallback(() => setOpen(false), []);
   const group = groups[0];
   if (!group) return null;
-  return <><button className="profile-story-trigger" type="button" onClick={() => setOpen(true)} aria-label={`Ver historias de ${group.profileName}`}><span>Ver historias</span></button>{open && <StoryViewer group={group} startAt={0} onClose={close} />}</>;
+  return <><ActionButton className="profile-story-trigger" type="button" onClick={() => setOpen(true)} aria-label={`Ver historias de ${group.profileName}`}><span>Ver historias</span></ActionButton>{open && <StoryViewer group={group} startAt={0} onClose={close} />}</>;
 }

@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import type { MessageRecord } from "@/lib/internal-messages";
@@ -194,14 +195,14 @@ export function ChatThread({
     <header>
       <div><span>CONVERSACIÓN PRIVADA</span><h2>{counterpartAvailable && currentRole === "visitor" ? profileName : counterpartLabel}</h2></div>
       <div className="internal-chat-controls">
-        <button type="button" onClick={enableBrowserNotifications}>Activar avisos</button>
-        <button type="button" onClick={toggleMute} disabled={busy}>{muted ? "Reactivar avisos" : "Silenciar"}</button>
-        <button className={blockedByMe ? "is-blocked" : ""} type="button" onClick={toggleBlock} disabled={busy}>{blockedByMe ? "Desbloquear" : "Bloquear"}</button>
+        <ActionButton type="button" onClick={enableBrowserNotifications}>Activar avisos</ActionButton>
+        <ActionButton type="button" onClick={toggleMute} disabled={busy}>{muted ? "Reactivar avisos" : "Silenciar"}</ActionButton>
+        <ActionButton className={blockedByMe ? "is-blocked" : ""} type="button" onClick={toggleBlock} disabled={busy}>{blockedByMe ? "Desbloquear" : "Bloquear"}</ActionButton>
       </div>
     </header>
     <p className="internal-chat-safety"><strong>Cuida tu privacidad:</strong> no envíes contraseñas, códigos, documentos, datos bancarios ni información que no quieras compartir. Chile3X nunca te pedirá esos datos por este chat.</p>
     <div className="internal-chat-messages" ref={listRef} aria-live="polite" onScroll={event => { const list = event.currentTarget; followLatest.current = list.scrollHeight - list.scrollTop - list.clientHeight < 80; }}>
-      {hasMore && <button className="internal-chat-load-more" type="button" onClick={loadOlder} disabled={busy}>Cargar mensajes anteriores</button>}
+      {hasMore && <ActionButton className="internal-chat-load-more" type="button" onClick={loadOlder} disabled={busy}>Cargar mensajes anteriores</ActionButton>}
       {messages.length === 0 && <p className="internal-chat-empty">Aún no hay mensajes. Preséntate y menciona que viste este anuncio en Chile3X.</p>}
       {messages.map((message) => <article className={message.senderRole === currentRole ? "is-own" : "is-other"} key={message.id}>
         <strong className="internal-chat-sender">{message.senderRole === "owner" ? profileName : currentRole === "visitor" ? currentUserLabel : counterpartLabel}</strong>
@@ -213,7 +214,7 @@ export function ChatThread({
     <form className="internal-chat-composer" onSubmit={send}>
       <label htmlFor="internal-chat-body">Mensaje</label>
       <textarea id="internal-chat-body" value={body} onChange={(event) => setBody(event.target.value)} maxLength={1_200} rows={4} disabled={blockedByAnyone || !counterpartAvailable} placeholder="Escribe un mensaje privado…" />
-      <div><small className={sensitiveWarning ? "is-warning" : ""}>{sensitiveWarning ? "Parece que incluiste información sensible. Revísala antes de enviar." : `${body.length}/1200 caracteres`}</small><button className="button button-primary" type="submit" disabled={busy || blockedByAnyone || !counterpartAvailable || !body.trim()}>{busy ? "Enviando…" : "Enviar mensaje"}</button></div>
+      <div><small className={sensitiveWarning ? "is-warning" : ""}>{sensitiveWarning ? "Parece que incluiste información sensible. Revísala antes de enviar." : `${body.length}/1200 caracteres`}</small><ActionButton className="button button-primary" type="submit" disabled={busy || blockedByAnyone || !counterpartAvailable || !body.trim()}>{busy ? "Enviando…" : "Enviar mensaje"}</ActionButton></div>
     </form>
     {error && <p className="form-alert" role="status">{error}</p>}
   </section>;

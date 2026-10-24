@@ -1,4 +1,5 @@
 "use client";
+import { ActionAnchor, ActionButton } from "@/app/ActionButton";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
@@ -90,11 +91,11 @@ export function BrowserSessionBoundary({ initial, children }: { initial: Session
     };
   }, [mode, identity, pathname, protectedView]);
 
-  if (state.phase === "changed") return <main className="session-change-screen"><section role="alert"><p className="eyebrow">SEGURIDAD DE LA SESIÓN</p><h1>Tu sesión cambió</h1><p>La identidad activa cambió en otra pestaña o tu sesión terminó. Esta vista se cerró para evitar mezclar cuentas. No se modificaron tus datos ni tus permisos.</p><a className="button button-primary" href={state.current?.mode === "admin" ? "/admin" : state.current?.mode === "account" ? "/mi-cuenta" : "/ingresar?error=session_changed"}>{state.current?.mode === "admin" ? "Ir a administración" : state.current?.mode === "account" ? "Ir a mi cuenta" : "Iniciar sesión"}</a></section></main>;
+  if (state.phase === "changed") return <main className="session-change-screen"><section role="alert"><p className="eyebrow">SEGURIDAD DE LA SESIÓN</p><h1>Tu sesión cambió</h1><p>La identidad activa cambió en otra pestaña o tu sesión terminó. Esta vista se cerró para evitar mezclar cuentas. No se modificaron tus datos ni tus permisos.</p><ActionAnchor className="button button-primary" href={state.current?.mode === "admin" ? "/admin" : state.current?.mode === "account" ? "/mi-cuenta" : "/ingresar?error=session_changed"}>{state.current?.mode === "admin" ? "Ir a administración" : state.current?.mode === "account" ? "Ir a mi cuenta" : "Iniciar sesión"}</ActionAnchor></section></main>;
   const blocked = Boolean(mode && protectedView && state.phase !== "ready");
   return <>
-    {blocked && <main className="session-change-screen session-check-screen"><section role="status"><p className="eyebrow">SEGURIDAD DE LA SESIÓN</p><h1>{state.phase === "offline" ? "No pudimos comprobar tu sesión" : "Comprobando tu sesión"}</h1><p>{state.phase === "offline" ? "La vista anterior permanece oculta por seguridad. Revisa tu conexión e inténtalo nuevamente; tus campos no se han borrado." : "Estamos confirmando la identidad activa de este navegador."}</p>{state.phase === "offline" && <button className="button button-primary" type="button" onClick={() => retry.current()}>Reintentar</button>}</section></main>}
-    {!protectedView && state.phase === "offline" && <div className="session-check-notice" role="alert">No se pudo actualizar el estado de tu sesión. Puedes seguir usando esta página o <button type="button" onClick={() => retry.current()}>Reintentar</button></div>}
+    {blocked && <main className="session-change-screen session-check-screen"><section role="status"><p className="eyebrow">SEGURIDAD DE LA SESIÓN</p><h1>{state.phase === "offline" ? "No pudimos comprobar tu sesión" : "Comprobando tu sesión"}</h1><p>{state.phase === "offline" ? "La vista anterior permanece oculta por seguridad. Revisa tu conexión e inténtalo nuevamente; tus campos no se han borrado." : "Estamos confirmando la identidad activa de este navegador."}</p>{state.phase === "offline" && <ActionButton className="button button-primary" type="button" onClick={() => retry.current()}>Reintentar</ActionButton>}</section></main>}
+    {!protectedView && state.phase === "offline" && <div className="session-check-notice" role="alert">No se pudo actualizar el estado de tu sesión. Puedes seguir usando esta página o <ActionButton type="button" onClick={() => retry.current()}>Reintentar</ActionButton></div>}
     <div className="browser-session-boundary" data-session-checking={blocked ? "true" : undefined} inert={blocked || undefined} aria-hidden={blocked || undefined} aria-busy={blocked || undefined}>{children}</div>
   </>;
 }

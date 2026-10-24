@@ -21,7 +21,7 @@ export default async function NewsPage() {
   const posts = await listNews();
 
   return <DirectoryShell>
-    <main className="news-index">
+    <section className="news-index">
       <header>
         <p className="eyebrow">ACTUALIDAD CHILE3X</p>
         <h1>Noticias, seguridad y publicación responsable</h1>
@@ -54,6 +54,6 @@ export default async function NewsPage() {
           <Link href="/reglas-de-publicacion">Reglas de publicación</Link>
         </nav>
       </section>
-    </main>
+    </section>
   </DirectoryShell>;
 }

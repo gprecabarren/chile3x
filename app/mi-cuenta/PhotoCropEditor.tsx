@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
 import { MAX_IMAGE_UPLOAD_BYTES } from "@/lib/image-upload-policy";
 
@@ -78,7 +79,7 @@ export default function PhotoCropEditor({ file, onApply, disabled, onBusyChange 
       <canvas ref={canvasRef} aria-label="Foto original con el cuadro de recorte" />
       {selection && <div className="photo-crop-selection" style={{ left: `${selection.x / sourceSize.width * 100}%`, top: `${selection.y / sourceSize.height * 100}%`, width: `${selection.width / sourceSize.width * 100}%`, height: `${selection.height / sourceSize.height * 100}%` }}>
         <span className="photo-crop-grid" aria-hidden="true" />
-        {(["nw", "ne", "sw", "se"] as const).map(corner => <button key={corner} className={`photo-crop-handle is-${corner}`} data-crop-corner={corner} type="button" disabled={disabled || saving} aria-label={`Ajustar esquina ${corner === "nw" ? "superior izquierda" : corner === "ne" ? "superior derecha" : corner === "sw" ? "inferior izquierda" : "inferior derecha"}`} onKeyDown={event => { const dx = event.key === "ArrowLeft" ? -10 : event.key === "ArrowRight" ? 10 : 0, dy = event.key === "ArrowUp" ? -10 : event.key === "ArrowDown" ? 10 : 0; if (dx || dy) { event.preventDefault(); setCrop(current => resizePhotoCrop(sourceSize.width, sourceSize.height, current, corner, dx, dy)); } }} />)}
+        {(["nw", "ne", "sw", "se"] as const).map(corner => <ActionButton key={corner} className={`photo-crop-handle is-${corner}`} data-crop-corner={corner} type="button" disabled={disabled || saving} aria-label={`Ajustar esquina ${corner === "nw" ? "superior izquierda" : corner === "ne" ? "superior derecha" : corner === "sw" ? "inferior izquierda" : "inferior derecha"}`} onKeyDown={event => { const dx = event.key === "ArrowLeft" ? -10 : event.key === "ArrowRight" ? 10 : 0, dy = event.key === "ArrowUp" ? -10 : event.key === "ArrowDown" ? 10 : 0; if (dx || dy) { event.preventDefault(); setCrop(current => resizePhotoCrop(sourceSize.width, sourceSize.height, current, corner, dx, dy)); } }} />)}
       </div>}
     </div>
     <div className="photo-crop-controls">
@@ -89,6 +90,6 @@ export default function PhotoCropEditor({ file, onApply, disabled, onBusyChange 
       {([['zoom','Acercar encuadre',1,4,.1],['horizontal','Posición horizontal',0,100,1],['vertical','Posición vertical',0,100,1]] as const).map(([key,label,min,max,step]) => <label key={key}>{label}<input type="range" min={min} max={max} step={step} value={crop[key]} disabled={disabled || saving} onChange={event => setCrop(current => ({ ...current, [key]: Number(event.target.value) }))} /></label>)}
     </div></details>
     <small>{dimensions || "Cargando foto…"}</small>{error && <p role="alert">{error}</p>}
-    <div className="photo-selection-actions"><button type="button" className="button button-outline" disabled={disabled || saving} onClick={() => setCrop({ ...defaultPhotoCrop })}>Restablecer encuadre</button><button type="button" className="button button-primary" disabled={!loaded || disabled || saving} onClick={apply}>{saving ? "Aplicando…" : "Usar este recorte"}</button></div>
+    <div className="photo-selection-actions"><ActionButton type="button" className="button button-outline" disabled={disabled || saving} onClick={() => setCrop({ ...defaultPhotoCrop })}>Restablecer encuadre</ActionButton><ActionButton type="button" className="button button-primary" disabled={!loaded || disabled || saving} onClick={apply}>{saving ? "Aplicando…" : "Usar este recorte"}</ActionButton></div>
   </section>;
 }

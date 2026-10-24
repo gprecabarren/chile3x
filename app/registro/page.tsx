@@ -1,3 +1,4 @@
+import { ActionButton } from "@/app/ActionButton";
 import type { Metadata } from "next";
 import Link from "@/app/NavigationLink";
 import { AccountIdentityFields } from "@/app/account-identity-fields";
@@ -23,6 +24,7 @@ import { getXAuthConfig, readXRegistrationIntent } from "@/lib/x-auth";
 import { X_REGISTRATION_COOKIE } from "@/lib/x-oauth";
 import { XSignInButton } from "@/app/XSignInButton";
 import { getLegalVersionSummary } from '@/lib/legal-documents';
+import "./registration-layout.css";
 
 export const metadata: Metadata = privatePageMetadata({
   title: "Crear cuenta de anunciante",
@@ -109,7 +111,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
       <small className="auth-registration-note">Textos vigentes: Términos {legalVersions.terms.version} · Privacidad {legalVersions.privacy.version}.</small>
       <AuthTurnstile action={TURNSTILE_AUTH_REGISTER_ACTION} />
       {!providerName && <p className="auth-registration-note">Entra y prepara tu anuncio al registrarte. Tendrás 7 días para verificar tu correo desde Mi cuenta.</p>}
-      <button className="button button-primary" type="submit">{providerName ? `Crear cuenta con ${providerName}` : "Crear cuenta"}</button>
+      <ActionButton className="button button-primary" type="submit">{providerName ? `Crear cuenta con ${providerName}` : "Crear cuenta"}</ActionButton>
     </form>
     {whatsappHref && <PortalWhatsappLink placement="registration" className="button button-outline auth-whatsapp-request" href={whatsappHref} target="_blank" rel="noopener noreferrer">Solicitar creación de cuenta por WhatsApp</PortalWhatsappLink>}
     <p className="auth-switch">¿Ya tienes una cuenta? <Link href={loginHref}>Ingresar</Link></p>

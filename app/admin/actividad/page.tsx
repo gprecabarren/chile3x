@@ -1,3 +1,4 @@
+import { ActionButton } from "@/app/ActionButton";
 import { and, asc, count, desc, eq, isNotNull, isNull, like, or, sql, type SQL } from "drizzle-orm";
 import Link from "@/app/NavigationLink";
 import { DateField } from "@/app/DateField";
@@ -124,7 +125,7 @@ function entityHref(type: string, id: string | null, label: string | null, retur
   if (type === "profile") return `/admin/anuncios-publicaciones?q=${encodeURIComponent(label ?? id)}&return_to=${encodeURIComponent(returnTo)}`;
   if (type === "news") return `/admin/noticias?edit=${encodeURIComponent(id)}`;
   if (type === "report" || type === "report_evidence") return "/admin/reportes";
-  if (type === "bug_report") return "/admin/bugs";
+  if (type === "bug_report") return "/admin/testing?seccion=bugs";
   if (type === "exclusive_collection") return "/admin/medios?tipo=exclusive";
   if (type === "public_media" || type === "exclusive_media" || type === "verification_document") return "/admin/medios";
   if (type === "settings") return "/admin/configuracion";
@@ -259,13 +260,13 @@ export default async function AdminActivityPage({ searchParams }: { searchParams
         <label>Buscar<input type="search" name="notify_q" defaultValue={notificationFilters.q} placeholder="Cuenta o anuncio" /></label>
         <label>Tipo<select name="notify_kind" defaultValue={notificationFilters.kind}><option value="">Todos</option><option value="account_registered">Nuevas cuentas</option><option value="profile_created">Anuncios creados</option><option value="profile_updated">Anuncios modificados</option><option value="media_uploaded">Fotos y videos recibidos</option></select></label>
         <label>Estado<select name="notify_state" defaultValue={notificationFilters.state}><option value="">Leídas y nuevas</option><option value="unread">Solo nuevas</option><option value="read">Solo leídas</option></select></label>
-        <button className="button button-primary" type="submit">Filtrar</button>
+        <ActionButton className="button button-primary" type="submit">Filtrar</ActionButton>
         {(notificationFilters.q || notificationFilters.kind || notificationFilters.state) && <Link className="button button-outline" href="/admin/actividad">Limpiar</Link>}
       </form>
-      <form className="admin-notification-read-all" action="/api/admin/notificaciones" method="post"><input type="hidden" name="intent" value="all" /><input type="hidden" name="return_to" value="/admin/actividad?notice=notifications_read" /><button type="submit">Marcar todas como leídas</button></form>
+      <form className="admin-notification-read-all" action="/api/admin/notificaciones" method="post"><input type="hidden" name="intent" value="all" /><input type="hidden" name="return_to" value="/admin/actividad?notice=notifications_read" /><ActionButton type="submit">Marcar todas como leídas</ActionButton></form>
       {notificationRows.length ? <div className="admin-notification-list">{notificationRows.map((notification) => <article className={notification.readAt ? "is-read" : "is-unread"} key={notification.id}>
         <div><span>{notification.kind === "account_registered" ? "Nueva cuenta" : notification.kind === "profile_created" ? "Anuncio creado" : notification.kind === "media_uploaded" ? "Fotos o videos recibidos" : "Anuncio modificado"}</span><strong>{notification.profileName ?? notification.actorName ?? (notification.actorUsername ? `@${notification.actorUsername}` : notification.actorEmail) ?? "Usuario de Chile3X"}</strong><p>{notification.summary}</p><time dateTime={activityInstant(notification.createdAt)}>{activityDate(notification.createdAt)}</time></div>
-        <nav>{notification.actorUserId && <Link href={`/admin/cuentas/${encodeURIComponent(notification.actorUserId)}`}>Ver cuenta</Link>}{notification.profileId && <Link href={`/admin/anuncios-publicaciones?q=${encodeURIComponent(notification.profileName ?? notification.profileId)}`}>Ver anuncio</Link>}{!notification.readAt && <form action="/api/admin/notificaciones" method="post"><input type="hidden" name="notification_id" value={notification.id} /><input type="hidden" name="return_to" value="/admin/actividad?notice=notifications_read" /><button type="submit">Marcar leída</button></form>}</nav>
+        <nav>{notification.actorUserId && <Link href={`/admin/cuentas/${encodeURIComponent(notification.actorUserId)}`}>Ver cuenta</Link>}{notification.profileId && <Link href={`/admin/anuncios-publicaciones?q=${encodeURIComponent(notification.profileName ?? notification.profileId)}`}>Ver anuncio</Link>}{!notification.readAt && <form action="/api/admin/notificaciones" method="post"><input type="hidden" name="notification_id" value={notification.id} /><input type="hidden" name="return_to" value="/admin/actividad?notice=notifications_read" /><ActionButton type="submit">Marcar leída</ActionButton></form>}</nav>
       </article>)}</div> : <p className="admin-media-empty">No hay notificaciones que coincidan con estos filtros.</p>}
     </details>
     <PortalWhatsappStats />
@@ -288,7 +289,7 @@ export default async function AdminActivityPage({ searchParams }: { searchParams
       <DateField label="Desde" name="from" defaultValue={filters.from} />
       <DateField label="Hasta" name="to" defaultValue={filters.to} />
       <label>Orden<select name="order" defaultValue={filters.order}><option value="newest">Más recientes primero</option><option value="oldest">Más antiguos primero</option></select></label>
-      <div className="admin-audit-filter-actions"><button className="button button-primary" type="submit">Aplicar filtros</button>{hasFilters && <Link prefetch={false} className="button button-outline" href="/admin/actividad">Limpiar</Link>}</div>
+      <div className="admin-audit-filter-actions"><ActionButton className="button button-primary" type="submit">Aplicar filtros</ActionButton>{hasFilters && <Link prefetch={false} className="button button-outline" href="/admin/actividad">Limpiar</Link>}</div>
     </form>
     <p className="admin-filter-summary">Mostrando {rows.length} de {total} registros{total > PAGE_SIZE ? ` · página ${page} de ${totalPages}` : ""}.</p>
     {rows.length ? <section className="admin-audit-list" aria-label="Eventos administrativos">{rows.map((row) => {

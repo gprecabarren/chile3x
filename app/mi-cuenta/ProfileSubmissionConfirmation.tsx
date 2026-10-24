@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
 import { useState } from "react";
 import { AnalyticsEvent } from "@/app/AnalyticsEvent";
@@ -28,7 +29,7 @@ export function ProfileSubmissionConfirmation({ profileId, profileType }: { prof
           <li>Galería privada para personas que autorices.</li>
         </ul>
       </div>
-      <button className="button button-primary" type="button" onClick={close}>Continuar completando</button>
+      <ActionButton className="button button-primary" type="button" onClick={close}>Continuar completando</ActionButton>
     </section>
   </div>;
 }

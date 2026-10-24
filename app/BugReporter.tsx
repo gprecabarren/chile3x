@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
 import { useEffect, useState } from "react";
 
@@ -51,14 +52,14 @@ export function BugReporter() {
   }
 
   return <aside className="tester-reporter" aria-label="Herramientas de prueba">
-    <button type="button" className="tester-reporter-trigger" onClick={() => { setOpen((value) => !value); setNotice(""); }} aria-expanded={open}>🐞 <span>Reportar bug</span></button>
+    <ActionButton type="button" className="tester-reporter-trigger" onClick={() => { setOpen((value) => !value); setNotice(""); }} aria-expanded={open}>🐞 <span>Reportar bug</span></ActionButton>
     {open && <form className="tester-reporter-form" onSubmit={submit}>
-      <header><div><p>HERRAMIENTAS DE TESTER</p><h2>Reportar un problema</h2></div><button type="button" aria-label="Cerrar reporte" onClick={() => setOpen(false)}>×</button></header>
+      <header><div><p>HERRAMIENTAS DE TESTER</p><h2>Reportar un problema</h2></div><ActionButton type="button" aria-label="Cerrar reporte" onClick={() => setOpen(false)}>×</ActionButton></header>
       <p>Este reporte llegará sólo al panel de administración. La página, dispositivo y navegador se adjuntan automáticamente.</p>
       <label>Resumen<input required minLength={3} maxLength={120} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Ej. El menú no se puede cerrar" /></label>
       <label>¿Qué ocurrió y cómo repetirlo?<textarea required minLength={10} maxLength={2000} rows={5} value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Indica los pasos, resultado esperado y resultado obtenido." /></label>
       {context && <dl><div><dt>Página</dt><dd>{context.pageUrl}</dd></div><div><dt>Entorno</dt><dd>{context.deviceType === "mobile" ? "Móvil" : "Escritorio"} · {context.viewport}</dd></div></dl>}
-      <button className="button button-primary" type="submit" disabled={busy}>{busy ? "Enviando…" : "Enviar reporte"}</button>
+      <ActionButton className="button button-primary" type="submit" disabled={busy}>{busy ? "Enviando…" : "Enviar reporte"}</ActionButton>
       {notice && <p className="tester-reporter-notice" role="status">{notice}</p>}
     </form>}
   </aside>;

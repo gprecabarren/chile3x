@@ -1,6 +1,7 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { MIN_PASSWORD_LENGTH, passwordRequirementText } from "@/lib/password-policy";
 
 const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
@@ -22,6 +23,7 @@ function createPassword(length = 14) {
 }
 
 export function AdminPasswordField({ label, submitLabel }: { label: string; submitLabel: string }) {
+  const fieldId=useId();
   const [password, setPassword] = useState("");
   const [copyStatus, setCopyStatus] = useState("");
   const [showPassword, setShowPassword] = useState(true);
@@ -41,5 +43,5 @@ export function AdminPasswordField({ label, submitLabel }: { label: string; subm
     setCopyStatus("");
   }
 
-  return <div className="admin-password-field"><span>{label}</span><div><input name="password" type={showPassword ? "text" : "password"} required minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" value={password} placeholder="Escribe o genera una contraseña" onChange={(event) => { setPassword(event.target.value); setCopyStatus(""); }} /><button className="button button-outline" type="button" onClick={generatePassword}>Generar clave</button><button className="button button-outline admin-password-visibility-button" type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"} aria-pressed={showPassword} title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}><VisibilityIcon visible={showPassword} /></button><button className="button button-outline admin-password-copy-button" type="button" onClick={copyPassword} disabled={!password} aria-label="Copiar contraseña" title="Copiar contraseña"><CopyIcon /><span className="sr-only">Copiar contraseña</span></button></div><small>{passwordRequirementText} Puedes generar una clave y copiarla para compartirla de forma segura. Chile3X nunca guarda la clave en texto visible.</small>{copyStatus && <span className="admin-password-copy-status" role="status">{copyStatus}</span>}<button className="button button-primary" type="submit">{submitLabel}</button></div>;
+  return <div className="admin-password-field"><label htmlFor={fieldId}>{label}</label><div className="admin-password-entry"><input id={fieldId} aria-describedby={`${fieldId}-help`} name="password" type={showPassword ? "text" : "password"} required minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" value={password} placeholder="Escribe o genera una contraseña" onChange={(event) => { setPassword(event.target.value); setCopyStatus(""); }} /><ActionButton className="button button-outline" type="button" onClick={generatePassword}>Generar clave</ActionButton><ActionButton className="button button-outline admin-password-visibility-button" type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"} aria-pressed={showPassword} title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}><VisibilityIcon visible={showPassword} /></ActionButton><ActionButton className="button button-outline admin-password-copy-button" type="button" onClick={copyPassword} disabled={!password} aria-label="Copiar contraseña" title="Copiar contraseña"><CopyIcon /><span className="sr-only">Copiar contraseña</span></ActionButton></div><small id={`${fieldId}-help`}>{passwordRequirementText} Puedes generar una clave y copiarla para compartirla de forma segura. Chile3X nunca guarda la clave en texto visible.</small>{copyStatus && <span className="admin-password-copy-status" role="status">{copyStatus}</span>}<ActionButton className="button button-primary" type="submit">{submitLabel}</ActionButton></div>;
 }

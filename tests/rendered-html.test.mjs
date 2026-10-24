@@ -75,9 +75,11 @@ test("server-renders the Chile3X public home", async () => {
   assert.match(html, /Ir a una ciudad/);
   assert.match(html, /numberOfItems":36/);
   assert.match(html, /"url":"https:\/\/chile3x\.cl\/escorts\/concepcion"/);
-  assert.match(html, /ciudades y comunas disponibles/);
-  assert.match(html, /Encuentra por territorio\./);
-  assert.match(html, /class="coverage-stats"/);
+  assert.match(html, /Explorar regiones de Chile/);
+  assert.match(html, /home-coverage-action/);
+  assert.doesNotMatch(html, /class="hero-card"|coverage-panorama/);
+  assert.doesNotMatch(html, /Encuentra por territorio\./);
+  assert.doesNotMatch(html, /class="coverage-stats"/);
   assert.doesNotMatch(html, /home-silhouette|home-hero-background|COBERTURA INICIAL|Desde Arica hasta Punta Arenas\./);
   assert.match(html, /Región de Arica y Parinacota/);
   assert.match(html, /Región de Magallanes y de la Antártica Chilena/);

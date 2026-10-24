@@ -1,5 +1,6 @@
 import { getDb } from "@/db";
 import { siteSettings } from "@/db/schema";
+import {publicSiteOrigin} from "./public-site-url";
 import { cache } from "react";
 
 export const siteSettingDefaults = {
@@ -7,6 +8,17 @@ export const siteSettingDefaults = {
   moderation_mode: "manual",
   billing_mode: "manual",
   maintenance_mode: "disabled",
+  home_layout: "classic",
+  home_content_classic: "",
+  home_content_compact: "",
+  social_title: "",
+  social_description: "",
+  seo_info_contacto: "",
+  seo_info_faq: "",
+  seo_info_terminos: "",
+  seo_info_privacidad: "",
+  seo_info_reglas: "",
+  visual_theme: "classic",
   account_help_enabled: "enabled",
   sponsors_enabled: "enabled",
   robots_indexing: "enabled",
@@ -88,9 +100,5 @@ export const getSiteSettings = cache(async function getSiteSettings(): Promise<S
 });
 
 export function siteBaseUrl(value: string) {
-  try {
-    return new URL(value).origin;
-  } catch {
-    return siteSettingDefaults.site_url;
-  }
+  return publicSiteOrigin(value)??siteSettingDefaults.site_url;
 }

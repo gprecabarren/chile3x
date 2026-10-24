@@ -10,6 +10,7 @@ const paths: Record<string, string> = {
   "/mi-cuenta#mis-anuncios": "M5 3h14v18H5zM8 7h8M8 11h8M8 15h5",
   "/mi-cuenta/mensajes": "M4 4h16v12H9l-5 4zM8 8h8M8 12h5",
   "/mi-cuenta/contenido": "M3 4h18v16H3zM3 16l5-5 4 4 4-6 5 7M7 8h.01",
+  "/mi-cuenta/historias": "M9 3a9 9 0 1 0 12 12M15 3h6M18 0v6M8 9h8M8 13h5",
   "/mi-cuenta/datos-personales": "M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0M5 21v-3a7 7 0 0 1 14 0v3",
   "/mi-cuenta/favoritos": "M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z",
   "/mi-cuenta/reportes": "M5 21V3M5 4h14l-2 4 2 4H5",
@@ -25,7 +26,7 @@ export function AccountNavigationLink({ grouped = false, ...props }: ComponentPr
   const href = fullHref.split("#")[0];
   const active = grouped
     ? pathname === "/mi-cuenta/favoritos" || pathname === "/mi-cuenta/comentarios"
-    : !fullHref.includes("#") && (pathname === href || (href !== "/mi-cuenta" && pathname.startsWith(`${href}/`)));
+    : !fullHref.includes("#") && (pathname === href || (href !== "/mi-cuenta" && pathname.startsWith(`${href}/`)) || (href === "/mi-cuenta/historias" && /^\/mi-cuenta\/[^/]+\/historias$/.test(pathname)));
   return <Link {...props} className={`${props.className ?? ""}${active ? " is-current" : ""}`} aria-current={active ? "page" : undefined}>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[fullHref] ?? paths[href] ?? paths["/mi-cuenta"]} /></svg>
     <span>{props.children}</span>

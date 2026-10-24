@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -31,10 +32,10 @@ export function InternalChatButton({ profileId, signedIn, loginHref }: { profile
   }
 
   return <div className="internal-chat-launcher">
-    <button className="button contact-internal-chat" type="button" onClick={openChat} disabled={busy}>
+    <ActionButton className="button contact-internal-chat" type="button" onClick={openChat} disabled={busy}>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.5h16v11H8l-4 4v-15Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" /><path d="M8 9h8M8 12h5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
       <span>{busy ? "Abriendo…" : "Chat interno"}</span>
-    </button>
+    </ActionButton>
     {error && <small role="alert">{error}</small>}
   </div>;
 }

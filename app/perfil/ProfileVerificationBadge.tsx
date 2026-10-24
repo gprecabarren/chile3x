@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
 import Image from "next/image";
 import { useRef } from "react";
@@ -13,12 +14,12 @@ export function ProfileVerificationBadge({ displayName, imageUrl, verifiedAt }: 
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   return <>
-    <button className="verified-sticker" type="button" title="Ver detalles de la verificación" aria-label={`Ver verificación de ${displayName}`} onClick={() => dialogRef.current?.showModal()}>✓</button>
+    <ActionButton className="verified-sticker" type="button" title="Ver detalles de la verificación" aria-label={`Ver verificación de ${displayName}`} onClick={() => dialogRef.current?.showModal()}>✓</ActionButton>
     <dialog className="profile-verification-dialog" ref={dialogRef} onClick={(event) => {
       if (event.target === dialogRef.current) dialogRef.current?.close();
     }}>
       <section>
-        <button className="profile-verification-close" type="button" aria-label="Cerrar información de verificación" onClick={() => dialogRef.current?.close()}>×</button>
+        <ActionButton className="profile-verification-close" type="button" aria-label="Cerrar información de verificación" onClick={() => dialogRef.current?.close()}>×</ActionButton>
         <div className="profile-verification-main">
           <p className="eyebrow">PERFIL VERIFICADO</p>
           <div className="profile-verification-identity">

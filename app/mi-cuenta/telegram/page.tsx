@@ -1,3 +1,4 @@
+import { ActionAnchor, ActionButton } from "@/app/ActionButton";
 import { and, eq } from "drizzle-orm";
 import Link from "@/app/NavigationLink";
 import { redirect } from "next/navigation";
@@ -52,7 +53,7 @@ export default async function AccountTelegramPage({ searchParams }: { searchPara
     {query.notice && notices[query.notice] && <p className={query.notice.includes("error") || query.notice.includes("confirmation") || query.notice === "not_configured" ? "account-error" : "account-success"} role="status">{notices[query.notice]}</p>}
     {configuration.publicCommunityUrl && <section className="telegram-community-callout">
       <div><p className="eyebrow">ACCESO PÚBLICO</p><h2>Comunidad Chile3X</h2><p>Puedes entrar a la comunidad pública sin vincular tu cuenta. El espacio de Miembros se habilita solo después de validar el vínculo.</p></div>
-      <a className="button button-outline" href={configuration.publicCommunityUrl} target="_blank" rel="noreferrer">Abrir comunidad pública</a>
+      <ActionAnchor className="button button-outline" href={configuration.publicCommunityUrl} target="_blank" rel="noreferrer">Abrir comunidad pública</ActionAnchor>
     </section>}
 
     <ol className="telegram-user-flow" aria-label="Pasos para acceder a Miembros">
@@ -68,7 +69,7 @@ export default async function AccountTelegramPage({ searchParams }: { searchPara
         <TelegramLinkLauncher endpoint="/api/mi-cuenta/telegram/vincular" label="Vincular Telegram" />
       </> : link.status === "banned" ? <p>Esta identidad fue vetada de los espacios de Telegram. La cuenta del sitio se mantiene separada; solicita una revisión desde <Link href="/contacto">Contacto</Link>.</p> : <>
         <dl><div><dt>Estado de Miembros</dt><dd>{membership?.status === "active" ? "Dentro del espacio privado" : membership?.status === "pending" ? "Solicitud o invitación pendiente" : "Fuera del espacio privado"}</dd></div><div><dt>Reingreso</dt><dd>Siempre es manual; una reactivación del sitio no te añade automáticamente.</dd></div></dl>
-        <div className="telegram-account-actions"><form action="/api/mi-cuenta/telegram/invitacion" method="post"><button className="button button-primary" type="submit">{membership?.status === "active" ? "Enviar otra invitación" : "Volver a entrar"}</button></form><details><summary>Desvincular Telegram</summary><form action="/api/mi-cuenta/telegram/desvincular" method="post"><p>Se revocará el acceso a Miembros. Para confirmar, escribe DESVINCULAR.</p><label>Confirmación<input name="confirmation" autoComplete="off" required /></label><button className="button button-danger" type="submit">Desvincular y revocar acceso</button></form></details></div>
+        <div className="telegram-account-actions"><form action="/api/mi-cuenta/telegram/invitacion" method="post"><ActionButton className="button button-primary" type="submit">{membership?.status === "active" ? "Enviar otra invitación" : "Volver a entrar"}</ActionButton></form><details><summary>Desvincular Telegram</summary><form action="/api/mi-cuenta/telegram/desvincular" method="post"><p>Se revocará el acceso a Miembros. Para confirmar, escribe DESVINCULAR.</p><label>Confirmación<input name="confirmation" autoComplete="off" required /></label><ActionButton className="button button-danger" type="submit">Desvincular y revocar acceso</ActionButton></form></details></div>
       </>}
     </section>
 
@@ -77,7 +78,7 @@ export default async function AccountTelegramPage({ searchParams }: { searchPara
       <h2>¿Reconoces esta identidad?</h2>
       <strong>{telegramIdentityLabel(attempt.candidateFirstName, attempt.candidateUsername, attempt.candidateTelegramUserId)}</strong>
       <p>Confirma solo si acabas de hablar con el bot desde esa cuenta de Telegram.</p>
-      <form action="/api/mi-cuenta/telegram/confirmar" method="post"><button className="button button-primary" type="submit">Sí, vincular esta identidad</button></form>
+      <form action="/api/mi-cuenta/telegram/confirmar" method="post"><ActionButton className="button button-primary" type="submit">Sí, vincular esta identidad</ActionButton></form>
     </section>}
 
     <section className="telegram-safety-note"><h2>Reglas básicas de seguridad</h2><p>Chile3X no coordina pagos, reservas ni negociaciones por el bot o los grupos. No compartas contraseñas, códigos de verificación, documentos, datos bancarios ni material privado de terceros.</p></section>

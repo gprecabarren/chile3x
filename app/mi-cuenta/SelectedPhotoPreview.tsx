@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
 import { MAX_IMAGE_UPLOAD_BYTES } from "@/lib/image-upload-policy";
 
@@ -38,7 +39,7 @@ export function SelectedPhotoPreview({ file, watermark, blurFaces, regions, disa
       <img ref={previewRef} alt={prepared ? "Resultado con las opciones aplicadas" : "Foto seleccionada, todavía sin procesar"} loading="lazy" />
       <span>{prepared ? "Ver resultado completo" : "Ver foto completa · sin efectos"}</span>
     </a>
-    <div className="photo-selection-actions"><button type="button" className="button button-outline" disabled={disabled || processing} onClick={preview}>{processing ? "Preparando vista previa…" : "Ver resultado con opciones"}</button><button type="button" className="button button-outline" disabled={disabled || processing} aria-expanded={editorOpen} onClick={() => setEditorOpen(!editorOpen)}>{editorOpen ? "Cerrar editor" : "Recortar / ajustar foto"}</button>{edited && <button type="button" className="button button-outline" disabled={disabled || processing} onClick={() => { onRestore(); setEditorOpen(false); }}>Volver al original</button>}</div>
+    <div className="photo-selection-actions"><ActionButton type="button" className="button button-outline" disabled={disabled || processing} onClick={preview}>{processing ? "Preparando vista previa…" : "Ver resultado con opciones"}</ActionButton><ActionButton type="button" className="button button-outline" disabled={disabled || processing} aria-expanded={editorOpen} onClick={() => setEditorOpen(!editorOpen)}>{editorOpen ? "Cerrar editor" : "Recortar / ajustar foto"}</ActionButton>{edited && <ActionButton type="button" className="button button-outline" disabled={disabled || processing} onClick={() => { onRestore(); setEditorOpen(false); }}>Volver al original</ActionButton>}</div>
     {notice && <p role="status">{!prepared && !processing && notice === "Resultado listo. Se subirá exactamente esta foto." ? "Opciones modificadas. Genera otra vista previa para comprobar el resultado." : notice}</p>}
     {editorOpen && <Suspense fallback={<p role="status">Cargando editor…</p>}><PhotoCropEditor key={`${file.name}:${file.size}:${file.lastModified}`} file={file} disabled={disabled || processing} onBusyChange={onBusyChange} onApply={next => { onEdit(next); setEditorOpen(false); setNotice("Recorte aplicado. Revisa la marca de agua y el difuminado antes de subir."); }} /></Suspense>}
   </div>;

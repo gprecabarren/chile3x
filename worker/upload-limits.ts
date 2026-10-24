@@ -1,7 +1,10 @@
 const MB = 1_000_000;
 export function multipartBodyLimit(path: string) {
+  if (/^\/api\/admin\/muestras\/[^/]+$/.test(path)) return 12 * MB + 256_000;
   if (/^\/api\/admin\/foro\/adjuntos\/[^/]+$/.test(path)) return 12 * MB + 256_000;
-  if (/^\/api\/(?:admin\/profiles|perfiles)\/[^/]+\/media$/.test(path) || path === "/api/mi-cuenta/contenido/medios") return 12 * MB + 256_000;
+  // Only final files are stored; no additional private photo bases.
+  if (/^\/api\/(?:admin\/profiles|perfiles)\/[^/]+\/media$/.test(path)) return 12 * MB + 256_000;
+  if (path === "/api/mi-cuenta/contenido/medios") return 12 * MB + 256_000;
   if (/^\/api\/perfiles\/[^/]+\/reportes$/.test(path)) return 25 * MB + 64_000;
   if (/^\/api\/perfiles\/[^/]+\/documentos\/[^/]+$/.test(path)) return 15 * MB + 64_000;
   if (path === "/api/admin/patrocinadores") return 20 * MB + 256_000; // Main image and optional logo, each up to 10 MB.

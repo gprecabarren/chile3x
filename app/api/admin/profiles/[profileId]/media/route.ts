@@ -9,6 +9,7 @@ import { ProfileMediaUploadError, uploadProfileMedia } from "@/lib/profile-media
 import { MediaUploadRequestError, readMediaUploadForm } from "@/lib/media-upload-form";
 import { MAX_IMAGE_BYTES, MAX_VIDEO_BYTES } from "@/lib/media";
 import { CollaborationConflict, expectedVersion, conflictResponse } from "@/lib/collaboration";
+import { parsePhotoEditOptions } from "@/lib/photo-edit-policy";
 
 export const dynamic = "force-dynamic";
 const error = (message: string, status: number) => NextResponse.json({ error: message }, { status });
@@ -29,8 +30,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const file = formData.get("file");
     if (!(file instanceof File)) return error("Selecciona una foto o video para subir.", 400);
     const uploadKind = formData.get("upload_kind") === "profile_photo" ? "profile_photo" : "gallery";
+    const processing=parsePhotoEditOptions(formData.get("processing"));
+    if(formData.has("original_file")||(formData.has("processing")&&!processing))return error("Envía solo el archivo final y opciones válidas.",400);
     try {
-      const result = await uploadProfileMedia({ profileId, file, uploadKind, uploadedBy: admin.id, moderationStatus: "approved",version:expectedVersion(formData,`profile:${profileId}`),adminActorId:admin.id });
+      const result = await uploadProfileMedia({ profileId, file, uploadKind, uploadedBy: admin.id, moderationStatus: "approved",version:expectedVersion(formData,`profile:${profileId}`),adminActorId:admin.id,...(processing?{processing}:{}) });
       await recordAdminAudit(admin, {
         category: "media", action: "media.public_approve", entityType: "public_media", entityId: result.media.id,
         entityLabel: `${result.media.mediaType === "video" ? "Video" : "Foto"} · ${row.displayName}`,

@@ -1,8 +1,6 @@
-import { and, count, desc, eq, gt, inArray, isNull } from "drizzle-orm";
+import { ActionButton } from "@/app/ActionButton";
 import Link from "@/app/NavigationLink";
 import { redirect } from "next/navigation";
-import { getDb } from "@/db";
-import { profileStatuses, profiles } from "@/db/schema";
 import { getCurrentUser, getUserSessionCookieName } from "@/lib/auth";
 import { getAccountSessions } from "@/lib/session-management";
 import { SessionManager } from "@/app/SessionManager";
@@ -15,6 +13,8 @@ import { AnalyticsEvent } from "@/app/AnalyticsEvent";
 import { getAccountDashboard } from "@/lib/account-dashboard";
 import { AccountIdentityCard } from "./AccountIdentityCard";
 import { AccountNotificationCards } from "@/app/MessageNotifications";
+import { getAccountStoryOverview } from "@/lib/account-stories";
+import { AccountStoriesOverview } from "./AccountStories";
 
 export const dynamic = "force-dynamic";
 
@@ -48,19 +48,13 @@ const messages: Record<string, string> = {
 export default async function AccountHome({ searchParams }: { searchParams: Promise<{ notice?: string; session_notice?: string; created?: string; estado?: string }> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/ingresar?return_to=/mi-cuenta");
-  const db = await getDb();
   const [rows, sessions, params] = await Promise.all([
-    db.select({ id: profiles.id, slug: profiles.slug, handle: profiles.handle, displayName: profiles.displayName, type: profiles.type, status: profiles.status, city: profiles.city, region: profiles.region, updatedAt: profiles.updatedAt, ownerHiddenAt: profiles.ownerHiddenAt }).from(profiles)
-      .where(and(eq(profiles.ownerId, user.id), isNull(profiles.trashedAt))).orderBy(desc(profiles.updatedAt)),
+    getAccountStoryOverview(),
     getAccountSessions(user.id, getUserSessionCookieName()),
     searchParams,
   ]);
-  const ids = rows.map((profile) => profile.id);
-  const [activeStoryCounts, dashboard] = await Promise.all([
-    ids.length ? db.select({ profileId: profileStatuses.profileId, total: count() }).from(profileStatuses).where(and(inArray(profileStatuses.profileId, ids), gt(profileStatuses.expiresAt, new Date().toISOString()))).groupBy(profileStatuses.profileId) : [],
-    getAccountDashboard(rows.length > 0),
-  ]);
-  const storyCounts = new Map(activeStoryCounts.map((row) => [row.profileId, Number(row.total)]));
+  const dashboard = await getAccountDashboard(rows.length > 0);
+  const storyCounts = new Map(rows.map(profile => [profile.id, profile.stories.total]));
   const mediaCounts = new Map(dashboard.pendingMedia.map(row => [row.profileId, row.total]));
   const visible = rows.filter(row => row.status === "approved" && !row.ownerHiddenAt).length;
   const filters = [
@@ -91,6 +85,7 @@ export default async function AccountHome({ searchParams }: { searchParams: Prom
         <Link className="account-summary-card" href="/mi-cuenta/comentarios"><span>Comentarios enviados</span><strong>{dashboard.sentReviews}</strong><small>Pendientes y publicados →</small></Link>
       </div>
     </section>
+    <AccountStoriesOverview profiles={rows} />
     {rows.length > 0 && <section className="account-overview" aria-labelledby="account-performance-title">
       <header><h2 id="account-performance-title">Rendimiento de tus anuncios</h2><p>Suma de tus anuncios actuales. Alcance y contactos: últimos 30 días.</p></header>
       <div className="account-summary-grid">
@@ -114,10 +109,10 @@ export default async function AccountHome({ searchParams }: { searchParams: Prom
         <Link className="button button-outline" href={`/mi-cuenta/${profile.id}/editar#fotos-y-videos`}>Fotos y videos</Link>
         {profile.type === "escort" && <Link className="button button-outline" href={`/mi-cuenta/${profile.id}/editar#documentos-privados`}>Documentos privados</Link>}
         {profile.status === "approved" && <Link className="button button-outline" href={`/mi-cuenta/${profile.id}/historias`}>Historias ({storyCounts.get(profile.id) ?? 0})</Link>}
-        {(profile.status === "draft" || profile.status === "rejected") && <form action={`/api/perfiles/${profile.id}/enviar-revision`} method="post"><button className="button button-primary" type="submit">Enviar a revisión</button></form>}
-        <form action={`/api/perfiles/${profile.id}/visibilidad`} method="post"><input type="hidden" name="return_to" value="/mi-cuenta" /><input type="hidden" name="action" value={profile.ownerHiddenAt ? "show" : "hide"} /><button className="button button-outline" type="submit">{profile.ownerHiddenAt ? "Volver a mostrar" : "Ocultar anuncio"}</button></form>
+        {(profile.status === "draft" || profile.status === "rejected") && <form action={`/api/perfiles/${profile.id}/enviar-revision`} method="post"><ActionButton className="button button-primary" type="submit">Enviar a revisión</ActionButton></form>}
+        <form action={`/api/perfiles/${profile.id}/visibilidad`} method="post"><input type="hidden" name="return_to" value="/mi-cuenta" /><input type="hidden" name="action" value={profile.ownerHiddenAt ? "show" : "hide"} /><ActionButton className="button button-outline" type="submit">{profile.ownerHiddenAt ? "Volver a mostrar" : "Ocultar anuncio"}</ActionButton></form>
       </div>
-      <details className="profile-trash-control is-destructive"><summary>🗑 Eliminar este anuncio</summary><form action={`/api/perfiles/${profile.id}/papelera`} method="post"><p>Se quitará de tu panel y del sitio público. Solo un administrador podrá restaurarlo; sus datos no se borrarán de inmediato.</p><label>Escribe ELIMINAR<input name="confirmation" required autoComplete="off" /></label><button className="button button-danger" type="submit">Confirmar eliminación</button></form></details>
+      <details className="profile-trash-control is-destructive"><summary>🗑 Eliminar este anuncio</summary><form action={`/api/perfiles/${profile.id}/papelera`} method="post"><p>Se quitará de tu panel y del sitio público. Solo un administrador podrá restaurarlo; sus datos no se borrarán de inmediato.</p><label>Escribe ELIMINAR<input name="confirmation" required autoComplete="off" /></label><ActionButton className="button button-danger" type="submit">Confirmar eliminación</ActionButton></form></details>
     </article>)}</div>}
     <p className="account-feature-note">La pausa por período de publicación está preparada para los futuros planes pagados, pero sus controles permanecerán deshabilitados hasta activar la facturación. Ocultar un anuncio sí está disponible y no consume pausas.</p>
     </section>

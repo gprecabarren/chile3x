@@ -1,19 +1,21 @@
 import { sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/db";
-import { collaborationGuards } from "@/db/schema";
+import { adminMutationReceipts, collaborationGuards } from "@/db/schema";
 export { reviewReservations } from "@/db/schema";
 import { adminHasCapability } from "@/lib/admin-permissions";
 import type { AdminUser } from "@/lib/auth";
+import { PRIVATE_SAMPLES_ENABLED } from "@/lib/private-sample-policy";
 
 export const CONFLICT_MESSAGE = "Esta información cambió desde que abriste la página, o está reservada por otra persona. No guardamos ni repetimos tu acción. Conservamos lo que escribiste: consulta la versión actual antes de continuar.";
 export class CollaborationConflict extends Error { constructor() { super(CONFLICT_MESSAGE); } }
-export type ResourceKey = `profile:${string}` | `account:${string}` | `library:${string}` | `legal:${'terms'|'privacy'}` | "settings:site";
-export type ReviewVersion = { key: ResourceKey; revision: number };
+export type ResourceKey = `profile:${string}` | `account:${string}` | `sample:${string}` | `library:${string}` | `legal:${'terms'|'privacy'}` | "settings:site";
+export type ReviewVersion = { key: ResourceKey; revision: number; mutationId?: string };
 
 export function resourceKey(value: unknown): ResourceKey | null {
-  return typeof value === "string" && /^(?:(?:profile|account|library):[\w-]{1,120}|legal:(?:terms|privacy)|settings:site)$/.test(value) ? value as ResourceKey : null;
+  return typeof value === "string" && /^(?:(?:profile|account|sample|library):[\w-]{1,120}|legal:(?:terms|privacy)|settings:site)$/.test(value) ? value as ResourceKey : null;
 }
 export function canReview(admin: AdminUser, key: ResourceKey) {
+  if (key.startsWith("sample:")) return PRIVATE_SAMPLES_ENABLED && adminHasCapability(admin,"accounts.manage") && adminHasCapability(admin,"profiles.moderate");
   if (key.startsWith("profile:")) return adminHasCapability(admin,"profiles.moderate") || adminHasCapability(admin,"media.moderate");
   if (key.startsWith("account:")) return adminHasCapability(admin,"accounts.manage");
   if (key.startsWith("library:")) return adminHasCapability(admin,"media.moderate");
@@ -21,6 +23,7 @@ export function canReview(admin: AdminUser, key: ResourceKey) {
 }
 export function revisionExpression(key: ResourceKey): SQL {
   const id = key.slice(key.indexOf(":")+1);
+  if (key.startsWith("sample:")) return sql`(select revision from private_profile_samples where id=${id})`;
   if (key.startsWith("profile:")) return sql`(select revision from profiles where id=${id})`;
   if (key.startsWith("account:")) return sql`(select revision from users where id=${id} and role!='admin')`;
   if (key.startsWith("library:")) return sql`(select revision from exclusive_content_collections where id=${id})`;
@@ -34,7 +37,9 @@ export async function currentRevision(key: ResourceKey) {
 export function expectedVersion(form: FormData, key: ResourceKey): ReviewVersion {
   const revision = form.get("review_revision");
   if (form.get("review_key") !== key || typeof revision !== "string" || !/^\d{1,12}$/.test(revision)) throw new CollaborationConflict();
-  return { key, revision: Number(revision) };
+  const mutationId = form.get("mutation_id");
+  if (mutationId !== null && (typeof mutationId !== "string" || !/^[a-f\d-]{36}$/i.test(mutationId))) throw new CollaborationConflict();
+  return { key, revision: Number(revision), ...(typeof mutationId === "string" ? { mutationId } : {}) };
 }
 type Database = Awaited<ReturnType<typeof getDb>>;
 type Statements = Parameters<Database["batch"]>[0];
@@ -49,9 +54,10 @@ export async function guardedBatch(version: ReviewVersion, statements: Statement
     const results = await db.batch([
       db.insert(collaborationGuards).values({ id, allowed: sql`case when ${revisionExpression(version.key)}=${version.revision} and ${reservation} then 1 else 0 end` }),
       ...statements,
+      ...(actorId && version.mutationId ? [db.insert(adminMutationReceipts).values({id:version.mutationId,actorId,resourceKey:version.key,expiresAt:Date.now()+86_400_000})] : []),
       db.delete(collaborationGuards).where(sql`${collaborationGuards.id}=${id}`),
     ]);
-    return results.slice(1,-1);
+    return results.slice(1,1+statements.length);
   } catch (error) {
     let cause:unknown=error;
     for(let depth=0;depth<6&&cause;depth++){

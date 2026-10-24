@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
 import { useRef, useState } from "react";
 import { readUploadResponse } from "@/lib/upload-response";
@@ -72,8 +73,8 @@ export function ProfileVerificationDocuments({ profileId, initialDocuments }: { 
         return <div className="private-document-card" key={kind}><strong>{labels[kind].title}</strong><small>{labels[kind].description}</small>
           {document && <p><a href={`/api/perfiles/${profileId}/documentos/${kind}`}>Descargar archivo privado</a> · {fileSize(document.byteSize)}</p>}
           <input ref={inputs[kind]} type="file" accept="image/jpeg,image/png,image/webp,application/pdf" capture="environment" onChange={(event) => { const next = event.currentTarget.files?.[0]; setSelected((current) => ({ ...current, [kind]: next })); setMessage(""); }} />
-          {file && <div className="private-document-actions"><small>Seleccionado: {file.name} · {fileSize(file.size)}</small><button className="button button-outline" type="button" onClick={() => { setSelected((current) => ({ ...current, [kind]: undefined })); if (inputs[kind].current) inputs[kind].current.value = ""; }}>Quitar seleccionado</button><button className="button button-primary" type="button" disabled={busy === kind} onClick={() => void upload(kind)}>{busy === kind ? "Subiendo…" : document ? "Reemplazar archivo" : "Subir archivo"}</button></div>}
-          {document && <button className="button button-outline" type="button" disabled={busy === kind} onClick={() => void removeSaved(kind)}>Eliminar archivo guardado</button>}
+          {file && <div className="private-document-actions"><small>Seleccionado: {file.name} · {fileSize(file.size)}</small><ActionButton className="button button-outline" type="button" onClick={() => { setSelected((current) => ({ ...current, [kind]: undefined })); if (inputs[kind].current) inputs[kind].current.value = ""; }}>Quitar seleccionado</ActionButton><ActionButton className="button button-primary" type="button" disabled={busy === kind} onClick={() => void upload(kind)}>{busy === kind ? "Subiendo…" : document ? "Reemplazar archivo" : "Subir archivo"}</ActionButton></div>}
+          {document && <ActionButton className="button button-outline" type="button" disabled={busy === kind} onClick={() => void removeSaved(kind)}>Eliminar archivo guardado</ActionButton>}
         </div>;
       })}
     </div>

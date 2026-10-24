@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
 import { useEffect, useRef, useState } from "react";
 
@@ -51,12 +52,12 @@ export function ProfileShareButton({ displayName, profileSlug }: { displayName: 
   const encodedUrl = encodeURIComponent(url);
   const encodedText = encodeURIComponent(text);
   return <div className="profile-share" ref={rootRef}>
-    <button className="profile-share-trigger" type="button" aria-expanded={open} aria-haspopup="menu" onClick={share}><ShareIcon />Compartir</button>
+    <ActionButton className="profile-share-trigger" type="button" aria-expanded={open} aria-haspopup="menu" onClick={share}><ShareIcon />Compartir</ActionButton>
     {open && <div className="profile-share-menu" role="menu">
       <a role="menuitem" target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodedText}%20${encodedUrl}`}>WhatsApp</a>
       <a role="menuitem" target="_blank" rel="noreferrer" href={`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`}>Telegram</a>
       <a role="menuitem" href={`mailto:?subject=${encodeURIComponent(`${displayName} en Chile3X`)}&body=${encodedText}%0A%0A${encodedUrl}`}>Correo</a>
-      <button role="menuitem" type="button" onClick={copy}>Copiar enlace</button>
+      <ActionButton role="menuitem" type="button" onClick={copy}>Copiar enlace</ActionButton>
     </div>}
     {notice && <span className="profile-share-notice" role="status">{notice}</span>}
   </div>;

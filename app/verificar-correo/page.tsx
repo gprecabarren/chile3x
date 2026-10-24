@@ -1,3 +1,4 @@
+import { ActionButton } from "@/app/ActionButton";
 import type { Metadata } from "next";
 import Link from "@/app/NavigationLink";
 import { AnalyticsEvent } from "@/app/AnalyticsEvent";
@@ -51,9 +52,9 @@ export default async function VerifyEmailPage({
         <input name="return_to" type="hidden" value={returnTo} />
         <label>Correo electrónico<input name="email" type="email" required defaultValue={email} readOnly={Boolean(user)} maxLength={160} autoComplete="email" placeholder="Ej. valentina@correo.cl" /></label>
         <AuthTurnstile action={TURNSTILE_AUTH_EMAIL_ACTION} />
-        <button className="button button-outline" type="submit">Reenviar enlace</button>
+        <ActionButton className="button button-outline" type="submit">Reenviar enlace</ActionButton>
       </form></>}
-      {user ? <><p className="auth-switch">{!blocked && <Link href={returnTo}>Continuar a Mi cuenta</Link>}</p><form action="/api/auth/session/logout" method="post"><button className="button button-outline" type="submit">Cerrar sesión o cambiar de cuenta</button></form></> : <p className="auth-switch"><Link href={`/ingresar?return_to=${encodeURIComponent(returnTo)}`}>Volver a ingresar</Link></p>}
+      {user ? <><p className="auth-switch">{!blocked && <Link href={returnTo}>Continuar a Mi cuenta</Link>}</p><form action="/api/auth/session/logout" method="post"><ActionButton className="button button-outline" type="submit">Cerrar sesión o cambiar de cuenta</ActionButton></form></> : <p className="auth-switch"><Link href={`/ingresar?return_to=${encodeURIComponent(returnTo)}`}>Volver a ingresar</Link></p>}
     </section>
   </main>;
 }

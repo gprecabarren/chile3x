@@ -1,11 +1,14 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "@/app/NavigationLink";
 import "./account-workspace.css";
+import { ActionIcon } from "@/app/ActionIcon";
 
-export function AccountWorkspace({ brand, navigation, identity, children }: {
+export function AccountWorkspace({ brand, toolbarBrand, navigation, identity, children }: {
   brand: ReactNode;
+  toolbarBrand: ReactNode;
   navigation: ReactNode;
   identity: ReactNode;
   children: ReactNode;
@@ -62,17 +65,17 @@ export function AccountWorkspace({ brand, navigation, identity, children }: {
 
   const hamburger = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>;
   return <div className={`account-workspace${collapsed ? " is-desktop-collapsed" : ""}${mobileOpen ? " is-mobile-open" : ""}`}>
-    {mobileOpen && <button className="account-sidebar-backdrop" aria-label="Cerrar menú de mi cuenta" type="button" onClick={() => setMobileOpen(false)} />}
+    {mobileOpen && <ActionButton className="account-sidebar-backdrop" aria-label="Cerrar menú de mi cuenta" type="button" onClick={() => setMobileOpen(false)} />}
     <aside className="account-sidebar" id="account-sidebar" ref={sidebar} role={mobileOpen ? "dialog" : undefined} aria-modal={mobileOpen || undefined} aria-label="Menú de mi cuenta" inert={collapsed && !mobileOpen || undefined} onClick={event => { if (event.target instanceof Element && event.target.closest("a[href]")) setMobileOpen(false); }}>
-      <div className="account-sidebar-head">{brand}<button className="account-drawer-close" type="button" ref={closeButton} aria-label="Cerrar menú de mi cuenta" onClick={() => setMobileOpen(false)}>×</button></div>
+      <div className="account-sidebar-head">{brand}<ActionButton className="account-drawer-close" type="button" ref={closeButton} aria-label="Cerrar menú de mi cuenta" onClick={() => setMobileOpen(false)}>×</ActionButton></div>
       <div className="account-sidebar-navigation">{navigation}</div>
       <footer className="account-sidebar-footer">{identity}</footer>
     </aside>
     <main className="account-root" inert={mobileOpen || undefined}>
       <header className="account-toolbar">
-        <button className="account-desktop-toggle" type="button" aria-label={collapsed ? "Expandir menú de mi cuenta" : "Contraer menú de mi cuenta"} aria-expanded={!collapsed} aria-controls="account-sidebar" onClick={() => setCollapsed(value => !value)}>{hamburger}</button>
-        <button className="account-mobile-toggle" type="button" ref={mobileToggle} aria-label="Abrir menú de mi cuenta" aria-expanded={mobileOpen} aria-controls="account-sidebar" onClick={() => setMobileOpen(true)}>{hamburger}</button>
-        <div className="account-toolbar-brand">{brand}</div><span className="account-toolbar-label">Mi cuenta</span><Link className="account-view-site" href="/">Ver sitio <span aria-hidden="true">↗</span></Link>
+        <ActionButton className="account-desktop-toggle" type="button" aria-label={collapsed ? "Expandir menú de mi cuenta" : "Contraer menú de mi cuenta"} aria-expanded={!collapsed} aria-controls="account-sidebar" onClick={() => setCollapsed(value => !value)}>{hamburger}</ActionButton>
+        <ActionButton className="account-mobile-toggle" type="button" ref={mobileToggle} aria-label="Abrir menú de mi cuenta" aria-expanded={mobileOpen} aria-controls="account-sidebar" onClick={() => setMobileOpen(true)}>{hamburger}</ActionButton>
+        <div className="account-toolbar-brand">{toolbarBrand}</div><Link className="button button-primary account-toolbar-stories" href="/mi-cuenta/historias">Subir historias</Link><Link className="account-view-site" href="/"><ActionIcon name="back" /><span>Volver al sitio web</span></Link>
       </header>
       {children}
     </main>

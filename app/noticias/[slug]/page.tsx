@@ -47,7 +47,7 @@ export default async function NewsArticlePage({ params }: Props) {
   const updatedAt = newsIsoDate(post.updatedAt);
 
   return <DirectoryShell>
-    <main className="news-article">
+    <div className="news-article">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(schema) }} />
       <nav className="news-breadcrumbs" aria-label="Ruta de navegación"><Link href="/">Inicio</Link><span aria-hidden="true">/</span><Link href="/noticias">Noticias</Link><span aria-hidden="true">/</span><span aria-current="page">Artículo</span></nav>
       <Link className="page-back-link" href="/noticias">← Volver a noticias</Link>
@@ -62,6 +62,7 @@ export default async function NewsArticlePage({ params }: Props) {
         </div>
       </header>
       {cover && <figure className="news-article-cover"><Image src={`/noticias/media/${cover.id}`} alt={post.title} fill priority unoptimized sizes="100vw" /></figure>}
+      <div className="news-article-layout">
       <article className="news-article-content" dangerouslySetInnerHTML={{ __html: post.contentHtml }} />
       <section className="news-article-next" aria-labelledby="news-article-next-title">
         <h2 id="news-article-next-title">Continúa en Chile3X</h2>
@@ -74,6 +75,7 @@ export default async function NewsArticlePage({ params }: Props) {
           <Link className="button button-outline" href="/registro">Crear cuenta</Link>
         </nav>
       </section>
-    </main>
+      </div>
+    </div>
   </DirectoryShell>;
 }

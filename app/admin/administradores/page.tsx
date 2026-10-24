@@ -1,3 +1,4 @@
+import { ActionButton } from "@/app/ActionButton";
 import { desc, eq } from "drizzle-orm";
 import Link from "@/app/NavigationLink";
 import { redirect } from "next/navigation";
@@ -102,7 +103,7 @@ export default async function AdministratorsPage({ searchParams }: { searchParam
           <option value="editor">Noticias</option>
           <option value="support">Soporte</option>
         </select></label>
-        <button className="button button-primary" type="submit">Autorizar acceso</button>
+        <ActionButton className="button button-primary" type="submit">Autorizar acceso</ActionButton>
       </form>
       <details className="admin-access-level-help">
         <summary>Qué permite cada nivel</summary>
@@ -136,12 +137,12 @@ export default async function AdministratorsPage({ searchParams }: { searchParam
             <label><span>Nivel</span><select name="access_level" defaultValue={grant.accessLevel}>
               <option value="moderator">Moderación</option><option value="administrator">Administrador</option><option value="editor">Noticias</option><option value="support">Soporte</option>
             </select></label>
-            <button className="button button-outline" type="submit">Guardar nivel</button>
+            <ActionButton className="button button-outline" type="submit">Guardar nivel</ActionButton>
           </form>
           {grant.isActive ? <>
-            <form action={`/api/admin/administradores/${encodeURIComponent(grant.id)}`} method="post"><input type="hidden" name="intent" value="sessions" /><button className="button button-outline" type="submit">Cerrar sus sesiones</button></form>
-            <form action={`/api/admin/administradores/${encodeURIComponent(grant.id)}`} method="post"><input type="hidden" name="intent" value="revoke" /><button className="button admin-access-danger" type="submit">Revocar acceso</button></form>
-          </> : <form action={`/api/admin/administradores/${encodeURIComponent(grant.id)}`} method="post"><input type="hidden" name="intent" value="reactivate" /><button className="button button-primary" type="submit">Reactivar acceso</button></form>}
+            <form action={`/api/admin/administradores/${encodeURIComponent(grant.id)}`} method="post"><input type="hidden" name="intent" value="sessions" /><ActionButton className="button button-outline" type="submit">Cerrar sus sesiones</ActionButton></form>
+            <form action={`/api/admin/administradores/${encodeURIComponent(grant.id)}`} method="post"><input type="hidden" name="intent" value="revoke" /><ActionButton className="button admin-access-danger" type="submit">Revocar acceso</ActionButton></form>
+          </> : <form action={`/api/admin/administradores/${encodeURIComponent(grant.id)}`} method="post"><input type="hidden" name="intent" value="reactivate" /><ActionButton className="button button-primary" type="submit">Reactivar acceso</ActionButton></form>}
         </div>}
       </article>)}</div>
     </section>

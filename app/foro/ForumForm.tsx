@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
 import { useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
@@ -23,7 +24,7 @@ export function ForumForm({ children, label = "Guardar cambios" }: { children: R
     finally { setBusy(false); }
   }
   return <form action="/api/admin/foro" method="post" className="forum-form" aria-busy={busy} onSubmit={submit}>
-    <fieldset disabled={busy}>{children}<button type="submit" className="button button-primary">{busy ? "Guardando…" : label}</button></fieldset>
+    <fieldset disabled={busy}>{children}<ActionButton type="submit" className="button button-primary">{busy ? "Guardando…" : label}</ActionButton></fieldset>
     {error && <p className="form-alert" role="alert">{error}</p>}
   </form>;
 }

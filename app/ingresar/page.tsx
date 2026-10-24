@@ -1,3 +1,4 @@
+import { ActionButton } from "@/app/ActionButton";
 import type { Metadata } from "next";
 import Link from "@/app/NavigationLink";
 import { safeAccountReturnTo } from "@/lib/auth";
@@ -10,6 +11,7 @@ import { getSiteSettings } from "@/lib/site-settings";
 import { AppleSignInButton } from "@/app/AppleSignInButton";
 import { XSignInButton } from "@/app/XSignInButton";
 import { getXAuthConfig } from "@/lib/x-auth";
+import { PasswordEntry } from "@/app/PasswordEntry";
 
 export const metadata: Metadata = privatePageMetadata({
   title: "Ingresar",
@@ -66,7 +68,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       <AppleSignInButton enabled={settings.apple_sign_in_status === "enabled"} intent="login" returnTo={returnTo} />
     </div>
     <div className="auth-divider"><span>o ingresa con tu contraseña</span></div>
-    <form action="/api/auth/login" method="post" className="auth-form"><input name="return_to" type="hidden" value={returnTo} /><label>Correo electrónico<input name="email" type="email" required maxLength={160} autoComplete="email" placeholder="Ej. valentina@correo.cl" /></label><label>Contraseña<input name="password" type="password" required autoComplete="current-password" placeholder="Tu contraseña" /></label><AuthTurnstile action={TURNSTILE_AUTH_LOGIN_ACTION} /><button className="button button-primary" type="submit">Ingresar</button></form>
+    <form action="/api/auth/login" method="post" className="auth-form"><input name="return_to" type="hidden" value={returnTo} /><label>Correo electrónico<input name="email" type="email" required maxLength={160} autoComplete="email" placeholder="Ej. valentina@correo.cl" /></label><PasswordEntry /><AuthTurnstile action={TURNSTILE_AUTH_LOGIN_ACTION} /><ActionButton className="button button-primary" type="submit">Ingresar</ActionButton></form>
     <p className="auth-switch"><Link href="/recuperar-clave">Olvidé mi contraseña</Link></p>
     <p className="auth-switch">¿Aún no publicas? <Link href={`/registro?return_to=${encodeURIComponent(returnTo)}`}>Crear cuenta</Link></p>
     </div>

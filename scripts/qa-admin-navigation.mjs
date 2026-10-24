@@ -11,7 +11,7 @@ try{
  assert.ok([302,303,307].includes((await read(f.ownerCookie)).status));
  db.prepare("UPDATE admin_github_access SET access_level='support' WHERE user_id=?").run(f.admin);
  const limited=await read(f.adminCookie);assert.equal(limited.status,200);const text=await limited.text();const nav=text.match(/<nav aria-label="Administración">([\s\S]*?)<\/nav>/)?.[1];assert.ok(nav);
- for(const path of ['/admin/reportes','/admin/bugs','/admin/telegram','/admin/ayuda'])assert.ok(nav.includes(path));
+ for(const path of ['/admin/reportes','/admin/testing','/admin/telegram','/admin/ayuda'])assert.ok(nav.includes(path));
  for(const path of ['/admin/medios','/admin/cuentas','/admin/configuracion','/admin/administradores','/foro'])assert.ok(!nav.includes(path));
  console.log('PASS: local admin shell and separate ADMIN link, normal account denied, support sees only its permitted links; no permission/schema changes.');
 }finally{db.prepare('UPDATE admin_github_access SET access_level=? WHERE user_id=?').run(previous,f.admin);db.close();}

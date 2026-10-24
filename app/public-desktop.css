@@ -1,0 +1,213 @@
+/* Desktop composition; phone layouts retain their existing CSS exactly.
+   More space means more columns, not oversized buttons, images or paragraphs. */
+@media (min-width:1100px) {
+  :is(.home-layout,.directory-root) {
+    --public-wide-max:3200px;
+    --public-page-gutter:clamp(24px,2.5vw,80px);
+    --public-wide-size:min(calc(100% - var(--public-page-gutter) - var(--public-page-gutter)),var(--public-wide-max));
+    --public-wide-inset:max(var(--public-page-gutter),calc((100% - var(--public-wide-max)) / 2));
+    --public-card-min:208px;
+    --public-card-max:252px;
+    --public-header-clearance:clamp(168px,calc(420px - 16vw),244px);
+  }
+
+  /* One common page edge for full-bleed bands and inner catalog sections. */
+  :root body :is(.home-layout,.directory-root) :is(.public-header,.public-footer,.directory-hero,.city-hero,.about-hero) {
+    padding-inline:var(--public-wide-inset);
+  }
+  :root body :is(.home-layout,.directory-root) :is(.directory-content,.directory-city-bar-inner,.static-page-hero,.sponsors-page,.home-city-directory,.home-layout--compact .hero,.home-discovery-controls) {
+    width:var(--public-wide-size);
+    max-width:none;
+  }
+  :root body .home-layout :is(.section,.hero,.announce-section) { padding-inline:var(--public-wide-inset); }
+  :root body .home-layout--compact .hero { padding-inline:0; }
+  :root body .home-layout > .home-photo-banner > div { width:var(--public-wide-size); }
+  :root body .home-layout > .story-rail { padding-inline:var(--public-wide-inset); }
+  :root body .directory-root > .seo-content { width:var(--public-wide-size); margin-inline:auto; }
+
+  /* Compact identity/actions above navigation. Groups wrap into real rows,
+     never into a horizontally scrolling header. No clipping or new layers. */
+  :root body .site-header.public-header {
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr) auto auto;
+    align-items:center;
+    gap:10px 24px;
+    padding-block:14px;
+  }
+  :root body .public-header > .brand { grid-column:1; grid-row:1; margin:0; }
+  :root body .public-header .public-account-summary { grid-column:2; grid-row:1; justify-self:end; width:auto; min-width:0; max-width:280px; }
+  :root body .public-header .public-session-actions { grid-column:3; grid-row:1; order:initial; width:auto; min-width:0; flex-wrap:wrap; }
+  :root body .public-header .public-header-actions { grid-column:4; grid-row:1; order:initial; justify-self:end; width:auto; max-width:100%; }
+  :root body .public-header .public-navigation-stack {
+    grid-column:1/-1;
+    grid-row:2;
+    order:initial;
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px 22px;
+    margin:0;
+  }
+  :root body .public-header .public-navigation-stack .public-navigation {
+    flex:1 1 780px;
+    min-width:0;
+    max-width:100%;
+    width:auto;
+    flex-wrap:wrap;
+    justify-content:flex-start;
+    overflow:visible;
+    gap:6px 24px;
+    margin:0;
+  }
+  :root body .public-header .public-navigation-stack .public-navigation-group {
+    flex:0 1 auto;
+    min-width:0;
+    flex-wrap:wrap;
+    justify-content:flex-start;
+    gap:6px 18px;
+    white-space:normal;
+  }
+  :root body .public-header .public-navigation-stack .portal-contact-links-header { flex:0 0 auto; width:auto; margin:0; }
+
+  /* Shorter city lead-in puts the actual directory closer to the first fold. */
+  :root body .directory-root :is(.city-hero,.directory-hero) { padding-block:36px 30px; }
+  :root body .directory-root :is(.city-hero,.directory-hero) h1 { max-width:1400px; font-size:clamp(38px,2.8vw,58px); line-height:1.08; margin-bottom:16px; }
+  :root body .directory-root :is(.city-hero,.directory-hero) > p:last-child { max-width:78ch; }
+  :root body .directory-root .directory-content { padding-top:26px; }
+  :root body .directory-stories-layout.has-activity .directory-live-layout { grid-template-columns:minmax(0,1fr) 280px; gap:24px; }
+  :root body .directory-live-layout .story-activity-panel { top:var(--public-header-clearance); max-height:calc(100dvh - var(--public-header-clearance) - 20px); scrollbar-width:thin; scrollbar-color:#58637a transparent; overscroll-behavior:contain; }
+  :root body :is(.home-layout,.directory-root) .story-bubble-list { scrollbar-width:thin; scrollbar-color:#b94755 transparent; }
+  :root body:has(.home-layout,.directory-root) .story-viewer-toolbar :is(button,.story-viewer-profile-link) { font-size:1rem; line-height:1.35; }
+  :root body .directory-filter-form .filter-heading > div { grid-template-columns:minmax(280px,max-content) minmax(0,70ch); gap:5px 28px; }
+  :root body .directory-quick-filters > .quick-filter-search { flex:1 1 240px; max-width:420px; }
+  :root body .directory-quick-filters > .quick-filter-category { flex:0 1 250px; }
+  :root body .directory-quick-filters > .quick-filter-clear { margin-left:0; }
+
+  /* auto-fill reserves the same tracks even when a category has few entries.
+     Card width is capped; original, unoptimized photo URLs remain untouched. */
+  :root body :is(.home-layout,.directory-root) .public-profile-grid {
+    grid-template-columns:repeat(auto-fill,minmax(var(--public-card-min),1fr));
+    gap:16px;
+    align-items:start;
+  }
+  :root body :is(.home-layout,.directory-root) .public-profile-card { width:100%; max-width:var(--public-card-max); min-width:0; }
+  :root body :is(.home-layout,.directory-root) .public-profile-visual { aspect-ratio:4/5; }
+  :root body :is(.home-layout,.directory-root) .public-profile-image { transform:none; filter:none; }
+  :root body .city-profile-section-content { padding:0 16px 18px; }
+  :root body .city-profile-section-content .public-profile-grid { padding-top:16px; }
+
+  /* The count belongs to its title, not halfway across an ultrawide section. */
+  :root body .city-profile-section > summary { display:grid; grid-template-columns:max-content auto minmax(0,1fr) 24px; gap:6px 12px; min-height:76px; padding:16px; }
+  :root body .city-profile-section > summary > span { display:contents; }
+  :root body .city-profile-section > summary strong { grid-column:1; grid-row:1; }
+  :root body .city-profile-section > summary small { grid-column:1/4; grid-row:2; }
+  :root body .city-profile-section > summary > b { grid-column:2; grid-row:1; justify-self:start; align-self:center; }
+  :root body .city-profile-section > summary::after { grid-column:4; grid-row:1/3; justify-self:end; margin:0; }
+
+  /* Dense coverage/cards, but short controls and reading columns stay bounded. */
+  :root body .home-layout .regional-grid { grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr)); gap:16px; }
+  :root body .home-city-directory-links { grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); }
+  :root body .home-city-directory-links > a { max-width:280px; }
+  :root body .home-discovery-controls > .home-location-summary { width:min(100%,1100px); grid-template-columns:minmax(0,1fr) minmax(280px,420px); }
+  :root body .home-layout:not(.home-layout--compact) .hero { grid-template-columns:minmax(0,1fr); min-height:0; padding-block:64px 56px; gap:0; }
+  :root body .home-layout .hero-copy { max-width:980px; }
+  :root body .home-layout--classic .hero h1 { max-width:1000px; font-size:clamp(44px,3.9vw,72px); line-height:1.04; }
+  :root body .home-layout--classic .hero-text { max-width:72ch; }
+  :root body .home-layout--classic .trust-row { margin-top:32px; }
+  :root body .home-layout :is(.directory-section,.home-city-directory) { scroll-margin-top:var(--public-header-clearance); }
+  :root body .home-layout .process-section { grid-template-columns:minmax(300px,520px) minmax(0,760px); justify-content:space-between; gap:clamp(40px,6vw,120px); }
+  :root body .home-layout .announce-section > div { max-width:78ch; }
+  :root body .public-footer { grid-template-columns:minmax(240px,400px) auto minmax(180px,280px); justify-content:space-between; }
+  :root body .public-footer-navigation { grid-template-columns:repeat(2,minmax(160px,max-content)); justify-content:center; gap:32px clamp(28px,4vw,72px); }
+
+  /* Information pages share the public frame, not the retired narrow canvas.
+     Paragraph measure stays bounded; extra room gives indexes/help a column. */
+  :root body .directory-root :is(.static-page-content,.legal-page,.news-article,.news-index) {
+    width:var(--public-wide-size);
+    max-width:none;
+    padding-inline:0;
+    --public-reading-size:1.125rem;
+  }
+  :root body .directory-root :is(.static-page-hero,.legal-page,.news-article,.news-index) { padding-top:44px; }
+  :root body .directory-root .static-page-hero { padding-bottom:32px; }
+  :root body .directory-root .static-page-hero h1 { max-width:1200px; font-size:clamp(42px,3.6vw,68px); line-height:1.1; }
+  :root body .directory-root .static-page-hero > p:last-child { max-width:82ch; font-size:1.125rem; }
+  :root body .directory-root .faq-content { display:grid; grid-template-columns:minmax(0,1fr) minmax(280px,360px); align-items:start; gap:clamp(24px,3vw,64px); }
+  :root body .directory-root .faq-content summary { font-size:1.25rem; }
+  :root body .directory-root .faq-content aside { margin:0; padding:26px; border-radius:var(--corner-14); }
+  :root body .directory-root .faq-content aside h2 { font-size:28px; line-height:1.2; }
+  :root body .directory-root .contact-content { gap:24px; }
+  :root body .directory-root .contact-content article { padding:32px; border-radius:var(--corner-14); }
+  :root body .directory-root .contact-content :is(p,ul) { max-width:76ch; }
+  :root body .directory-root .legal-page h1 { max-width:1200px; font-size:clamp(44px,4vw,68px); line-height:1.08; }
+  :root body .directory-root .legal-summary { max-width:82ch; }
+  :root body .directory-root .legal-content { display:grid; grid-template-columns:minmax(240px,320px) minmax(0,1fr); align-items:start; gap:clamp(24px,3vw,64px); }
+  :root body .directory-root .legal-index { margin:0; padding:24px; }
+  :root body .directory-root .legal-index ol { grid-template-columns:minmax(0,1fr); gap:12px; }
+  :root body .directory-root .legal-sections > section:first-child { padding-top:0; }
+  :root body .directory-root .legal-content section { scroll-margin-top:var(--public-header-clearance); }
+  :root body .directory-root :is(.legal-content h2,.news-article-content h2) { font-size:clamp(28px,2vw,36px); line-height:1.25; }
+  :root body .directory-root .news-article > header { max-width:1200px; }
+  :root body .directory-root .news-article > header h1 { max-width:28ch; font-size:clamp(38px,3.2vw,64px); line-height:1.1; }
+  :root body .directory-root .news-article > header > p { max-width:82ch; }
+  :root body .directory-root .news-article-byline { font-size:14px; }
+  :root body .directory-root .news-article-cover { max-width:1200px; min-height:0; aspect-ratio:16/7; }
+  :root body .directory-root .news-article-layout { display:grid; grid-template-columns:minmax(0,1fr) minmax(280px,360px); align-items:start; gap:clamp(24px,3vw,64px); }
+  :root body .directory-root .news-article-next { margin:0; }
+  :root body .directory-root .news-article-next h2 { font-size:28px; }
+  :root body .directory-root .news-index > header { max-width:1100px; }
+  :root body .directory-root .news-card-grid { grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); }
+
+  /* Balanced reading composition inside the shared wide frame. Keep related
+     columns together instead of pushing help cards to the far screen edge. */
+  :root body .directory-root :is(.static-page-content,.legal-page,.news-article,.news-index) { --public-reading-size:1.25rem; }
+  :root body .directory-root .static-page-hero { padding-inline:max(0px,calc((var(--public-wide-size) - 1500px) / 2)); }
+  :root body .directory-root .static-page-hero > p:last-child { font-size:1.25rem; }
+  :root body .directory-root .faq-content { grid-template-columns:minmax(0,1100px) minmax(280px,360px); justify-content:center; gap:clamp(24px,2.5vw,40px); }
+  :root body .directory-root .faq-content summary { font-size:1.375rem; }
+  :root body .directory-root .faq-content aside :is(p,.button) { font-size:1.0625rem; }
+  :root body .directory-root .contact-content { grid-template-columns:repeat(2,minmax(0,738px)); justify-content:center; gap:24px; }
+  :root body .directory-root .contact-content article { padding:32px; }
+  :root body .directory-root .contact-content :is(p,ul) { max-width:72ch; }
+  :root body .directory-root .legal-content { grid-template-columns:minmax(240px,320px) minmax(0,1080px); justify-content:center; gap:clamp(28px,3vw,48px); }
+  :root body .directory-root .legal-page > :is(header,.legal-summary) { margin-left:max(0px,calc((100% - 1448px) / 2)); }
+  :root body .directory-root .legal-content:not(:has(.legal-index)) { display:block; width:min(100%,1080px); margin-inline:auto; }
+  :root body .directory-root .legal-page:not(:has(.legal-index)) > header { margin-left:max(0px,calc((100% - 1080px) / 2)); }
+  :root body .directory-root .legal-index a { font-size:1.0625rem; }
+  :root body .directory-root .news-article { --article-inner-max:1400px; }
+  :root body .directory-root .news-article > :is(header,.news-breadcrumbs,.page-back-link) { max-width:none; margin-left:max(0px,calc((100% - var(--article-inner-max)) / 2)); }
+  :root body .directory-root .news-article-layout { grid-template-columns:minmax(0,1000px) minmax(280px,360px); justify-content:center; gap:clamp(28px,3vw,40px); }
+  :root body .directory-root .news-article-byline { font-size:1rem; }
+  :root body .directory-root .news-article-next :is(p,.button) { font-size:1.0625rem; }
+  :root body .directory-root .news-article-cover { width:min(100%,var(--article-inner-max)); max-width:none; margin-inline:auto; }
+  :root body .directory-root :is(.static-page-hero,.news-article,.legal-page) .eyebrow { font-size:.8125rem; }
+  :root body .directory-root .news-breadcrumbs { font-size:1rem; }
+
+  /* About-page text was still using 9–15px labels and a large empty central
+     gap. Bound the paired composition, not the entire public/catalog frame. */
+  :root body .directory-root .about-hero { padding-inline:max(var(--public-wide-inset),calc((100% - 1600px) / 2)); grid-template-columns:minmax(0,1.05fr) minmax(340px,.95fr); gap:clamp(32px,4vw,64px); }
+  :root body .directory-root .about-hero-copy h1 { max-width:19ch; font-size:clamp(48px,3.8vw,72px); line-height:1.05; }
+  :root body .directory-root .about-hero-copy > p:not(.eyebrow) { max-width:68ch; font-size:1.25rem; line-height:1.65; }
+  :root body .directory-root .about-hero-copy > p.about-launch-note { font-size:1rem; }
+  :root body .directory-root .about-hero-panel { width:100%; max-width:none; }
+  :root body .directory-root .about-hero-panel dl div { grid-template-columns:minmax(100px,.35fr) minmax(0,1fr); gap:18px; }
+  :root body .directory-root .about-hero-panel :is(p,dd) { font-size:1rem; line-height:1.6; }
+  :root body .directory-root :is(.about-intro,.about-differences,.about-how,.about-available,.about-contact) { width:var(--public-wide-size); max-width:none; padding-inline:max(0px,calc((var(--public-wide-size) - 1600px) / 2)); }
+  :root body .directory-root :is(.about-free,.about-trust,.about-roadmap) { padding-inline:max(var(--public-wide-inset),calc((100% - 1600px) / 2)); gap:clamp(32px,4vw,64px); }
+  :root body .directory-root :is(.about-intro,.about-differences,.about-free,.about-how,.about-trust,.about-roadmap,.about-available,.about-contact) p { font-size:1.125rem; line-height:1.7; }
+  :root body .directory-root :is(.about-hero,.about-intro,.about-differences,.about-how,.about-trust,.about-roadmap,.about-available,.about-contact) .eyebrow { font-size:.8125rem; }
+  :root body .directory-root :is(.about-hero-actions,.about-free-actions,.about-contact-actions,.about-trust-links,.about-how nav) :is(a,.button) { font-size:1.0625rem; }
+  :root body .directory-root :is(.about-free aside small,.about-roadmap-list strong,.about-available-links span,.about-contact-number small) { font-size:.9375rem; line-height:1.6; }
+}
+
+/* Intermediate effective widths also occur with desktop browser zoom. Anchor
+   this small popover to the filter box, not to a button on a wrapped row.
+   The <=620px phone layout remains untouched. */
+@media (min-width:621px) and (max-width:1099px) {
+  :root body .directory-quick-filters { position:relative; }
+  :root body .quick-filter-age { position:static; }
+  :root body .quick-filter-age-popover { left:10px; right:auto; top:calc(100% + 6px); width:min(250px,calc(100% - 20px)); }
+  :root body .directory-live-layout .story-activity-panel { position:static; }
+}

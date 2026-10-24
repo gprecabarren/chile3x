@@ -65,16 +65,15 @@ test("mobile login appears only in the quick row, not duplicated in the hamburge
   assert.match(css, /\.public-navigation \.public-login-link \{ border: 1px solid #8d343b/);
 });
 
-test("coverage illustration is confined to the card with fixed dimensions and PNG fallback", async () => {
-  const home = await source("app/page.tsx");
-  assert.match(home, /<aside className="hero-card"[\s\S]*?<picture className="coverage-panorama">/);
-  assert.match(home, /image\/webp/);
-  assert.match(home, /chile-coverage-panorama-20261007.png" alt="" width=\{768\} height=\{256\}/);
-  for (const extension of ["png", "webp"]) assert.ok((await readFile(new URL(`../public/assets/chile-coverage-panorama-20261007.${extension}`, import.meta.url))).length < 50_000);
+test("home coverage uses a light anchor instead of the former decorative card", async () => {
+  const home = await source("app/HomeContent.tsx");
+  assert.doesNotMatch(home, /hero-card|coverage-panorama|coverage-stats|chile-coverage-panorama/);
+  assert.match(home, /className="button button-outline home-coverage-action" href="#cobertura"/);
+  assert.match(home, /id=\{compact \? undefined : "cobertura"\}/);
 });
 
 test("home backdrop is decorative, lightweight and has a distinct mobile crop", async () => {
-  const home = await source("app/page.tsx");
+  const home = await source("app/HomeContent.tsx");
   assert.match(home, /<picture className="hero-backdrop">/);
   assert.match(home, /media="\(max-width: 620px\)" srcSet="\/assets\/hero-night-silhouette-mobile-20261007.webp" width=\{512\} height=\{768\}/);
   assert.match(home, /hero-night-silhouette-desktop-20261007.webp" alt="" aria-hidden="true" width=\{1600\} height=\{640\} fetchPriority="low" decoding="async"/);

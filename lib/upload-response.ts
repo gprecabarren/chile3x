@@ -18,12 +18,27 @@ export async function readUploadResponse<T>(response: Response, sizeHelp = "Cada
 
 /** A network failure cannot prove whether the server received the upload. */
 export async function uploadMediaRequest<T>(url: string, body: FormData): Promise<T> {
+  async function savedReceipt() {
+    const id=body.get("mutation_id"),key=body.get("review_key");
+    if(!url.startsWith("/api/admin/")||typeof id!=="string"||typeof key!=="string")return false;
+    try {
+      const result=await fetch(`/api/admin/colaboracion/confirmacion?id=${encodeURIComponent(id)}`,{cache:"no-store",signal:AbortSignal.timeout(8000)});
+      if(!result.ok)return false;
+      const receipt=await result.json();return receipt.committed===true&&receipt.resourceKey===key;
+    }catch{return false;}
+  }
+  const committedMessage="El cambio quedó guardado, pero falló la respuesta posterior. Recarga el anuncio para ver la versión actual antes de continuar; no repitas esta carga.";
   let response: Response;
   try { response = await fetch(url, { method: "POST", body }); }
   catch {
+    if(await savedReceipt())throw new Error(committedMessage);
     throw new Error(typeof navigator !== "undefined" && navigator.onLine === false
       ? "El dispositivo está sin conexión. Conéctate a internet y reintenta este archivo."
       : "La conexión se interrumpió durante el envío. No pudimos confirmar la carga: revisa si el archivo aparece en tu galería antes de reintentar para no duplicarlo.");
   }
-  return readUploadResponse<T>(response);
+  try {return await readUploadResponse<T>(response);}
+  catch(cause) {
+    if((response.status>=500||response.ok)&&await savedReceipt())throw new Error(committedMessage);
+    throw cause;
+  }
 }

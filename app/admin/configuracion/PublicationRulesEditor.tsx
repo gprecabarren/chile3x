@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
 import { useState } from "react";
 import type { PublicationRule } from "@/lib/publication-rules";
@@ -33,12 +34,12 @@ export function PublicationRulesEditor({ initialRules }: { initialRules: Publica
           <label>Contenido<textarea value={rule.body} maxLength={1400} rows={5} required onChange={(event) => update(index, "body", event.target.value)} /></label>
         </div>
         <div className="faq-settings-actions">
-          <button type="button" onClick={() => move(index, -1)} disabled={index === 0}>Subir</button>
-          <button type="button" onClick={() => move(index, 1)} disabled={index === rules.length - 1}>Bajar</button>
-          <button type="button" className="faq-remove" onClick={() => setRules((current) => current.length > 1 ? current.filter((_, ruleIndex) => ruleIndex !== index) : current)}>Quitar</button>
+          <ActionButton type="button" onClick={() => move(index, -1)} disabled={index === 0}>Subir</ActionButton>
+          <ActionButton type="button" onClick={() => move(index, 1)} disabled={index === rules.length - 1}>Bajar</ActionButton>
+          <ActionButton type="button" className="faq-remove" onClick={() => setRules((current) => current.length > 1 ? current.filter((_, ruleIndex) => ruleIndex !== index) : current)}>Quitar</ActionButton>
         </div>
       </article>)}
     </div>
-    {rules.length < 20 && <button type="button" className="button button-outline faq-add" onClick={() => setRules((current) => [...current, { ...emptyRule }])}>Agregar regla</button>}
+    {rules.length < 20 && <ActionButton type="button" className="button button-outline faq-add" onClick={() => setRules((current) => [...current, { ...emptyRule }])}>Agregar regla</ActionButton>}
   </section>;
 }

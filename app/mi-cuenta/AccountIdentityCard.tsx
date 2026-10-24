@@ -1,3 +1,4 @@
+import { ActionButton } from "@/app/ActionButton";
 import Link from "@/app/NavigationLink";
 import type { AccountUser } from "@/lib/auth";
 import { emailVerificationLabel, emailVerificationState } from "@/lib/email-verification-policy";
@@ -14,7 +15,7 @@ export function AccountIdentityCard({ user }: { user: AccountUser }) {
           <label htmlFor="account-username">Nuevo nombre de usuario</label>
           <input id="account-username" name="username" required minLength={3} maxLength={48} defaultValue={user.username ?? ""} autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} aria-describedby="account-username-help" />
           <small id="account-username-help">Entre 3 y 48 caracteres: letras, números o guiones. Debe estar disponible.</small>
-          <button className="button button-primary" type="submit">Guardar usuario</button>
+          <ActionButton className="button button-primary" type="submit">Guardar usuario</ActionButton>
         </form></details>
       </div>
     </div>

@@ -10,12 +10,19 @@ import { recordAdminAudit } from "@/lib/admin-audit";
 import { adminHasCapability } from "@/lib/admin-permissions";
 import { normalizeTelegramCommunityUrl, TELEGRAM_CONFIG_ID } from "@/lib/telegram";
 import { normalizePortalWhatsappPhone, validateWhatsappContacts, WHATSAPP_TEXT_LIMITS } from "@/lib/portal-whatsapp";
+import { HOME_LAYOUTS } from "@/lib/home-layout-policy";
+import { VISUAL_THEMES } from "@/lib/site-theme-policy";
+import { settingsReturnPath } from "@/lib/admin-testing-policy";
+import { parseHomeTexts } from "@/lib/home-content-policy";
+import {publicSiteOrigin} from "@/lib/public-site-url";
 
 const allowedSettings = {
   listing_open: new Set(["closed", "waitlist", "open"]),
   moderation_mode: new Set(["manual", "manual_priority"]),
   billing_mode: new Set(["manual", "planned"]),
   maintenance_mode: new Set(["disabled", "enabled"]),
+  home_layout: new Set<string>(HOME_LAYOUTS),
+  visual_theme: new Set<string>(VISUAL_THEMES),
   account_help_enabled: new Set(["disabled", "enabled"]),
   robots_indexing: new Set(["enabled", "disabled"]),
   profile_gallery_watermark_enabled: new Set(["enabled", "disabled"]),
@@ -32,7 +39,7 @@ function readText(formData: FormData, key: string, maximum: number) {
 
 function configurationReturnTo(formData: FormData) {
   const value = readText(formData, "return_to", 120);
-  return value && /^\/admin\/configuracion(?:\/[a-z-]+)?$/.test(value) ? value : "/admin/configuracion";
+  return settingsReturnPath(value);
 }
 
 export async function POST(request: NextRequest) {
@@ -47,9 +54,18 @@ export async function POST(request: NextRequest) {
   if (!adminHasCapability(admin, "settings.manage")) return new Response("No tienes permiso para cambiar la configuración.", { status: 403 });
 
   const formData = await request.formData();
+  if (formData.has("home_layout") && formData.getAll("home_layout").length !== 1) {
+    return new Response("Elige un único diseño del home.", { status: 400 });
+  }
+  if (formData.has("visual_theme") && formData.getAll("visual_theme").length !== 1) return new Response("Elige un único tema visual.", { status: 400 });
   const updatedAt = new Date().toISOString();
   const rows: Array<{ key: string; value: string; updatedBy: string; updatedAt: string }> = [];
   const set = (key: string, value: string) => rows.push({ key, value, updatedBy: admin.id, updatedAt });
+  for(const layout of ["classic","compact"] as const){
+    const key=`home_content_${layout}`;if(!formData.has(key))continue;
+    const value=formData.get(key);if(typeof value!=="string"||value.length>40_000)return new Response("Contenido del home demasiado extenso.",{status:400});
+    try{set(key,JSON.stringify(parseHomeTexts(value,layout,true)));}catch(error){return new Response(error instanceof Error?error.message:"Contenido no válido.",{status:400});}
+  }
 
   for (const [key, allowed] of Object.entries(allowedSettings)) {
     if (!formData.has(key)) continue;
@@ -70,15 +86,13 @@ export async function POST(request: NextRequest) {
     set("site_description", siteDescription);
   }
   if (siteUrl !== undefined) {
-    try {
-      if (!siteUrl || new URL(siteUrl).protocol !== "https:") throw new Error("URL no segura");
-    } catch {
-      return new Response("La URL pública debe comenzar con https://", { status: 400 });
-    }
-    set("site_url", siteUrl);
+    const origin=siteUrl?publicSiteOrigin(siteUrl):null;
+    if(!origin)return new Response("La URL pública debe ser un dominio HTTPS, sin rutas, puertos, credenciales ni direcciones locales del PC.",{status:400});
+    set("site_url", origin);
   }
 
   const optionalText = [
+    ["social_title",90],["social_description",180],
     ["google_site_verification", 180], ["google_analytics_id", 20], ["google_oauth_client_id", 180], ["contact_whatsapp", 22],
     ["contact_telegram", 180], ["contact_instagram", 180], ["contact_email", 180],
     ["apple_services_id", 180], ["apple_team_id", 10], ["apple_key_id", 10], ["apple_primary_app_id", 180],
@@ -159,9 +173,6 @@ export async function POST(request: NextRequest) {
       target: siteSettings.key,
       set: { value: row.value, updatedBy: admin.id, updatedAt: row.updatedAt },
     }));
-  if (Object.hasOwn(values, "contact_telegram")) {
-    // The canonical site setting and Telegram mirror are committed together.
-  }
   const [first,...rest]=statements;if(!first)return new Response("No se recibieron cambios.",{status:400});
   try{await guardedBatch(expectedVersion(formData,"settings:site"),[first,...rest,...(Object.hasOwn(values,"contact_telegram")?[db.insert(telegramConfiguration).values({id:TELEGRAM_CONFIG_ID,publicCommunityUrl:values.contact_telegram,updatedBy:admin.id,updatedAt}).onConflictDoUpdate({target:telegramConfiguration.id,set:{publicCommunityUrl:values.contact_telegram,updatedBy:admin.id,updatedAt}})]:[])],admin.id);}catch(error){if(error instanceof CollaborationConflict)return conflictResponse();throw error;}
   await recordAdminAudit(admin, { category: "settings", action: "settings.update", summary: `Modificó ${rows.length} ${rows.length === 1 ? "ajuste" : "ajustes"} del sitio.`, entityType: "settings", entityId: configurationReturnTo(formData), entityLabel: "Configuración del sitio", before, after: Object.fromEntries(rows.map((row) => [row.key, row.value])), metadata: { changedKeys: rows.map((row) => row.key) } });

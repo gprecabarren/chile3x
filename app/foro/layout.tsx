@@ -8,5 +8,5 @@ export const metadata = privatePageMetadata({ title: "Foro privado beta", descri
 export default function ForumLayout({ children }: { children: ReactNode }) {
   // Reuse the deferred panel bundle outside /admin without adding it to public pages.
   // eslint-disable-next-line @next/next/no-css-tags
-  return <><link href="/assets/panels-20260923.css?v=20261010-social-access" precedence="panels" rel="stylesheet" />{children}</>;
+  return <><link href="/assets/panels-20260923.css?v=20261021-rounded" precedence="panels" rel="stylesheet" />{children}</>;
 }

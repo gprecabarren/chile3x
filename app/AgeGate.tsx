@@ -1,4 +1,5 @@
 "use client";
+import { ActionAnchor, ActionButton } from "@/app/ActionButton";
 
 import { useEffect, useState } from "react";
 
@@ -28,8 +29,8 @@ export function AgeGate() {
         <p>Este sitio contiene un directorio destinado exclusivamente a personas mayores de 18 años. Al continuar declaras tener la edad legal para acceder a este contenido en Chile.</p>
         <small className="age-gate-beta-note">Sitio operativo en fase beta. Seguimos construyendo y mejorando.</small>
         <div className="age-gate-actions">
-          <button className="button button-primary" type="button" onClick={confirmAge}>Soy mayor de 18 años</button>
-          <a className="button button-outline" href="https://www.google.com/">Salir del sitio</a>
+          <ActionButton className="button button-primary" type="button" onClick={confirmAge}>Soy mayor de 18 años</ActionButton>
+          <ActionAnchor className="button button-outline" href="https://www.google.com/">Salir del sitio</ActionAnchor>
         </div>
         <small>Consulta nuestros <a href="/terminos">términos</a>, <a href="/privacidad">privacidad</a> y <a href="/reglas-de-publicacion">reglas de publicación</a>.</small>
       </div>

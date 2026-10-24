@@ -46,6 +46,19 @@ test('real SQLite transactions exercise stale reviews, simultaneous saves, owner
     sqlite.exec("INSERT INTO users(id,email,display_name,is_active,role) VALUES('owner','owner@example.invalid','Alias',1,'advertiser'),('admin_a','a@example.invalid','Admin A',1,'admin'),('admin_b','b@example.invalid','Admin B',1,'admin');INSERT INTO profiles(id,owner_id,type,status,display_name,slug,health_review_status,verification_status,is_featured) VALUES('p1','owner','escort','pending','QA 1','qa-1','not_requested','unreviewed',0),('p2','owner','escort','pending','QA 2','qa-2','not_requested','unreviewed',0);INSERT INTO profile_details(profile_id,metadata) VALUES('p1','{\"age\":\"23\"}');");
     const {guardedBatch,currentRevision,CollaborationConflict,expectedVersion}=await import('../lib/collaboration.ts');
     const db=globalThis.__collaborationTestDb;
+    await t.test('save receipts commit atomically, identify the actor, and never survive a rejected transaction',async()=>{
+      const id=crypto.randomUUID(),version={key:'profile:p1',revision:await currentRevision('profile:p1'),mutationId:id};
+      const result=await guardedBatch(version,[db.update(schema.profiles).set({city:'receipt test'}).where(eq(schema.profiles.id,'p1'))],'admin_a');assert.equal(result.length,1);
+      assert.deepEqual(sqlite.prepare('SELECT actor_id,resource_key FROM admin_mutation_receipts WHERE id=?').get(id),Object.assign(Object.create(null),{actor_id:'admin_a',resource_key:'profile:p1'}));
+      const failed=crypto.randomUUID();await assert.rejects(guardedBatch({...version,mutationId:failed},[db.update(schema.profiles).set({city:'must not save'}).where(eq(schema.profiles.id,'p1'))],'admin_b'),CollaborationConflict);
+      assert.equal(sqlite.prepare('SELECT id FROM admin_mutation_receipts WHERE id=?').get(failed),undefined);
+      const {GET}=await import('../app/api/admin/colaboracion/confirmacion/route.ts');
+      const request=new Request('https://example.invalid/api/admin/colaboracion/confirmacion?id='+id);
+      assert.equal((await(await GET(request)).json()).committed,true);
+      const original=globalThis.__collaborationTestAdmin;globalThis.__collaborationTestAdmin={...original,id:'admin_b'};
+      assert.deepEqual(await(await GET(request)).json(),{committed:false,resourceKey:null});
+      globalThis.__collaborationTestAdmin=null;assert.equal((await GET(request)).status,401);globalThis.__collaborationTestAdmin=original;
+    });
     await t.test('only one administrator can save the same reviewed version',async()=>{
       const version={key:'profile:p1',revision:await currentRevision('profile:p1')};
       const results=await Promise.allSettled([

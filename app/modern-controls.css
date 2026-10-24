@@ -1,0 +1,50 @@
+/* DM Sans and a lighter, quieter action system. Shared by both themes. */
+body { -webkit-font-smoothing:antialiased; }
+body :is(h1,h2,h3) { text-wrap:balance; }
+body :is(button,input,select,textarea) { font-family:var(--font-site); }
+.button { min-height:44px; gap:9px; padding:11px 20px; font-size:14px; font-weight:650; line-height:1.4; letter-spacing:-.01em; text-transform:none; border-radius:999px; transition:background-color .16s,border-color .16s,color .16s; }
+.button svg { flex-shrink:0; }
+.button:focus-visible { outline:2px solid #fcb0b8; outline-offset:4px; }
+.button:disabled { cursor:not-allowed; opacity:.55; }
+.button-primary { box-shadow:none; }
+.button:hover { transform:none; }
+:is(.admin-workspace,.account-workspace) .button { min-height:44px; font-size:13px !important; font-weight:600 !important; letter-spacing:0 !important; line-height:1.45 !important; }
+:is(.admin-workspace,.account-workspace) :is(.admin-root,.account-root) :is(.admin-heading,.account-heading) h1 { font-size:clamp(30px,3.2vw,48px); font-weight:600; letter-spacing:-.045em; line-height:1.12; }
+.site-header :is(.header-publish,.header-stories-button),.hero-actions .button,.free-publish-actions .button { border-radius:999px; }
+.directory-city-options button { font-weight:550; }
+.admin-sidebar-head .admin-sidebar-brand .sidebar-return-site,.account-sidebar-head .account-sidebar-brand .sidebar-return-site { display:flex; align-items:center; justify-content:flex-start; gap:10px; width:100%; min-width:0; min-height:44px; padding:10px 6px; border:0; border-radius:var(--corner-8); color:#d5deed; background:transparent; font-size:13px; font-weight:550; line-height:1.5; text-decoration:none; }
+.sidebar-return-site > span:first-child { flex-shrink:0; font-size:19px; }
+.sidebar-return-site > span:last-child { min-width:0; white-space:normal; overflow-wrap:break-word; }
+.sidebar-return-site:focus-visible { outline:2px solid #ffb5bf; outline-offset:3px; }
+.admin-workspace .admin-sidebar-head,.account-workspace .account-sidebar-head { min-height:60px; padding:8px 14px; }
+.admin-workspace .admin-sidebar-identity,.account-workspace .account-sidebar-identity { display:block; }
+.admin-workspace .admin-sidebar-identity > div,.account-workspace .account-sidebar-identity > a { display:block; width:100%; min-width:0; }
+.admin-workspace .admin-sidebar-identity strong,.account-workspace .account-sidebar-identity strong { font-size:14px; line-height:1.5; }
+.admin-workspace .admin-sidebar-identity small,.account-workspace .account-sidebar-identity small { font-size:12px; line-height:1.5; }
+.admin-workspace .admin-sidebar-footer button,.account-workspace .account-sidebar-footer button { min-height:44px; font-size:12px; }
+.home-text-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; margin-top:20px; }
+.home-text-fields label { min-width:0; display:grid; align-content:start; gap:8px; font-size:14px; color:#d4dfed; }
+.home-text-fields :is(input,textarea) { width:100%; min-width:0; min-height:44px; padding:11px 12px; border:1px solid #4b5971; border-radius:var(--corner-10); background:#0b101a; color:#fff; font:inherit; }
+.home-text-fields small { color:#a9b8cd; font-size:12px; }
+.seo-snippet-preview { display:grid; gap:8px; margin-top:18px; padding:22px; max-width:720px; border:1px solid #3f4e64; border-radius:var(--corner-14); background:#0d1420; }
+.seo-snippet-preview span,.seo-snippet-preview p { overflow-wrap:anywhere; color:#c4cfde; font-size:14px; line-height:1.65; margin:0; }
+.seo-snippet-preview h3 { margin:0; font-size:22px; color:#aecbff; line-height:1.35; }
+.seo-snippet-preview small { color:#a7b5cb; font-size:12px; }
+.agency-management-card,.agency-invite-form,.agency-invite-form label { min-width:0; }
+.agency-invite-form { grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto; }
+.agency-invite-form :is(input,select) { width:100%; min-width:0; max-width:100%; }
+.agency-invite-form .button { max-width:100%; white-space:normal; }
+.account-details-form .account-identity-optional .form-grid { align-items:start; }
+.account-details-form .account-identity-optional .form-grid > label { align-content:start; gap:7px; }
+.account-details-form .account-identity-optional :is(input,select) { height:46px; min-height:46px; margin:0; }
+@media(max-width:760px) { .agency-invite-form { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:760px) { .home-text-fields { grid-template-columns:minmax(0,1fr); } }
+@media(min-width:1100px) {
+  .admin-workspace .admin-root .admin-content,.account-workspace .account-root .account-content { max-width:1440px; }
+  .admin-workspace .admin-content :is(.admin-settings-section,.admin-account-password-actions) { padding:24px; }
+}
+@media(max-width:620px) {
+  :is(.admin-workspace,.account-workspace) :is(input:not([type=checkbox],[type=radio],[type=hidden],[type=file]),select,textarea) { font-size:16px; }
+  .button { min-height:44px; padding:10px 16px; }
+}
+@media(prefers-reduced-motion:reduce) { .button { transition:none; } }

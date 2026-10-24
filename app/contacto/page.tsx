@@ -3,14 +3,9 @@ import Link from "@/app/NavigationLink";
 import { DirectoryShell, PortalContactLinks } from "@/app/directorio/_components";
 import { getPortalContacts } from "@/lib/site-contacts";
 import { getSiteSettings } from "@/lib/site-settings";
-import { publicPageMetadata } from "@/lib/seo";
+import { informationPageMetadata } from "@/lib/information-seo";
 
-export const metadata: Metadata = publicPageMetadata({
-  title: "Contacto y soporte de Chile3X",
-  description: "Canales oficiales de Chile3X para consultas de cuenta, publicación, revisión, seguridad y reportes sobre perfiles del directorio.",
-  path: "/contacto",
-  socialTitle: "Contacto | Chile3X",
-});
+export async function generateMetadata(): Promise<Metadata> { return informationPageMetadata('contacto'); }
 
 export const dynamic = "force-dynamic";
 

@@ -12,6 +12,11 @@ import { purgeExpiredStoryRecords } from "./story-cleanup";
 import { enforceExclusiveBrowserSession } from "./session-isolation";
 import { handleDataRetentionScheduled, purgeMediaDeletionJobs } from "./data-retention";
 import { forwardConfiguredInbound, handleModerationMailScheduled } from "./moderation-mail";
+import { prepareSitePresentation } from "./site-presentation";
+import { HOME_LAYOUT_HEADER } from "../lib/home-layout-policy";
+import { VISUAL_THEME_HEADER } from "../lib/site-theme-policy";
+import { adminMutationResponse } from "./admin-mutation-response";
+import { isSamplePath,PRIVATE_SAMPLE_HEADER,PRIVATE_SAMPLES_ENABLED } from "../lib/private-sample-policy";
 
 const availableCitySlugs = new Set(cityDirectory.map(city => city.citySlug));
 
@@ -32,13 +37,21 @@ function withSecurityHeaders(response: Response, pathname = "", privateDocument 
   // top-level page from unrelated cross-origin windows.
   headers.set("cross-origin-opener-policy", "same-origin-allow-popups");
   headers.set("referrer-policy", pathname === "/api/auth/verificar-correo" ? "no-referrer" : "strict-origin-when-cross-origin");
-  // Even anonymous sign-in redirects from the beta must remain private.
-  if (pathname === "/foro" || pathname.startsWith("/foro/")) {
+  if(isSamplePath(pathname)) {
+    headers.set("cache-control","private, no-store, max-age=0");
+    headers.set("x-robots-tag","noindex, nofollow, noarchive, nosnippet, noimageindex");
+    headers.set("referrer-policy","no-referrer");
+  }
+  // Private administration and beta routes, including anonymous redirects,
+  // must not be indexed or cached. This does not replace authentication.
+  if (pathname === "/admin" || pathname.startsWith("/admin/")
+    || pathname === "/foro" || pathname.startsWith("/foro/")) {
     headers.set("cache-control", "private, no-store, max-age=0");
     headers.set("x-robots-tag", "noindex, nofollow, nosnippet");
   }
   headers.set("permissions-policy", "camera=(self), geolocation=(self), microphone=(self)");
   headers.set("content-security-policy", `default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline'${wasmPermission} https://accounts.google.com https://challenges.cloudflare.com https://www.googletagmanager.com https://news.google.com https://cdn.jsdelivr.net https://static.cloudflareinsights.com; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob:; font-src 'self' data:; frame-src https://accounts.google.com https://challenges.cloudflare.com https://www.googletagmanager.com https://news.google.com https://maps.google.com https://www.google.com; connect-src 'self' https://accounts.google.com https://www.googleapis.com https://challenges.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com https://news.google.com https://cdn.jsdelivr.net https://storage.googleapis.com https://cloudflareinsights.com; upgrade-insecure-requests`);
+  if(isSamplePath(pathname))headers.set("content-security-policy","default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; frame-src 'none'; connect-src 'self'");
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
@@ -59,6 +72,9 @@ function addPublicCacheHeaders(response: Response) {
 function isLegacyApplicationProbe(pathname: string) {
   const path = pathname.toLowerCase();
   return path.endsWith(".php")
+    || path.endsWith(".map")
+    || path.startsWith("/@fs/")
+    || path.startsWith("/@vite/")
     || path === "/wp"
     || path.startsWith("/wp/")
     || path.includes("/wp-")
@@ -88,6 +104,13 @@ function probeNotFoundResponse() {
 const worker = {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+    if(!PRIVATE_SAMPLES_ENABLED&&(isSamplePath(url.pathname)||/^\/(?:admin|api\/admin)\/muestras(?:\/|$)/.test(url.pathname))) {
+      return withSecurityHeaders(new Response("No disponible.",{status:404,headers:{"cache-control":"private, no-store","x-robots-tag":"noindex, nofollow, nosnippet"}}),url.pathname,true);
+    }
+    const privateSample=isSamplePath(url.pathname),requestHeaders=new Headers(request.headers);
+    requestHeaders.delete(PRIVATE_SAMPLE_HEADER);
+    if(privateSample)requestHeaders.set(PRIVATE_SAMPLE_HEADER,"1");
+    request=new Request(request,{headers:requestHeaders});
 
     if (isTelegramWebhookPath(url.pathname)) {
       return withSecurityHeaders(await handleTelegramWebhook(request, env));
@@ -97,9 +120,9 @@ const worker = {
       return probeNotFoundResponse();
     }
 
-    const sessionConflict = await enforceExclusiveBrowserSession(request, env.DB);
+    const sessionConflict = privateSample?null:await enforceExclusiveBrowserSession(request, env.DB);
     if (sessionConflict) return withSecurityHeaders(sessionConflict, url.pathname, true);
-    const verificationBlock = await enforceEmailVerification(request, env.DB);
+    const verificationBlock = privateSample?null:await enforceEmailVerification(request, env.DB);
     if (verificationBlock) return withSecurityHeaders(verificationBlock, url.pathname, true);
 
     const uploadRequest = await limitMultipartUpload(request);
@@ -117,7 +140,9 @@ const worker = {
       }, allowedWidths));
     }
 
-    const cacheKey = publicCacheKey(request, env.CF_VERSION_METADATA?.id, availableCitySlugs);
+    const home = await prepareSitePresentation(request, env.DB);
+    request = home.request;
+    const cacheKey = publicCacheKey(request, `${env.CF_VERSION_METADATA?.id??"current"}:${home.contentRevision}`, availableCitySlugs, home.layout, home.theme);
     const cache = cacheKey ? (caches as CacheStorage & { default: Cache }).default : null;
 
     if (cache && cacheKey) {
@@ -130,7 +155,9 @@ const worker = {
       }
     }
 
-    const response = withSecurityHeaders(await handler.fetch(request, env, ctx), url.pathname, hasPrivateSession(request));
+    const response = withSecurityHeaders(adminMutationResponse(request,await handler.fetch(request, env, ctx)), url.pathname, hasPrivateSession(request));
+    if (url.pathname === "/") response.headers.set(HOME_LAYOUT_HEADER, home.layout);
+    if (home.page) response.headers.set(VISUAL_THEME_HEADER, home.theme);
     if (!cache || !cacheKey || !isCacheableDocument(response)) {
       const isDocument = /text\/(?:html|x-component)/i.test(response.headers.get("content-type") ?? "");
       return hasPrivateSession(request) || isDocument || url.pathname.startsWith("/api/auth/")

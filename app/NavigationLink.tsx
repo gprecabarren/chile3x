@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ComponentProps } from "react";
 import { beginUserNavigation } from "@/lib/user-navigation-progress";
+import { ActionLabel } from "./ActionLabel";
 
 /** Navigation stays client-side, but only requests a page when it is opened.
  * Global menus otherwise render many unused RSC pages concurrently, consuming
@@ -15,5 +16,5 @@ export default function NavigationLink(props: ComponentProps<typeof Link>) {
       || (props.target && props.target !== "_self") || props.download) return;
     const href = event.currentTarget.href;
     if (href) beginUserNavigation(href);
-  }} />;
+  }}>{/(?:^|\s)button(?:\s|$)/.test(props.className ?? "") ? <ActionLabel>{props.children}</ActionLabel> : props.children}</Link>;
 }

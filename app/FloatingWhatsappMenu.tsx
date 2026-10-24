@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -63,13 +64,13 @@ export function FloatingWhatsappMenu({ contacts, title, description, buttonLabel
   return <WhatsappMenuContext.Provider value={{ isOpen: open, openMenu }}>
     <div inert={open ? true : undefined}>{children}</div>
     {showFloating && (contacts.length > 0 || advertiser) && <div className="portal-whatsapp-widget" inert={open ? true : undefined}>
-      <button type="button" className="floating-whatsapp" aria-label={advertiser?.href ? `WhatsApp de ${advertiser.name} y ayuda de Chile3X` : advertiser ? "Contactos de este anuncio y ayuda de Chile3X" : buttonLabel} title={advertiser ? "Contactar al anunciante o al equipo" : buttonLabel}
-        aria-expanded={open} aria-haspopup="dialog" onClick={event => openMenu("floating", event.currentTarget)}>{icon}</button>
+      <ActionButton type="button" className="floating-whatsapp" aria-label={advertiser?.href ? `WhatsApp de ${advertiser.name} y ayuda de Chile3X` : advertiser ? "Contactos de este anuncio y ayuda de Chile3X" : buttonLabel} title={advertiser ? "Contactar al anunciante o al equipo" : buttonLabel}
+        aria-expanded={open} aria-haspopup="dialog" onClick={event => openMenu("floating", event.currentTarget)}>{icon}</ActionButton>
     </div>}
     {open && createPortal(<div className="portal-whatsapp-backdrop" onClick={event => { if (event.target === event.currentTarget) close(); }}>
       <section className="portal-whatsapp-panel" ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId}>
         <header><div><span>{advertiser ? "CONTACTOS DEL ANUNCIO" : "EQUIPO CHILE3X"}</span><h2 id={titleId}>{advertiser ? "¿Con quién quieres hablar?" : title}</h2></div>
-          <button type="button" className="portal-whatsapp-close" ref={closeRef} aria-label="Cerrar contactos de WhatsApp" onClick={close}>×</button>
+          <ActionButton type="button" className="portal-whatsapp-close" ref={closeRef} aria-label="Cerrar contactos de WhatsApp" onClick={close}>×</ActionButton>
         </header>
         <p className="portal-whatsapp-explanation" id={descriptionId}>{advertiser ? "Para consultar este anuncio, escribe directamente a su anunciante. El equipo de Chile3X solo atiende soporte y marketing; no coordina citas ni arriendos." : description}</p>
         <div className="portal-whatsapp-options">

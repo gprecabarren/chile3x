@@ -21,6 +21,15 @@ export const ADMIN_AUDIT_CATEGORIES = {
 } as const;
 
 export const ADMIN_AUDIT_ACTIONS = {
+  "sample.create":"Creó una muestra privada",
+  "sample.share":"Renovó el enlace de una muestra",
+  "sample.save":"Editó una muestra privada",
+  "sample.upload":"Subió un archivo privado de muestra",
+  "sample.remove_media":"Retiró un archivo de muestra",
+  "sample.cover":"Cambió la foto principal de una muestra",
+  "sample.revoke":"Revocó el acceso a una muestra",
+  "sample.migrate":"Convirtió una muestra en anuncio real",
+  "sample.delete":"Eliminó una muestra privada",
   "legal.draft": "Guardó un borrador legal",
   "legal.publish": "Publicó una versión legal",
   "legal.discard": "Descartó un borrador legal",
@@ -117,6 +126,7 @@ export const ADMIN_AUDIT_ACTIONS = {
 } as const;
 
 export const ADMIN_AUDIT_ENTITY_TYPES = {
+  sample:"Muestra privada",
   legal_document: "Documento legal",
   forum_section: "Sección del foro",
   forum_topic: "Tema del foro",
@@ -194,7 +204,7 @@ export function parseAuditJson(value: string | null): JsonObject | null {
 export async function recordAdminAudit(actor: AdminUser, input: AdminAuditInput) {
   try {
     const db = await getDb();
-    const [identity] = await db.select({ githubLogin: adminGithubIdentities.githubLogin })
+    const [identity] = actor.githubLogin ? [{githubLogin:actor.githubLogin}] : await db.select({ githubLogin: adminGithubIdentities.githubLogin })
       .from(adminGithubIdentities)
       .where(eq(adminGithubIdentities.userId, actor.id))
       .limit(1);

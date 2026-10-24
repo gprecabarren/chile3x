@@ -3,14 +3,9 @@ import Link from "@/app/NavigationLink";
 import { DirectoryShell } from "@/app/directorio/_components";
 import { getFaqEntries } from "@/lib/faq";
 import { safeJsonLd } from "@/lib/json-ld";
-import { publicPageMetadata } from "@/lib/seo";
+import { informationPageMetadata } from "@/lib/information-seo";
 
-export const metadata: Metadata = publicPageMetadata({
-  title: "Preguntas frecuentes",
-  description: "Respuestas sobre Chile3X, cuentas, publicación, moderación y el uso responsable del directorio para adultos.",
-  path: "/faq",
-  socialTitle: "Preguntas frecuentes | Chile3X",
-});
+export async function generateMetadata(): Promise<Metadata> { return informationPageMetadata('faq'); }
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +20,9 @@ export default async function FaqPage() {
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(faqSchema) }} />
     <section className="static-page-hero"><p className="eyebrow">AYUDA</p><h1>Preguntas <em>frecuentes.</em></h1><p>Información clara sobre el funcionamiento inicial de Chile3X.</p></section>
     <section className="static-page-content faq-content">
+      <div className="faq-questions">
       {entries.map(({ question, answer }) => <details key={question}><summary>{question}</summary><p>{answer}</p></details>)}
+      </div>
       <aside><h2>¿No encuentras una respuesta?</h2><p>Revisa nuestras reglas antes de publicar, usa un canal oficial o vuelve a una página territorial para explorar publicaciones visibles.</p><div><Link className="button button-primary" href="/contacto">Ir a contacto</Link><Link className="button button-outline" href="/reglas-de-publicacion">Ver reglas</Link><Link className="button button-outline" href="/escorts">Directorio nacional</Link><Link className="button button-outline" href="/noticias">Noticias y guías</Link></div></aside>
     </section>
   </DirectoryShell>;

@@ -1,4 +1,7 @@
-const CACHE_VERSION = "anonymous-documents-v4";
+import { readHomeLayout } from "../lib/home-layout-policy.ts";
+import { readVisualTheme } from "../lib/site-theme-policy.ts";
+
+const CACHE_VERSION = "anonymous-documents-v6";
 export const PUBLIC_PAGE_CACHE_SECONDS = 600;
 
 export function hasPrivateSession(request: Request) {
@@ -8,7 +11,7 @@ export function hasPrivateSession(request: Request) {
 
 /** Only full anonymous documents are shareable. Router payloads depend on
  * navigation headers, not just their URL, and must not overwrite HTML entries. */
-export function publicCacheKey(request: Request, deploymentVersion = CACHE_VERSION, availableCitySlugs?: ReadonlySet<string>): Request | null {
+export function publicCacheKey(request: Request, deploymentVersion = CACHE_VERSION, availableCitySlugs?: ReadonlySet<string>, homeLayout = "classic", visualTheme = "classic"): Request | null {
   if (request.method !== "GET" || hasPrivateSession(request)) return null;
   const url = new URL(request.url);
   // City preferences are public, finite variants, not account data. Isolate
@@ -28,6 +31,11 @@ export function publicCacheKey(request: Request, deploymentVersion = CACHE_VERSI
     if (name.startsWith("next-") || name.startsWith("x-vinext-")) return null;
   }
   const path = url.pathname;
+  // Only the server-selected template can choose a cache entry. A rollback
+  // must never wait for the inactive template's ten-minute entry to expire.
+  url.searchParams.delete("__chile3x_home");
+  if (path === "/") url.searchParams.set("__chile3x_home", readHomeLayout(homeLayout));
+  url.searchParams.set("__chile3x_theme", readVisualTheme(visualTheme));
   // Legal publication must be visible on the next request, including anonymously.
   if(path==='/terminos'||path==='/privacidad')return null;
   // Directory entry requests generate a new random order. Caching their HTML

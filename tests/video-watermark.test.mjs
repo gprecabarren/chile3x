@@ -71,10 +71,10 @@ test('watermark forces decoding/encoding, preserves sound, and invalidates previ
   assert.doesNotMatch(manager, /Los videos no llevan.*marca de agua|Los videos se preparan sin estos efectos/);
 });
 
-test('only one final upload/object is stored, with rollback on failed database registration', async () => {
+test('only one final file is stored, with rollback on registration failure', async () => {
   const manager = await source('app/mi-cuenta/ProfileMediaManager.tsx'), upload = await source('lib/profile-media-upload.ts');
   assert.match(manager, /data.set\("file", prepared\)/);
   assert.equal((upload.match(/env.MEDIA.put\(/g) ?? []).length, 1);
   assert.match(upload, /await env.MEDIA.delete\(r2Key\)/);
-  assert.doesNotMatch(upload, /originalFile|watermark|poster/);
+  assert.doesNotMatch(upload, /originalFile|originalKey|poster|profileMediaEdits/);
 });

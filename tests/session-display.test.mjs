@@ -51,7 +51,8 @@ test('the session-state endpoint reveals no credentials, email or raw account ID
  }finally {delete globalThis.__sessionDisplayServer;}
 });
 
-const reactStub=moduleUrl(`export const useState=initial=>globalThis.__sessionDisplayClient.useState(initial);
+const reactStub=moduleUrl(`export const ActionButton='button',ActionAnchor='a';
+export const useState=initial=>globalThis.__sessionDisplayClient.useState(initial);
 export const useRef=initial=>globalThis.__sessionDisplayClient.useRef(initial);
 export const useEffect=effect=>{globalThis.__sessionDisplayClient.effect=effect;};
 export const usePathname=()=>globalThis.__sessionDisplayClient.pathname;

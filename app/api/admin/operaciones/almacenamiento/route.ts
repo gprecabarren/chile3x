@@ -6,6 +6,7 @@ import {
   newsMedia,
   operationalStorageSnapshots,
   profileMedia,
+  privateSampleMedia,
   profileReportEvidence,
   profileStatuses,
   profileVerificationFiles,
@@ -60,6 +61,7 @@ export async function POST(request: NextRequest) {
     let inspectedReferences = 0;
     let referencesPartial = false;
     const referenceQueries = [
+      (limit: number) => db.select({ key: privateSampleMedia.r2Key }).from(privateSampleMedia).limit(limit),
       (limit: number) => db.select({ key: profileMedia.r2Key }).from(profileMedia).limit(limit),
       (limit: number) => db.select({ key: profileStatuses.r2Key }).from(profileStatuses).where(isNotNull(profileStatuses.r2Key)).limit(limit),
       (limit: number) => db.select({ key: profileVerificationFiles.r2Key }).from(profileVerificationFiles).limit(limit),

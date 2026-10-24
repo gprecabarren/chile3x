@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
 import Link from "@/app/NavigationLink";
 import { useMemo, useState } from "react";
@@ -49,9 +50,9 @@ export function ProfileCityAlertPanel({ profileId, profileSlug, displayName, cur
       <div className="profile-city-alert-form">
         <label htmlFor={`city-alert-${profileId}`}>Ciudad</label>
         <select id={`city-alert-${profileId}`} value={city} onChange={(event) => setCity(event.target.value)}>{choices.map((item) => <option value={item} key={item}>{item}</option>)}</select>
-        <button className="button button-primary" type="button" disabled={busy || !city || alerts.includes(city)} onClick={() => updateAlert(city, "create")}>{alerts.includes(city) ? "Aviso activo" : "Invitar y avisarme"}</button>
+        <ActionButton className="button button-primary" type="button" disabled={busy || !city || alerts.includes(city)} onClick={() => updateAlert(city, "create")}>{alerts.includes(city) ? "Aviso activo" : "Invitar y avisarme"}</ActionButton>
       </div>
-      {alerts.length > 0 && <div className="profile-city-alert-active"><strong>Avisos activos</strong>{alerts.map((item) => <span key={item}>{item}<button type="button" disabled={busy} aria-label={`Quitar aviso para ${item}`} onClick={() => updateAlert(item, "remove")}>×</button></span>)}</div>}
+      {alerts.length > 0 && <div className="profile-city-alert-active"><strong>Avisos activos</strong>{alerts.map((item) => <span key={item}>{item}<ActionButton type="button" disabled={busy} aria-label={`Quitar aviso para ${item}`} onClick={() => updateAlert(item, "remove")}>×</ActionButton></span>)}</div>}
     </> : <Link className="button button-outline profile-city-alert-login" href={loginHref}>Inicia sesión para pedir un aviso</Link>}
     <small>Tu correo permanece privado y el aviso se envía una sola vez por ciudad.</small>
     {notice && <p className="profile-city-alert-notice" role="status">{notice}</p>}

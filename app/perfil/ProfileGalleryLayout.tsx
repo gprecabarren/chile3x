@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
 import { useState, type CSSProperties, type ReactNode } from "react";
 
@@ -16,7 +17,7 @@ export function ProfileGalleryLayout({ count, kind, heading, children }: { count
   return <div className="profile-gallery-layout" style={{ "--gallery-columns": current } as CSSProperties}>
     <div className="profile-gallery-header">{heading}
     {maximum > 1 && <div className="profile-gallery-controls" role="group" aria-label={`Distribución de ${kind === "photos" ? "fotos" : "videos"}`}>
-      <span>Vista</span>{Array.from({ length: maximum }, (_, index) => index + 1).map(value => <button key={value} type="button" title={`${value} ${value === 1 ? "columna" : "columnas"}`} aria-label={`${value} ${value === 1 ? "columna" : "columnas"}`} aria-pressed={current === value} onClick={() => setColumns(value)}><GalleryViewIcon columns={value} /></button>)}
+      <span>Vista</span>{Array.from({ length: maximum }, (_, index) => index + 1).map(value => <ActionButton key={value} type="button" title={`${value} ${value === 1 ? "columna" : "columnas"}`} aria-label={`${value} ${value === 1 ? "columna" : "columnas"}`} aria-pressed={current === value} onClick={() => setColumns(value)}><GalleryViewIcon columns={value} /></ActionButton>)}
     </div>}
     </div>
     {children}

@@ -1,3 +1,4 @@
+import { ActionButton } from "@/app/ActionButton";
 import Image from "next/image";
 import { MediaVideo } from "@/app/MediaVideo";
 import { and, count, countDistinct, desc, eq, inArray, max, or, sql } from "drizzle-orm";
@@ -80,9 +81,9 @@ function PublicMediaCard({ media, profileName, returnTo }: {
       <form action={`/api/admin/media/${media.id}`} method="post">
         <input type="hidden" name="return_to" value={returnTo} />
         {media.moderationStatus === "approved"
-          ? <button className="button button-outline" type="submit" name="action" value="unapprove">Cancelar aprobación</button>
-          : <button className="button button-primary" type="submit" name="action" value="approve">Aprobar archivo</button>}
-        <button className="button button-outline" type="submit" name="action" value="delete">Eliminar</button>
+          ? <ActionButton className="button button-outline" type="submit" name="action" value="unapprove">Cancelar aprobación</ActionButton>
+          : <ActionButton className="button button-primary" type="submit" name="action" value="approve">Aprobar archivo</ActionButton>}
+        <ActionButton className="button button-outline" type="submit" name="action" value="delete">Eliminar</ActionButton>
       </form>
       {media.mediaType === "image" && <AdminMediaImageProcessing mediaId={media.id} profileName={profileName} />}
     </div>
@@ -106,9 +107,9 @@ function ExclusiveMediaCard({ media, ownerUsername, returnTo }: {
       <form action={`/api/admin/contenido/${media.id}`} method="post">
         <input type="hidden" name="return_to" value={returnTo} />
         {media.moderationStatus === "approved"
-          ? <button className="button button-outline" type="submit" name="action" value="unapprove">Cancelar aprobación</button>
-          : <button className="button button-primary" type="submit" name="action" value="approve">Aprobar archivo</button>}
-        <button className="button button-outline" type="submit" name="action" value="delete">Eliminar</button>
+          ? <ActionButton className="button button-outline" type="submit" name="action" value="unapprove">Cancelar aprobación</ActionButton>
+          : <ActionButton className="button button-primary" type="submit" name="action" value="approve">Aprobar archivo</ActionButton>}
+        <ActionButton className="button button-outline" type="submit" name="action" value="delete">Eliminar</ActionButton>
       </form>
     </div>
   </article>;
@@ -424,7 +425,7 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
       {view === "accounts" && <label>Buscar cuenta<input name="q" type="search" defaultValue={params.q ?? ""} placeholder="Correo, usuario o nombre" /></label>}
       <label>Estado<select name="estado" defaultValue={status}><option value="">Todos</option><option value="pending">En revisión</option><option value="approved">Aprobados</option><option value="rejected">Rechazados</option></select></label>
       <label>Tipo de archivo<select name="archivo" defaultValue={fileType}><option value="">Fotos y videos</option><option value="image">Solo fotos</option><option value="video">Solo videos</option></select></label>
-      <button className="button button-primary" type="submit">Aplicar filtros</button>
+      <ActionButton className="button button-primary" type="submit">Aplicar filtros</ActionButton>
       {(accountQuery || status || fileType) && <Link prefetch={false} className="button button-outline" href={mediaHref(clearParams)}>Limpiar filtros</Link>}
     </form>
     <section className={`admin-media-quota admin-media-quota-${quota.level}`}>

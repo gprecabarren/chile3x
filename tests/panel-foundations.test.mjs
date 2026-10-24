@@ -13,7 +13,7 @@ test('panel content and branding remain scoped, aligned and responsive across bo
  const css=await source('app/panel-foundations.css');
  assert.match(css,/\.admin-workspace \.admin-root \.admin-content,/);
  assert.match(css,/\.account-workspace \.account-root \.account-content \{[^}]*margin-inline:28px/);
- assert.match(css,/\.admin-sidebar-brand > a:first-child,[\s\S]*border-radius:9px/);
+ assert.match(css,/\.admin-sidebar-brand > a:first-child:not\(\.sidebar-return-site\),[\s\S]*border-radius:var\(--corner-9\)/);
  assert.match(css,/@media\(max-width:620px\)/);
  assert.match(css,/@media\(max-width:360px\)/);
 });

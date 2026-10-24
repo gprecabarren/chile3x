@@ -5,13 +5,13 @@ textarea { font-weight:400 !important; }
 .browser-session-boundary { min-width:0; }
 .browser-session-boundary[data-session-checking="true"], .browser-session-boundary[data-session-checking="true"] * { visibility:hidden !important; }
 .session-change-screen { min-height:100dvh; display:grid; place-items:center; padding:28px; color:#f4f7fc; background:#0a0f1a; }
-.session-change-screen > section { width:min(100%,620px); padding:32px; border:1px solid #46536c; border-radius:14px; background:#141c2c; }
+.session-change-screen > section { width:min(100%,620px); padding:32px; border:1px solid #46536c; border-radius:var(--corner-14); background:#141c2c; }
 .session-change-screen h1 { margin:12px 0 18px; font-size:clamp(30px,6vw,42px); }
 .session-change-screen section > p:not(.eyebrow) { color:#bcc9dc; font-size:15px; line-height:1.75; }
 .session-change-screen .button { margin-top:14px; }
 .session-check-screen { position:fixed; z-index:11000; inset:0; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
-.session-check-notice { position:fixed; z-index:10000; inset:10px 10px auto; width:fit-content; max-width:calc(100% - 20px); margin-inline:auto; padding:16px; border:1px solid #b57436; border-radius:10px; color:#ffdfb6; background:#291f15; font-size:13px; line-height:1.7; }
-.session-check-notice button { padding:6px 12px; margin-left:8px; border:1px solid #c18e58; border-radius:6px; background:#49321c; color:#fff; cursor:pointer; }
+.session-check-notice { position:fixed; z-index:10000; inset:10px 10px auto; width:fit-content; max-width:calc(100% - 20px); margin-inline:auto; padding:16px; border:1px solid #b57436; border-radius:var(--corner-10); color:#ffdfb6; background:#291f15; font-size:13px; line-height:1.7; }
+.session-check-notice button { padding:6px 12px; margin-left:8px; border:1px solid #c18e58; border-radius:var(--corner-6); background:#49321c; color:#fff; cursor:pointer; }
 
 /* Anchor content beside the drawer instead of centering a narrow legacy
    container inside an increasingly wide desktop canvas. */
@@ -21,12 +21,12 @@ textarea { font-weight:400 !important; }
 .admin-workspace .admin-content > *, .account-workspace .account-content > * { min-width:0; max-width:100%; }
 .account-workspace .account-root .account-content { padding:42px 0 80px; }
 .account-workspace .account-root .account-heading h1 { font-size:clamp(32px,3.6vw,52px); line-height:1.1; }
-.account-workspace :is(.account-empty,.profile-statistics-panel) { border-radius:12px; }
+.account-workspace :is(.account-empty,.profile-statistics-panel) { border-radius:var(--corner-12); }
 .admin-workspace .admin-content .admin-settings-page-form { width:100%; max-width:none; padding:0; border:0; background:transparent; gap:24px; }
-.admin-workspace .admin-settings-page-form > .admin-settings-section { margin:0; border-radius:12px; }
+.admin-workspace .admin-settings-page-form > .admin-settings-section { margin:0; border-radius:var(--corner-12); }
 .admin-workspace .admin-settings-page-form .admin-settings-grid { align-items:start; }
 .admin-workspace .admin-settings-page-form .admin-settings-grid label { align-content:start; min-width:0; font-size:13px; }
-.admin-workspace .admin-settings-page-form .admin-settings-grid :is(input:not([type="checkbox"],[type="radio"],[type="file"],[type="hidden"]),select) { box-sizing:border-box; min-width:0; height:46px; min-height:46px; border-radius:8px; }
+.admin-workspace .admin-settings-page-form .admin-settings-grid :is(input:not([type="checkbox"],[type="radio"],[type="file"],[type="hidden"]),select) { box-sizing:border-box; min-width:0; height:46px; min-height:46px; border-radius:var(--corner-8); }
 .admin-workspace .admin-content p.admin-note { display:block; }
 /* Visually hidden upload controls must not enlarge the document's scroll area. */
 .admin-workspace .admin-news-editor :is(.rich-news-toolbar,.news-cover-uploader) label { position:relative; overflow:hidden; }
@@ -35,22 +35,22 @@ textarea { font-weight:400 !important; }
 .admin-workspace .telegram-admin-metrics { grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr)); }
 
 /* One visual language for admin and account branding, in drawers and toolbars. */
-.admin-workspace .admin-sidebar-brand > a:first-child,
-.account-workspace .account-sidebar-brand > a:first-child { display:grid; place-items:center; overflow:hidden; padding:3px 7px; border:1px solid #343e51; border-radius:9px; background:#05060a; }
+.admin-workspace .admin-sidebar-brand > a:first-child:not(.sidebar-return-site),
+.account-workspace .account-sidebar-brand > a:first-child:not(.sidebar-return-site) { display:grid; place-items:center; overflow:hidden; padding:3px 7px; border:1px solid #343e51; border-radius:var(--corner-9); background:#05060a; }
 .admin-workspace .admin-sidebar-head .admin-sidebar-brand,
 .account-workspace .account-sidebar-head .account-sidebar-brand { display:grid; grid-template-columns:minmax(0,1fr); gap:8px; }
-.admin-workspace .admin-sidebar-head .admin-sidebar-brand > a:first-child,
-.account-workspace .account-sidebar-head .account-sidebar-brand > a:first-child { width:100%; min-height:62px; padding:6px 10px; }
+.admin-workspace .admin-sidebar-head .admin-sidebar-brand > a:first-child:not(.sidebar-return-site),
+.account-workspace .account-sidebar-head .account-sidebar-brand > a:first-child:not(.sidebar-return-site) { width:100%; min-height:62px; padding:6px 10px; }
 .admin-workspace .admin-sidebar-head .official-chile3x-logo,
 .account-workspace .account-sidebar-head .official-chile3x-logo { width:132px; max-width:100%; height:auto; }
 .admin-workspace .admin-sidebar-head .admin-home-link,
-.account-workspace .account-sidebar-head .account-brand-home { width:100%; min-height:40px; border-radius:9px; font-size:11px; }
+.account-workspace .account-sidebar-head .account-brand-home { width:100%; min-height:40px; border-radius:var(--corner-9); font-size:11px; }
 .admin-workspace .admin-toolbar-brand .admin-sidebar-brand,
 .account-workspace .account-toolbar-brand .account-sidebar-brand { flex-wrap:nowrap; }
 .admin-workspace .admin-toolbar-brand .official-chile3x-logo,
 .account-workspace .account-toolbar-brand .official-chile3x-logo { width:96px; height:auto; }
 .admin-workspace .admin-toolbar-brand .admin-home-link,
-.account-workspace .account-toolbar-brand .account-brand-home { min-height:40px; border-radius:9px; }
+.account-workspace .account-toolbar-brand .account-brand-home { min-height:40px; border-radius:var(--corner-9); }
 @media(max-width:620px) {
  .account-workspace .account-sidebar-head { padding:16px; gap:12px; }
  .account-workspace .account-sidebar-head .account-sidebar-brand { gap:12px; }

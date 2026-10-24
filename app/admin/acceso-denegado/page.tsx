@@ -1,3 +1,4 @@
+import { ActionAnchor } from "@/app/ActionButton";
 import Link from "@/app/NavigationLink";
 import { getCurrentAdmin } from "@/lib/auth";
 import { ResumeAdminSession } from "./ResumeAdminSession";
@@ -21,7 +22,7 @@ export default async function AccessDeniedPage({ searchParams }: { searchParams:
       <p>CHILE3X &middot; ADMINISTRACI&#211;N</p>
       {resumeSession || loginError ? <ResumeAdminSession initialConfirmed={resumeSession} failureMessage={loginMessage} /> : <><h1>Este acceso no está autorizado.</h1><span>{emailConflict ? "El correo verificado de esta identidad de GitHub ya pertenece a una cuenta de anunciante o tester. Por seguridad, un mismo correo no puede usarse en ambos paneles." : reason === "permission" ? "No tienes el permiso necesario para esta sección. Puedes volver al panel o solicitar ese permiso a la persona propietaria." : "Tu identidad de GitHub no tiene acceso a esta sección o su autorización fue revocada. Si formas parte del equipo, solicita el permiso correspondiente a la persona propietaria."}</span></>}
       <div className="admin-denied-actions">
-        <a className="button button-primary" href="/admin">Volver al panel</a>
+        <ActionAnchor className="button button-primary" href="/admin">Volver al panel</ActionAnchor>
         <Link className="button button-outline" href="/">Ir al sitio</Link>
       </div>
     </main>

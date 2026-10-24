@@ -1,3 +1,4 @@
+import { ActionAnchor, ActionButton } from "@/app/ActionButton";
 import Image from "next/image";
 import Link from "@/app/NavigationLink";
 import { redirect } from "next/navigation";
@@ -54,7 +55,7 @@ export default async function AdminSponsorsPage({ searchParams }: { searchParams
       <div><p className="eyebrow">VISIBILIDAD PÚBLICA</p><h2>{enabled ? "Página publicada" : "Página oculta"}</h2><span>{enabled ? "Aparece en el footer, el menú móvil y el sitemap." : "Solo las cuentas administradoras pueden previsualizarla; los buscadores reciben noindex y los visitantes, 404."}</span></div>
       <form action="/api/admin/patrocinadores/visibilidad" method="post">
         <input type="hidden" name="sponsors_enabled" value={enabled ? "disabled" : "enabled"} />
-        <button className={`button ${enabled ? "button-outline" : "button-primary"}`} type="submit">{enabled ? "Ocultar página" : "Publicar página"}</button>
+        <ActionButton className={`button ${enabled ? "button-outline" : "button-primary"}`} type="submit">{enabled ? "Ocultar página" : "Publicar página"}</ActionButton>
       </form>
     </section>
 
@@ -67,7 +68,7 @@ export default async function AdminSponsorsPage({ searchParams }: { searchParams
         <label className="admin-field-wide">Descripción<textarea name="description" maxLength={240} rows={3} placeholder="Sitios asociados en Santiago y alrededores." /></label>
         <label>Orden vertical<input name="sort_order" type="number" min={-9999} max={9999} defaultValue={groups.length * 10} /></label>
         <label className="check-label"><input name="is_active" type="checkbox" defaultChecked /> Grupo visible</label>
-        <div className="admin-sponsor-create-actions"><small>Un número menor coloca el grupo antes en la página.</small><button className="button button-primary" type="submit">Crear grupo</button></div>
+        <div className="admin-sponsor-create-actions"><small>Un número menor coloca el grupo antes en la página.</small><ActionButton className="button button-primary" type="submit">Crear grupo</ActionButton></div>
       </form>
       </details>
 
@@ -88,7 +89,7 @@ export default async function AdminSponsorsPage({ searchParams }: { searchParams
         <label>Logo opcional<input name="logo" type="file" accept="image/jpeg,image/png,image/webp" /></label>
         <label className="check-label"><input name="is_active" type="checkbox" defaultChecked /> Tarjeta visible</label>
         <label className="check-label"><input name="is_sponsored" type="checkbox" /> Enlace pagado o patrocinado</label>
-        <div className="admin-sponsor-create-actions"><small>Marca “patrocinado” cuando exista pago o compensación; el enlace recibirá la señal SEO correspondiente.</small><button className="button button-primary" type="submit" disabled={!groups.length}>Crear tarjeta</button></div>
+        <div className="admin-sponsor-create-actions"><small>Marca “patrocinado” cuando exista pago o compensación; el enlace recibirá la señal SEO correspondiente.</small><ActionButton className="button button-primary" type="submit" disabled={!groups.length}>Crear tarjeta</ActionButton></div>
       </form>
       </details>
     </section>
@@ -105,9 +106,9 @@ export default async function AdminSponsorsPage({ searchParams }: { searchParams
             <label className="admin-field-wide">Descripción<textarea name="description" maxLength={240} rows={2} defaultValue={group.description} /></label>
             <label>Orden vertical<input name="sort_order" type="number" min={-9999} max={9999} defaultValue={group.sortOrder} /></label>
             <label className="check-label"><input name="is_active" type="checkbox" defaultChecked={group.isActive} /> Grupo visible</label>
-            <button className="button button-primary">Guardar grupo</button>
+            <ActionButton className="button button-primary">Guardar grupo</ActionButton>
             <label className="check-label admin-danger-confirm"><input name="confirm_delete" type="checkbox" /> Confirmo que el grupo está vacío</label>
-            <button className="button button-outline admin-danger-button" name="action" value="delete" formNoValidate>Eliminar grupo</button>
+            <ActionButton className="button button-outline admin-danger-button" name="action" value="delete" formNoValidate>Eliminar grupo</ActionButton>
           </form>
           <div className="admin-sponsor-card-list">
             {group.sponsors.map((card) => <form className="admin-sponsor-card-editor" action={`/api/admin/patrocinadores/${card.id}`} method="post" encType="multipart/form-data" key={card.id}>
@@ -133,10 +134,10 @@ export default async function AdminSponsorsPage({ searchParams }: { searchParams
                 <label className="check-label"><input name="is_sponsored" type="checkbox" defaultChecked={card.isSponsored} /> Enlace pagado o patrocinado</label>
               </div>
               <div className="admin-sponsor-card-actions">
-                <button className="button button-primary">Guardar tarjeta</button>
-                <a className="button button-outline" href={card.destinationUrl} target="_blank" rel="noreferrer">Probar enlace</a>
+                <ActionButton className="button button-primary">Guardar tarjeta</ActionButton>
+                <ActionAnchor className="button button-outline" href={card.destinationUrl} target="_blank" rel="noreferrer">Probar enlace</ActionAnchor>
                 <label className="check-label admin-danger-confirm"><input name="confirm_delete" type="checkbox" /> Confirmo la eliminación permanente</label>
-                <button className="button button-outline admin-danger-button" name="action" value="delete" formNoValidate>Eliminar tarjeta</button>
+                <ActionButton className="button button-outline admin-danger-button" name="action" value="delete" formNoValidate>Eliminar tarjeta</ActionButton>
               </div>
             </form>)}
             {!group.sponsors.length && <p className="admin-sponsor-empty">Este grupo todavía no contiene tarjetas.</p>}

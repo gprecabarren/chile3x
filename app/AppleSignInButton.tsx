@@ -1,3 +1,4 @@
+import { ActionButton } from "@/app/ActionButton";
 import Link from "@/app/NavigationLink";
 
 function AppleLogo() {
@@ -14,6 +15,6 @@ export function AppleSignInButton({ enabled, intent, returnTo }: {
     return <div className="apple-signin"><Link className="apple-signin-button" href={`/api/auth/apple/start?intent=${intent}&return_to=${encodeURIComponent(returnTo)}`}><AppleLogo /><span>{label}</span></Link></div>;
   }
   return <div className="apple-signin is-disabled">
-    <button className="apple-signin-button" type="button" disabled aria-disabled="true"><AppleLogo /><span>{label}</span></button>
+    <ActionButton className="apple-signin-button" type="button" disabled aria-disabled="true"><AppleLogo /><span>{label}</span></ActionButton>
   </div>;
 }

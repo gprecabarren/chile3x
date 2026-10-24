@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
 import Image from "next/image";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
@@ -46,6 +47,6 @@ export function ProfilePhotoViewer({ photos, children }: { photos: Photo[]; chil
     if (event.key === "ArrowRight") { event.preventDefault(); setSelected(index => index === null ? null : Math.min(photos.length - 1, index + 1)); }
     if (event.key === "ArrowLeft") { event.preventDefault(); setSelected(index => index === null ? null : Math.max(0, index - 1)); }
   }}>
-    {photo && <div className="profile-photo-dialog-panel"><header><span>{selected! + 1} / {photos.length}</span><button ref={closeRef} type="button" className="profile-photo-close" aria-label="Cerrar fotografía" onClick={() => setSelected(null)}>×</button></header><div className="profile-photo-dialog-image"><Image key={photo.id} src={photo.url} alt={photo.alt} fill unoptimized sizes="100vw" style={{ objectFit: "scale-down" }} /></div>{photos.length > 1 && <nav aria-label="Fotografías del anuncio"><button type="button" disabled={selected === 0} onClick={() => setSelected(index => index === null ? null : index - 1)} aria-label="Foto anterior">← Anterior</button><button type="button" disabled={selected === photos.length - 1} onClick={() => setSelected(index => index === null ? null : index + 1)} aria-label="Foto siguiente">Siguiente →</button></nav>}</div>}
+    {photo && <div className="profile-photo-dialog-panel"><header><span>{selected! + 1} / {photos.length}</span><ActionButton ref={closeRef} type="button" className="profile-photo-close" aria-label="Cerrar fotografía" onClick={() => setSelected(null)}>×</ActionButton></header><div className="profile-photo-dialog-image"><Image key={photo.id} src={photo.url} alt={photo.alt} fill unoptimized sizes="100vw" style={{ objectFit: "scale-down" }} /></div>{photos.length > 1 && <nav aria-label="Fotografías del anuncio"><ActionButton type="button" disabled={selected === 0} onClick={() => setSelected(index => index === null ? null : index - 1)} aria-label="Foto anterior">← Anterior</ActionButton><ActionButton type="button" disabled={selected === photos.length - 1} onClick={() => setSelected(index => index === null ? null : index + 1)} aria-label="Foto siguiente">Siguiente →</ActionButton></nav>}</div>}
   </dialog></PhotoContext.Provider>;
 }

@@ -1,0 +1,172 @@
+/* Readable public actions, shared by Classic and Liquid Glass. Private
+   workspaces deliberately stay outside these roots. No JS or extra fonts. */
+:is(.home-layout,.directory-root) {
+  --public-action-size:1rem;
+}
+
+/* Text actions can grow vertically. Keep icon-only controls, photo navigation
+   and story avatars at their existing sizes instead of inflating every button. */
+:root body :is(.home-layout,.directory-root) :is(
+  .button,
+  button:where(:not(.mobile-menu-toggle,.mobile-menu-close,.directory-city-close,.profile-verification-close,.verified-sticker,.profile-photo-close,.story-bubble,.profile-gallery-controls button,.profile-city-alert-active button,.profile-report-file-list button)),
+  .text-link,
+  .city-category-links a,
+  .directory-pagination a,
+  .home-city-directory-links > a,
+  .home-city-all,
+  .home-city-regions a,
+  .home-location-summary nav a,
+  .directory-home-link,
+  .directory-city-options button,
+  .quick-filter-clear,
+  .quick-filter-toggle,
+  .quick-filter-age > summary,
+  .directory-city-bar summary,
+  .profile-safety-actions > a,
+  .seo-content-links a
+) {
+  min-width:0;
+  max-width:100%;
+  font-size:var(--public-action-size);
+  line-height:1.35;
+  letter-spacing:normal;
+  white-space:normal;
+  overflow-wrap:break-word;
+}
+:root body :is(.home-layout,.directory-root) .button {
+  text-align:center;
+}
+:root body :is(.home-layout,.directory-root) .profile-share-trigger {
+  /* This legacy control has an important 10px rule in globals.css. */
+  font-size:var(--public-action-size) !important;
+}
+:is(.home-layout,.directory-root) :is(.button,.text-link,.home-city-all,.directory-home-link,.seo-content-links a,.directory-pagination a) {
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+}
+:is(.home-layout,.directory-root) :is(.button,button,a) > svg { flex-shrink:0; }
+
+/* Navigation wraps rather than becoming a tiny desktop horizontal scroller. */
+:root body .public-header .public-navigation-stack .public-navigation {
+  flex-wrap:wrap;
+  overflow-x:visible;
+  gap:8px 22px;
+}
+:root body .public-header .public-navigation-group {
+  flex:0 1 auto;
+  min-width:0;
+  flex-wrap:wrap;
+  gap:6px 18px;
+  white-space:normal;
+}
+:root body .public-header :is(.public-navigation a,.mobile-public-quick-links a),
+:root body .mobile-menu-panel a {
+  min-width:0;
+  max-width:100%;
+  display:inline-flex;
+  align-items:center;
+  font-size:1rem;
+  line-height:1.35;
+  white-space:normal;
+  overflow-wrap:break-word;
+}
+:root body .public-header .public-header-actions { min-width:0; flex-wrap:wrap; align-items:stretch; }
+
+/* Both home layouts use the same readable city names. The classic location
+   card gives its actions a separate row instead of squeezing the city label. */
+:root body .home-discovery-controls .home-location-actions {
+  flex-direction:row;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:flex-start;
+  gap:8px 12px;
+}
+:root body .home-discovery-controls .home-location-current strong { font-size:18px; }
+:root body .home-discovery-controls .region-jump label { font-size:14px; line-height:1.5; }
+:root body .home-city-directory > header { flex-wrap:wrap; }
+:root body .home-city-all { flex-shrink:1; }
+:root body .home-city-directory-links { grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr)); }
+:root body .commune-list li { max-width:100%; padding:0; }
+:root body .commune-list li a { display:flex; align-items:center; flex-wrap:wrap; gap:5px; padding:5px 8px; font-size:1rem; line-height:1.35; overflow-wrap:break-word; }
+:root body .home-search > div { align-items:stretch; flex-wrap:wrap; }
+:root body .home-search button { text-transform:none; }
+
+/* Native selects remain native; 16px also avoids iOS focus zoom. */
+:root body :is(.home-layout,.directory-root) :is(.region-jump select,.home-city-directory-filters input,.directory-city-popover input,.directory-filter-form select,.directory-filter-form input:not([type=checkbox],[type=radio],[type=range])) {
+  min-width:0;
+  max-width:100%;
+  font-size:1rem;
+  line-height:1.5;
+}
+:root body .directory-quick-filters { display:flex; flex-wrap:wrap; gap:10px; }
+:root body .directory-quick-filters > * { min-width:0; }
+:root body .directory-quick-filters > .quick-filter-search { flex:1 1 240px; }
+:root body .directory-quick-filters > .quick-filter-category { flex:1 1 230px; }
+:root body .directory-quick-filters :is(.quick-filter-toggle,.quick-filter-clear,.quick-filter-apply) { flex:0 1 auto; }
+:root body .directory-city-bar-inner { position:relative; flex-wrap:wrap; padding-block:6px; }
+:root body .directory-city-bar details { position:static; max-width:100%; }
+:root body .directory-city-popover { width:min(650px,100%); }
+:root body .directory-filter-form :is(.filter-more-options > summary > span,.filter-services > summary > span,.filter-mobile-toggle > span) { font-size:1rem; line-height:1.5; }
+:root body .directory-filter-form .filter-mobile-toggle > span { flex-shrink:1; }
+:root body .directory-filter-form .filter-mobile-toggle { height:auto; }
+:root body .directory-filter-form .filter-mobile-toggle small { font-size:14px; }
+:root body .directory-filter-form .filter-check-grid label { font-size:1rem; line-height:1.5; min-height:44px; }
+
+/* Profile actions have no forced single row, even at 320px or with long labels. */
+:root body .directory-root .profile-engagement-actions { flex-wrap:wrap; gap:10px; }
+:root body .directory-root .profile-engagement-actions > button { gap:8px; }
+:root body .directory-root .profile-contact-actions { justify-content:flex-start; }
+:root body .directory-root .profile-share-menu { width:min(300px,calc(100vw - 48px)); max-width:calc(100vw - 48px); }
+:root body .directory-root .profile-share-menu :is(button,a) { width:100%; min-height:44px; font-size:1rem; line-height:1.5; white-space:normal; }
+:root body .directory-root .city-popular-profiles > header { flex-wrap:wrap; }
+:root body .directory-root .city-popular-open { font-size:1rem; line-height:1.5; }
+
+/* Legal and information pages share this footer. Don't enlarge logos, badge
+   images, small copyright metadata or the intentionally discreet admin entry. */
+:root body .public-footer :is(.public-footer-navigation,.public-footer-links) a {
+  min-width:0;
+  max-width:100%;
+  display:flex;
+  align-items:center;
+  font-size:1rem;
+  line-height:1.5;
+  overflow-wrap:break-word;
+}
+:root body .public-footer-navigation > div { gap:4px; }
+
+/* These dialogs are portals outside the public <main>. Their shared text
+   actions also remain readable; no private workspace button rules change. */
+:root body :is(.age-gate,.privacy-consent) .button { min-width:0; max-width:100%; height:auto; font-size:1rem; line-height:1.35; white-space:normal; overflow-wrap:break-word; }
+:root body .portal-whatsapp-option strong { font-size:18px; line-height:1.45; }
+:root body .portal-whatsapp-option small { font-size:14px; line-height:1.5; }
+:root body .portal-whatsapp-directory { font-size:1rem; line-height:1.5; }
+:root body :is(.home-layout,.directory-root) :is(a,button,summary,select):focus-visible { outline:2px solid #fcb0b8; outline-offset:3px; }
+
+@media(min-width:861px) {
+  :root body .site-header.public-header { flex-wrap:wrap; gap:14px 24px; }
+  :root body .public-header .brand { flex:0 0 auto; margin-right:auto; }
+  :root body .public-header .public-navigation-stack { order:4; width:100%; margin-left:0; justify-items:stretch; }
+  :root body .public-header .public-navigation-stack .portal-contact-links-header { justify-self:end; }
+}
+@media(max-width:860px) {
+  :root body .public-header .mobile-public-quick-links { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+  :root body .public-header .mobile-public-quick-links .mobile-directory-secondary { display:none; }
+  :root body .mobile-menu-panel > .mobile-menu-directory-extra { display:grid; }
+}
+@media(max-width:620px) {
+  :root body .public-header .public-header-actions .button { letter-spacing:normal; }
+  :root body .home-discovery-controls .home-location-summary > .home-location-heading { grid-template-columns:36px minmax(0,1fr); gap:10px 12px; }
+  :root body .home-discovery-controls .home-location-actions { grid-column:1/-1; }
+  :root body .directory-quick-filters { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  :root body .directory-quick-filters :is(.quick-filter-search,.quick-filter-category,.quick-filter-age) { grid-column:1/-1; width:100%; }
+  :root body .home-city-directory-links { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  :root body .public-footer-navigation { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  :root body .profile-contact-actions { width:100%; }
+  :root body .directory-root .profile-engagement-actions .profile-share-menu { left:0; right:auto; }
+}
+@media(max-width:360px) {
+  :root body .public-header .public-header-actions { grid-template-columns:minmax(0,1fr); }
+  :root body .public-header .mobile-public-quick-links a { padding-inline:2px; }
+  :root body .home-city-directory-links { grid-template-columns:minmax(0,1fr); }
+}

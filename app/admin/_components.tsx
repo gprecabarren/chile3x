@@ -1,8 +1,8 @@
+import { ActionButton } from "@/app/ActionButton";
 import Link from "@/app/NavigationLink";
 import type { ReactNode } from "react";
 import { and, count, eq, isNull, or } from "drizzle-orm";
 import type { AdminUser } from "@/lib/auth";
-import { OfficialChile3xLogo } from "@/app/OfficialChile3xLogo";
 import { getDb } from "@/db";
 import { bugReports, exclusiveContentMedia, profileMedia, profileReports, profiles, telegramModerationCases } from "@/db/schema";
 import { ADMIN_ACCESS_LABELS, adminHasCapability } from "@/lib/admin-permissions";
@@ -11,6 +11,9 @@ import { AdminWorkspace } from "./AdminWorkspace";
 import { AdminSidebarLink } from "./AdminSidebarLink";
 import { adminDisplayLogin } from "@/lib/admin-presentation";
 import { AdminPendingCount } from "./AdminPendingCount";
+import {ContentNavigation} from "./contenido/ContentNavigation";
+import {ADMIN_CONTENT_SECTIONS} from "@/lib/admin-content-navigation";
+import { PRIVATE_SAMPLES_ENABLED } from "@/lib/private-sample-policy";
 
 async function getPendingProfilesCount() {
   try {
@@ -91,18 +94,17 @@ function AdminNavigation({
     <nav aria-label="Administración">
       <AdminSidebarLink href="/admin">Resumen</AdminSidebarLink>
       {adminHasCapability(user, "profiles.moderate") && <AdminSidebarLink className={pendingCount > 0 ? "admin-nav-alert" : undefined} href="/admin/anuncios-publicaciones">Anuncios<AdminPendingCount key={pendingCount} kind="pendingProfiles" initial={pendingCount} /></AdminSidebarLink>}
+      {PRIVATE_SAMPLES_ENABLED&&adminHasCapability(user,"accounts.manage")&&adminHasCapability(user,"profiles.moderate")&&<AdminSidebarLink href="/admin/muestras">Muestras privadas</AdminSidebarLink>}
       {adminHasCapability(user, "media.moderate") && <AdminSidebarLink className={pendingMedia > 0 ? "admin-nav-alert" : undefined} href="/admin/medios">Medios<AdminPendingCount key={pendingMedia} kind="pendingMedia" initial={pendingMedia} /></AdminSidebarLink>}
       {adminHasCapability(user, "reviews.moderate") && <AdminSidebarLink href="/admin/resenas">Reseñas</AdminSidebarLink>}
       {adminHasCapability(user, "reports.manage") && <AdminSidebarLink className={pendingReports > 0 ? "admin-nav-alert" : undefined} href="/admin/reportes">Reportes<AdminPendingCount key={pendingReports} kind="pendingReports" initial={pendingReports} /></AdminSidebarLink>}
-      {adminHasCapability(user, "bugs.manage") && <AdminSidebarLink className={pendingBugs > 0 ? "admin-nav-alert" : undefined} href="/admin/bugs">Testers<AdminPendingCount key={pendingBugs} kind="pendingBugs" initial={pendingBugs} /></AdminSidebarLink>}
+      {(adminHasCapability(user, "bugs.manage") || adminHasCapability(user, "settings.manage")) && <AdminSidebarLink className={pendingBugs > 0 ? "admin-nav-alert" : undefined} href="/admin/testing">Testing<AdminPendingCount key={pendingBugs} kind="pendingBugs" initial={pendingBugs} /></AdminSidebarLink>}
       {adminHasCapability(user, "accounts.manage") && <AdminSidebarLink href="/admin/cuentas">Cuentas</AdminSidebarLink>}
-      {adminHasCapability(user, "news.manage") && <AdminSidebarLink href="/admin/noticias">Noticias</AdminSidebarLink>}
-      {adminHasCapability(user, "settings.manage") && <AdminSidebarLink href="/admin/patrocinadores">Sitios asociados</AdminSidebarLink>}
+      {(adminHasCapability(user, "news.manage")||adminHasCapability(user, "settings.manage"))&&<AdminSidebarLink href="/admin/contenido">Contenido del sitio</AdminSidebarLink>}
       {adminHasCapability(user, "telegram.view") && <AdminSidebarLink className={pendingTelegram > 0 ? "admin-nav-alert" : undefined} href="/admin/telegram">Telegram<AdminPendingCount key={pendingTelegram} kind="pendingTelegram" initial={pendingTelegram} /></AdminSidebarLink>}
       {adminHasCapability(user, "audit.view") && <AdminSidebarLink href="/admin/actividad">Actividad</AdminSidebarLink>}
       {canViewEmailHistory(user) && <AdminSidebarLink href="/admin/correos">Historial correos</AdminSidebarLink>}
       {adminHasCapability(user, "settings.manage") && <AdminSidebarLink href="/admin/configuracion">Configuración</AdminSidebarLink>}
-      {adminHasCapability(user, "settings.manage") && <AdminSidebarLink href="/admin/documentos-legales">Términos y privacidad</AdminSidebarLink>}
       {adminHasCapability(user, "forum.manage") && <AdminSidebarLink href="/foro">Foro <small>beta privada</small></AdminSidebarLink>}
       {adminHasCapability(user, "admins.manage") && <AdminSidebarLink href="/admin/administradores">Administradores</AdminSidebarLink>}
       <AdminSidebarLink href="/admin/ayuda">Ayuda <small>beta</small></AdminSidebarLink>
@@ -119,9 +121,10 @@ export async function AdminShell({ user, children }: { user: AdminUser; children
     adminHasCapability(user, "bugs.manage") ? getNewBugReportsCount() : 0,
     adminHasCapability(user, "telegram.view") ? getOpenTelegramCasesCount() : 0,
   ]);
-  const brand=<div className="admin-sidebar-brand"><Link href="/" aria-label="Ver sitio público Chile3X"><OfficialChile3xLogo priority /></Link><Link className="admin-home-link" href="/admin" aria-label="Ir al resumen de administración">ADMINISTRADOR</Link></div>;
-  const identity=<><div className="admin-sidebar-identity"><span className="admin-sidebar-avatar" aria-hidden="true">{displayLogin.slice(0,1).toUpperCase()}</span><div><strong title={`@${displayLogin}`}>@{displayLogin}</strong><small>{ADMIN_ACCESS_LABELS[user.accessLevel]} · Sesión administrativa</small></div></div><form action="/api/auth/logout" method="post"><button type="submit" title="Cerrar la sesión administrativa">Cerrar sesión administrador</button></form></>;
-  return <AdminWorkspace brand={brand} identity={identity} navigation={<AdminNavigation user={user} pendingCount={pendingCount} pendingMedia={pendingMedia} pendingReports={pendingReports} pendingBugs={pendingBugs} pendingTelegram={pendingTelegram} />}>{children}</AdminWorkspace>;
+  const brand=<div className="admin-sidebar-brand"><Link href="/" className="sidebar-return-site"><span aria-hidden="true">←</span><span>Volver al sitio web</span></Link></div>;
+  const toolbarBrand=<Link className="admin-home-link" href="/admin" aria-label="Ir al resumen de administración">ADMINISTRADOR</Link>;
+  const identity=<><div className="admin-sidebar-identity"><div><strong title={`@${displayLogin}`}>@{displayLogin}</strong><small>{ADMIN_ACCESS_LABELS[user.accessLevel]} · Sesión administrativa</small></div></div><form action="/api/auth/logout" method="post"><ActionButton type="submit" title="Cerrar la sesión administrativa">Cerrar sesión administrador</ActionButton></form></>;
+  return <AdminWorkspace brand={brand} toolbarBrand={toolbarBrand} identity={identity} navigation={<AdminNavigation user={user} pendingCount={pendingCount} pendingMedia={pendingMedia} pendingReports={pendingReports} pendingBugs={pendingBugs} pendingTelegram={pendingTelegram} />}><ContentNavigation hrefs={ADMIN_CONTENT_SECTIONS.filter(section=>adminHasCapability(user,section.capability)).map(section=>section.href)}/>{children}</AdminWorkspace>;
 }
 
 export function AdminPageHeading({ eyebrow, title, description, children, backHref }: {

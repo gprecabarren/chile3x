@@ -1,0 +1,20 @@
+.saved-photo-tools { min-width:0; margin:18px 0; border:1px solid #46536b; border-radius:var(--corner-12); background:#101722; }
+.saved-photo-tools > summary { min-height:46px; padding:14px 16px; color:#e7eefc; font-size:14px; font-weight:700; cursor:pointer; }
+.saved-photo-tools-content { display:grid; gap:16px; min-width:0; padding:0 16px 18px; }
+.saved-photo-tools-content > p { margin:0; color:#bfcbdc; font-size:13px; line-height:1.65; }
+.saved-photo-bulk-actions { display:flex; flex-wrap:wrap; gap:10px; }
+.saved-photo-bulk-actions .button { flex:1 1 210px; }
+.saved-photo-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr)); align-items:start; gap:16px; }
+.saved-photo-grid > article { display:grid; align-content:start; gap:12px; min-width:0; padding:15px; border:1px solid #3a475e; border-radius:var(--corner-10); background:#0c121d; scroll-margin-top:180px; }
+.saved-photo-grid > article.has-error { border-color:#bc6f68; }
+.saved-photo-grid h4 { margin:0; color:#eef3fc; font-size:15px; }
+.saved-photo-grid > article > img { display:block; width:100%; height:220px; object-fit:contain; background:#080b12; border-radius:var(--corner-8); }
+.saved-photo-grid :is(p,small) { margin:0; font-size:12px; line-height:1.6; color:#bdc9da; overflow-wrap:anywhere; }
+.saved-photo-options { display:flex; flex-wrap:wrap; gap:12px; }
+.saved-photo-options label { display:flex; align-items:center; gap:8px; min-height:34px; color:#d7e0f0; font-size:13px; }
+.saved-photo-options input { flex:0 0 18px; width:18px; min-width:18px; height:18px; min-height:18px; margin:0; accent-color:#db536b; }
+.saved-photo-grid .button { min-height:44px; height:auto; width:100%; max-width:100%; padding:10px 12px; white-space:normal; line-height:1.5; }
+.saved-photo-preview-label { color:#ffdda8; font-size:12px; font-weight:700; }
+.saved-photo-grid .face-privacy-editor { min-width:0; }
+.saved-photo-grid .face-privacy-controls { min-width:0; grid-template-columns:minmax(0,1fr); }
+@media(max-width:620px) { .saved-photo-bulk-actions { display:grid; grid-template-columns:minmax(0,1fr); }.saved-photo-tools-content { padding-inline:12px; }.saved-photo-grid > article { padding:12px; } }

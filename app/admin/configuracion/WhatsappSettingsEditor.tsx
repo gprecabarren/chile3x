@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
 import { useState } from "react";
 import { MAX_WHATSAPP_CONTACTS, WHATSAPP_TEXT_LIMITS, type WhatsappContact } from "@/lib/portal-whatsapp";
@@ -28,14 +29,14 @@ export function WhatsappSettingsEditor({ initialContacts }: { initialContacts: W
         <label>Visibilidad<select value={contact.enabled ? "enabled" : "disabled"} onChange={event => update(contact.id, { enabled: event.target.value === "enabled" })}><option value="enabled">Mostrar contacto</option><option value="disabled">Ocultar contacto</option></select></label>
       </div>
       <div className="whatsapp-settings-actions">
-        <button type="button" disabled={index === 0} onClick={() => move(index, -1)}>Subir</button>
-        <button type="button" disabled={index === contacts.length - 1} onClick={() => move(index, 1)}>Bajar</button>
-        <button type="button" className="whatsapp-settings-remove" onClick={() => { if (window.confirm(`¿Quitar “${contact.label || "este contacto"}” del panel? Las estadísticas anteriores se conservan.`)) setContacts(current => current.filter(item => item.id !== contact.id)); }}>Quitar contacto</button>
+        <ActionButton type="button" disabled={index === 0} onClick={() => move(index, -1)}>Subir</ActionButton>
+        <ActionButton type="button" disabled={index === contacts.length - 1} onClick={() => move(index, 1)}>Bajar</ActionButton>
+        <ActionButton type="button" className="whatsapp-settings-remove" onClick={() => { if (window.confirm(`¿Quitar “${contact.label || "este contacto"}” del panel? Las estadísticas anteriores se conservan.`)) setContacts(current => current.filter(item => item.id !== contact.id)); }}>Quitar contacto</ActionButton>
       </div>
     </article>)}</div>
-    {contacts.length < MAX_WHATSAPP_CONTACTS && <button type="button" className="button button-outline" onClick={() => setContacts(current => [...current, {
+    {contacts.length < MAX_WHATSAPP_CONTACTS && <ActionButton type="button" className="button button-outline" onClick={() => setContacts(current => [...current, {
       id: `wa_${crypto.randomUUID()}`, label: "Nuevo contacto", description: "Ayuda del equipo de Chile3X con publicaciones y el sitio.", phone: "", message: "Hola, quiero consultar al equipo de Chile3X sobre una publicación.", enabled: false,
-    }])}>+ Agregar WhatsApp</button>}
+    }])}>+ Agregar WhatsApp</ActionButton>}
     <small className="whatsapp-settings-help">Puedes configurar hasta {MAX_WHATSAPP_CONTACTS} contactos adicionales. Al terminar, pulsa “Guardar cambios”. Quitar un contacto no borra los registros anteriores.</small>
   </section>;
 }

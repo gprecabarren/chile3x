@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { privatePageMetadata } from "@/lib/seo";
 
-const PANEL_STYLESHEET = "/assets/panels-20260923.css?v=20261010-social-access";
+const PANEL_STYLESHEET = "/assets/panels-20260923.css?v=20261021-rounded";
 
 export const metadata: Metadata = privatePageMetadata({
   title: "Administración",

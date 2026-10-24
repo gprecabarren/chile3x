@@ -24,15 +24,15 @@ test("admin summary cards link to their existing filtered views", () => {
   assert.match(dashboardSource, /className="admin-stat-link"/);
 });
 
-test("account and admin panels use Manrope with readable action text", () => {
+test("account and admin panels use DM Sans with readable action text", () => {
   assert.doesNotMatch(layoutSource, /next\/font\/google/);
-  assert.match(cssSource, /src: url\("\/fonts\/manrope-latin-variable\.woff2"\)/);
+  assert.match(cssSource, /src: url\("\/fonts\/dm-sans-latin-variable-20261023\.woff2"\)/);
   assert.match(cssSource, /--font-panel: var\(--font-site\)/);
   assert.match(panelCssSource, /\.admin-root,\s*\.account-root \{\s*font-family: var\(--font-panel\)/s);
   assert.match(panelCssSource, /\.admin-root \.button,[\s\S]*?font-size: 14px !important/);
   assert.match(panelCssSource, /\.admin-content > \.admin-stat-grid \+ \.admin-review-alert \{\s*margin-top: 24px/);
-  assert.match(adminLayoutSource, /PANEL_STYLESHEET = "\/assets\/panels-20260923\.css\?v=20261010-social-access"/);
-  assert.match(accountLayoutSource, /PANEL_STYLESHEET = "\/assets\/panels-20260923\.css\?v=20261010-social-access"/);
+  assert.match(adminLayoutSource, /PANEL_STYLESHEET = "\/assets\/panels-20260923\.css\?v=20261021-rounded"/);
+  assert.match(accountLayoutSource, /PANEL_STYLESHEET = "\/assets\/panels-20260923\.css\?v=20261021-rounded"/);
   assert.doesNotMatch(cssSource, /\.admin-root,\s*\.account-root \{\s*font-family: var\(--font-panel\)/s);
 });
 

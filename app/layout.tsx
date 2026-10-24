@@ -1,6 +1,18 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import "./globals.css";
+import "./corner-tokens.css";
 import "./panel-foundations.css";
+import "./action-controls.css";
+import "./footer-access.css";
+import "./account-form-controls.css";
+import "./admin-record-layout.css";
+import "./modern-controls.css";
+import "./public-controls.css";
+import "./public-reading.css";
+import "./public-desktop.css";
+import "./public-mobile.css";
+import { PRIVATE_SAMPLE_HEADER } from "@/lib/private-sample-policy";
 import { AgeGate } from "./AgeGate";
 import { MaintenanceScreen } from "./MaintenanceScreen";
 import { getCurrentAdmin, getVerificationUser } from "@/lib/auth";
@@ -15,6 +27,7 @@ import { getBrowserSessionView } from "@/lib/browser-session-view";
 import { UserNavigationProgress } from "./UserNavigationProgress";
 import { AdminCollaboration } from "./AdminCollaboration";
 import { LOAD_RECOVERY_SCRIPT } from "@/lib/load-recovery";
+import { GLASS_STYLESHEET, readVisualTheme, VISUAL_THEME_HEADER } from "@/lib/site-theme-policy";
 
 export const dynamic = "force-dynamic";
 
@@ -30,8 +43,8 @@ export async function generateMetadata(): Promise<Metadata> {
     robots: indexingEnabled ? { index: true, follow: true } : { index: false, follow: false },
     verification: settings.google_site_verification ? { google: settings.google_site_verification } : undefined,
     openGraph: {
-      title: settings.site_title,
-      description: settings.site_description,
+      title: settings.social_title||settings.site_title,
+      description: settings.social_description||settings.site_description,
       url: "/",
       type: "website",
       locale: "es_CL",
@@ -47,21 +60,21 @@ export async function generateMetadata(): Promise<Metadata> {
   },
     twitter: {
       card: "summary_large_image",
-      title: settings.site_title,
-      description: settings.site_description,
+      title: settings.social_title||settings.site_title,
+      description: settings.social_description||settings.site_description,
       images: [socialCardImageUrl],
     },
     icons: {
       icon: [
-        { url: "/favicon-512.png?v=4", type: "image/png", sizes: "512x512" },
-        { url: "/favicon-192.png?v=4", type: "image/png", sizes: "192x192" },
-        { url: "/favicon-48.png?v=4", type: "image/png", sizes: "48x48" },
-        { url: "/favicon.ico?v=4", sizes: "any" },
+        { url: "/chile3x-favicon-48-20261020.png", type: "image/png", sizes: "48x48" },
+        { url: "/chile3x-favicon-192-20261020.png", type: "image/png", sizes: "192x192" },
+        { url: "/chile3x-favicon-512-20261020.png", type: "image/png", sizes: "512x512" },
+        { url: "/chile3x-favicon-20261020.ico", type: "image/x-icon", sizes: "any" },
       ],
-      shortcut: "/favicon.ico?v=4",
-      apple: [{ url: "/apple-touch-icon.png?v=4", type: "image/png", sizes: "180x180" }],
+      shortcut: "/chile3x-favicon-20261020.ico",
+      apple: [{ url: "/chile3x-apple-touch-20261020.png", type: "image/png", sizes: "180x180" }],
     },
-    manifest: "/site.webmanifest",
+    manifest: "/site.webmanifest?v=20261020",
   };
 }
 
@@ -72,15 +85,20 @@ export default async function RootLayout({
 }>) {
   const settings = await getSiteSettings();
   const maintenanceEnabled = settings.maintenance_mode === "enabled";
+  const requestHeaders=await headers();
+  const theme = readVisualTheme(requestHeaders.get(VISUAL_THEME_HEADER) ?? settings.visual_theme);
+  if(requestHeaders.get(PRIVATE_SAMPLE_HEADER)==="1")return <html lang="es" data-visual-theme={theme}><head><meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex"/><meta name="referrer" content="no-referrer"/><link rel="preload" href="/fonts/dm-sans-latin-variable-20261023.woff2" as="font" type="font/woff2" crossOrigin="anonymous"/>{theme==="liquid-glass"&&<link rel="stylesheet" href={GLASS_STYLESHEET} precedence="visual-theme" data-theme-stylesheet="liquid-glass"/>}</head><body>{children}<AgeGate/></body></html>;
   // Anonymous views require no session DB lookup. Signed-in identity checks
   // are deduplicated with the header and protected route within this render.
   const [admin, user, sessionView] = await Promise.all([maintenanceEnabled ? getCurrentAdmin() : Promise.resolve(null), getVerificationUser(), getBrowserSessionView()]);
   const verificationDeadline = user && ["grace", "blocked"].includes(emailVerificationState(user)) ? emailVerificationDeadline(user) : null;
 
   return (
-    <html lang="es">
+    <html lang="es" data-visual-theme={theme}>
       <head>
+        <link rel="preload" href="/fonts/dm-sans-latin-variable-20261023.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <meta name="rating" content="adult" />
+        {theme === "liquid-glass" && <link rel="stylesheet" href={GLASS_STYLESHEET} precedence="visual-theme" data-theme-stylesheet="liquid-glass" />}
         <script id="portal-load-recovery-bootstrap" dangerouslySetInnerHTML={{__html:LOAD_RECOVERY_SCRIPT}} />
       </head>
       <body>

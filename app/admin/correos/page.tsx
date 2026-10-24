@@ -1,3 +1,4 @@
+import { ActionButton } from "@/app/ActionButton";
 import { and, count, desc, eq, like, or, sql, type SQL } from "drizzle-orm";
 import Link from "@/app/NavigationLink";
 import { redirect } from "next/navigation";
@@ -66,7 +67,7 @@ export default async function AdminEmailsPage({ searchParams }: { searchParams: 
       <label>Período<select name="period" defaultValue={filters.period}><option value="24h">Últimas 24 horas</option><option value="7d">Últimos 7 días</option><option value="30d">Últimos 30 días</option><option value="all">Todo el historial conservado</option></select></label>
       <div className="admin-email-date-range"><DateField name="from" label="Desde" defaultValue={filters.from} /><DateField name="to" label="Hasta" defaultValue={filters.to} /></div>
       <small>Una fecha específica reemplaza el período rápido. Fechas y horas de Chile (Santiago). El filtro de servicio incluye también los intentos alternativos fallidos.</small>
-      <div><button className="button button-primary" type="submit">Aplicar filtros</button><Link prefetch={false} className="button button-outline" href="/admin/correos">Limpiar</Link></div>
+      <div><ActionButton className="button button-primary" type="submit">Aplicar filtros</ActionButton><Link prefetch={false} className="button button-outline" href="/admin/correos">Limpiar</Link></div>
     </form>
     <div className="admin-email-stats">{[["Registros", total], ["Aceptados", Number(stats?.accepted ?? 0)], ["Fallidos", Number(stats?.failed ?? 0)], ["Sin resultado", Number(stats?.pending ?? 0)], ["Omitidos", Number(stats?.skipped ?? 0)]].map(([label, number]) => <div key={label}><span>{label}</span><strong>{number}</strong></div>)}</div>
     <section className="admin-email-list" aria-label="Correos registrados">{rows.map(row => <article key={row.id}>

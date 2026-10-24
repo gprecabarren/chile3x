@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
 import Link from "@/app/NavigationLink";
 import { useState } from "react";
@@ -66,12 +67,12 @@ export function ProfileEngagementActions({
 
   return <section className="profile-engagement" aria-label="Interacciones del perfil">
     <div className="profile-engagement-actions">
-      <button type="button" className={engagement.viewerHasFavorite ? "is-active" : ""} aria-pressed={engagement.viewerHasFavorite} disabled={busy !== null} onClick={() => toggle("favorite")}>
+      <ActionButton type="button" className={engagement.viewerHasFavorite ? "is-active" : ""} aria-pressed={engagement.viewerHasFavorite} disabled={busy !== null} onClick={() => toggle("favorite")}>
         <span aria-hidden="true">{engagement.viewerHasFavorite ? "♥" : "♡"}</span>{engagement.viewerHasFavorite ? "Guardado" : "Favorito"}<small>{engagement.favoritesCount}</small>
-      </button>
-      <button type="button" className={engagement.viewerHasLike ? "is-active" : ""} aria-pressed={engagement.viewerHasLike} disabled={busy !== null} onClick={() => toggle("like")}>
+      </ActionButton>
+      <ActionButton type="button" className={engagement.viewerHasLike ? "is-active" : ""} aria-pressed={engagement.viewerHasLike} disabled={busy !== null} onClick={() => toggle("like")}>
         <span aria-hidden="true">{engagement.viewerHasLike ? "♥" : "♡"}</span>{engagement.viewerHasLike ? "Te gusta" : "Me gusta"}<small>{engagement.likesCount}</small>
-      </button>
+      </ActionButton>
       <ProfileShareButton displayName={displayName} profileSlug={profileSlug} />
     </div>
     {notice && <p className="profile-engagement-notice" role="status">{notice}</p>}

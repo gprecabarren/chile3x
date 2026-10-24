@@ -1,7 +1,7 @@
+import { ActionButton } from "@/app/ActionButton";
 import Link from "@/app/NavigationLink";
 import type { ReactNode } from "react";
 import type { AccountUser } from "@/lib/auth";
-import { OfficialChile3xLogo } from "@/app/OfficialChile3xLogo";
 import { AccountWorkspace } from "./AccountWorkspace";
 import { AccountNavigationLink } from "./AccountNavigationLink";
 import { PresenceHeartbeat } from "@/app/PresenceHeartbeat";
@@ -11,11 +11,13 @@ import { emailVerificationDeadline, emailVerificationState } from "@/lib/email-v
 import { EmailVerificationNotice } from "@/app/EmailVerificationNotice";
 import { getSiteSettings } from "@/lib/site-settings";
 import { MessageNotifications, PendingReviewsNotice, UnreadMessagesBadge, UnreadMessagesNotice } from "@/app/MessageNotifications";
+import { PortalWhatsappScope } from "@/app/directorio/_components";
 
 function AccountNavigation({ user, helpEnabled }: { user: AccountUser; helpEnabled: boolean }) {
   return <nav aria-label="Navegación de cuenta">
     <AccountNavigationLink className="account-navigation-home" href="/mi-cuenta">Mi cuenta</AccountNavigationLink>
     <AccountNavigationLink href="/mi-cuenta#mis-anuncios">Mis anuncios</AccountNavigationLink>
+    <AccountNavigationLink href="/mi-cuenta/historias">Historias</AccountNavigationLink>
     <AccountNavigationLink className="account-messages-link" href="/mi-cuenta/mensajes">Mensajes<UnreadMessagesBadge /></AccountNavigationLink>
     <AccountNavigationLink href="/mi-cuenta/contenido">Mi contenido</AccountNavigationLink>
     <AccountNavigationLink href="/mi-cuenta/datos-personales">Mis datos</AccountNavigationLink>
@@ -39,16 +41,17 @@ function AccountNavigation({ user, helpEnabled }: { user: AccountUser; helpEnabl
 export async function AccountShell({ user, children, showActivityNotices = true }: { user: AccountUser; children: ReactNode; showActivityNotices?: boolean }) {
   const [unreadMessages, pendingReviews, settings] = await Promise.all([countUnreadMessages(user.id), countPendingReceivedReviews(user.id), getSiteSettings()]);
   const helpEnabled = settings.account_help_enabled === "enabled";
-  const brand = <div className="account-sidebar-brand"><Link href="/" aria-label="Ver sitio público Chile3X"><OfficialChile3xLogo priority /></Link><Link className="account-brand-home" href="/mi-cuenta">MI CUENTA</Link></div>;
-  const identity = <><div className="account-sidebar-identity"><span aria-hidden="true">{(user.displayName || user.email).slice(0, 1).toUpperCase()}</span><Link className="account-home-link" href="/mi-cuenta" title={user.email} aria-label={`Ir a mi cuenta: ${user.email}`}><strong>{user.displayName || "Mi cuenta"}</strong><small>{user.email}</small></Link></div><form action="/api/auth/session/logout" method="post"><button type="submit" title="Cerrar la sesión de esta cuenta">Cerrar sesión</button></form></>;
+  const brand = <div className="account-sidebar-brand"><Link href="/" className="sidebar-return-site"><span aria-hidden="true">←</span><span>Volver al sitio web</span></Link></div>;
+  const toolbarBrand = <Link className="account-brand-home" href="/mi-cuenta">MI CUENTA</Link>;
+  const identity = <><div className="account-sidebar-identity"><Link className="account-home-link" href="/mi-cuenta" title={user.email} aria-label={`Ir a mi cuenta: ${user.email}`}><strong>{user.displayName || "Mi cuenta"}</strong><small>{user.email}</small></Link></div><form action="/api/auth/session/logout" method="post"><ActionButton type="submit" title="Cerrar la sesión de esta cuenta">Cerrar sesión</ActionButton></form></>;
   return (
-    <MessageNotifications initialUnread={unreadMessages} initialPendingReviews={pendingReviews}><AccountWorkspace brand={brand} navigation={<AccountNavigation user={user} helpEnabled={helpEnabled} />} identity={identity}>
+    <PortalWhatsappScope showFloating={false}><MessageNotifications initialUnread={unreadMessages} initialPendingReviews={pendingReviews}><AccountWorkspace brand={brand} toolbarBrand={toolbarBrand} navigation={<AccountNavigation user={user} helpEnabled={helpEnabled} />} identity={identity}>
       <PresenceHeartbeat />
       {emailVerificationState(user) === "grace" && <EmailVerificationNotice deadline={emailVerificationDeadline(user)} />}
       {showActivityNotices && <UnreadMessagesNotice />}
       {showActivityNotices && <PendingReviewsNotice />}
       {children}
-    </AccountWorkspace></MessageNotifications>
+    </AccountWorkspace></MessageNotifications></PortalWhatsappScope>
   );
 }
 

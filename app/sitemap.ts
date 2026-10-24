@@ -6,13 +6,15 @@ import { getPublicNewsSitemapRows } from "@/lib/news";
 import { newsCanonicalUrl, newsIsoDate } from "@/lib/news-seo";
 import { profilePublicPath } from "@/lib/profile";
 import { getLegalVersionSummary } from '@/lib/legal-documents';
+import { INFORMATION_PAGES, INFO_SETTING_KEYS, readInfoSeoOverrides } from '@/lib/information-seo-policy';
 
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [profiles, settings, news,legal] = await Promise.all([getPublicProfileSitemapRows(), getSiteSettings(), getPublicNewsSitemapRows(),getLegalVersionSummary()]);
   const siteUrl = siteBaseUrl(settings.site_url);
-  return [
+  const hiddenInformationPages = new Set(Object.entries(INFORMATION_PAGES).filter(([id]) => readInfoSeoOverrides(settings[INFO_SETTING_KEYS[id as keyof typeof INFO_SETTING_KEYS]],siteUrl).indexing === 'noindex').map(([,page])=>siteUrl+page.path));
+  const entries: MetadataRoute.Sitemap = [
     { url: siteUrl, changeFrequency: "weekly", priority: 1 },
     { url: `${siteUrl}/escorts`, changeFrequency: "daily", priority: 0.9 },
     { url: `${siteUrl}/venta-contenido`, changeFrequency: "daily", priority: 0.8 },
@@ -34,4 +36,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       return { url, ...(updatedAt ? { lastModified: new Date(updatedAt) } : {}), changeFrequency: "monthly" as const, priority: 0.6 };
     }),
   ];
+  return entries.filter(entry=>!hiddenInformationPages.has(entry.url));
 }

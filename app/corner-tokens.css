@@ -1,0 +1,28 @@
+/* Shared by both themes. Scale corners only, never dimensions or hit targets.
+   Keep circular avatars/pills at 50%/999px and joined edges at zero. */
+:root {
+  --corner-scale: 1.15;
+  --corner-1: calc(1px * var(--corner-scale));
+  --corner-3: calc(3px * var(--corner-scale));
+  --corner-4: calc(4px * var(--corner-scale));
+  --corner-5: calc(5px * var(--corner-scale));
+  --corner-6: calc(6px * var(--corner-scale));
+  --corner-7: calc(7px * var(--corner-scale));
+  --corner-8: calc(8px * var(--corner-scale));
+  --corner-9: calc(9px * var(--corner-scale));
+  --corner-10: calc(10px * var(--corner-scale));
+  --corner-11: calc(11px * var(--corner-scale));
+  --corner-12: calc(12px * var(--corner-scale));
+  --corner-13: calc(13px * var(--corner-scale));
+  --corner-14: calc(14px * var(--corner-scale));
+  --corner-15: calc(15px * var(--corner-scale));
+  --corner-16: calc(16px * var(--corner-scale));
+  --corner-18: calc(18px * var(--corner-scale));
+  --corner-20: calc(20px * var(--corner-scale));
+}
+
+/* Low specificity: component-specific circles and compound corners win. */
+:where(button, .button, [role="button"], select, textarea, input:not([type="checkbox"], [type="radio"], [type="range"], [type="hidden"])) {
+  border-radius: var(--corner-8);
+}
+:where(fieldset, dialog, article, details, .mobile-menu-panel, .directory-filters, .profile-description, .profile-services, .profile-reviews, .profile-contact-box, .seo-content) { border-radius: var(--corner-12); }

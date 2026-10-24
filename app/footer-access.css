@@ -1,0 +1,17 @@
+.public-footer-bottom { padding-top:18px; border-top:1px solid #272b39; }
+.public-footer-bottom .public-footer-meta { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:4px 16px; min-width:0; }
+/* One shared divider, including when the metadata stacks on mobile.
+   Override the legacy `footer span` rule on both nesting levels. */
+.public-footer-bottom > span, .public-footer-bottom .public-footer-meta > span { padding-top:0; border-top:0; }
+.public-footer-bottom .footer-admin-access { display:inline-flex; align-items:center; min-height:32px; padding:5px 0; color:#a3adbd; font-size:10px; font-weight:500; line-height:1.5; text-decoration:none; white-space:nowrap; }
+.public-footer-bottom .footer-admin-access:hover { color:#eef1f7; text-decoration:underline; text-underline-offset:3px; }
+.public-footer-bottom .footer-admin-access:focus-visible { outline:2px solid #f28d98; outline-offset:4px; border-radius:var(--corner-3); }
+@media(max-width:820px) {
+  .public-footer-bottom .public-footer-meta { justify-content:flex-start; }
+  .public-footer-bottom .footer-admin-access { min-height:44px; }
+}
+/* Leave room for the fixed WhatsApp control at the bottom-right corner.
+   Narrow screens naturally wrap the admin entry onto its own line. */
+@media(max-width:620px) {
+  .public-footer-bottom .public-footer-meta { max-width:100%; padding-right:62px; box-sizing:border-box; }
+}

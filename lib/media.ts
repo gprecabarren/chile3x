@@ -2,7 +2,8 @@ import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { MAX_IMAGE_UPLOAD_BYTES } from "@/lib/image-upload-policy";
 import { MAX_PREPARED_VIDEO_BYTES } from "@/lib/video-policy";
-import { exclusiveContentMedia, forumAttachments, newsMedia, profileMedia, profileReportEvidence, profileStatuses, profileVerificationFiles, profiles, sponsors, users } from "@/db/schema";
+import { PRIVATE_SAMPLES_ENABLED } from "@/lib/private-sample-policy";
+import { exclusiveContentMedia, forumAttachments, newsMedia, profileMedia, privateSampleMedia, profileReportEvidence, profileStatuses, profileVerificationFiles, profiles, sponsors, users } from "@/db/schema";
 
 export const MAX_IMAGES_PER_PROFILE = 10;
 export const MAX_IMAGE_BYTES = MAX_IMAGE_UPLOAD_BYTES;
@@ -102,6 +103,7 @@ export async function getMediaUsage() {
     db.select({bytes:sql<number>`coalesce(sum(${profileReportEvidence.byteSize}),0)`,files:sql<number>`count(*)`}).from(profileReportEvidence),
     db.select({bytes:sql<number>`coalesce(sum(${exclusiveContentMedia.byteSize}),0)`,files:sql<number>`count(*)`}).from(exclusiveContentMedia),
     db.select({bytes:sql<number>`coalesce(sum(${sponsors.backgroundByteSize}+${sponsors.logoByteSize}),0)`,files:sql<number>`count(*)+coalesce(sum(case when ${sponsors.logoR2Key} is not null then 1 else 0 end),0)`}).from(sponsors),
+    ...(PRIVATE_SAMPLES_ENABLED?[db.select({bytes:sql<number>`coalesce(sum(${privateSampleMedia.byteSize}),0)`,files:sql<number>`count(*)`}).from(privateSampleMedia)]:[]),
   ]);
   return totals.reduce((sum,[row])=>({bytes:sum.bytes+Number(row?.bytes??0),files:sum.files+Number(row?.files??0)}),{bytes:0,files:0});
 }

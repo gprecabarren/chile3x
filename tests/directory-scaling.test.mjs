@@ -5,7 +5,7 @@ import test from "node:test";
 const source = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
 test("home quick selector groups configured cities under non-clickable regions", async () => {
-  const [selector, home] = await Promise.all([source("app/HomeLocationSummary.tsx"), source("app/page.tsx")]);
+  const [selector, home] = await Promise.all([source("app/HomeLocationSummary.tsx"), source("app/HomeContent.tsx")]);
   assert.match(selector, /aria-expanded=\{selectorOpen\} aria-controls=\{selectorOpen \? "home-city-selector" : undefined\}/);
   assert.match(selector, /regions\.filter\(\(region\) => region\.cities\.length > 0\)/);
   assert.match(selector, /<h3>\{region\.displayTitle\}<\/h3>/);

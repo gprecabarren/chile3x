@@ -7,6 +7,7 @@ import { ProfileMediaUploadError, uploadProfileMedia } from "@/lib/profile-media
 import { MediaUploadRequestError, readMediaUploadForm } from "@/lib/media-upload-form";
 import { MAX_IMAGE_BYTES, MAX_VIDEO_BYTES } from "@/lib/media";
 import { CollaborationConflict, conflictResponse, expectedVersion } from "@/lib/collaboration";
+import { parsePhotoEditOptions } from "@/lib/photo-edit-policy";
 
 export const dynamic = "force-dynamic";
 
@@ -23,11 +24,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const formData = await readMediaUploadForm(request, Math.max(MAX_IMAGE_BYTES, MAX_VIDEO_BYTES));
     const file = formData.get("file");
     if (!(file instanceof File)) return error("Selecciona una foto o video para subir.", 400);
+    const processing=parsePhotoEditOptions(formData.get("processing"));
+    if(formData.has("original_file")||(formData.has("processing")&&!processing))return error("Envía solo el archivo final y opciones válidas.",400);
     try {
       const result = await uploadProfileMedia({
         profileId, file, uploadKind: formData.get("upload_kind") === "profile_photo" ? "profile_photo" : "gallery",
         uploadedBy: user.id, moderationStatus: hasTesterAutoApproval(user) ? "approved" : "pending",
         version:formData.has('review_revision')?expectedVersion(formData,`profile:${profileId}`):undefined,
+        ...(processing?{processing}:{}),
       });
       return NextResponse.json(result, { status: 201 });
     } catch (cause) {

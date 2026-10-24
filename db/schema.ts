@@ -621,6 +621,26 @@ export const profileMedia = sqliteTable("profile_media", {
   createdAt,
 }, (table) => [index("profile_media_profile_idx").on(table.profileId, table.sortOrder), index("profile_media_pending_review_idx").on(table.profileId).where(sql`${table.moderationStatus} = 'pending'`),index('profile_media_public_cover_idx').on(table.profileId,sql`${table.isProfilePhoto} desc`,table.sortOrder,table.id).where(sql`${table.visibility}='public' and ${table.moderationStatus}='approved' and ${table.mediaType}='image'`)]);
 
+export const privateProfileSamples = sqliteTable("private_profile_samples", {
+  id:text("id").primaryKey(),displayName:text("display_name").notNull(),formJson:text("form_json").notNull(),
+  revision:integer("revision").notNull().default(0),tokenHash:text("token_hash").unique(),expiresAt:integer("expires_at").notNull(),
+  createdBy:text("created_by").notNull().references(()=>users.id),migratedProfileId:text("migrated_profile_id").references(()=>profiles.id,{onDelete:"set null"}),
+  migratedAt:text("migrated_at"),createdAt,updatedAt:text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+},table=>[index("private_profile_samples_updated").on(table.updatedAt),index("private_profile_samples_expiry").on(table.expiresAt)]);
+export const privateSampleMedia = sqliteTable("private_sample_media", {
+  id:text("id").primaryKey(),sampleId:text("sample_id").notNull().references(()=>privateProfileSamples.id,{onDelete:"cascade"}),
+  r2Key:text("r2_key").notNull(),byteSize:integer("byte_size").notNull(),contentType:text("content_type").notNull(),
+  mediaType:text("media_type",{enum:["image","video"]}).notNull(),isProfilePhoto:integer("is_profile_photo",{mode:"boolean"}).notNull().default(false),sortOrder:integer("sort_order").notNull().default(0),
+},table=>[index("private_sample_media_parent").on(table.sampleId,table.sortOrder)]);
+
+export const adminMutationReceipts = sqliteTable("admin_mutation_receipts", {
+  id: text("id").primaryKey(),
+  actorId: text("actor_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  resourceKey: text("resource_key").notNull(),
+  expiresAt: integer("expires_at").notNull(),
+  createdAt,
+}, table => [index("admin_mutation_receipts_expiry_idx").on(table.expiresAt)]);
+
 // A view is stored once per profile, browser and Chilean calendar day. The
 // browser key is an opaque first-party cookie; no IP address is retained.
 export const profileViews = sqliteTable("profile_views", {

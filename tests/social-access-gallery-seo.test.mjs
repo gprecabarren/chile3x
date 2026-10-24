@@ -61,10 +61,16 @@ test('chat scroll follows committed messages, preserves older scroll and anonymi
   assert.match(await source('app/mi-cuenta/mensajes/page.tsx'),/conversation.otherUserActive && profileHref/);
 });
 test('home/about titles include escorts and single branding, preserve About style and correct account home', async () => {
-  const home=await source('app/page.tsx'), about=await source('app/quienes-somos/page.tsx');
-  assert.match(home,/absolute: "Directorio de escorts en Chile por ciudad \| Chile3X"/);
-  assert.equal((home.match(/title: "Directorio de escorts en Chile por ciudad \| Chile3X"/g) ?? []).length, 2);
-  assert.match(home, /<h1>Directorio de escorts <em>en Chile por ciudad\.<\/em><\/h1>/);
+  const home=await source('app/page.tsx') + await source('app/HomeContent.tsx'), about=await source('app/quienes-somos/page.tsx');
+  assert.match(home,/title:\{absolute:copy.seoTitle\}/);
+  assert.match(home,/<h1>\{copy.title\} <em>\{copy.titleAccent\}<\/em><\/h1>/);
+  const {defaultHomeTexts}=await import('../lib/home-content-policy.ts');
+  for(const layout of ['classic','compact']) {
+    const copy=defaultHomeTexts(layout);
+    assert.equal(copy.seoTitle,'Directorio de escorts en Chile por ciudad | Chile3X');
+    assert.equal((copy.seoTitle.match(/Chile3X/g)??[]).length,1);
+    assert.equal(copy.title+' '+copy.titleAccent,'Directorio de escorts en Chile por ciudad.');
+  }
   assert.match(about,/absolute: "Quiénes somos: directorio de escorts en Chile \| Chile3X"/);
   assert.match(about,/className="about-hero"/); assert.match(about,/Sitio operativo en fase beta/);
   assert.match(await source('app/mi-cuenta/_components.tsx'),/account-brand-home" href="\/mi-cuenta"/);

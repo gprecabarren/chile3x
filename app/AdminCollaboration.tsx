@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import "./collaboration.css";
@@ -30,7 +31,16 @@ export function AdminCollaboration({adminMode}:{adminMode:boolean}) {
     }
     function action(event:Event){const {key,intent}=(event as CustomEvent).detail;if(!adminMode||!['claim','release'].includes(intent)||leasePending.has(key))return;leasePending.add(key);void lease(key,intent).then(()=>{nextRefresh=0;return refresh();}).catch(()=>announce('No se pudo completar la reserva.')).finally(()=>leasePending.delete(key));}
     function forceRefresh(){nextRefresh=0;void refresh();}
+    async function confirmSaved(id:string,key:string){
+      try {
+        const response=await fetch(`/api/admin/colaboracion/confirmacion?id=${encodeURIComponent(id)}`,{cache:'no-store',signal:AbortSignal.any([controller.signal,AbortSignal.timeout(8_000)])});
+        const result=await response.json();
+        if(response.ok&&result.committed===true&&result.resourceKey===key){announce('El cambio quedó guardado. Falló la respuesta posterior, no el guardado del registro. Abre la versión actual antes de continuar.');void refresh();return true;}
+      }catch{/* An unavailable receipt is not evidence of success or failure. */}
+      return false;
+    }
     async function submit(event:SubmitEvent){
+      if(!adminMode)return;
       const form=event.target;if(!(form instanceof HTMLFormElement)||event.defaultPrevented||form.method.toLowerCase()!=='post')return;
       const scope=form.closest<HTMLElement>('[data-review-resource]'),key=form.querySelector<HTMLInputElement>('input[name="review_key"]')?.value??scope?.dataset.reviewResource;
       if(!key)return;
@@ -38,16 +48,23 @@ export function AdminCollaboration({adminMode}:{adminMode:boolean}) {
       event.preventDefault();if(pending.has(form))return;pending.add(form);setMessage('');
       const submitter=event.submitter instanceof HTMLButtonElement||event.submitter instanceof HTMLInputElement?event.submitter:undefined;
       const body=new FormData(form,submitter);if(!body.has('review_key')){body.set('review_key',key);body.set('review_revision',scope?.dataset.reviewRevision??'');}
+      if(scope?.dataset.reviewResource===key)body.set('review_revision',scope.dataset.reviewRevision??'');
+      const mutationId=crypto.randomUUID();body.set('mutation_id',mutationId);
       const buttons=[...form.querySelectorAll<HTMLButtonElement>('button[type="submit"]')];const previous=buttons.map(button=>button.disabled);buttons.forEach(button=>button.disabled=true);form.setAttribute('aria-busy','true');
       try{
         const response=await fetch(actionUrl,{method:'POST',body,headers:{accept:'application/json'},signal:AbortSignal.any([controller.signal,AbortSignal.timeout(60_000)])});
         if(response.redirected){location.assign(response.url);return;}
         const plain=response.headers.get('content-type')?.includes('application/json')?null:(await response.text()).trim();
         const result=plain===null?await response.json():{error:plain.length<=600&&!plain.startsWith('<')?plain:'No se pudo confirmar el guardado. Comprueba el estado antes de repetirlo.'};
-        if(!response.ok){announce(result.error??'No se pudo confirmar el guardado. Comprueba el estado antes de repetirlo.');return;}
+        if(!response.ok){
+          if(response.status>=500&&await confirmSaved(mutationId,key))return;
+          const resourceLimit=plain?.includes('1102')||plain?.includes('Worker exceeded');
+          announce(resourceLimit?'Cloudflare interrumpió esta petición por su límite de recursos. No repetimos la acción: comprueba la versión actual antes de continuar.':result.error??`No se pudo confirmar el guardado (HTTP ${response.status}). Comprueba el estado antes de repetirlo.`);return;
+        }
         if(result.redirectTo){location.assign(result.redirectTo);return;}
+        if(plain!==null||result.error){if(await confirmSaved(mutationId,key))return;announce(result.error??'La respuesta no confirmó el guardado. Comprueba la versión actual antes de repetirlo.');return;}
         announce('Acción completada. Consulta la versión actual antes de realizar otra acción sobre este registro.');void refresh();
-      }catch{if(!controller.signal.aborted)announce('Se interrumpió la comunicación. No repetimos la acción: consulta la versión actual para comprobar si se guardó.');}
+      }catch{if(!controller.signal.aborted&&!await confirmSaved(mutationId,key))announce('Se interrumpió la comunicación. No repetimos la acción: consulta la versión actual para comprobar si se guardó.');}
       finally{pending.delete(form);buttons.forEach((button,index)=>button.disabled=previous[index]);form.removeAttribute('aria-busy');}
     }
     // Bubble phase respects validation/cancellation performed by the form itself.
@@ -59,5 +76,5 @@ export function AdminCollaboration({adminMode}:{adminMode:boolean}) {
       for(const [key,token] of leases){const body=new FormData();body.set('key',key);body.set('token',token);body.set('intent','release');void fetch('/api/admin/colaboracion',{method:'POST',body,keepalive:true}).catch(()=>{});}
     };
   },[adminMode,pathname,search]);
-  return message?<aside className="collaboration-message" role="alert"><p>{message}</p><div><button type="button" onClick={()=>setMessage('')}>Seguir revisando</button><a href={pathname+((search?.toString())?'?'+search.toString():'')} target="_blank" rel="noopener noreferrer">Abrir versión actual en otra pestaña ↗</a></div></aside>:null;
+  return message?<aside className="collaboration-message" role={message.startsWith('El cambio quedó guardado')?'status':'alert'}><p>{message}</p><div><ActionButton type="button" onClick={()=>setMessage('')}>Seguir revisando</ActionButton><a href={pathname+((search?.toString())?'?'+search.toString():'')} target="_blank" rel="noopener noreferrer">Abrir versión actual en otra pestaña ↗</a></div></aside>:null;
 }

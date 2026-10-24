@@ -1,14 +1,14 @@
 .admin-mail-settings-page .admin-settings-page-form { width:100%; max-width:none; display:grid; gap:24px; margin:0; padding:0; border:0; background:transparent; }
-.admin-mail-settings-page .admin-settings-section { width:100%; min-width:0; margin:0; padding:28px; border:1px solid #354159; border-radius:12px; background:#111722; }
+.admin-mail-settings-page .admin-settings-section { width:100%; min-width:0; margin:0; padding:28px; border:1px solid #354159; border-radius:var(--corner-12); background:#111722; }
 .admin-mail-settings-page .admin-settings-section > div:first-child { margin-bottom:24px; }
 .admin-mail-settings-page .admin-settings-section h2 { font-size:clamp(24px,2.1vw,32px); line-height:1.25; }
 .admin-mail-settings-page .admin-settings-section > div:first-child > span { display:block; max-width:1000px; font-size:13px; line-height:1.7; }
 .admin-mail-settings-page .admin-settings-grid { min-width:0; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; gap:22px 26px; }
 .admin-mail-settings-page .admin-settings-grid label { min-width:0; display:grid; align-content:start; gap:8px; font-size:13px; font-weight:650; line-height:1.5; }
-.admin-mail-settings-page .admin-settings-grid :is(input,select) { box-sizing:border-box; width:100%; min-width:0; height:48px; min-height:48px; margin:0; padding:11px 13px; border:1px solid #4a5872; border-radius:8px; color:#f1f4fa; background:#0a101a; font-size:14px; line-height:1.5; color-scheme:dark; }
+.admin-mail-settings-page .admin-settings-grid :is(input,select) { box-sizing:border-box; width:100%; min-width:0; height:48px; min-height:48px; margin:0; padding:11px 13px; border:1px solid #4a5872; border-radius:var(--corner-8); color:#f1f4fa; background:#0a101a; font-size:14px; line-height:1.5; color-scheme:dark; }
 .admin-mail-settings-page .admin-settings-grid small { min-width:0; margin:0; color:#aab9ce; font-size:12px; font-weight:400; line-height:1.65; }
 .admin-mail-settings-page .admin-settings-grid :is(input,select):focus-visible { outline:2px solid #ff929f; outline-offset:2px; }
-.admin-mail-settings-page .mail-settings-note { display:block; min-width:0; margin:24px 0 0; padding:18px 20px; border:1px solid #3d4a61; border-left:3px solid #df3344; border-radius:10px; color:#b9c8dc; background:#171f2e; font-size:13px; font-weight:400; line-height:1.75; overflow-wrap:break-word; }
+.admin-mail-settings-page .mail-settings-note { display:block; min-width:0; margin:24px 0 0; padding:18px 20px; border:1px solid #3d4a61; border-left:3px solid #df3344; border-radius:var(--corner-10); color:#b9c8dc; background:#171f2e; font-size:13px; font-weight:400; line-height:1.75; overflow-wrap:break-word; }
 .admin-mail-settings-page .admin-settings-grid .mail-settings-note { margin:0; }
 .admin-mail-settings-page .mail-settings-note p { max-width:none; margin:0; color:inherit; font:inherit; }
 .admin-mail-settings-page .mail-settings-note p + p { margin-top:10px; }

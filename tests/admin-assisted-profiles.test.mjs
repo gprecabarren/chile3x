@@ -29,8 +29,9 @@ test("admin uploads require both account and media authority; owner uploads stay
   assert.match(admin, /!row\.ownerActive/);
   assert.match(owner, /profile\.ownerId !== user\.id/);
   assert.match(owner, /hasTesterAutoApproval\(user\) \? "approved" : "pending"/);
-  assert.match(shared, /detectImageType\(data\)/);
-  assert.match(shared, /detectVideoType\(data\)/);
+  assert.match(shared, /detectImageType\(signature\)/);
+  assert.match(shared, /detectVideoType\(signature\)/);
+  assert.match(shared, /file\.slice\(0,16\)/);
   assert.match(shared, /MAX_PROFILE_MEDIA_BYTES/);
   assert.match(shared, /MEDIA_HARD_LIMIT_BYTES/);
 });
@@ -62,16 +63,17 @@ test("account and listing origin remain attributable and filterable", async () =
 
 test("image processing is optional, previewed and scoped to media moderators", async () => {
   const [editor, route, adminList] = await Promise.all([
-    source("app/admin/medios/AdminMediaImageProcessing.tsx"),
+    source("app/admin/medios/AdminPhotoTools.tsx"),
     source("app/api/admin/media/[mediaId]/procesar/route.ts"),
     source("app/admin/medios/page.tsx"),
   ]);
   assert.match(editor, /Generar vista previa/);
-  assert.match(editor, /Confirmar y reemplazar imagen/);
-  assert.match(editor, /applyWatermark: watermark, blurFaces: blur/);
+  assert.match(editor, /Confirmar esta foto/);
+  assert.match(editor, /applyWatermark:options.watermark/);
+  assert.match(editor, /blurFaces:options.blur/);
   assert.match(route, /"media\.moderate"/);
-  assert.match(route, /detectImageType\(data\)/);
-  assert.match(route, /record\.media\.mediaType !== "image"/);
+  assert.match(route, /detectImageType\(await file.slice\(0,16\).arrayBuffer\(\)\)/);
+  assert.match(route, /record\.media\.mediaType!=="image"/);
   assert.match(adminList, /media\.mediaType === "image" && <AdminMediaImageProcessing/);
 });
 
@@ -79,6 +81,6 @@ test("face detection WebAssembly is scoped to editing and session documents, nev
   const worker = await source("worker/index.ts");
   assert.match(worker, /pathname === "\/admin\/medios"/);
   assert.match(worker, /wasmPermission = faceBlurPage \? " 'wasm-unsafe-eval'" : ""/);
-  assert.match(worker, /withSecurityHeaders\(await handler.fetch\(request, env, ctx\), url.pathname, hasPrivateSession\(request\)\)/);
+  assert.match(worker, /withSecurityHeaders\(adminMutationResponse\(request,await handler.fetch\(request, env, ctx\)\), url.pathname, hasPrivateSession\(request\)\)/);
   assert.doesNotMatch(worker, /'unsafe-eval'/);
 });

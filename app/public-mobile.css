@@ -1,0 +1,71 @@
+/* Mobile corrections only: navigation is not an action button. Keep the
+   larger action labels without letting them inflate the header's controls. */
+@media (max-width:860px) {
+  :root body .public-header .mobile-public-quick-links {
+    grid-template-columns:1.3fr .8fr 1fr;
+    gap:6px;
+  }
+  :root body .public-header .mobile-public-quick-links a {
+    min-height:36px;
+    padding:4px 2px;
+    font-size:12px;
+    line-height:1.2;
+  }
+  :root body .mobile-menu-panel a {
+    font-size:12px;
+    line-height:1.35;
+  }
+  :root body .public-header .public-header-actions .button {
+    min-height:40px;
+    padding:6px;
+    font-size:1rem;
+    line-height:1.2;
+  }
+}
+
+@media (max-width:620px) {
+  /* The two hero actions form one mobile group: same full width and baseline
+     height, without stretching desktop actions or constraining text reflow. */
+  :root body .home-layout--classic .hero-actions > .button {
+    width:100%;
+    min-height:44px;
+  }
+  /* A secondary hint must not turn a one-line disclosure into a tall button.
+     It remains available to assistive technology; the expanded fields retain
+     their visible labels. Do not constrain height when the user scales text. */
+  :root body .directory-filter-form .filter-mobile-toggle {
+    position:relative;
+    min-height:42px;
+    padding:8px 10px;
+  }
+  :root body .directory-filter-form .filter-mobile-toggle > span {
+    font-size:1rem;
+    line-height:1.2;
+  }
+  :root body .directory-filter-form .filter-mobile-toggle small {
+    display:block;
+    position:absolute;
+    width:1px;
+    height:1px;
+    padding:0;
+    margin:-1px;
+    overflow:hidden;
+    clip-path:inset(50%);
+    white-space:nowrap;
+  }
+  :root body .directory-filter-form .filter-mobile-toggle::after { margin-left:auto; }
+}
+
+@media (max-width:360px) {
+  /* Keep the original two actions side by side, including narrow phones.
+     Slightly tighter labels/gaps preserve their 40px controls, not tiny text. */
+  :root body .public-header .public-header-actions:not(.is-signed-in),
+  :root body .public-header .public-header-actions:has(.header-stories-action) {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  :root body .public-header .public-header-actions .button {
+    padding-inline:2px;
+    gap:3px;
+    font-size:.875rem;
+  }
+}

@@ -1,4 +1,5 @@
 import { RETENTION_DAYS, RETENTION_ENFORCE_AT } from "../lib/data-retention-policy";
+import { purgeExpiredSamples } from "./private-sample-cleanup";
 
 type RetentionEnv = {DB:Pick<D1Database,"prepare"|"batch">;MEDIA?:Pick<R2Bucket,"delete">};
 const held=(type:string,column:string)=>`EXISTS (SELECT 1 FROM data_retention_holds WHERE entity_type='${type}' AND entity_id=${column})`;
@@ -61,6 +62,9 @@ export async function purgeMediaDeletionJobs(env:RetentionEnv) {
   return {processed:retryNeeded?0:jobs.results.length,retryNeeded};
 }
 export async function handleDataRetentionScheduled(env:RetentionEnv) {
+  await purgeExpiredSamples(env.DB);
+  // Short-lived save acknowledgements are independent of the legal-retention rollout.
+  await env.DB.prepare("DELETE FROM admin_mutation_receipts WHERE id IN (SELECT id FROM admin_mutation_receipts WHERE expires_at<=? LIMIT 200)").bind(Date.now()).run();
   const now=new Date().toISOString();if(Date.parse(now)<Date.parse(RETENTION_ENFORCE_AT))return;
   // Claim one run per hour; errors re-enable a retry at the next five-minute tick.
   await env.DB.prepare("INSERT OR IGNORE INTO site_settings(key,value,updated_at) VALUES('retention_last_run','',?)").bind(now).run();

@@ -93,7 +93,7 @@ test("video policy is shared by upload preparation, server validation and visibl
 
 test("edit link on public listing uses server-verified ownership for every listing type", async()=>{
   const page=await source("app/perfil/[slug]/page.tsx");
-  assert.match(page,/\[getCurrentAdmin\(\), getCurrentUser\(\), searchParams\]/);
+  assert.match(page,/\[sample \? Promise.resolve\(null\) : getCurrentAdmin\(\), sample \? Promise.resolve\(null\) : getCurrentUser\(\), searchParams\]/);
   assert.match(page,/ownerId === viewer.id/);
   assert.match(page,/viewerOwnsProfile && <aside className="profile-owner-edit-bar"/);
   assert.match(page,/href=\{`\/mi-cuenta\/\$\{profile.id\}\/editar`\}/);

@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
 import { useEffect, useState } from "react";
 
@@ -97,8 +98,8 @@ export function PrivacyConsent() {
         <p>Usamos almacenamiento y cookies necesarias para que Chile3X funcione. Con tu permiso, medimos visitas y acciones generales sin enviar nombres, correos, teléfonos, RUT, direcciones, archivos ni otros datos personales a Google.</p>
       </div>
       <div className="privacy-consent-actions">
-        <button className="button button-primary" type="button" onClick={() => chooseConsent("granted")}>Aceptar medición</button>
-        <button className="button button-outline" type="button" onClick={() => chooseConsent("necessary")}>Solo necesarias</button>
+        <ActionButton className="button button-primary" type="button" onClick={() => chooseConsent("granted")}>Aceptar medición</ActionButton>
+        <ActionButton className="button button-outline" type="button" onClick={() => chooseConsent("necessary")}>Solo necesarias</ActionButton>
         <a href="/privacidad#medicion">Ver política</a>
       </div>
     </section>

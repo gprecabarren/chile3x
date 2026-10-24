@@ -57,7 +57,7 @@ test("WhatsApp contact tracing is privacy-minimized and available to administrat
 
 test("manual city selection replaces GPS and persists only a chosen city", async () => {
   const [selector, locationClient, homeLocation, directory, shell, home, worker, privacy] = await Promise.all([
-    source("app/directorio/DirectoryCityBar.tsx"), source("app/directorio/location-client.ts"), source("app/HomeLocationSummary.tsx"), source("lib/directory.ts"), source("app/directorio/_components.tsx"), source("app/page.tsx"), source("worker/index.ts"), source("lib/legal-defaults.ts"),
+    source("app/directorio/DirectoryCityBar.tsx"), source("app/directorio/location-client.ts"), source("app/HomeLocationSummary.tsx"), source("lib/directory.ts"), source("app/directorio/_components.tsx"), source("app/HomeContent.tsx"), source("worker/index.ts"), source("lib/legal-defaults.ts"),
   ]);
   assert.match(selector, /position|chooseCity/);
   assert.match(selector, /cityDirectory/);
@@ -108,12 +108,12 @@ test("disabled owners cannot be approved and Telegram usernames refresh from upd
   assert.match(worker, /UPDATE telegram_admin_identities SET username/);
 });
 
-test("Manrope is self-hosted without local filesystem URLs and non-critical JS is deferred", async () => {
+test("DM Sans is self-hosted without local filesystem URLs and non-critical JS is deferred", async () => {
   const [layout, styles, deferred] = await Promise.all([
     source("app/layout.tsx"), source("app/globals.css"), source("app/DeferredClientFeatures.tsx"),
   ]);
   assert.doesNotMatch(layout, /next\/font/);
-  assert.match(styles, /\/fonts\/manrope-latin-variable\.woff2/);
+  assert.match(styles, /\/fonts\/dm-sans-latin-variable-20261023\.woff2/);
   assert.doesNotMatch(styles, /C:\\Users|file:\/\//);
   assert.match(deferred, /requestIdleCallback/);
   assert.match(deferred, /dynamic\(\(\) => import\("\.\/PrivacyConsent"\)/);

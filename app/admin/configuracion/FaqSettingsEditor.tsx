@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
 import { useState } from "react";
 import type { FaqEntry } from "@/lib/faq";
@@ -33,12 +34,12 @@ export function FaqSettingsEditor({ initialEntries }: { initialEntries: FaqEntry
           <label>Respuesta<textarea value={entry.answer} maxLength={700} rows={4} required onChange={(event) => update(index, "answer", event.target.value)} /></label>
         </div>
         <div className="faq-settings-actions">
-          <button type="button" onClick={() => move(index, -1)} disabled={index === 0}>Subir</button>
-          <button type="button" onClick={() => move(index, 1)} disabled={index === entries.length - 1}>Bajar</button>
-          <button type="button" className="faq-remove" onClick={() => setEntries((current) => current.length > 1 ? current.filter((_, itemIndex) => itemIndex !== index) : current)}>Quitar</button>
+          <ActionButton type="button" onClick={() => move(index, -1)} disabled={index === 0}>Subir</ActionButton>
+          <ActionButton type="button" onClick={() => move(index, 1)} disabled={index === entries.length - 1}>Bajar</ActionButton>
+          <ActionButton type="button" className="faq-remove" onClick={() => setEntries((current) => current.length > 1 ? current.filter((_, itemIndex) => itemIndex !== index) : current)}>Quitar</ActionButton>
         </div>
       </article>)}
     </div>
-    {entries.length < 20 && <button type="button" className="button button-outline faq-add" onClick={() => setEntries((current) => [...current, { ...emptyEntry }])}>Agregar pregunta</button>}
+    {entries.length < 20 && <ActionButton type="button" className="button button-outline faq-add" onClick={() => setEntries((current) => [...current, { ...emptyEntry }])}>Agregar pregunta</ActionButton>}
   </section>;
 }

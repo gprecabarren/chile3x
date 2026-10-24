@@ -38,7 +38,7 @@ test('real media and engagement reads keep all gallery media but hydrate just th
   const {getApprovedMediaForProfiles,getMediaUsage}=await import('../lib/media.ts');
   const {getProfileEngagement,getApprovedReviewsPage}=await import('../lib/profile-interactions.ts');
   const schema=await import('../db/schema.ts');
-  for(const name of ['forumAttachments','profileStatuses','profileVerificationFiles','newsMedia','profileReportEvidence','exclusiveContentMedia','sponsors','profiles','profileDetails','profileTags','profileServices','agencyMembers','accountPresence','blockedProfiles','profileViews','users','reviews']) {
+  for(const name of ['privateSampleMedia','forumAttachments','profileStatuses','profileVerificationFiles','newsMedia','profileReportEvidence','exclusiveContentMedia','sponsors','profiles','profileDetails','profileTags','profileServices','agencyMembers','accountPresence','blockedProfiles','profileViews','users','reviews']) {
    const table=getTableConfig(schema[name]);sqlite.exec(`CREATE TABLE IF NOT EXISTS "${table.name}" (${table.columns.map(column=>`"${column.name}" ${column.getSQLType()}`).join(',')})`);
   }
   assert.deepEqual(await getMediaUsage(),{bytes:0,files:0});

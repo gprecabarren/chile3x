@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -82,10 +83,10 @@ export function DirectoryFilters({ action, filters, pinnedCity, pinnedRegion, sh
     <form className="directory-filter-form" action={action} method="get" onSubmit={(event) => { event.preventDefault(); search(event.currentTarget); }}>
       <section className="directory-filters" aria-label="Buscar publicaciones">
       <div className="filter-heading"><div><p className="eyebrow">{contentDirectory ? "BUSCADOR DE VENTA DE CONTENIDO" : showEscortFilters ? "BUSCADOR DE ESCORTS" : "BUSCADOR DE ANUNCIOS"}</p><h2>Encuentra con más precisión</h2><p>{contentDirectory ? "Busca por ubicación, nombre o características. Todos los resultados venden contenido; esta condición siempre está activa." : !showEscortFilters ? "Elige una ciudad y busca por nombre, conexión o verificación." : pinnedCity ? "Busca por nombre, categoría o edad y combina los filtros de apariencia y servicios." : "Elige una región o ciudad y combina nombre, categoría, edad y características."}</p></div></div>
-      <button className="filter-mobile-toggle" type="button" aria-expanded={showMobileFilters} aria-controls="directory-filter-controls" onClick={() => setMobileFilterOpen(!showMobileFilters)}>
+      <ActionButton className="filter-mobile-toggle" type="button" aria-expanded={showMobileFilters} aria-controls="directory-filter-controls" onClick={() => setMobileFilterOpen(!showMobileFilters)}>
         <span>{showMobileFilters ? "Ocultar filtros" : "Mostrar filtros"}</span>
         <small>{hasVisibleFilters ? "Hay filtros aplicados" : "Nombre, categoría y más"}</small>
-      </button>
+      </ActionButton>
       <div id="directory-filter-controls" className={`filter-mobile-body${showMobileFilters ? " is-open" : ""}`}>
       <div className="filter-grid">
         {!pinnedCity && <label>Región<select name="region" value={region} onChange={(event) => changeRegion(event.target.value)}><option value="">Todas las regiones</option>{regions.map((item) => <option key={item.id} value={item.title}>Región {item.numeral} · {item.shortTitle}</option>)}</select></label>}
@@ -99,7 +100,7 @@ export function DirectoryFilters({ action, filters, pinnedCity, pinnedRegion, sh
           const form = event.target.form;
           if (form) search(form, value);
         }}><option value="">Todas las categorías</option>{(["vip", "premium", "bronze"] as const).map((tier) => <option key={tier} value={tier}>{tier === "vip" ? "✦" : tier === "premium" ? "◆" : "⬡"} {tierLabels[tier]}</option>)}{!contentDirectory && <><option value="masajes">✿ Masajes</option><option value="contenido">▧ Venta de contenido</option><option value="agency">◇ Agencias</option><option value="rental">▣ Arriendos</option></>}</select></label>}
-        {showEscortFilters && <details className="quick-filter-age" open={Boolean(filters.ageMin || filters.ageMax)}><summary>Edad {ageMin > 18 || ageMax < 70 ? `${ageMin}–${ageMax === 70 ? "70+" : ageMax}` : ""}</summary><div className="quick-filter-age-popover"><div><strong>Rango de edad</strong><span>{ageMin} – {ageMax === 70 ? "70+" : ageMax} años</span></div><label>Desde {ageMin}<input type="range" min="18" max="70" value={ageMin} name={escortAgeEnabled && ageMin > 18 ? "edad_min" : undefined} onChange={(event) => setAgeMin(Math.min(Number(event.target.value), ageMax))} disabled={!escortAgeEnabled} /></label><label>Hasta {ageMax === 70 ? "70+" : ageMax}<input type="range" min="18" max="70" value={ageMax} name={escortAgeEnabled && ageMax < 70 ? "edad_max" : undefined} onChange={(event) => setAgeMax(Math.max(Number(event.target.value), ageMin))} disabled={!escortAgeEnabled} /></label><button type="button" onClick={() => { setAgeMin(18); setAgeMax(70); }}>Restablecer edad</button></div></details>}
+        {showEscortFilters && <details className="quick-filter-age" open={Boolean(filters.ageMin || filters.ageMax)}><summary>Edad {ageMin > 18 || ageMax < 70 ? `${ageMin}–${ageMax === 70 ? "70+" : ageMax}` : ""}</summary><div className="quick-filter-age-popover"><div><strong>Rango de edad</strong><span>{ageMin} – {ageMax === 70 ? "70+" : ageMax} años</span></div><label>Desde {ageMin}<input type="range" min="18" max="70" value={ageMin} name={escortAgeEnabled && ageMin > 18 ? "edad_min" : undefined} onChange={(event) => setAgeMin(Math.min(Number(event.target.value), ageMax))} disabled={!escortAgeEnabled} /></label><label>Hasta {ageMax === 70 ? "70+" : ageMax}<input type="range" min="18" max="70" value={ageMax} name={escortAgeEnabled && ageMax < 70 ? "edad_max" : undefined} onChange={(event) => setAgeMax(Math.max(Number(event.target.value), ageMin))} disabled={!escortAgeEnabled} /></label><ActionButton type="button" onClick={() => { setAgeMin(18); setAgeMax(70); }}>Restablecer edad</ActionButton></div></details>}
         <label className="quick-filter-toggle is-online"><input name="online" value="1" type="checkbox" defaultChecked={filters.online} /><span>Online</span></label>
         <label className="quick-filter-toggle is-verified"><input name="verificados" value="1" type="checkbox" defaultChecked={filters.verified} /><span>Verificados</span></label>
         <a className="quick-filter-clear" href={action} onClick={event => {
@@ -109,7 +110,7 @@ export function DirectoryFilters({ action, filters, pinnedCity, pinnedRegion, sh
           beginUserNavigation(window.matchMedia("(max-width: 620px)").matches ? `${action}?filtros=abiertos` : action);
           router.push(window.matchMedia("(max-width: 620px)").matches ? `${action}?filtros=abiertos` : action, { scroll: false });
         }}>Limpiar</a>
-        <button className="quick-filter-apply" type="submit">Buscar</button>
+        <ActionButton className="quick-filter-apply" type="submit">Buscar</ActionButton>
       </section>
       {(showEscortFilters || showServices) && <details className="filter-more-options" open={hasAdvancedFilters}>
         <summary><span>Ver más filtros</span><small>Apariencia, categorías adicionales y servicios</small></summary>

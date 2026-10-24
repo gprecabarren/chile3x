@@ -1,4 +1,6 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
+import { incompatibleProfileTags,PROFILE_TAG_COMBINATION_MESSAGE } from "@/lib/profile-tag-policy";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DateField } from "@/app/DateField";
@@ -65,6 +67,7 @@ type ProfileFormProps = {
   allowEscort?: boolean;
   adminAssisted?: boolean;
   adminEdit?: boolean;
+  privateSample?: boolean;
 };
 
 function socialUsername(value: string) {
@@ -84,7 +87,8 @@ function metadataValue(initial: ProfileFormInitial | undefined, key: string) {
   return initial?.details.metadata?.[key] ?? "";
 }
 
-export function ProfileForm({ action, submitLabel, initial, allowEscort = true, adminAssisted = false, adminEdit = false, review }: ProfileFormProps) {
+export function ProfileForm({ action, submitLabel, initial, allowEscort = true, adminAssisted = false, adminEdit = false, privateSample = false, review }: ProfileFormProps) {
+  const [sampleBusy,setSampleBusy]=useState(false),[sampleError,setSampleError]=useState("");
   const formRef = useRef<HTMLFormElement>(null);
   const optionalRef = useRef<HTMLDetailsElement>(null);
   const storageKey = `chile3x-profile-draft:${action}`;
@@ -105,9 +109,10 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
   const [contentOnly, setContentOnly] = useState(metadataValue(initial, "content_only") === "1");
   const [selectedTier, setSelectedTier] = useState(initial?.tier ?? "vip");
   const [underageNotice, setUnderageNotice] = useState(false);
-  const typeLocked = Boolean(initial);
+  const typeLocked = Boolean(initial)||privateSample;
 
   useEffect(() => {
+    if(privateSample)return;
     const query = new URLSearchParams(window.location.search);
     if (!query.get("error")) {
       window.sessionStorage.removeItem(storageKey);
@@ -160,7 +165,7 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
       });
     });
     return () => { window.cancelAnimationFrame(restore); window.cancelAnimationFrame(restoreFields); };
-  }, [availableProfileTypes, storageKey, typeLocked]);
+  }, [availableProfileTypes, storageKey, typeLocked, privateSample]);
 
   function saveFormBeforeSubmit(form: HTMLFormElement) {
     const saved: Record<string, string[]> = {};
@@ -179,8 +184,7 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
   function toggleProfileTag(tag: string) {
     setSelectedProfileTags((current) => {
       if (current.includes(tag)) return current.filter((item) => item !== tag);
-      if (tag === "milf") return [...current.filter((item) => item !== "trans"), tag];
-      if (tag === "trans") return [...current.filter((item) => item !== "milf"), tag];
+      if (incompatibleProfileTags([...current,tag])) return current;
       return [...current, tag];
     });
   }
@@ -197,7 +201,19 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
       const field = event.target;
       if (field instanceof HTMLElement && field.closest(".profile-optional-fields") && optionalRef.current) optionalRef.current.open = true;
     }} onSubmit={(event) => {
-      saveFormBeforeSubmit(event.currentTarget);
+      if(type==="escort"&&incompatibleProfileTags(selectedProfileTags)){event.preventDefault();document.getElementById("profile-tag-combination-help")?.scrollIntoView({block:"center"});return;}
+      if(privateSample){
+        event.preventDefault();if(sampleBusy)return;
+        const body=new FormData(event.currentTarget);body.set("intent","submit");
+        const scope=event.currentTarget.closest<HTMLElement>("[data-review-resource]");if(scope)body.set("review_revision",scope.dataset.reviewRevision??"");
+        setSampleBusy(true);setSampleError("");
+        void fetch(action,{method:"POST",body,headers:{accept:"application/json"}}).then(async response=>{
+          let result;try{result=await response.json();}catch{throw new Error("No se pudo confirmar el guardado. Revisa la versión actual antes de repetirlo.");}
+          if(!response.ok)throw new Error(result?.error||"No se pudo guardar la muestra.");
+          if(typeof result?.redirectTo!=="string")throw new Error("No se pudo confirmar el guardado. Revisa la versión actual antes de repetirlo.");
+          window.location.assign(result.redirectTo);
+        }).catch(error=>setSampleError(error instanceof Error?error.message:"No se pudo confirmar el guardado. Revisa la versión actual antes de repetirlo.")).finally(()=>setSampleBusy(false));
+      }else saveFormBeforeSubmit(event.currentTarget);
       const form = event.currentTarget;
       const age = Number(new FormData(form).get("age") || 0);
       if (type === "escort" && age > 0 && age < 18) {
@@ -206,9 +222,11 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
       }
     }}>
       {review && <><input type="hidden" name="review_key" value={review.key} /><input type="hidden" name="review_revision" value={review.revision} /></>}
+      {sampleError&&<p className="admin-notice" role="alert">{sampleError}</p>}
+      {privateSample&&<label className="sample-permission"><input type="checkbox" name="sample_permission" required />Tengo autorización para preparar esta muestra privada y utilizar sus datos y fotos. No se publica un anuncio ni se crea una cuenta.</label>}
       <div className="profile-form-actions profile-form-actions-top">
-        {!adminEdit && <button className="button button-outline" name="intent" type="submit" value="draft" formNoValidate>Guardar borrador</button>}
-        <button className="button button-primary" name="intent" type="submit" value="submit">{submitLabel}</button>
+        {!adminEdit && <ActionButton className="button button-outline" name="intent" type="submit" value="draft" formNoValidate>Guardar borrador</ActionButton>}
+        <ActionButton className="button button-primary" name="intent" type="submit" value="submit" disabled={sampleBusy}>{sampleBusy?"Guardando…":submitLabel}</ActionButton>
       </div>
       <section className="profile-form-section">
         <div className="profile-form-section-heading">
@@ -247,7 +265,7 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
           </label>
           {type !== "escort" && <input name="tier" type="hidden" value="bronze" />}
         </div>
-        {type === "escort" && <fieldset className="profile-content-mode">
+        {type === "escort" && !privateSample && <fieldset className="profile-content-mode">
           <legend>Modalidad del anuncio</legend>
           <label className="profile-content-only-toggle"><input type="checkbox" name="content_only" checked={contentOnly} onChange={event => {
             const only = event.target.checked;
@@ -310,10 +328,12 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
         {type === "escort" && <fieldset className="profile-tags-fieldset">
           <legend>Etiquetas complementarias (opcionales)</legend>
           <p>Selecciona solo las que correspondan a tu anuncio. Puedes dejarlas sin marcar.</p>
+          <p id="profile-tag-combination-help">{PROFILE_TAG_COMBINATION_MESSAGE}</p>
+          {incompatibleProfileTags(selectedProfileTags)&&<p role="alert">Este anuncio tiene una combinación antigua no válida. Desmarca MILF o la otra etiqueta antes de guardar.</p>}
           <div className="check-grid">
             {profileTags.map((tag) => {
-              const blocked = (tag === "milf" && selectedProfileTags.includes("trans")) || (tag === "trans" && selectedProfileTags.includes("milf")) || (contentOnly && (tag === "masajes" || tag === "venta-contenido"));
-              return <label key={tag} className={blocked ? "is-blocked" : ""}><input name="tags" type="checkbox" value={tag} checked={(contentOnly && tag === "venta-contenido") || selectedProfileTags.includes(tag)} disabled={blocked} onChange={() => toggleProfileTag(tag)} />{tagLabels[tag]}</label>;
+              const blocked = (!selectedProfileTags.includes(tag)&&incompatibleProfileTags([...selectedProfileTags,tag])) || (contentOnly && (tag === "masajes" || tag === "venta-contenido"));
+              return <label key={tag} className={blocked ? "is-blocked" : ""} title={blocked?PROFILE_TAG_COMBINATION_MESSAGE:undefined}><input name="tags" type="checkbox" value={tag} checked={(contentOnly && tag === "venta-contenido") || selectedProfileTags.includes(tag)} disabled={blocked} aria-describedby="profile-tag-combination-help" onChange={() => toggleProfileTag(tag)} />{tagLabels[tag]}</label>;
             })}
           </div>
         </fieldset>}
@@ -366,10 +386,10 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
               {initial?.details.schedule && !savedAvailability.size && <input type="hidden" name="legacy_schedule" value={initial.details.schedule} />}
               <legend>Horarios de disponibilidad</legend>
               <p>{type === "escort" ? "Activa solo los días en que atiendes." : "Activa los días de disponibilidad del anuncio."} En el perfil se indicará si está disponible ahora, usando la hora de Chile.</p>
-              <div className="availability-bulk-actions"><button className="button button-outline availability-toggle-all" type="button" aria-pressed={enabledAvailabilityDays.size === availabilityDays.length} onClick={() => setEnabledAvailabilityDays((current) => current.size === availabilityDays.length ? new Set() : new Set(availabilityDays.map((day) => day.key)))}>
+              <div className="availability-bulk-actions"><ActionButton className="button button-outline availability-toggle-all" type="button" aria-pressed={enabledAvailabilityDays.size === availabilityDays.length} onClick={() => setEnabledAvailabilityDays((current) => current.size === availabilityDays.length ? new Set() : new Set(availabilityDays.map((day) => day.key)))}>
                 {enabledAvailabilityDays.size === availabilityDays.length ? "Desmarcar todos los días" : "Seleccionar todos los días"}
-              </button>
-              <button className="button button-outline" type="button" aria-pressed={allSelectedHours} disabled={!enabledAvailabilityDays.size} onClick={toggleAllHours}>{allSelectedHours ? "Restaurar horas anteriores" : "24 horas en días seleccionados"}</button></div>
+              </ActionButton>
+              <ActionButton className="button button-outline" type="button" aria-pressed={allSelectedHours} disabled={!enabledAvailabilityDays.size} onClick={toggleAllHours}>{allSelectedHours ? "Restaurar horas anteriores" : "24 horas en días seleccionados"}</ActionButton></div>
               <small>Selecciona todos los días y luego 24 horas para atención 24/7. El botón de horas solo modifica los días activados; puedes restaurar el horario anterior.</small>
               <div className="availability-editor-grid">
                 {availabilityDays.map((day) => {
@@ -504,12 +524,13 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
 
       <section className="profile-media-notice" aria-label="Estado de carga de fotos y videos">
         <strong>Galería y videos</strong>
+        {privateSample&&<p>Guarda la muestra para cargar sus fotos y videos. Quedarán privados, separados de los anuncios reales. Compartir el enlace no publica la ficha.</p>}
         <p>{adminEdit ? "Este formulario guarda los datos del anuncio sin cambiar su estado de publicación o verificación. Los medios y documentos se gestionan por separado desde los accesos de esta página." : initial ? "Las fotos y videos se envían desde su sección al inicio y no necesitan este guardado. Este formulario guarda únicamente los datos del anuncio; cambiar información relevante vuelve a revisión." : adminAssisted ? "Al crear el anuncio pasarás directamente a la carga de la foto principal, hasta 10 fotos y hasta 3 videos. El material que subas como administrador se aprobará al instante; el anuncio se publica desde moderación." : <>Guarda y envía el anuncio a revisión. Luego encontrarás al inicio la carga de fotos y videos; puedes adjuntarlos sin esperar la aprobación del anuncio. Cada imagen puede pesar hasta 10 MB y los archivos se revisan por separado.{type === "escort" && " También podrás adjuntar tu carnet o examen médico privado (JPG, PNG, WebP o PDF de hasta 15 MB)."}</>}</p>
       </section>
 
       <div className="profile-form-actions">
-        {!adminEdit && <button className="button button-outline" name="intent" type="submit" value="draft" formNoValidate>Guardar borrador</button>}
-        <button className="button button-primary" name="intent" type="submit" value="submit">{submitLabel}</button>
+        {!adminEdit && <ActionButton className="button button-outline" name="intent" type="submit" value="draft" formNoValidate>Guardar borrador</ActionButton>}
+        <ActionButton className="button button-primary" name="intent" type="submit" value="submit" disabled={sampleBusy}>{sampleBusy?"Guardando…":submitLabel}</ActionButton>
       </div>
     </form>
   );

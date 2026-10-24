@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { MAX_PRIVACY_REGIONS, privacyRegionAtPoint, type FacePrivacyRegion } from "@/lib/face-privacy";
@@ -46,10 +47,10 @@ export function FacePrivacyEditor({ file, regions, onChange, disabled = false }:
       <img ref={image} alt="Foto original para seleccionar zonas de privacidad, solo en este dispositivo" draggable={false} />
       {[...regions, ...(draft ? [draft] : [])].map((region, index) => <span key={index} style={{ left: `${region.x * 100}%`, top: `${region.y * 100}%`, width: `${region.width * 100}%`, height: `${region.height * 100}%` }} aria-hidden="true">{index + 1}</span>)}
     </div>
-    <div className="face-privacy-actions"><button type="button" className="button button-outline" disabled={disabled || regions.length >= MAX_PRIVACY_REGIONS} onClick={() => onChange([...regions, { x: .35, y: .1, width: .3, height: .25 }])}>Añadir zona</button><button type="button" className="button button-outline" disabled={disabled || !regions.length} onClick={() => onChange([])}>Limpiar zonas</button></div>
+    <div className="face-privacy-actions"><ActionButton type="button" className="button button-outline" disabled={disabled || regions.length >= MAX_PRIVACY_REGIONS} onClick={() => onChange([...regions, { x: .35, y: .1, width: .3, height: .25 }])}>Añadir zona</ActionButton><ActionButton type="button" className="button button-outline" disabled={disabled || !regions.length} onClick={() => onChange([])}>Limpiar zonas</ActionButton></div>
     {regions.map((region, index) => <fieldset className="face-privacy-controls" key={index}><legend>Zona {index + 1}</legend>
       {([['x', 'Horizontal'], ['y', 'Vertical'], ['width', 'Ancho'], ['height', 'Alto']] as const).map(([field, label]) => <label key={field}>{label}<input type="range" min={field === 'x' || field === 'y' ? 0 : 1} max={Math.round((field === 'x' ? 1 - region.width : field === 'y' ? 1 - region.height : 1) * 100)} value={Math.round(region[field] * 100)} disabled={disabled} onChange={event => update(index, field, Number(event.target.value))} /></label>)}
-      <button type="button" disabled={disabled} className="button button-outline" onClick={() => onChange(regions.filter((_, position) => position !== index))}>Quitar zona {index + 1}</button>
+      <ActionButton type="button" disabled={disabled} className="button button-outline" onClick={() => onChange(regions.filter((_, position) => position !== index))}>Quitar zona {index + 1}</ActionButton>
     </fieldset>)}
     <small>Comprueba el resultado antes de guardar. El difuminado no garantiza anonimato: revisa también tatuajes, reflejos y otros detalles identificables.</small>
   </details>;

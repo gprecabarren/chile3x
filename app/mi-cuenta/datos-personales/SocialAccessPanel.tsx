@@ -1,3 +1,4 @@
+import { ActionButton } from "@/app/ActionButton";
 import Link from "@/app/NavigationLink";
 import { authEventLabel, socialProviderLabels, type getAccountSocialAccess, type SocialProvider } from "@/lib/account-social-access";
 
@@ -14,11 +15,11 @@ export function SocialAccessPanel({ access, hasPassword, xEnabled }: { access: A
           <strong>¿Desvincular {socialProviderLabels[provider]}?</strong><p>Dejarás de ingresar mediante este servicio. Tu correo conservará su estado y podrás entrar con contraseña. Se cerrarán las demás sesiones.</p>
           <input name="provider" type="hidden" value={provider} /><input name="confirmation" type="hidden" value="unlink" />
           <label>Confirma tu contraseña<input name="current_password" type="password" required maxLength={256} autoComplete="current-password" /></label>
-          <button className="button button-outline" type="submit">Confirmar desvinculación</button>
+          <ActionButton className="button button-outline" type="submit">Confirmar desvinculación</ActionButton>
         </form></details> : <Link href="#password">Crear contraseña para desvincular</Link>}
       </div>;
     })}
-    {xEnabled && !access.linked.x && <div className="account-access-row"><div><strong>X</strong><small>No vinculado</small></div>{hasPassword ? <details><summary>Vincular X</summary><form action="/api/auth/x/start" method="post"><input name="intent" type="hidden" value="link" /><input name="return_to" type="hidden" value="/mi-cuenta/datos-personales" /><label>Confirma tu contraseña<input name="current_password" type="password" required maxLength={256} autoComplete="current-password" /></label><button className="button button-outline" type="submit">Continuar con X</button></form></details> : <Link href="#password">Primero crea una contraseña</Link>}</div>}
+    {xEnabled && !access.linked.x && <div className="account-access-row"><div><strong>X</strong><small>No vinculado</small></div>{hasPassword ? <details><summary>Vincular X</summary><form action="/api/auth/x/start" method="post"><input name="intent" type="hidden" value="link" /><input name="return_to" type="hidden" value="/mi-cuenta/datos-personales" /><label>Confirma tu contraseña<input name="current_password" type="password" required maxLength={256} autoComplete="current-password" /></label><ActionButton className="button button-outline" type="submit">Continuar con X</ActionButton></form></details> : <Link href="#password">Primero crea una contraseña</Link>}</div>}
     {access.events.length > 0 && <details className="account-access-history"><summary>Historial de cambios de acceso</summary><ul>{access.events.map(event => <li key={event.id}><span>{authEventLabel(event)}</span><time dateTime={event.createdAt}>{new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Santiago" }).format(new Date(event.createdAt))}</time></li>)}</ul></details>}
   </section>;
 }

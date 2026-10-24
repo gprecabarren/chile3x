@@ -1,0 +1,51 @@
+/* Public information pages only. The shared typography also improves phones;
+   wide-screen structure lives in public-desktop.css. No header overrides. */
+:root body .directory-root :is(.faq-content,.contact-content,.legal-page,.news-article,.news-index) {
+  --public-reading-size:1rem;
+  min-width:0;
+  overflow-wrap:break-word;
+}
+:root body .directory-root :is(.faq-questions,.faq-content aside,.contact-content article,.legal-content,.legal-index,.legal-sections,.news-article-layout,.news-article-content,.news-article-next) { min-width:0; }
+:root body .directory-root :is(.faq-content details p,.faq-content aside p,.contact-content p,.contact-content li,.legal-summary p,.legal-content p,.legal-content ul,.legal-content ol,.legal-page aside,.news-article-content,.news-article > header > p:not(.eyebrow),.news-article-next > p,.news-card-grid p,.news-index-guide > p:not(.eyebrow)) {
+  font-size:var(--public-reading-size,1rem);
+  line-height:1.75;
+  color:#cbd3df;
+}
+:root body .directory-root .static-page-hero > p:last-child { font-size:1rem; line-height:1.7; }
+:root body .directory-root .faq-content summary { font-size:1.0625rem; line-height:1.45; }
+:root body .directory-root .faq-content details p { max-width:82ch; }
+:root body .directory-root :is(.legal-content h3,.news-article-content h3) { font-size:1.25rem; line-height:1.4; }
+:root body .directory-root .legal-index { display:block; }
+:root body .directory-root .legal-index li { font-size:1rem; line-height:1.5; }
+:root body .directory-root .legal-index a { padding-block:3px; font-size:inherit; line-height:inherit; }
+:root body .directory-root :is(.legal-content,.news-article-content) :is(p,ul,ol) { max-width:82ch; }
+:root body .directory-root .legal-callout { max-width:82ch; }
+:root body .directory-root .news-article-content :is(table,pre) { max-width:100%; overflow-x:auto; }
+:root body .directory-root .news-article-content iframe { max-width:100%; }
+:root body .directory-root .news-article-content :is(img,video) { max-width:100%; height:auto; }
+:root body .directory-root .news-article-content blockquote > ol > li { font-size:1rem; line-height:1.6; }
+:root body .directory-root :is(.faq-content summary,.legal-index a):focus-visible { outline:2px solid #fcb0b8; outline-offset:3px; }
+:root body .directory-root .news-card-grid article > div > a { display:inline-flex; align-items:center; min-height:36px; font-size:1rem; }
+:root body .directory-root .news-breadcrumbs { font-size:14px; }
+:root body .directory-root .news-breadcrumbs a { font-size:inherit; }
+:root body .directory-root .news-article .page-back-link { font-size:1rem; }
+
+@media (max-width:620px) {
+  :root body .directory-root :is(.static-page-hero,.static-page-content,.legal-page) { width:calc(100% - 32px); }
+  :root body .directory-root .static-page-hero { padding-block:36px 26px; }
+  :root body .directory-root .static-page-hero h1 { font-size:clamp(34px,10vw,48px); line-height:1.08; }
+  :root body .directory-root .static-page-content { padding-block:24px 48px; }
+  :root body .directory-root .faq-content summary { padding:16px; }
+  :root body .directory-root .faq-content details p { padding:0 16px 18px; }
+  :root body .directory-root .faq-content aside { padding:20px 16px; }
+  :root body .directory-root .contact-content { grid-template-columns:minmax(0,1fr); gap:16px; }
+  :root body .directory-root .contact-content article { padding:20px 16px; }
+  :root body .directory-root .legal-page { padding-top:36px; }
+  :root body .directory-root .legal-index { padding:20px 16px; }
+  :root body .directory-root .legal-content section { scroll-margin-top:24px; }
+  :root body .directory-root .news-article { padding:32px 16px 56px; }
+  :root body .directory-root .news-article > header h1 { font-size:clamp(30px,8.5vw,42px); }
+  :root body .directory-root .news-article-cover { min-height:0; aspect-ratio:16/10; }
+  :root body .directory-root .news-article-content blockquote { margin-inline:0; padding:16px; }
+  :root body .directory-root .news-article-content blockquote > ol { grid-template-columns:minmax(0,1fr); }
+}

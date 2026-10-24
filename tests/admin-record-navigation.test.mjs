@@ -9,16 +9,17 @@ import { adminHasCapability } from '../lib/admin-permissions.ts';
 const source = path => readFile(new URL('../'+path,import.meta.url),'utf8');
 const dataUrl = text => 'data:text/javascript;base64,'+Buffer.from(text).toString('base64');
 const linkStub = dataUrl(`import {createElement} from ${JSON.stringify(import.meta.resolve('react'))};export default function Link({prefetch,children,...props}){return createElement('a',props,children);}`);
+const iconModule = dataUrl(ts.transpileModule(await source('app/ActionIcon.tsx'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext,jsx:ts.JsxEmit.ReactJSX}}).outputText.replace(/from "([^"\n]+)"/g,(_all,name)=>`from ${JSON.stringify(import.meta.resolve(name))}`));
 async function component(path) {
  let code=ts.transpileModule(await source(path),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext,jsx:ts.JsxEmit.ReactJSX}}).outputText;
- code=code.replace(/from "([^"\n]+)"/g,(_all,name)=>`from ${JSON.stringify(name==='@/app/NavigationLink'?linkStub:name==='@/lib/profile'?new URL('../lib/profile.ts',import.meta.url).href:import.meta.resolve(name))}`);
+ code=code.replace(/from "([^"\n]+)"/g,(_all,name)=>`from ${JSON.stringify(name==='@/app/NavigationLink'?linkStub:name==='@/app/ActionIcon'?iconModule:name==='@/lib/profile'?new URL('../lib/profile.ts',import.meta.url).href:import.meta.resolve(name))}`);
  return import(dataUrl(code));
 }
 const aliases=registerHooks({resolve(specifier,context,next){if(specifier.startsWith('@/'))return {url:new URL('../'+specifier.slice(2)+'.ts',import.meta.url).href,shortCircuit:true};return next(specifier,context);}});
 const { MediaRecordLinks }=await component('app/admin/medios/MediaRecordLinks.tsx');
 const { ModerationInbox }=await component('app/admin/ModerationInbox.tsx');
 aliases.deregister();
-const links=markup=>[...markup.matchAll(/<a[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/g)].map(([,href,label])=>({href:href.replaceAll('&amp;','&'),label}));
+const links=markup=>[...markup.matchAll(/<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g)].map(([,href,label])=>({href:href.replaceAll('&amp;','&'),label:label.replace(/<svg[\s\S]*?<\/svg>/g,'').replace(/<[^>]+>/g,'')}));
 const ownerId='owner/1';
 const profile={id:'exact/id',slug:'same-display-name',handle:'same-display-name',status:'pending',trashedAt:null};
 const returnTo='/admin/medios?estado=pending&tipo=exclusive';
@@ -38,6 +39,14 @@ test('unlinked exclusive libraries go to all account listings, and trash never g
  assert.deepEqual(trash.map(item=>item.label),['Ver cuenta','Abrir anuncio en papelera']);assert.doesNotMatch(JSON.stringify(trash),/\/perfil\//);
  const restricted=links(renderToStaticMarkup(createElement(MediaRecordLinks,{ownerId,profile,returnTo,canAccounts:false,canProfiles:false,canRecycle:false})));
  assert.deepEqual(restricted.map(item=>item.label),['Previsualizar anuncio']);
+});
+test('compact account actions preserve both exact-listing routes and permission checks',()=>{
+ const result=links(renderToStaticMarkup(createElement(MediaRecordLinks,{ownerId,profile:{...profile,status:'approved'},returnTo,...permissions,showAccount:false,compactLabels:true})));
+ assert.deepEqual(result.map(item=>item.label),['Revisar anuncio','Previsualizar']);
+ assert.match(result[0].href,/^\/admin\/anuncios-publicaciones\/exact%2Fid\/editar\?return_to=/);
+ assert.match(result[1].href,/^\/perfil\/@same-display-name\?return_to=/);
+ const restricted=links(renderToStaticMarkup(createElement(MediaRecordLinks,{ownerId,profile,returnTo,canAccounts:false,canProfiles:false,canRecycle:false,compactLabels:true})));
+ assert.deepEqual(restricted.map(item=>item.label),['Previsualizar']);
 });
 test('moderation queue places account first and does not render account links for roles without account permissions',async()=>{
  const initial={pendingProfiles:1,pendingMedia:0,pendingExclusive:0,unread:1,items:[{id:profile.id,ownerId,name:'Pending listing',city:'Concepción',status:'pending',files:0,newest:'2026-10-15',unread:1}]};

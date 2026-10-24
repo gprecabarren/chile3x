@@ -1,4 +1,5 @@
 "use client";
+import { ActionAnchor, ActionButton } from "@/app/ActionButton";
 
 import { useState } from "react";
 
@@ -68,15 +69,15 @@ export function TelegramLinkLauncher({ endpoint, label }: { endpoint: string; la
   }
 
   return <div className="telegram-link-launcher">
-    <button className="button button-primary" type="button" onClick={openTelegram} disabled={isPreparing}>
+    <ActionButton className="button button-primary" type="button" onClick={openTelegram} disabled={isPreparing}>
       {isPreparing ? "Abriendo Telegram…" : label}
-    </button>
+    </ActionButton>
     {launch && <div className="telegram-launch-fallback" role="status">
       <strong>¿Telegram no se abrió?</strong>
       <p>Usa una de estas opciones con el mismo vínculo temporal. Funciona con Telegram para iOS, Android, Windows y macOS, o mediante t.me en el navegador.</p>
       <div>
-        <a className="button button-outline" href={launch.nativeUrl}>Abrir la aplicación</a>
-        <a className="button button-outline" href={launch.universalUrl} target="_blank" rel="noreferrer">Abrir mediante t.me</a>
+        <ActionAnchor className="button button-outline" href={launch.nativeUrl}>Abrir la aplicación</ActionAnchor>
+        <ActionAnchor className="button button-outline" href={launch.universalUrl} target="_blank" rel="noreferrer">Abrir mediante t.me</ActionAnchor>
       </div>
     </div>}
     {error && <p className="telegram-launch-error" role="alert">{error} Recarga la página e inténtalo nuevamente.</p>}

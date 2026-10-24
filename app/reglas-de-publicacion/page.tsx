@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { LegalPage } from "@/app/legal/LegalPage";
 import { readPublicationRules } from "@/lib/publication-rules";
 import { getSiteSettings } from "@/lib/site-settings";
-import { publicPageMetadata } from "@/lib/seo";
+import { informationPageMetadata } from "@/lib/information-seo";
 
-export const metadata: Metadata = publicPageMetadata({ title: "Reglas de publicación", description: "Criterios de Chile3X para aprobar perfiles, agencias y arriendos.", path: "/reglas-de-publicacion" });
+export async function generateMetadata(): Promise<Metadata> { return informationPageMetadata('reglas'); }
 
 export const dynamic = "force-dynamic";
 

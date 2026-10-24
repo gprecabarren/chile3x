@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
 import { useEffect, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
@@ -23,5 +24,5 @@ export function BrowserSessionSetup({ children }: { children: ReactNode }) {
     return () => { stopped = true; controller.abort(); window.clearTimeout(timer); };
   }, [needed, ready, attempt]);
   if (!needed || ready) return children;
-  return <main className="session-change-screen session-check-screen"><section role={error ? "alert" : "status"}><p className="eyebrow">ACCESO SEGURO</p><h1>{error ? "No pudimos preparar el acceso" : "Preparando acceso seguro"}</h1><p>{error || "Estamos preparando este navegador para mantener una sola identidad activa entre tus pestañas."}</p>{error && <button className="button button-primary" type="button" onClick={() => { setError(""); setAttempt(value => value + 1); }}>Reintentar</button>}</section></main>;
+  return <main className="session-change-screen session-check-screen"><section role={error ? "alert" : "status"}><p className="eyebrow">ACCESO SEGURO</p><h1>{error ? "No pudimos preparar el acceso" : "Preparando acceso seguro"}</h1><p>{error || "Estamos preparando este navegador para mantener una sola identidad activa entre tus pestañas."}</p>{error && <ActionButton className="button button-primary" type="button" onClick={() => { setError(""); setAttempt(value => value + 1); }}>Reintentar</ActionButton>}</section></main>;
 }

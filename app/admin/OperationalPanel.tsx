@@ -1,3 +1,4 @@
+import { ActionButton } from "@/app/ActionButton";
 import Link from "@/app/NavigationLink";
 import {
   formatBytes,
@@ -50,7 +51,7 @@ export function OperationalPanel({ dashboard, filters, notice }: {
     </div>
     <div className="operational-storage-actions">
       <div>{storage ? <p>Última revisión: <strong>{operationalDate(storage.createdAt)}</strong> · {storage.referencedObjectCount ?? 0} referencias D1 · {storage.missingObjectCount ?? "—"} archivos faltantes.</p> : <p>La revisión compara las referencias de D1 con los objetos reales de R2 y no elimina ningún archivo.</p>}</div>
-      <form action="/api/admin/operaciones/almacenamiento" method="post"><button className="button button-outline" type="submit">Actualizar revisión D1/R2</button></form>
+      <form action="/api/admin/operaciones/almacenamiento" method="post"><ActionButton className="button button-outline" type="submit">Actualizar revisión D1/R2</ActionButton></form>
     </div>
     <details className="operational-details" open={hasFilters || notice === "storage_error"}>
       <summary>Ver más: filtros y eventos ({dashboard.eventCount})</summary>
@@ -58,7 +59,7 @@ export function OperationalPanel({ dashboard, filters, notice }: {
         <label>Período<select name="ops_period" defaultValue={filters.period}><option value="24h">Últimas 24 horas</option><option value="7d">Últimos 7 días</option><option value="30d">Últimos 30 días</option><option value="all">Todo el historial</option></select></label>
         <label>Área<select name="ops_category" defaultValue={filters.category}><option value="all">Todas</option>{Object.entries(OPERATIONAL_CATEGORIES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
         <label>Resultado<select name="ops_status" defaultValue={filters.outcome}><option value="all">Todos</option><option value="failure">Fallidos</option><option value="success">Completados</option></select></label>
-        <div><button className="button button-primary" type="submit">Aplicar filtros</button>{hasFilters && <Link className="button button-outline" href="/admin#panel-operativo" prefetch={false}>Limpiar</Link>}</div>
+        <div><ActionButton className="button button-primary" type="submit">Aplicar filtros</ActionButton>{hasFilters && <Link className="button button-outline" href="/admin#panel-operativo" prefetch={false}>Limpiar</Link>}</div>
       </form>
       {dashboard.events.length ? <div className="operational-event-list" aria-label="Eventos operativos">{dashboard.events.map((event) => <article key={event.id}>
         <span className={`operational-event-status is-${event.outcome}`} aria-hidden="true" />

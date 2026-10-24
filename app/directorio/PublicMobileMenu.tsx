@@ -1,4 +1,6 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
+import { ActionIcon } from "@/app/ActionIcon";
 
 import { PublicNavigationLink as Link } from "./PublicNavigationLink";
 import { useEffect, useRef, useState } from "react";
@@ -29,22 +31,37 @@ const portalLinks = [
 export function PublicMobileMenu({ hasUserSession = false, hasAdminSession = false, showSponsors = false, session = null }: PublicMobileMenuProps) {
   const [open, setOpen] = useState(false);
   const toggleRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const closeMenu = () => setOpen(false);
+  const dismissMenu = () => {
+    setOpen(false);
+    toggleRef.current?.focus({ preventScroll: true });
+  };
   useEffect(() => {
     if (!open) return;
+    closeRef.current?.focus({ preventScroll: true });
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        event.preventDefault();
         setOpen(false);
-        toggleRef.current?.focus();
+        toggleRef.current?.focus({ preventScroll: true });
       }
     };
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.target instanceof Node && !panelRef.current?.contains(event.target) && !toggleRef.current?.contains(event.target)) setOpen(false);
+    };
     document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
   }, [open]);
 
   return (
     <div className="mobile-public-menu">
-      <button
+      <ActionButton
         type="button"
         className="mobile-menu-toggle"
         ref={toggleRef}
@@ -55,9 +72,13 @@ export function PublicMobileMenu({ hasUserSession = false, hasAdminSession = fal
       >
         <span className="mobile-menu-icon" aria-hidden="true"><i /><i /><i /></span>
         <span>Menú</span>
-      </button>
+      </ActionButton>
       {open && (
-        <div id="public-mobile-navigation" className="mobile-menu-panel" role="navigation" aria-label="Navegación principal">
+        <div id="public-mobile-navigation" ref={panelRef} className="mobile-menu-panel" role="navigation" aria-label="Navegación principal">
+          <div className="mobile-menu-heading">
+            <span>Navegación</span>
+            <ActionButton type="button" className="mobile-menu-close" ref={closeRef} aria-label="Cerrar menú principal" onClick={dismissMenu}><ActionIcon name="close" /></ActionButton>
+          </div>
           <div className="mobile-menu-directory-extra">
             <p>DIRECTORIO</p>
             <Link href="/agencias" onClick={closeMenu}>Agencias</Link>
@@ -78,8 +99,8 @@ export function PublicMobileMenu({ hasUserSession = false, hasAdminSession = fal
           </div>}
           {(hasUserSession || hasAdminSession) && <div className="mobile-menu-session-actions">
             <p>SESIÓN</p>
-            {hasUserSession && <form action="/api/auth/session/logout" method="post"><button type="submit">Cerrar sesión</button></form>}
-            {hasAdminSession && <form action="/api/auth/logout" method="post"><button type="submit">Cerrar sesión administrador</button></form>}
+            {hasUserSession && <form action="/api/auth/session/logout" method="post"><ActionButton type="submit">Cerrar sesión</ActionButton></form>}
+            {hasAdminSession && <form action="/api/auth/logout" method="post"><ActionButton type="submit">Cerrar sesión administrador</ActionButton></form>}
           </div>}
         </div>
       )}

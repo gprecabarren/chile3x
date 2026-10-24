@@ -1,3 +1,4 @@
+import { ActionButton } from "@/app/ActionButton";
 import type { Metadata } from "next";
 import Link from "@/app/NavigationLink";
 import { cookies } from "next/headers";
@@ -28,7 +29,7 @@ export default async function ReactivateAccountPage({ searchParams }: { searchPa
     {intent.adminDisabledAt ? <div className="form-alert" role="alert"><strong>La cuenta también está bloqueada por Chile3X.</strong><p>Solo la administración puede retirar ese bloqueo. Contáctanos para solicitar una revisión.</p><Link href="/contacto">Ir a Contacto</Link></div> : <form action="/api/auth/reactivate" method="post" className="auth-form">
       <input name="return_to" type="hidden" value={returnTo} />
       <label className="auth-check"><input name="confirm" type="checkbox" value="yes" required />Sí, quiero restablecer mi cuenta y volver a acceder.</label>
-      <button className="button button-primary" type="submit">Restablecer cuenta</button>
+      <ActionButton className="button button-primary" type="submit">Restablecer cuenta</ActionButton>
       <Link className="button button-outline" href="/ingresar">No, mantenerla deshabilitada</Link>
     </form>}
   </section></main>;

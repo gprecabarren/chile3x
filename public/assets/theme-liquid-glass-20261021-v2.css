@@ -1,0 +1,170 @@
+/* Opt-in stylesheet: emitted by the server only for Liquid Glass. Shared
+   structure stays in the base CSS. No scripts, fonts, filters over photos,
+   animated refraction, transforms or extra stacking contexts on toolbars. */
+:root[data-visual-theme="liquid-glass"] {
+  color-scheme:dark;
+  --glass-surface:rgba(20,27,41,.82);
+  --glass-chrome-start:rgba(27,34,49,.94);
+  --glass-chrome-end:rgba(11,15,24,.92);
+  --glass-control:rgba(24,33,50,.82);
+  --glass-input:rgba(17,26,40,.88);
+  --glass-select:rgba(22,32,48,.86);
+  --glass-city:rgba(25,35,52,.80);
+  --glass-primary-start:rgba(193,39,70,.94);
+  --glass-primary-end:rgba(143,16,42,.92);
+  --glass-border:rgba(185,204,233,.27);
+  --glass-highlight:inset 0 1px 0 rgba(255,255,255,.12);
+  --glass-depth:0 8px 24px rgba(0,0,0,.22);
+  --line:rgba(170,192,222,.24);
+  --muted:#b8c4d7;
+}
+:root[data-visual-theme="liquid-glass"] body {
+  background-color:#080b12;
+  background-image:radial-gradient(ellipse at 14% 0,rgba(137,24,54,.14),transparent 50%),radial-gradient(ellipse at 86% 0,rgba(78,104,153,.10),transparent 55%);
+  background-size:100% 820px;
+  background-repeat:no-repeat;
+}
+
+/* Alpha colors expose a little of the backdrop without blur, container
+   opacity, filters, extra layers or JavaScript. Text/images stay fully opaque.
+   Overlays remain opaque so the content behind cannot compete. */
+:root[data-visual-theme="liquid-glass"] :is(.public-header,.admin-toolbar,.account-toolbar,.home-preview-toolbar) {
+  background:linear-gradient(125deg,var(--glass-chrome-start),var(--glass-chrome-end));
+  border-color:var(--glass-border);
+  box-shadow:var(--glass-highlight),0 5px 18px #0003;
+}
+:root[data-visual-theme="liquid-glass"] :is(.admin-sidebar,.account-sidebar,.mobile-menu-panel,.portal-whatsapp-panel) {
+  background:linear-gradient(145deg,#1b2232,#0e1420 75%);
+  border-color:var(--glass-border);
+  box-shadow:var(--glass-highlight),0 12px 30px #0005;
+}
+:root[data-visual-theme="liquid-glass"] :is(.admin-workspace,.account-workspace) { background-color:#0b0f18; }
+:root[data-visual-theme="liquid-glass"] :is(.brand img,.public-footer-logo img,.official-chile3x-logo) { border-radius:var(--corner-12); }
+:root[data-visual-theme="liquid-glass"] :is(.directory-filters,.home-discovery-controls > .home-location-summary,.home-city-directory,.region-card,.public-profile-card,.account-story-card,.account-stories-empty,.admin-account-card,.admin-home-layout-option,.admin-settings-section,.bug-report-list > article,.account-panel,.profile-description,.profile-services,.profile-reviews) {
+  background:linear-gradient(135deg,rgba(255,255,255,.045),rgba(255,255,255,0) 65%),var(--glass-surface);
+  border-color:var(--glass-border);
+  box-shadow:var(--glass-highlight),var(--glass-depth);
+}
+:root[data-visual-theme="liquid-glass"] :is(.home-city-directory,.region-card,.directory-filters) { border-radius:var(--corner-18); }
+:root[data-visual-theme="liquid-glass"] .home-discovery-controls > .home-location-summary { border-left-color:#e5637e; }
+
+/* Shared action classes keep existing dimensions, icons and semantic colors. */
+:root[data-visual-theme="liquid-glass"] :is(.button,.home-city-trigger,.quick-filter-apply,.quick-filter-clear,.home-city-all,.header-menu-toggle,.mobile-menu-close,.directory-city-close,.admin-sidebar-toggle,.account-sidebar-toggle,.admin-testing-tabs > a,.admin-review-tabs > a) {
+  border-radius:var(--corner-12);
+  box-shadow:var(--glass-highlight),0 4px 12px #0003;
+  text-shadow:none;
+  transition:background-color 120ms ease,border-color 120ms ease,color 120ms ease;
+}
+:root[data-visual-theme="liquid-glass"] :is(.button-outline,.quick-filter-clear,.home-city-all,.header-menu-toggle,.mobile-menu-close,.directory-city-close,.admin-sidebar-toggle,.account-sidebar-toggle,.admin-testing-tabs > a,.admin-review-tabs > a) {
+  background:linear-gradient(155deg,#ffffff0f,#ffffff02),var(--glass-control);
+  border-color:#8a9fbe66;
+  color:#eef3fc;
+}
+:root[data-visual-theme="liquid-glass"] :is(.button-primary,.quick-filter-apply,.home-city-trigger) {
+  background:linear-gradient(155deg,var(--glass-primary-start),var(--glass-primary-end));
+  border-color:#ff9ca580;
+  color:#fff;
+  box-shadow:inset 0 1px 0 #ffffff26,0 5px 14px #58051a55;
+}
+:root[data-visual-theme="liquid-glass"] :is(.admin-testing-tabs > a[aria-current="page"],.admin-review-tabs > a[aria-current="page"],.admin-sidebar a.is-current,.account-sidebar a.is-current) {
+  background:linear-gradient(145deg,#ffffff12,#ffffff03),#2b374c;
+  border-color:#98accd99;
+  color:#fff;
+}
+:root[data-visual-theme="liquid-glass"] :is(.button,.quick-filter-apply,.home-city-trigger):is(:disabled,[aria-disabled="true"]) {
+  background:#252d3b;
+  color:#bbc4d2;
+  border-color:#606c80;
+  box-shadow:none;
+  opacity:1;
+}
+
+/* Native selects stay native: retain their arrow, label, sizing and mobile
+   keyboard behavior. Options use an opaque background, never transparent. */
+:root[data-visual-theme="liquid-glass"] select {
+  background-color:var(--glass-select) !important;
+  color:#f2f5fc !important;
+  border-color:#8fa2c166 !important;
+  border-radius:var(--corner-11) !important;
+  box-shadow:inset 0 1px 0 #ffffff12,0 3px 10px #0002 !important;
+  color-scheme:dark;
+}
+:root[data-visual-theme="liquid-glass"] :is(option,optgroup) { background-color:#131d2c; color:#f2f5fc; }
+:root[data-visual-theme="liquid-glass"] select:disabled { background-color:#1b2431 !important; color:#aab5c7 !important; border-color:#536178 !important; opacity:1; }
+:root[data-visual-theme="liquid-glass"] :is(textarea,input:not([type]),input[type="text"],input[type="search"],input[type="email"],input[type="password"],input[type="url"],input[type="tel"],input[type="number"],input[type="date"]) {
+  color:#edf2fc !important;
+  background-color:var(--glass-input) !important;
+  border-color:#7c91b466 !important;
+  border-radius:var(--corner-10);
+  box-shadow:inset 0 1px 2px #0004;
+  font-weight:400 !important;
+}
+:root[data-visual-theme="liquid-glass"] :is(input,textarea)::placeholder { color:#aab8cd; opacity:1; }
+:root[data-visual-theme="liquid-glass"] :is(button,a,input,select,textarea,summary):focus-visible { outline:2px solid #ffa3b7; outline-offset:3px; }
+
+/* City controls share a visual language across both home layouts, the
+   location picker, regional links and directory filters. No layout changes. */
+:root[data-visual-theme="liquid-glass"] :is(.home-city-directory-links > a,.home-city-regions section a,.region-cities a,.directory-city-options button,.directory-city-bar summary,.quick-filter-age > summary) {
+  color:#edf3ff;
+  border:1px solid #a0b4d34d;
+  border-radius:var(--corner-12);
+  background:linear-gradient(150deg,#ffffff0c,#ffffff02),var(--glass-city);
+  box-shadow:var(--glass-highlight),0 3px 9px #0002;
+}
+:root[data-visual-theme="liquid-glass"] .home-location-symbol {
+  color:#ffadbe;
+  border-color:#dd81986b;
+  background:linear-gradient(145deg,#ffffff15,transparent),#382131;
+  box-shadow:var(--glass-highlight);
+}
+:root[data-visual-theme="liquid-glass"] .home-city-selector {
+  background:linear-gradient(145deg,#1e293a,#111a28);
+  border-color:#8ca1c15c;
+  border-radius:var(--corner-15);
+  box-shadow:var(--glass-highlight),var(--glass-depth);
+}
+:root[data-visual-theme="liquid-glass"] :is(.directory-city-popover,.quick-filter-age-popover) {
+  background:linear-gradient(140deg,#202c40,#141e2f);
+  border-color:#98acca73;
+  border-radius:var(--corner-16);
+  box-shadow:var(--glass-highlight),0 18px 40px #0008;
+}
+:root[data-visual-theme="liquid-glass"] .directory-city-options button.is-selected {
+  color:#fff;
+  background:linear-gradient(155deg,#8f2940,#551e30);
+  border-color:#f599b2;
+}
+:root[data-visual-theme="liquid-glass"] :is(.home-location-reset,.account-view-site,.admin-view-site) { box-shadow:none; }
+
+@media(hover:hover) {
+  :root[data-visual-theme="liquid-glass"] :is(.button-outline,.home-city-directory-links > a,.home-city-regions a,.directory-city-options button,.directory-city-bar summary,.admin-testing-tabs > a):hover:not(:disabled):not([aria-disabled="true"]) {
+    border-color:#c4d4edb3;
+    background-color:#27344b;
+    color:#fff;
+  }
+  :root[data-visual-theme="liquid-glass"] :is(.button-primary,.home-city-trigger,.quick-filter-apply):hover:not(:disabled) { background:linear-gradient(155deg,#d33858,#a01432); border-color:#ffc0cc; }
+}
+@media(max-width:760px) {
+  :root[data-visual-theme="liquid-glass"] :is(.public-profile-card,.region-card,.account-story-card) { box-shadow:var(--glass-highlight),0 4px 12px #0003; }
+}
+@media(prefers-reduced-motion:reduce) {
+  :root[data-visual-theme="liquid-glass"] :is(.button,.home-city-trigger,.quick-filter-apply,.home-city-directory-links > a,.directory-city-options button) { transition:none; }
+}
+@media(prefers-reduced-transparency:reduce) {
+  :root[data-visual-theme="liquid-glass"] {
+    --glass-surface:#141b29;
+    --glass-chrome-start:#1b2231;
+    --glass-chrome-end:#0b0f18;
+    --glass-control:#182132;
+    --glass-input:#111a28;
+    --glass-select:#162030;
+    --glass-city:#192334;
+    --glass-primary-start:#c12746;
+    --glass-primary-end:#8f102a;
+  }
+  :root[data-visual-theme="liquid-glass"] :is(.admin-sidebar,.account-sidebar,.mobile-menu-panel,.portal-whatsapp-panel) { background:#141e2f; }
+  :root[data-visual-theme="liquid-glass"] :is(.directory-city-popover,.quick-filter-age-popover) { -webkit-backdrop-filter:none; backdrop-filter:none; background:#141e2f; }
+}
+@media(forced-colors:active) {
+  :root[data-visual-theme="liquid-glass"] :is(.button,select,input,textarea,.home-city-directory-links > a,.directory-city-popover,.quick-filter-age-popover) { background:Canvas !important; color:CanvasText !important; border-color:ButtonText !important; box-shadow:none !important; -webkit-backdrop-filter:none; backdrop-filter:none; }
+}

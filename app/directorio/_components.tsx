@@ -1,3 +1,4 @@
+import { ActionButton } from "@/app/ActionButton";
 import Link from "@/app/NavigationLink";
 import Image from "next/image";
 import { publicProfileAge } from "@/lib/profile-age";
@@ -98,8 +99,8 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
           <small>{sessionSecondary}</small>
         </Link>}
         {(hasUserSession || hasAdminSession) && <div className="public-session-actions" aria-label="Sesiones activas">
-          {hasUserSession && <form action="/api/auth/session/logout" method="post"><button type="submit">Cerrar sesión</button></form>}
-          {hasAdminSession && <form action="/api/auth/logout" method="post"><button className="public-admin-logout" type="submit">Cerrar sesión administrador</button></form>}
+          {hasUserSession && <form action="/api/auth/session/logout" method="post"><ActionButton type="submit">Cerrar sesión</ActionButton></form>}
+          {hasAdminSession && <form action="/api/auth/logout" method="post"><ActionButton className="public-admin-logout" type="submit">Cerrar sesión administrador</ActionButton></form>}
         </div>}
         <PublicMobileMenu
           hasUserSession={hasUserSession}
@@ -124,6 +125,7 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
         </nav>
         <div className={`public-header-actions${hasAnySession ? " is-signed-in" : ""}`} aria-label="Acciones de cuenta">
           {!hasAnySession && <Link className="button button-outline" href="/registro">Registrarse</Link>}
+          {hasUserSession && !hasAdminSession && <Link className="button button-outline header-stories-action" href="/mi-cuenta/historias">Subir historias</Link>}
           <Link className="button button-primary" href="/ingresar?return_to=/mi-cuenta/nuevo-perfil" prefetch={false}>Publicar anuncio</Link>
         </div>
       </header>
@@ -151,7 +153,7 @@ export async function PublicFooter() {
         <div><strong>SÍGUENOS</strong><PortalContactLinks placement="footer" /></div>
         <div className="public-footer-partners"><strong>DIRECTORIOS ASOCIADOS</strong><div className="public-footer-partner-badges"><OadBadge /><AngelisNetBadge /><LaEstokadaBadge /></div></div>
       </div>
-      <div className="public-footer-bottom"><span>© {new Date().getFullYear()} Chile3X · Solo mayores de 18 años</span><span>Chile · Directorio para adultos</span></div>
+      <div className="public-footer-bottom"><span>© {new Date().getFullYear()} Chile3X · Solo mayores de 18 años</span><span className="public-footer-meta"><span>Chile · Directorio para adultos</span><a className="footer-admin-access" href="/admin" rel="nofollow">Acceso administrador</a></span></div>
     </footer>
   );
 }
@@ -176,14 +178,16 @@ export function PortalContactIcon({ kind }: { kind: "whatsapp" | "telegram" | "i
     {/* eslint-disable-next-line @next/next/no-img-element */}
     <img className="arsmate-brand-mark" src="https://arsmate.com/LOGO-CELESTE.png" alt="" width="58" height="22" />
   </>;
-  return <span className="arsmate-icon" aria-hidden="true">OF</span>;
+  // OnlyFans brand symbol (Simple Icons, CC0). Inline to avoid a remote logo
+  // request and keep the same compact, accessible contact control as Arsmate.
+  return <svg className="onlyfans-brand-mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><circle cx="16" cy="16" r="15" fill="#00AFF0" /><path transform="translate(6 6) scale(.833333)" fill="#fff" d="M24 4.003h-4.015c-3.45 0-5.3.197-6.748 1.957a7.996 7.996 0 1 0 2.103 9.211c3.182-.231 5.39-2.134 6.085-5.173 0 0-2.399.585-4.43 0 4.018-.777 6.333-3.037 7.005-5.995zM5.61 11.999A2.391 2.391 0 0 1 9.28 9.97a2.966 2.966 0 0 1 2.998-2.528h.008c-.92 1.778-1.407 3.352-1.998 5.263A2.392 2.392 0 0 1 5.61 12Zm2.386-7.996a7.996 7.996 0 1 0 7.996 7.996 7.996 7.996 0 0 0-7.996-7.996Zm0 10.394A2.399 2.399 0 1 1 10.395 12a2.396 2.396 0 0 1-2.399 2.398Z" /></svg>;
 }
 
-export async function PortalWhatsappScope({ children, advertiser }: { children: ReactNode; advertiser?: AdvertiserWhatsapp }) {
+export async function PortalWhatsappScope({ children, advertiser, showFloating = true }: { children: ReactNode; advertiser?: AdvertiserWhatsapp; showFloating?: boolean }) {
   const settings = await getSiteSettings();
   const contacts = publicWhatsappContacts(settings);
   return <FloatingWhatsappMenu contacts={contacts} title={settings.whatsapp_panel_title.slice(0, WHATSAPP_TEXT_LIMITS.title)} description={settings.whatsapp_panel_description.slice(0, WHATSAPP_TEXT_LIMITS.explanation)} buttonLabel={settings.whatsapp_button_label}
-    advertiser={advertiser} showFloating={settings.whatsapp_panel_enabled === "enabled"} icon={<PortalContactIcon kind="whatsapp" />}>
+    advertiser={advertiser} showFloating={showFloating && settings.whatsapp_panel_enabled === "enabled"} icon={<PortalContactIcon kind="whatsapp" />}>
     {children}
   </FloatingWhatsappMenu>;
 }

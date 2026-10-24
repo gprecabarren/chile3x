@@ -2,6 +2,7 @@ import { and, eq, ne } from "drizzle-orm";
 import { getDb } from "@/db";
 import { createAdminNotification } from "@/lib/admin-notifications";
 import { profileMedia, profiles } from "@/db/schema";
+import { type PhotoEditOptions } from "@/lib/photo-edit-policy";
 import { CollaborationConflict, currentRevision, guardedBatch, type ReviewVersion } from "@/lib/collaboration";
 import { validatePreparedVideo } from "@/lib/video-validation";
 import {
@@ -23,6 +24,7 @@ export async function uploadProfileMedia(input: {
   moderationStatus: "pending" | "approved";
   version?: ReviewVersion;
   adminActorId?: string;
+  processing?: PhotoEditOptions;
 }) {
   const { profileId, file, uploadKind, uploadedBy, moderationStatus } = input;
   const revision=input.version?.revision??await currentRevision(`profile:${profileId}`);
@@ -31,9 +33,11 @@ export async function uploadProfileMedia(input: {
   if (file.size > Math.max(MAX_IMAGE_BYTES, MAX_VIDEO_BYTES)) {
     throw new ProfileMediaUploadError(`El archivo supera el máximo: fotos de hasta ${MAX_IMAGE_BYTES / 1_000_000} MB y videos de hasta ${MAX_VIDEO_BYTES / 1_000_000} MB.`);
   }
-  const data = await file.arrayBuffer();
-  const imageType = detectImageType(data);
-  const videoType = imageType ? null : detectVideoType(data);
+  // Inspect only the signature for photos. R2 accepts a stream; copying the
+  // complete JPEG several times can consume the Free Worker's 10 ms budget.
+  const signature = await file.slice(0,16).arrayBuffer();
+  const imageType = detectImageType(signature);
+  const videoType = imageType ? null : detectVideoType(signature);
   if (!imageType && !videoType) throw new ProfileMediaUploadError("Solo se permiten imágenes JPEG, PNG o WebP, y videos MP4 o WebM válidos.");
   const mediaType = imageType ? "image" as const : "video" as const;
   const contentType = imageType ?? videoType!;
@@ -42,7 +46,7 @@ export async function uploadProfileMedia(input: {
     throw new ProfileMediaUploadError(imageType ? `Cada imagen debe pesar como máximo ${MAX_IMAGE_BYTES / 1_000_000} MB.` : `Cada video debe pesar como máximo ${MAX_VIDEO_BYTES / 1_000_000} MB.`);
   }
   if (videoType) {
-    try { await validatePreparedVideo(data, videoType); }
+    try { await validatePreparedVideo(await file.arrayBuffer(), videoType); }
     catch (cause) { throw new ProfileMediaUploadError(cause instanceof Error ? cause.message : "No se pudo validar el video."); }
   }
   const existing = await getProfileMedia(profileId);
@@ -60,11 +64,13 @@ export async function uploadProfileMedia(input: {
   const id = `med_${crypto.randomUUID()}`;
   const extension = imageType ? extensionForImageType(imageType) : extensionForVideoType(videoType!);
   const r2Key = `profiles/${profileId}/${id}.${extension}`;
-  try { await env.MEDIA.put(r2Key, data, {
+  try { await env.MEDIA.put(r2Key, file.stream(), {
     httpMetadata: { contentType, contentDisposition: "inline", cacheControl: "private, no-store" },
-    customMetadata: { profileId, uploadedBy, moderation: moderationStatus, mediaType, uploadKind },
+    customMetadata: { profileId, uploadedBy, moderation: moderationStatus, mediaType, uploadKind,watermark:String(input.processing?.watermark??false),blur:String(input.processing?.blur??false),photoOptions:JSON.stringify(input.processing??{watermark:false,blur:false,faceRegions:[]}) },
     storageClass: "Standard",
-  }); } catch (cause) {
+  });
+  } catch (cause) {
+    try{await env.MEDIA.delete(r2Key);}catch{/* Unreferenced objects are inspected by storage QA. */}
     const reference = `CARGA-${crypto.randomUUID().slice(0,8)}`;
     console.error("Media storage write failed", { reference, profileId, cause });
     throw new ProfileMediaUploadError(`Falló el guardado en el almacenamiento del sitio. Tu archivo no fue registrado. Código de soporte: ${reference}.`, 500);
@@ -78,7 +84,7 @@ export async function uploadProfileMedia(input: {
         // The newly uploaded photo must remain the selected cover.
         ne(profileMedia.id, id),
       ))]:[];
-    const results=await guardedBatch({key:`profile:${profileId}`,revision},[db.insert(profileMedia).values({id,profileId,mediaType,r2Key,byteSize:data.byteLength,contentType,moderationStatus,visibility:"public",isProfilePhoto:uploadKind==="profile_photo",sortOrder}),...covers,db.select({revision:profiles.revision}).from(profiles).where(eq(profiles.id,profileId))],input.adminActorId);
+    const results=await guardedBatch({...input.version,key:`profile:${profileId}`,revision},[db.insert(profileMedia).values({id,profileId,mediaType,r2Key,byteSize:file.size,contentType,moderationStatus,visibility:"public",isProfilePhoto:uploadKind==="profile_photo",sortOrder}),...covers,db.select({revision:profiles.revision}).from(profiles).where(eq(profiles.id,profileId))],input.adminActorId);
     const rows=results.at(-1);if(Array.isArray(rows)&&rows[0]&&typeof rows[0].revision==='number')savedRevision=rows[0].revision;
   } catch (cause) {
     const reference = `CARGA-${crypto.randomUUID().slice(0,8)}`;
@@ -88,11 +94,11 @@ export async function uploadProfileMedia(input: {
     if(cause instanceof CollaborationConflict)throw cause;
     throw new ProfileMediaUploadError(`Falló el registro de la foto o video en la galería. No se confirmó la carga. Código de soporte: ${reference}.`, 500);
   }
-  const totalBytes = usage.bytes + data.byteLength;
+  const totalBytes = usage.bytes + file.size;
   if (moderationStatus === "pending") await createAdminNotification({ kind: "media_uploaded", actorUserId: uploadedBy, profileId, summary: `Se recibió ${mediaType === "video" ? "un video" : "una foto"} pendiente de revisión${uploadKind === "profile_photo" ? " como foto principal" : " en la galería"}.` });
   return {
     revision:savedRevision,
-    media: { id, url: `/media/${id}`, mediaType, contentType, moderationStatus, visibility: "public" as const, isProfilePhoto: uploadKind === "profile_photo", byteSize: data.byteLength },
+    media: { id, url: `/media/${id}`, mediaType, contentType, moderationStatus, visibility: "public" as const, isProfilePhoto: uploadKind === "profile_photo", byteSize: file.size },
     quota: { bytes: totalBytes, ...getMediaQuotaState(totalBytes) },
   };
 }

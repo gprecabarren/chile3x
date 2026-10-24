@@ -1,3 +1,4 @@
+import { ActionAnchor } from "@/app/ActionButton";
 import { and, eq, isNull } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import Link from "@/app/NavigationLink";
@@ -56,14 +57,16 @@ export default async function AdminEditProfilePage({ params, searchParams }: {
   const currentHref = `${editHref}?return_to=${encodeURIComponent(backHref)}`;
   return <AdminShell user={admin}><div className="admin-content admin-profile-editor"><ReviewScope resource={`profile:${profileId}`} revision={profile.revision}>
     <AdminPageHeading eyebrow="EDICIÓN ADMINISTRATIVA" title={profile.displayName} description={`Anuncio de ${row.ownerEmail}. Guardar conserva su estado y registra el cambio en el historial administrativo.`} backHref={backHref}>
+      <div className="admin-profile-heading-actions">
       {adminHasCapability(admin, "accounts.manage") && <Link prefetch={false} className="button button-outline" href={`/admin/cuentas/${encodeURIComponent(profile.ownerId)}?return_to=${encodeURIComponent(currentHref)}`}>Ver cuenta</Link>}
       <Link className="button button-public-preview" href={profilePublicPath(profile)} target="_blank">Ver / previsualizar anuncio</Link>
+      </div>
     </AdminPageHeading>
     <nav className="profile-editor-shortcuts" aria-label="Secciones del anuncio">
-      <a className="button button-outline" href="#datos-del-anuncio">Editar datos</a>
-      {canUpload && <a className="button button-outline" href="#fotos-y-videos">Fotos y videos</a>}
-      {canReadDocuments && profile.type === "escort" && <a className="button button-outline" href="#documentos-privados">Documentos privados</a>}
-      <a className="button button-outline" href="#historias">Historias y estados</a>
+      <ActionAnchor className="button button-outline" href="#datos-del-anuncio">Editar datos</ActionAnchor>
+      {canUpload && <ActionAnchor className="button button-outline" href="#fotos-y-videos">Fotos y videos</ActionAnchor>}
+      {canReadDocuments && profile.type === "escort" && <ActionAnchor className="button button-outline" href="#documentos-privados">Documentos privados</ActionAnchor>}
+      <ActionAnchor className="button button-outline" href="#historias">Historias y estados</ActionAnchor>
       <Link className="button button-outline" href={`/admin/anuncios-publicaciones?q=${encodeURIComponent(profile.displayName)}`}>Cambiar estados del anuncio</Link>
     </nav>
     {query.notice === "saved" && <p className="admin-success" role="status">Datos guardados. El anuncio conserva su estado de publicación y verificación.</p>}

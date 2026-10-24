@@ -15,7 +15,8 @@ async function moduleUrl(path,resolve) {
  source=source.replace(/from "([^"\n]+)"/g,(_match,name)=>'from '+JSON.stringify(resolve(name)));
  return 'data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(source)).toString('base64');
 }
-const retention=await import(await moduleUrl('worker/data-retention.ts',()=>url('lib/data-retention-policy.ts')));
+const samplesUrl=await moduleUrl('worker/private-sample-cleanup.ts',()=>url('lib/private-sample-policy.ts'));
+const retention=await import(await moduleUrl('worker/data-retention.ts',name=>name.endsWith('private-sample-cleanup')?samplesUrl:url('lib/data-retention-policy.ts')));
 const policyUrl=await moduleUrl('lib/help-guide-policy.ts',()=>url('lib/admin-permissions.ts'));
 const policy=await import(policyUrl);
 const help=await import(await moduleUrl('lib/help-guides.ts',name=>name==='drizzle-orm'?import.meta.resolve(name):name==='@/db/schema'?url('db/schema.ts'):name==='@/lib/help-guide-policy'?policyUrl:stub));
@@ -30,6 +31,7 @@ function retainedFixture(beforeBatch) {
  CREATE TABLE profile_verification_files(id TEXT PRIMARY KEY,r2_key TEXT,retention_expires_at TEXT);
  CREATE TABLE data_retention_holds(id TEXT PRIMARY KEY,entity_type TEXT,entity_id TEXT);
  CREATE TABLE data_deletion_jobs(id TEXT PRIMARY KEY,r2_key TEXT UNIQUE,created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+ CREATE TABLE admin_mutation_receipts(id TEXT PRIMARY KEY,expires_at INTEGER);
  CREATE TABLE profile_reports(id TEXT PRIMARY KEY,status TEXT,updated_at TEXT);
  CREATE TABLE profile_report_evidence(id TEXT PRIMARY KEY,report_id TEXT REFERENCES profile_reports(id) ON DELETE CASCADE,r2_key TEXT);
  CREATE TABLE message_conversations(id TEXT PRIMARY KEY,last_message_at TEXT);

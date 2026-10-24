@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 export function GuideForm({ children, label }: {children:ReactNode;label:string}) {
@@ -14,5 +15,5 @@ export function GuideForm({ children, label }: {children:ReactNode;label:string}
     } catch(error){setError(error instanceof TypeError?'Revisa tu conexión y recarga las guías antes de repetir el envío.':error instanceof Error?error.message:'No se pudo guardar.');}
     finally{setBusy(false);}
   }
-  return <form className="help-guide-form" method="post" action="/api/admin/ayuda/guias" onSubmit={submit} aria-busy={busy}><fieldset disabled={busy}>{children}<button className="button button-primary" type="submit">{busy?'Guardando…':label}</button></fieldset>{error&&<p role="alert" className="form-alert">{error}</p>}</form>;
+  return <form className="help-guide-form" method="post" action="/api/admin/ayuda/guias" onSubmit={submit} aria-busy={busy}><fieldset disabled={busy}>{children}<ActionButton className="button button-primary" type="submit">{busy?'Guardando…':label}</ActionButton></fieldset>{error&&<p role="alert" className="form-alert">{error}</p>}</form>;
 }

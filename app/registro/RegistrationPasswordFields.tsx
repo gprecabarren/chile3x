@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
 import { useState } from "react";
 import { MIN_PASSWORD_LENGTH, passwordRequirementText } from "@/lib/password-policy";
@@ -9,5 +10,5 @@ function VisibilityIcon({ visible }: { visible: boolean }) {
 
 export function RegistrationPasswordFields() {
   const [visible, setVisible] = useState(false);
-  return <div className="registration-password-fields"><label>Contraseña<div className="registration-password-entry"><input name="password" type={visible ? "text" : "password"} required minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" placeholder="Mínimo 8 caracteres" /><button className="button button-outline account-password-visibility-button" type="button" onClick={() => setVisible((value) => !value)} aria-label={visible ? "Ocultar contraseñas" : "Mostrar contraseñas"} aria-pressed={visible} title={visible ? "Ocultar contraseñas" : "Mostrar contraseñas"}><VisibilityIcon visible={visible} /></button></div></label><label>Repite tu contraseña<input name="password_confirmation" type={visible ? "text" : "password"} required minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" placeholder="Repite la misma contraseña" /><small>{passwordRequirementText}</small></label></div>;
+  return <div className="registration-password-fields"><label>Contraseña<div className="registration-password-entry"><input name="password" type={visible ? "text" : "password"} required minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" placeholder="Mínimo 8 caracteres" /><ActionButton className="button button-outline account-password-visibility-button" type="button" onClick={() => setVisible((value) => !value)} aria-label={visible ? "Ocultar contraseñas" : "Mostrar contraseñas"} aria-pressed={visible} title={visible ? "Ocultar contraseñas" : "Mostrar contraseñas"}><VisibilityIcon visible={visible} /></ActionButton></div></label><label>Repite tu contraseña<input name="password_confirmation" type={visible ? "text" : "password"} required minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" placeholder="Repite la misma contraseña" /><small>{passwordRequirementText}</small></label></div>;
 }

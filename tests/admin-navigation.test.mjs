@@ -9,7 +9,9 @@ test('admin navigation keeps permissions on the server and does not replace norm
  assert.match(shell,/className="admin-home-link" href="\/admin"/);
  assert.match(shell,/href="\/admin\/correos">Historial correos<\/AdminSidebarLink>/);
  assert.match(shell,/aria-label="Ir al resumen de administración">ADMINISTRADOR<\/Link>/);
- assert.match(shell,/href="\/" aria-label="Ver sitio público Chile3X"/);
+ assert.match(shell,/href="\/" className="sidebar-return-site"/);
+ assert.match(shell,/<span aria-hidden="true">←<\/span><span>Volver al sitio web<\/span>/);
+ assert.doesNotMatch(shell,/OfficialChile3xLogo/);
  for(const counter of ['pendingCount','pendingMedia','pendingReports','pendingBugs','pendingTelegram'])assert.ok(shell.includes(`initial={${counter}}`));
  assert.match(source('app/admin/AdminPendingCount.tsx'),/chile3x:moderation-counts/);
 });

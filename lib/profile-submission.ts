@@ -6,6 +6,7 @@ import { createAdminNotification } from "@/lib/admin-notifications";
 import { hasUnlimitedEscortListings } from "@/lib/profile-limits";
 import { profileMetadataForType } from "@/lib/profile-type-metadata";
 import { profileDemographicsError } from "@/lib/profile-demographics";
+import { incompatibleProfileTags,PROFILE_TAG_COMBINATION_MESSAGE } from "@/lib/profile-tag-policy";
 import {
   additionalServices,
   compactText,
@@ -303,9 +304,7 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
 
   const tags = typeValue === "escort" ? listFromForm(formData.getAll("tags"), profileTags).filter(tag => !contentOnly || tag !== "masajes") : [];
   if (contentOnly && !tags.includes("venta-contenido")) tags.push("venta-contenido");
-  if (tags.includes("milf") && tags.includes("trans")) {
-    throw new ProfileValidationError("MILF y TRANS no se pueden combinar en un mismo perfil.");
-  }
+  if (incompatibleProfileTags(tags)) throw new ProfileValidationError(PROFILE_TAG_COMBINATION_MESSAGE);
 
   return {
     type: typeValue,
@@ -359,7 +358,7 @@ async function isProfileHandleAvailable(handle: string, currentProfileId?: strin
   return (!existing || existing.id === currentProfileId) && !accountRows[0];
 }
 
-async function resolveProfileHandle(requestedHandle: string | null, displayName: string, currentProfileId?: string) {
+export async function resolveProfileHandle(requestedHandle: string | null, displayName: string, currentProfileId?: string) {
   if (requestedHandle) {
     if (!await isProfileHandleAvailable(requestedHandle, currentProfileId)) {
       throw new ProfileValidationError(`@${requestedHandle} ya está en uso. Elige otro usuario para este anuncio.`);

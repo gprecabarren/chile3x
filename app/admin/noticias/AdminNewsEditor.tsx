@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 
 import { MAX_IMAGE_UPLOAD_BYTES } from "@/lib/image-upload-policy";
 
@@ -125,16 +126,16 @@ export function AdminNewsEditor({ initial }: { initial?: Initial }) {
       <div className="rich-news-editor">
         <span>Contenido</span>
         <div className="rich-news-toolbar" aria-label="Herramientas de edición">
-          <button type="button" onClick={() => command("formatBlock", "p")}>Párrafo</button>
-          <button type="button" onClick={() => command("bold")}><b>B</b></button>
-          <button type="button" onClick={() => command("italic")}><i>I</i></button>
-          <button type="button" onClick={() => command("underline")}><u>U</u></button>
-          <button type="button" onClick={() => command("formatBlock", "h2")}>H2</button>
-          <button type="button" onClick={() => command("formatBlock", "h3")}>H3</button>
-          <button type="button" onClick={() => command("formatBlock", "blockquote")}>Cita</button>
-          <button type="button" onClick={() => command("insertUnorderedList")}>Lista</button>
-          <button type="button" onClick={() => command("insertOrderedList")}>Numerada</button>
-          <button type="button" onClick={() => { const url = window.prompt("URL segura https://"); if (url) command("createLink", url); }}>Enlace</button>
+          <ActionButton type="button" onClick={() => command("formatBlock", "p")}>Párrafo</ActionButton>
+          <ActionButton type="button" onClick={() => command("bold")}><b>B</b></ActionButton>
+          <ActionButton type="button" onClick={() => command("italic")}><i>I</i></ActionButton>
+          <ActionButton type="button" onClick={() => command("underline")}><u>U</u></ActionButton>
+          <ActionButton type="button" onClick={() => command("formatBlock", "h2")}>H2</ActionButton>
+          <ActionButton type="button" onClick={() => command("formatBlock", "h3")}>H3</ActionButton>
+          <ActionButton type="button" onClick={() => command("formatBlock", "blockquote")}>Cita</ActionButton>
+          <ActionButton type="button" onClick={() => command("insertUnorderedList")}>Lista</ActionButton>
+          <ActionButton type="button" onClick={() => command("insertOrderedList")}>Numerada</ActionButton>
+          <ActionButton type="button" onClick={() => { const url = window.prompt("URL segura https://"); if (url) command("createLink", url); }}>Enlace</ActionButton>
           <label>{busy ? "Subiendo…" : "Imagen"}<input ref={imageInput} type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => upload(event.target.files?.[0], false)} /></label>
         </div>
         <div ref={editor} className="rich-news-content" contentEditable suppressContentEditableWarning onInput={sync} dangerouslySetInnerHTML={{ __html: initial?.contentHtml ?? "<p>Escribe aquí la noticia.</p>" }} />
@@ -144,9 +145,9 @@ export function AdminNewsEditor({ initial }: { initial?: Initial }) {
     <aside className="admin-news-sidebar">
       <label>Estado<select name="status" defaultValue={initial?.status ?? "draft"}><option value="draft">Borrador</option><option value="published">Publicada</option></select></label>
       <div className="news-cover-uploader"><span>Imagen de portada</span>{coverUrl && <Image src={coverUrl} alt="Portada actual" width={640} height={360} unoptimized />}<label>{busy ? "Subiendo…" : "Elegir portada"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => upload(event.target.files?.[0], true)} /></label><input type="hidden" name="cover_media_id" value={coverId} /></div>
-      <details open><summary>SEO de la noticia</summary><button className="button button-outline news-seo-auto" type="button" onClick={autoCompleteSeo}>Generar propuesta SEO</button><label>Título SEO<input name="seo_title" maxLength={70} defaultValue={initial?.seoTitle ?? ""} /></label><label>Meta descripción<textarea name="meta_description" maxLength={170} rows={3} defaultValue={initial?.metaDescription ?? ""} /></label><label>Palabra clave<input name="focus_keyword" maxLength={100} defaultValue={initial?.focusKeyword ?? ""} /></label><label>URL canónica<input name="canonical_url" type="url" maxLength={500} defaultValue={initial?.canonicalUrl ?? ""} /></label><label>Open Graph título<input name="og_title" maxLength={100} defaultValue={initial?.ogTitle ?? ""} /></label><label>Open Graph descripción<textarea name="og_description" maxLength={200} rows={3} defaultValue={initial?.ogDescription ?? ""} /></label><label className="check-label"><input name="noindex" type="checkbox" defaultChecked={initial?.noindex} /> No indexar</label></details>
-      <button className="button button-primary" disabled={busy}>{initial ? "Guardar noticia" : "Crear noticia"}</button>
-      {initial && <button className="button button-outline" name="action" value="delete" formNoValidate onClick={(event) => { if (!window.confirm("¿Eliminar esta noticia?")) event.preventDefault(); }}>Eliminar</button>}
+      <details open><summary>SEO de la noticia</summary><ActionButton className="button button-outline news-seo-auto" type="button" onClick={autoCompleteSeo}>Generar propuesta SEO</ActionButton><label>Título SEO<input name="seo_title" maxLength={70} defaultValue={initial?.seoTitle ?? ""} /></label><label>Meta descripción<textarea name="meta_description" maxLength={170} rows={3} defaultValue={initial?.metaDescription ?? ""} /></label><label>Palabra clave<input name="focus_keyword" maxLength={100} defaultValue={initial?.focusKeyword ?? ""} /></label><label>URL canónica<input name="canonical_url" type="url" maxLength={500} defaultValue={initial?.canonicalUrl ?? ""} /></label><label>Open Graph título<input name="og_title" maxLength={100} defaultValue={initial?.ogTitle ?? ""} /></label><label>Open Graph descripción<textarea name="og_description" maxLength={200} rows={3} defaultValue={initial?.ogDescription ?? ""} /></label><label className="check-label"><input name="noindex" type="checkbox" defaultChecked={initial?.noindex} /> No indexar</label></details>
+      <ActionButton className="button button-primary" disabled={busy}>{initial ? "Guardar noticia" : "Crear noticia"}</ActionButton>
+      {initial && <ActionButton className="button button-outline" name="action" value="delete" formNoValidate onClick={(event) => { if (!window.confirm("¿Eliminar esta noticia?")) event.preventDefault(); }}>Eliminar</ActionButton>}
       {notice && <p role="status">{notice}</p>}
     </aside>
   </form>;

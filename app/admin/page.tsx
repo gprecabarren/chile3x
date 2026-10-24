@@ -142,7 +142,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
           <div>
             {adminHasCapability(admin, "news.manage") && <Link href="/admin/noticias" prefetch={false}>Administrar noticias <b>→</b></Link>}
             {adminHasCapability(admin, "reports.manage") && <Link href="/admin/reportes" prefetch={false}>Atender reportes <b>→</b></Link>}
-            {adminHasCapability(admin, "bugs.manage") && <Link href="/admin/bugs" prefetch={false}>Revisar pruebas <b>→</b></Link>}
+            {adminHasCapability(admin, "bugs.manage") && <Link href="/admin/testing?seccion=bugs" prefetch={false}>Revisar pruebas <b>→</b></Link>}
             {adminHasCapability(admin, "telegram.view") && <Link href="/admin/telegram" prefetch={false}>Gestionar Telegram <b>→</b></Link>}
           </div>
         </section>}

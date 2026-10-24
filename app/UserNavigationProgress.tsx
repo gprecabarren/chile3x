@@ -1,4 +1,5 @@
 "use client";
+import { ActionButton } from "@/app/ActionButton";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { USER_NAVIGATION_START } from "@/lib/user-navigation-progress";
@@ -32,6 +33,6 @@ export function UserNavigationProgress({ enabled }: { enabled: boolean }) {
   return <div className="user-navigation-progress" role="status" aria-live="polite">
     <span className="route-loading-hearts" aria-hidden="true"><i>♥</i><i>♥</i></span>
     <div><strong>{slow ? "La carga está tardando más de lo habitual" : "Cargando…"}</strong><span>{slow ? "Puedes seguir esperando. Evita repetir la misma acción." : "Estamos abriendo la sección que elegiste."}</span></div>
-    {slow && <button type="button" onClick={reset} aria-label="Cerrar aviso de carga">×</button>}
+    {slow && <ActionButton type="button" onClick={reset} aria-label="Cerrar aviso de carga">×</ActionButton>}
   </div>;
 }

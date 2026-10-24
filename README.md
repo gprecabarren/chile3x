@@ -4,6 +4,402 @@ Chile3X es un directorio nacional para adultos en Chile. Reúne anuncios de Esco
 
 El proyecto está construido para operar en Cloudflare con Workers, D1 y R2, sin depender de WordPress ni de un hosting tradicional.
 
+<!-- TECHNICAL_HANDOFF_START -->
+## Guía técnica de traspaso — 24 de octubre de 2026
+
+Esta sección reúne la arquitectura general, navegación, configuración, seguridad, criterios visuales, pruebas e historial técnico necesario para continuar el mantenimiento. El historial anterior se conserva más abajo, sin borrar notas ni decisiones previas.
+
+**Alcance real:** es una revisión dirigida de los puntos de entrada y contratos compartidos, acompañada de un inventario de archivos versionados y del historial de Git. **No es una auditoría exhaustiva línea por línea**, una certificación de seguridad ni una especificación de todos los procedimientos operativos del negocio. La presencia de una pantalla o un endpoint no demuestra que una integración esté activada o funcionando en producción.
+
+**Base de referencia:** `fec81918fea48b853535e30baae921f907d141d5` (`fec8191`). El inventario histórico de ese commit tiene 887 archivos versionados, 83 páginas `page.tsx`, 121 manejadores `app/api/**/route.ts`, 64 migraciones SQL y 87 archivos `tests/*.test.mjs`. Se inspeccionaron los mensajes de los 257 commits alcanzables desde esa base; no se revisaron los diffs completos de los 257 commits. Estos números no incluyen archivos locales sin seguimiento y no son una promesa de cobertura funcional.
+
+Al preparar esta guía había cambios locales ajenos al README, incluidos archivos del formulario, estilos, pruebas y documentos todavía sin confirmar. **No se incorporan ni se publican por el hecho de añadir esta documentación.** Ver siempre `git status` y `git diff` antes de continuar; una copia local con cambios no es idéntica al código desplegado.
+
+### Índice del traspaso
+
+- [Cómo usar esta guía y qué es fuente de verdad](#handoff-fuentes)
+- [Arquitectura, dependencias y árbol de carpetas](#handoff-arquitectura)
+- [Mapa de superficies públicas y paneles](#handoff-superficies)
+- [Sesiones, permisos y límites de confianza](#handoff-seguridad)
+- [Configuración, contenido y metadatos](#handoff-configuracion)
+- [Temas, tipografía y responsividad](#handoff-interfaz)
+- [Escrituras, concurrencia y respuestas inciertas](#handoff-concurrencia)
+- [Caché, recursos y rendimiento](#handoff-cache)
+- [Desarrollo, pruebas y despliegue](#handoff-desarrollo)
+- [Persistencia, integraciones y recuperación](#handoff-respaldo)
+- [Historia desde el inicio y cambios recientes](#handoff-historia)
+- [Comprobaciones de esta documentación y pendientes](#handoff-cobertura)
+
+<a id="handoff-fuentes"></a>
+### 1. Cómo usar esta guía y qué es fuente de verdad
+
+Para otra persona desarrolladora o un agente de IA:
+
+1. Leer [AGENTS.md](AGENTS.md) completo antes de editar. Contiene las reglas de ambos temas, controles compartidos y composición móvil/escritorio.
+2. Identificar rama, commit y cambios locales. No resetear, sobrescribir, limpiar ni incluir trabajo ajeno en un commit.
+3. Leer el archivo de la ruta afectada, sus dependencias directas y sus pruebas; no deducir una regla actual solo por una nota histórica.
+4. Diferenciar **código implementado**, **valor predeterminado**, **valor guardado en D1**, **secreto configurado** y **función verificada en un despliegue concreto**.
+5. Trabajar con fixtures locales desechables. No crear cuentas reales, exportar datos personales, cambiar planes ni ejecutar eliminaciones o migraciones remotas como prueba.
+6. Mantener las verificaciones de servidor. Un botón oculto, un campo deshabilitado o `noindex` no son controles de autorización.
+7. Entregar cambios acotados con pruebas y límites explícitos; no prometer que se revisó todo el repositorio si solo se inspeccionó una parte.
+
+Orden de referencia: código del commit revisado + migraciones + configuración efectiva del entorno → pruebas y evidencia fechada → esta guía → notas históricas. Las notas de una entrega son evidencia de aquella entrega, no del estado permanente del servicio.
+
+No copiar al README tokens, cookies, contraseñas, documentos privados, volcados SQL, claves de cifrado, archivos de credenciales ni registros con datos personales. El repositorio puede ser público. Los identificadores de recursos no sustituyen credenciales, pero tampoco hace falta repetirlos en documentación narrativa.
+
+<a id="handoff-arquitectura"></a>
+### 2. Arquitectura, dependencias y árbol de carpetas
+
+Versiones fijadas en [package.json](package.json), no sugerencias de actualización:
+
+| Pieza | Referencia de esta base | Función técnica |
+| --- | --- | --- |
+| Node.js | `>=22.13.0` | Herramientas, compilación y scripts locales. |
+| Gestor | `pnpm@9.15.5` | Instalación reproducible con lockfile. |
+| React / React DOM | `19.2.8` | Componentes y renderizado. |
+| API de Next | `16.3.8` | Convenciones App Router, componentes y APIs utilizadas por el código. |
+| Vinext / Vite | `0.0.50` / `8.0.16` | Adaptación y compilación para el runtime configurado. No asumir un despliegue estándar de Next en Node o Vercel. |
+| TypeScript | `5.9.3` | Contratos estáticos. |
+| Drizzle ORM | `0.45.2` | Consultas SQLite sobre D1. |
+| Wrangler | `4.92.0` | CLI fijada por el proyecto. |
+
+El resto de dependencias y los once `pnpm.overrides` se consultan en el manifiesto. La resolución exacta está en [pnpm-lock.yaml](pnpm-lock.yaml). No borrar el lockfile ni quitar la instalación congelada para esconder una divergencia de configuración.
+
+```text
+app/           Páginas, layouts, componentes, manejadores HTTP y CSS
+lib/           Políticas, validaciones y servicios compartidos
+worker/        Entrada del runtime, cabeceras, caché y tareas de fondo
+db/            Acceso a D1 y esquema tipado
+drizzle/       Migraciones SQL y metadatos de migración
+public/        Recursos estáticos versionados y fuentes locales
+build/         Integración de empaquetado del proyecto
+scripts/       Comprobaciones, QA y utilidades; leer antes de ejecutar
+tests/         Pruebas automatizadas
+docs/          Decisiones, guías y evidencias de entregas
+.github/       Automatizaciones versionadas de GitHub
+.openai/       Metadatos de hosting, no almacén de secretos
+```
+
+Puntos de entrada comprobados:
+
+| Archivo | Responsabilidad |
+| --- | --- |
+| [vite.config.ts](vite.config.ts) | Plugins Vinext/Vite/Cloudflare, bindings locales y persistencia de Miniflare. |
+| [wrangler.json](wrangler.json) | Worker desplegable, recursos, cron y observabilidad. Usa `dist/server/index.js` y `dist/client`. |
+| [.openai/hosting.json](.openai/hosting.json) | Mapeo de bindings de hosting (`DB`, `MEDIA`). No contiene los datos del servicio. |
+| [build/sites-vite-plugin.ts](build/sites-vite-plugin.ts) | Empaqueta metadatos de hosting y migraciones al terminar la compilación. |
+| [worker/index.ts](worker/index.ts) | Recibe HTTP, integra renderizado y expone manejadores de cola, cron y correo. |
+| [app/layout.tsx](app/layout.tsx) | Metadatos base, CSS común, selección visual, límites de sesión y elementos globales. |
+| [db/index.ts](db/index.ts) | Obtiene el binding D1 y crea el cliente Drizzle, deduplicado por petición. |
+| [db/schema.ts](db/schema.ts) | Esquema SQL tipado; no es una copia de los datos guardados. |
+| [drizzle.config.ts](drizzle.config.ts) | Generación de migraciones SQLite desde el esquema. |
+| [cloudflare-env.d.ts](cloudflare-env.d.ts) | Declaraciones de tipos complementarias del entorno. No aporta credenciales. |
+
+Flujo HTTP general:
+
+```text
+Petición → Worker → comprobaciones de sesión / límites / presentación / caché
+         → manejador App Router → servicios y políticas → D1 o R2
+         → respuesta con cabeceras de seguridad y política de caché
+```
+
+Los componentes de cliente no pueden tratarse como una frontera de seguridad. Las decisiones sobre identidad, alcance de datos y permisos deben permanecer en servidor.
+
+<a id="handoff-superficies"></a>
+### 3. Mapa de superficies públicas y paneles
+
+Este es un inventario de navegación, no una guía operativa de creación, promoción, aprobación o conversión de anuncios. Los nombres visibles, destinos y condiciones pueden depender de la sesión, capacidades y flags del entorno.
+
+**Área pública:** portada `/`; páginas informativas `/quienes-somos`, `/faq`, `/contacto`, `/terminos`, `/privacidad` y `/reglas-de-publicacion`; noticias `/noticias` y sus artículos; `/novedades`; `/patrocinadores`; directorios y páginas territoriales; rutas públicas de detalle; acceso, registro y recuperación. `app/robots.ts` y `app/sitemap.ts` definen las salidas técnicas de rastreo. No asumir que toda ruta existente se incluye en el sitemap.
+
+**Panel administrativo:** [app/admin/_components.tsx](app/admin/_components.tsx) construye la navegación y consulta capacidades. El mapa visible incluye:
+
+| Sección | Área o ruta de navegación |
+| --- | --- |
+| Resumen | `/admin` |
+| Anuncios | `/admin/anuncios-publicaciones` |
+| Muestras privadas | Sección condicional; depende de flags y permisos. |
+| Medios | `/admin/medios` |
+| Reseñas | `/admin/resenas` |
+| Reportes | `/admin/reportes` |
+| Testing | `/admin/testing` |
+| Cuentas | `/admin/cuentas` |
+| Contenido del sitio | `/admin/contenido` |
+| Telegram | `/admin/telegram` |
+| Actividad | `/admin/actividad` |
+| Historial correos | `/admin/correos` |
+| Configuración | `/admin/configuracion` |
+| Administradores | `/admin/administradores`, no disponible para todos los niveles. |
+| Ayuda / foro beta | Visibilidad y acceso sujetos a la configuración y autorización existentes. |
+
+Las tarjetas, avisos y contadores del menú no constituyen autorización. Los accesos directos también deben comprobarse en la página y su API correspondiente.
+
+**Cuenta normal:** [app/mi-cuenta/_components.tsx](app/mi-cuenta/_components.tsx) construye las secciones Mi cuenta, Mis anuncios, Historias, Mensajes, Mi contenido, Mis datos, Favoritos y comentarios, Mis reportes, Telegram, Mis pruebas, Anuncios ocultos y Ayuda. Mis pruebas depende del rol `tester` y Ayuda de su flag. Favoritos y comentarios comparten navegación visual, pero no necesariamente una única URL o consulta. La identidad de la cuenta y la identidad de un registro publicado son entidades diferentes.
+
+No confundir los roles de cuenta con los niveles administrativos. Tampoco confundir acceso GitHub al repositorio con acceso administrativo dentro de la aplicación.
+
+<a id="handoff-seguridad"></a>
+### 4. Sesiones, permisos y límites de confianza
+
+Referencias: [lib/auth.ts](lib/auth.ts), [lib/session-policy.ts](lib/session-policy.ts), [worker/session-isolation.ts](worker/session-isolation.ts), [lib/admin-permissions.ts](lib/admin-permissions.ts), [lib/safe-return-to.ts](lib/safe-return-to.ts).
+
+- La cuenta pública y la sesión administrativa tienen cookies distintas. La política de navegador detecta identidades simultáneas o cookies duplicadas en lugar de elegir arbitrariamente una.
+- Las cookies de sesión se configuran `HttpOnly`, `Secure`, `SameSite=Lax` y con alcance de ruta. La cookie de coordinación del navegador no es por sí sola una credencial.
+- `getCurrentAdmin()` exige una identidad administrativa y consulta la autorización vigente en D1; una sesión previa no debe conservar privilegios revocados.
+- `getCurrentUser()` y la identidad restringida para recuperación/verificación no son intercambiables. El bloqueo por verificación de correo se comprueba también en servidor.
+- Las mutaciones que usan `assertSameOrigin()` comparan el origen con el de la petición. Esta comprobación no reemplaza autenticación, autorización ni validación del cuerpo.
+- Las rutas de retorno se normalizan mediante las funciones `safeAdminReturnTo` y `safeAccountReturnTo`; no aceptar una URL externa enviada por el cliente.
+- La autorización administrativa usa capacidades, no solo el nombre visible del nivel. `admins.manage` exige además la condición de propietario protegido.
+- Existen niveles `owner`, `administrator`, `moderator`, `editor` y `support`. La matriz exacta está en el archivo de permisos; no duplicarla en componentes con listas independientes.
+- Los proveedores de identidad y Turnstile necesitan validación de servidor y configuración externa. Que exista un botón no prueba que el proveedor esté habilitado.
+
+El Worker configura HSTS, `nosniff`, protección de marcos, política de referencia, COOP y CSP. No sustituir esa política por comodines para resolver una integración. La excepción de WebAssembly es acotada; no equivale a habilitar evaluación arbitraria de JavaScript.
+
+Las áreas privadas llevan restricciones de caché e indexación. **`noindex` no vuelve privado un documento**; el control de acceso sigue siendo obligatorio. Las rutas de archivos requieren sus verificaciones de acceso y no deben sustituirse por un bucket público.
+
+Estas son propiedades observadas del diseño, no una conclusión de que no existan vulnerabilidades. Los documentos de identidad, datos de salud, mensajes y evidencias requieren especial cuidado; no copiarlos a incidencias públicas, capturas, fixtures ni conversaciones con otras herramientas.
+
+<a id="handoff-configuracion"></a>
+### 5. Configuración, contenido y metadatos
+
+Referencias: [lib/site-settings.ts](lib/site-settings.ts), [lib/admin-content-navigation.ts](lib/admin-content-navigation.ts), [app/admin/contenido/seo/SeoSettingsHelp.tsx](app/admin/contenido/seo/SeoSettingsHelp.tsx).
+
+`siteSettingDefaults` contiene respaldos de instalación, **no necesariamente los valores efectivos del sitio**. Los cambios administrativos se guardan en D1. No reescribir una buena configuración pública para que coincida con el código predeterminado.
+
+Contenido del sitio está dividido en dos grupos visuales: **Textos e imágenes** y **SEO y buscadores**. El índice principal no es otra pestaña equivalente a sus hijos; el selector activo elige la ruta más específica. La versión móvil utiliza un selector nativo agrupado.
+
+| Editor general | Responsabilidad y límites |
+| --- | --- |
+| Inicio · dos diseños | Valores de texto y metadatos de cada diseño, separados dentro del formulario. No activa por sí mismo otro tema. |
+| Noticias | Editor de artículos y sus metadatos; conserva identidad y URL del artículo. |
+| Sitios asociados | Contenido, imágenes y agrupaciones de esa sección. |
+| Términos y privacidad | Cuerpo legal por secciones, con borradores y versiones. No confundir con metadatos. |
+| FAQ y reglas | Texto visible de preguntas, respuestas y reglas. |
+| SEO global e identidad | Respaldos generales, identidad e indexación global. |
+| SEO por página | Metadatos de las seis páginas informativas admitidas. No es un editor libre de cualquier ruta. |
+
+El cuerpo visible de Quiénes somos no tiene un editor equivalente al de metadatos en la entrega de referencia; su presencia en SEO por página **no significa que se pueda editar allí todo su contenido**. Consultar el componente público antes de prometer esa función.
+
+Prioridad de metadatos que no debe confundirse:
+
+- `/` utiliza los textos SEO del **diseño de Home activo**. Sus metadatos propios tienen prioridad sobre el título y descripción globales.
+- El título global es un respaldo para páginas sin título propio; no es un segundo título del Home.
+- El H1 y los párrafos visibles son campos/contenidos distintos del título de pestaña y la descripción para buscadores.
+- La indexación global es una política diferente de los textos de respaldo y sí afecta a la portada. Desactivarla no sustituye permisos de acceso.
+- El editor informativo permite Contacto, FAQ, Términos, Privacidad, Reglas y Quiénes somos; la consulta de Inicio enlaza a su editor específico.
+- Al abrir el editor se cargan los valores efectivos. Quitar una personalización recupera el respaldo de esa página o documento, que no tiene por qué coincidir con el título global.
+
+Referencias de implementación: [lib/information-seo-policy.ts](lib/information-seo-policy.ts), [lib/information-seo.ts](lib/information-seo.ts), [app/admin/contenido/seo/paginas/InformationSeoEditor.tsx](app/admin/contenido/seo/paginas/InformationSeoEditor.tsx).
+
+El puntaje existente es **completitud técnica**, no Rank Math ni una predicción de posiciones. Revisa ocho condiciones de igual peso: título, descripción, canónica estable, HTTPS, título social, descripción social, ruta de imagen admitida y ALT. Un `noindex` intencional no resta puntos. Una ruta permitida puede puntuar aunque el archivo falle al cargar; el error de carga se controla por separado. No hay análisis de palabras clave, densidad, calidad o legibilidad del contenido, ni ese puntaje en todos los formularios globales y de Home.
+
+Canónicas, rutas, sitemap y datos estructurados siguen controlados por el sitio. Las imágenes sociales del editor informativo son recursos raster estáticos del mismo origen; no permite rutas locales del PC, SVG, medios privados ni un servicio de subida integrado.
+
+<a id="handoff-interfaz"></a>
+### 6. Temas, tipografía y responsividad
+
+**Dos ejes independientes:** diseño de Home `classic` / `compact` y tema global `classic` / `liquid-glass`. No crear cuatro URLs públicas ni usar selección solo de cliente para representar esas combinaciones.
+
+La presentación la fija el servidor: [worker/site-presentation.ts](worker/site-presentation.ts) prepara cabeceras y revisión de contenido; [lib/home-layout-policy.ts](lib/home-layout-policy.ts) y [lib/site-theme-policy.ts](lib/site-theme-policy.ts) normalizan valores; el layout renderiza la variante correspondiente. Los encabezados suministrados por un visitante no deben escoger una variante interna de caché.
+
+| Recurso compartido | Uso |
+| --- | --- |
+| [app/globals.css](app/globals.css) | Base, fuente y reglas heredadas compartidas. |
+| [app/corner-tokens.css](app/corner-tokens.css) | Radios con escala compartida; no aplicarla dos veces. |
+| [app/ActionButton.tsx](app/ActionButton.tsx) | `ActionButton` / `ActionAnchor`; mantener semántica, etiquetas y handlers. |
+| [app/action-controls.css](app/action-controls.css) y [app/modern-controls.css](app/modern-controls.css) | Controles y herencia tipográfica común. |
+| [app/panel-controls.css](app/panel-controls.css) | Estilo de controles de los paneles. |
+| [app/public-controls.css](app/public-controls.css) | Controles del área pública. |
+| [app/public-reading.css](app/public-reading.css) | Lectura de páginas informativas, sin aplicar su escala al header. |
+| [app/public-desktop.css](app/public-desktop.css) | Composición pública amplia, principalmente desde 1100 px. |
+| [app/public-mobile.css](app/public-mobile.css) | Correcciones móviles por debajo de 860 px. |
+
+La fuente global es **DM Sans autohospedada**, familia CSS `DM Sans Chile3X`, con archivo en `public/fonts/`. `--font-site`, `--font-panel` y `--font-display` están unificados. `body *` impone esa familia; código, preformateado, teclas, muestras e IP de sesión mantienen monospace intencionalmente. Un logotipo dentro de una imagen no cambia por esa regla. El archivo histórico de Manrope no demuestra que siga siendo la fuente activa. Tamaños, pesos y cursivas diferentes pueden dar sensación de otra fuente aun siendo la misma familia.
+
+El CSS de Liquid Glass se enlaza **solo** en ese tema. La referencia actual es `GLASS_STYLESHEET` en la política de tema; un cambio en un asset ya desplegado exige nuevo nombre versionado y actualización de esa referencia. No importarlo globalmente ni precargarlo cuando el tema clásico está activo.
+
+Invariantes visuales:
+
+- Menús sin desplazamiento horizontal para ocultar fallos de layout; reflujo antes que recorte.
+- Botones de ancho intrínseco salvo los casos móviles definidos; un texto mayor no implica agrandar todo el header.
+- No añadir blur, transformaciones o contenedores de recorte al header/sidebar que atrapen diálogos fijos.
+- Conservar foco visible, estados deshabilitados, labels y selects nativos.
+- Usar los tokens de anchura pública; el contenido de lectura puede acotar su longitud de línea sin volver a una página estrecha completa.
+- Probar ambos temas en 320/390 px y los tamaños de escritorio definidos en AGENTS.md, con textos largos, menús abiertos, teclado y escalado del navegador. La emulación en Chrome no prueba Safari en un iPhone físico.
+
+La navegación por anclas del header es temporal: se marca al activar el enlace y se limpia ante desplazamiento manual. Las rutas completas conservan su selección de página. Referencias: [app/directorio/PublicNavigationLink.tsx](app/directorio/PublicNavigationLink.tsx), [lib/anchor-navigation-highlight.ts](lib/anchor-navigation-highlight.ts).
+
+<a id="handoff-concurrencia"></a>
+### 7. Escrituras, concurrencia y respuestas inciertas
+
+Los editores administrativos comparten coordinación de revisión. Referencias: [lib/collaboration.ts](lib/collaboration.ts), [app/admin/ReviewScope.tsx](app/admin/ReviewScope.tsx), [worker/admin-mutation-response.ts](worker/admin-mutation-response.ts).
+
+- Una revisión/reserva ayuda a coordinar personas, pero no reemplaza autorización.
+- El formulario conserva la revisión leída y el servidor compara con la vigente. Las operaciones protegidas usan guardas y lote atómico; un conflicto responde `409` en vez de sobrescribir silenciosamente.
+- Algunos contratos incorporan identificadores o recibos de mutación. Su existencia en un editor no permite asumir idempotencia universal de todas las APIs.
+- Un `POST` correcto y la carga de la página destino son eventos diferentes. El adaptador administrativo puede confirmar con JSON y `redirectTo`; el cliente navega después.
+- Un timeout o error de renderizado posterior **no demuestra que no se guardó**. Mantener el borrador, consultar la versión actual y no repetir automáticamente una acción incierta.
+- Revalidar y auditar las escrituras sensibles en servidor; no aceptar campos extra solo porque el frontend no los dibuja.
+
+Este contrato es especialmente importante cuando varias pestañas o personas editan configuración al mismo tiempo.
+
+<a id="handoff-cache"></a>
+### 8. Caché, recursos y rendimiento
+
+[worker/public-cache.ts](worker/public-cache.ts) permite caché de borde solo para documentos HTML anónimos seleccionados. No comparte respuestas con cookies de sesión o `Authorization`, ni payloads RSC como si fueran HTML. La clave incorpora versión de despliegue, revisión de contenido y variantes públicas admitidas. Las respuestas al navegador vuelven a pasar por la política de caché privada/no-store; no confundir caché interna de borde con caché del navegador.
+
+Términos y Privacidad tienen exclusiones explícitas para reflejar publicaciones nuevas. Existen otras exclusiones por ruta; no ampliar la lista de páginas cacheables sin leer la función y sus pruebas. Los recursos estáticos versionados tienen una política diferente de los documentos.
+
+Lecciones de mantenimiento ya implementadas:
+
+- Evitar precarga masiva de rutas RSC desde menús; [app/NavigationLink.tsx](app/NavigationLink.tsx) controla el comportamiento común.
+- No añadir una lectura de configuración por componente ni usar caché global de identidad entre visitantes.
+- El cliente Drizzle no recibe todo el esquema para habilitar una API relacional que el proyecto no utiliza; no reintroducir trabajo síncrono innecesario en cada petición.
+- Los probes heredados de PHP/WordPress, archivos de entorno, `.git`, sourcemaps y rutas internas de desarrollo se rechazan antes del renderizado.
+- `build.sourcemap` está desactivado. Las rutas del PC y artefactos de desarrollo no deben terminar en respuestas públicas.
+- Diferenciar errores de instalación/lockfile, errores de aplicación y agotamiento de recursos. Un check de build fallido no significa que el último despliegue correcto haya desaparecido.
+
+Los límites y precios de Cloudflare cambian: consultar documentación y uso actual, no convertir una cifra de una entrega antigua en garantía permanente. No contratar ni cambiar el plan como parte automática de una corrección.
+
+<a id="handoff-desarrollo"></a>
+### 9. Desarrollo, pruebas y despliegue
+
+Comandos de proyecto, desde una copia de trabajo revisada:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm dev
+pnpm typecheck
+pnpm lint
+pnpm test
+```
+
+`pnpm test` **compila primero** y después ejecuta las pruebas de Node; no es un comando puramente lector. `pnpm build` genera `dist/`; `pnpm db:generate` genera migraciones y debe revisarse por separado. No ejecutar builds concurrentes en el mismo `dist/` ni confundir un resultado anterior con la prueba del último código modificado.
+
+Para D1 local se usa la persistencia de prueba configurada en Vite (`.wrangler/visual-state`). La preparación de una base nueva es una escritura **solo local**, no una orden para producción:
+
+```bash
+pnpm exec wrangler d1 migrations apply chile3x-db --local --persist-to .wrangler/visual-state
+```
+
+La configuración local de compatibilidad y la de despliegue no son necesariamente iguales. No cambiar la fecha de producción solo para sortear una limitación del runtime instalado en el PC.
+
+Antes de publicar: revisar diff y archivos a incluir; comprobar instalación congelada, tipos, lint, build y pruebas proporcionales; verificar migraciones pendientes sin aplicarlas por intuición; usar fixtures locales y revisar pantallas afectadas. La advertencia de lint de una entrega anterior no implica que no puedan aparecer otras nuevas.
+
+En esta base, `main` está vinculada a Workers Builds. El commit enviado y el despliegue activo deben comprobarse por separado. Un push puede disparar un despliegue: no subir trabajo ajeno ni iniciar además un deploy manual en paralelo.
+
+Comprobaciones de infraestructura de solo lectura:
+
+```bash
+pnpm exec wrangler deployments list --config wrangler.json
+pnpm exec wrangler versions view VERSION_ID --config wrangler.json
+```
+
+El script `pnpm deploy` y el comando remoto de despliegue **sí publican**. Solo usarlos con autorización y después de validar. El comando histórico de Workers Builds usa la configuración raíz con `--keep-vars`; no sustituirla por un archivo generado que duplique bindings. Que `dist/` esté excluido de Git no significa que falte código: se reconstruye en CI.
+
+La verificación mínima posterior debe incluir estado de checks, versión activa y lecturas de rutas afectadas. No copiar una captura o un resultado local como si fuera evidencia de la web publicada.
+
+<a id="handoff-respaldo"></a>
+### 10. Persistencia, integraciones y recuperación
+
+| Capa | Qué contiene | ¿Está completamente respaldada por clonar GitHub? |
+| --- | --- | --- |
+| Git | Fuente, assets estáticos, migraciones, pruebas y documentación confirmados. | Sí para esos archivos, no para trabajo local sin commit. |
+| D1 (`DB`) | Datos de aplicación, configuración efectiva, revisiones y registros. | No. El esquema y las migraciones no son los datos vivos. |
+| R2 (`MEDIA`) | Archivos subidos y objetos administrados por la aplicación. | No. Sus metadatos en D1 tampoco sustituyen los bytes. |
+| Secretos | Credenciales de OAuth, correo, bots, respaldos y otras integraciones. | No deben estar en Git; necesitan recuperación segura separada. |
+| Configuración externa | Dominios, permisos de proveedores, webhook, colas, workflows y configuración de build. | Solo parte está declarada en archivos; comprobar el entorno real. |
+
+El Worker expone tareas HTTP, cola, cron y correo. La configuración declara D1, R2, envío de correo, productor/consumidor de Telegram, cola de fallos y cron cada cinco minutos. El cron coordina mantenimiento, retención y reintentos; no suponer que las tareas programadas se ejecutan automáticamente durante cada sesión local de desarrollo.
+
+Las integraciones de identidad, correo, Telegram, medición y copia externa necesitan configuración fuera del código. Las opciones deshabilitadas o preparadas no deben describirse como activas solo por tener una implementación. El envío de correo puede depender del proveedor/relay efectivo; un binding declarado no prueba entregabilidad.
+
+Existe un workflow de copia externa cifrada: [.github/workflows/backup-to-google-drive.yml](.github/workflows/backup-to-google-drive.yml), documentado en [docs/respaldo-google-drive.md](docs/respaldo-google-drive.md). La definición prevé exportación de D1, copia incremental de R2 y manifiestos cifrados; necesita secretos y espacio disponibles. **No se verificó aquí una restauración ni la última ejecución satisfactoria.** Conservar las claves de recuperación fuera del repositorio y probar restauraciones en un entorno aislado antes de considerarlo un respaldo utilizable.
+
+Un rollback de código no revierte automáticamente D1 ni recupera objetos eliminados. No restaurar una base remota, vaciar un bucket ni ejecutar una purga basándose solo en este README.
+
+<a id="handoff-historia"></a>
+### 11. Historia desde el inicio y cambios recientes
+
+La historia verificable comienza el **29 de julio de 2026**, commit `d9931f3`. Git es la fuente para fechas y cambios confirmados; una conversación, un screenshot o una tarea pendiente no son un commit.
+
+| Período | Evolución técnica general verificable en el historial |
+| --- | --- |
+| Julio de 2026 | Arranque del MVP, hosting, bindings D1/R2, administración, autenticación, dominio canónico, páginas públicas y bases de contenido/configuración. |
+| Agosto de 2026 | Validaciones y seguridad, automatización de build, noticias, consentimiento de medición, documentos legales, respaldo cifrado y correcciones de móvil/rendimiento. |
+| Septiembre de 2026 | Gestión granular de acceso, auditoría, proveedores de identidad, sesiones/dispositivos, integraciones externas, aislamiento de CSS privado y sucesivas correcciones de navegación y ubicación. |
+| Octubre de 2026 | Correcciones de carga y sesión, paneles compartidos, coordinación concurrente, recuperación de renderizados, editores de documentos y actualización de interfaz/configuración. |
+
+Entregas recientes que cambian la lectura del historial anterior:
+
+| Commit | Cambio técnico de referencia |
+| --- | --- |
+| `ab44de9` / `9796fdd` | Coordinación de revisiones administrativas y recuperación de fallos de carga. |
+| `5882591` / `9ec0e8e` | Editor legal versionado y ajustes de coordinación sin esconder conflictos de guardado. |
+| `57a51fb` | Ajustes de espacios y texto del pie de página; era el último commit previo al bloque del 24 de octubre. |
+| `6a16dea` | Sincronización de cambios de interfaz y controles de metadatos informativos acumulados. |
+| `060679e` | Registro de despliegue y respaldo del repositorio. |
+| `d0ae577` | Orientación de editores, metadatos de Quiénes somos y reparación de instalación reproducible. |
+| `fec8191` | Resaltado temporal del ancla del header, explicación de prioridades SEO y puntaje técnico visible. |
+
+Las mejoras de temas, bordes, tipografía, contenido, lectura pública y navegación de las últimas entregas tienen informes fechados, no una lista de pruebas válida para cualquier estado futuro:
+
+- [docs/qa-liquid-glass-2026-10-21.md](docs/qa-liquid-glass-2026-10-21.md)
+- [docs/qa-corners-liquid-glass-2026-10-22.md](docs/qa-corners-liquid-glass-2026-10-22.md)
+- [docs/qa-sidebar-home-return-2026-10-23.md](docs/qa-sidebar-home-return-2026-10-23.md)
+- [docs/qa-escritorio-amplio-2026-10-24.md](docs/qa-escritorio-amplio-2026-10-24.md)
+- [docs/qa-header-movil-2026-10-24.md](docs/qa-header-movil-2026-10-24.md)
+- [docs/qa-lectura-cobertura-2026-10-24.md](docs/qa-lectura-cobertura-2026-10-24.md)
+- [docs/qa-editor-quienes-somos-2026-10-24.md](docs/qa-editor-quienes-somos-2026-10-24.md)
+- [docs/qa-ayuda-seo-y-navegacion-2026-10-24.md](docs/qa-ayuda-seo-y-navegacion-2026-10-24.md)
+
+La entrega `fec8191` dejó registradas 451 pruebas aprobadas, 24 recorridos de navegación y 36 vistas de editores. Es evidencia histórica de esa entrega, **no pruebas ejecutadas de nuevo por añadir esta guía**. También dejó una advertencia de lint preexistente indicada en su informe.
+
+Cambios superados que pueden confundir al releer:
+
+- Manrope fue una fuente anterior; la base actual declara DM Sans.
+- Hubo respaldo de ubicación por red y pruebas de GPS; la selección territorial posterior documentada es manual.
+- El antiguo acceso de fuente preferida de Google no debe reaparecer por copiar una sección vieja.
+- Límites de archivos, rutas y disponibilidad de integraciones variaron entre entregas. Para esos contratos consultar política vigente, servidor y pruebas, no el primer número encontrado aquí.
+- El fallo de instalación `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` se corrigió restaurando los once overrides ya resueltos y fijando el gestor; no se solucionó quitando la protección del lockfile.
+
+Para consultar el historial completo y un archivo concreto sin modificar el repositorio:
+
+```bash
+git log --reverse --date=short --format="%h %ad %s"
+git log --follow -- README.md
+git show COMMIT -- RUTA_DEL_ARCHIVO
+git status --short
+git diff --stat
+```
+
+<a id="handoff-cobertura"></a>
+### 12. Comprobaciones de esta documentación y pendientes
+
+Esta guía se contrastó con manifiesto/lockfile, configuración de build y runtime, entrada Worker, layout global, acceso a D1, políticas de sesión/permisos/retorno, navegación de ambos paneles, configuración de contenido, política de metadatos informativos, coordinación de escrituras, caché, workflow de respaldo, informes de QA y mensajes del historial de Git.
+
+No se ejecutaron pruebas de aplicación ni se modificaron datos o archivos de negocio para redactarla. No se revisaron semánticamente las 121 APIs ni cada componente, no se confirmaron todas las integraciones externas, no se auditó todo el historial de secretos y no se realizó una restauración. El inventario no debe presentarse como esa auditoría.
+
+Comprobar las referencias nuevas con:
+
+```bash
+node scripts/verify-readme-handoff.mjs
+```
+
+La comprobación valida enlaces locales y anclas de **esta sección**, consistencia de versiones declaradas y estructura del documento; no certifica el código ni verifica enlaces de toda la documentación histórica. Capturas, fixtures y bases de QA pueden estar excluidos de Git: su mención histórica no garantiza que una persona que clone el repositorio los reciba.
+
+Referencias oficiales para contrastar comandos y configuración:
+
+- [Desarrollo local de D1](https://developers.cloudflare.com/d1/best-practices/local-development/)
+- [Comandos de versiones y despliegues de Workers](https://developers.cloudflare.com/workers/wrangler/commands/workers/)
+- [Configuración de Workers Builds](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/)
+
+<!-- TECHNICAL_HANDOFF_END -->
+
+## Notas e historial anteriores conservados
+
+Las secciones siguientes mantienen la documentación anterior. Son una combinación de descripción funcional y entregas históricas; las fechas, versiones, límites y capturas pertenecen a su contexto original. En caso de contradicción, verificar el código y la configuración efectiva en lugar de aplicar automáticamente la nota más antigua.
+
 ## Resumen y navegación de Mi cuenta — 10 de octubre de 2026
 
 - Cabecera normal con correo privado en un botón que vuelve a `/mi-cuenta`, truncado con puntos suspensivos si es largo; identidad administrativa conservada. Navegación en dos filas en PC, menú desplegable en móvil. Crear anuncio no ocupa el menú: está al comienzo de Mi cuenta y dentro de Mis anuncios, cuyo acceso salta directamente a esa sección.

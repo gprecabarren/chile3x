@@ -13,6 +13,7 @@ import { AdminShell, AdminPageHeading } from '@/app/admin/_components';
 import { ReviewScope } from '@/app/admin/ReviewScope';
 import { ActionAnchor } from '@/app/ActionButton';
 import { InformationSeoEditor } from './InformationSeoEditor';
+import { SeoSettingsGuide, SeoFeatureHelp } from '../SeoSettingsHelp';
 import './information-seo.css';
 
 export const dynamic = 'force-dynamic';
@@ -35,13 +36,14 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ p
       {Object.entries(INFORMATION_PAGES).map(([key, page]) => <ActionAnchor className="button button-outline" key={key} href={`?pagina=${key}`} aria-current={!readOnly && key === id ? 'page' : undefined}>{!readOnly && key === id ? <span aria-hidden="true">✓</span> : null}{page.label}</ActionAnchor>)}
       <ActionAnchor className="button button-outline" href="?pagina=inicio" aria-current={query.pagina === 'inicio' ? 'page' : undefined}>Inicio · consulta</ActionAnchor>
     </nav>
-    {readOnly && settings ? <section className="info-seo-card"><h2>{`Inicio · diseño activo ${layout === 'classic' ? 'clásico' : 'compacto'}`}</h2><p>Consulta de la configuración actual, sin campos de edición en esta herramienta.</p><dl className="info-seo-values">
+    <SeoFeatureHelp/>
+    {readOnly && settings ? <><SeoSettingsGuide settings={settings} context="home"/><section className="info-seo-card"><h2>{`Inicio · diseño activo ${layout === 'classic' ? 'clásico' : 'compacto'}`}</h2><p>Consulta de la configuración actual, sin campos de edición en esta herramienta. Para cambiar estos valores, abre «Editar el SEO del Home» en la explicación anterior.</p><dl className="info-seo-values">
       <dt>Título</dt><dd>{home?.seoTitle}</dd>
       <dt>Descripción</dt><dd>{home?.seoDescription}</dd>
       <dt>Canónica</dt><dd>/</dd>
       <dt>Indexación global</dt><dd>{settings.robots_indexing === 'enabled' ? 'Permitida' : 'Desactivada'}</dd>
       <dt>Imagen social vigente</dt><dd><Image className="info-seo-current-image" src={socialCardImageUrl} alt="Imagen social actual" width={320} height={180} unoptimized/><code>{socialCardImageUrl}</code></dd>
-    </dl><p>Los valores de la portada dependen del diseño activo. Esta consulta no activa el otro Home ni crea una URL pública nueva.</p>{(['classic','compact'] as const).map(mode=>{const values=parseHomeTexts(settings[`home_content_${mode}`],mode);return <details key={mode} className="info-seo-card"><summary>Configuración guardada · {mode==='classic'?'clásico':'compacto'}{mode===layout?' · activo':''}</summary><dl className="info-seo-values"><dt>Título SEO</dt><dd>{values.seoTitle}</dd><dt>Descripción SEO</dt><dd>{values.seoDescription}</dd><dt>Título social</dt><dd>{values.socialTitle||values.seoTitle}</dd><dt>Descripción social</dt><dd>{values.socialDescription||values.seoDescription}</dd></dl></details>;})}</section> : data ? <ReviewScope resource="settings:site" revision={revision ?? 0}>
+    </dl><p>Los valores de la portada dependen del diseño activo. Esta consulta no activa el otro Home ni crea una URL pública nueva.</p>{(['classic','compact'] as const).map(mode=>{const values=parseHomeTexts(settings[`home_content_${mode}`],mode);return <details key={mode} className="info-seo-card"><summary>Configuración guardada · {mode==='classic'?'clásico':'compacto'}{mode===layout?' · activo':''}</summary><dl className="info-seo-values"><dt>Título SEO</dt><dd>{values.seoTitle}</dd><dt>Descripción SEO</dt><dd>{values.seoDescription}</dd><dt>Título social</dt><dd>{values.socialTitle||values.seoTitle}</dd><dt>Descripción social</dt><dd>{values.socialDescription||values.seoDescription}</dd></dl></details>;})}</section></> : data ? <ReviewScope resource="settings:site" revision={revision ?? 0}>
       {query.saved === '1' ? <p className="admin-success" role="status">Metadatos de esta página guardados.</p> : null}
       <InformationSeoEditor key={id} pageId={id} defaults={data.defaults} initial={data.overrides} indexingEnabled={data.indexingEnabled} revision={revision ?? 0} snapshot={await informationSeoSnapshot(data)} />
     </ReviewScope> : null}

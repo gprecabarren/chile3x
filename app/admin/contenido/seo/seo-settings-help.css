@@ -1,0 +1,22 @@
+.seo-settings-guide,.seo-feature-help { min-width:0; margin:24px 0; padding:22px; border:1px solid #496c98; border-radius:var(--corner-12); color:#e2eaf5; background:#101b2b; }
+.seo-settings-guide h2,.seo-feature-help h2 { margin:0 0 14px; color:#d6e8ff; font-size:23px; line-height:1.35; font-weight:650; }
+.seo-settings-guide p,.seo-settings-guide li,.seo-feature-help p,.seo-feature-help dd { font-size:16px; line-height:1.65; overflow-wrap:anywhere; }
+.seo-settings-guide .seo-help-kicker { margin:0 0 12px; font-size:12px; color:#b7d6fd; letter-spacing:.04em; font-weight:700; }
+.seo-help-current-values { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin:18px 0 12px; }
+.seo-help-current-values>div { min-width:0; padding:16px; border:1px solid #455a77; border-radius:var(--corner-10); background:#0c1421; }
+.seo-help-current-values dt { color:#b8d7ff; font-size:14px; font-weight:650; line-height:1.5; }
+.seo-help-current-values dd { margin:10px 0 0; font-size:17px; font-weight:550; line-height:1.5; overflow-wrap:anywhere; }
+.seo-settings-guide .seo-help-caption,.seo-help-current-values dd.seo-help-caption { color:#bac9dc; font-size:14px; line-height:1.6; font-weight:400; }
+.seo-settings-guide summary,.seo-feature-help>summary { min-height:44px; padding:10px 0; cursor:pointer; color:#d6e8ff; font-size:17px; line-height:1.5; font-weight:650; }
+.seo-settings-guide summary:focus-visible,.seo-feature-help>summary:focus-visible { outline:2px solid #9fcaff; outline-offset:3px; }
+.seo-settings-guide ol { padding-left:22px; }
+.seo-settings-guide li+li { margin-top:12px; }
+.seo-settings-guide .seo-help-indexing { margin:18px 0; padding-top:16px; border-top:1px solid #455a77; }
+.seo-help-feature-list { margin:16px 0 24px; }
+.seo-help-feature-list>div+div { margin-top:18px; padding-top:16px; border-top:1px solid #354a65; }
+.seo-help-feature-list dt { color:#d6e8ff; font-size:17px; line-height:1.5; font-weight:650; }
+.seo-help-feature-list dd { margin:8px 0 0; color:#c4d0e3; }
+.seo-feature-help h3 { margin:24px 0 10px; color:#d6e8ff; font-size:20px; }
+.seo-help-sources a { color:#c4dfff; text-decoration:underline; text-underline-offset:3px; }
+.seo-settings-guide .button { width:auto; max-width:100%; white-space:normal; text-align:center; }
+@media(max-width:700px) { .seo-help-current-values { grid-template-columns:minmax(0,1fr); }.seo-settings-guide,.seo-feature-help { padding:16px; }.seo-settings-guide h2,.seo-feature-help h2 { font-size:21px; } }

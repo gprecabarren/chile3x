@@ -8,7 +8,7 @@ body :is(button,input,select,textarea) { font-family:var(--font-site); }
 .button:disabled { cursor:not-allowed; opacity:.55; }
 .button-primary { box-shadow:none; }
 .button:hover { transform:none; }
-:is(.admin-workspace,.account-workspace) .button { min-height:44px; font-size:13px !important; font-weight:600 !important; letter-spacing:0 !important; line-height:1.45 !important; }
+:is(.admin-workspace,.account-workspace) .button { min-height:44px; border-radius:var(--corner-10); font-size:14px !important; font-weight:600 !important; letter-spacing:0 !important; line-height:1.45 !important; }
 :is(.admin-workspace,.account-workspace) :is(.admin-root,.account-root) :is(.admin-heading,.account-heading) h1 { font-size:clamp(30px,3.2vw,48px); font-weight:600; letter-spacing:-.045em; line-height:1.12; }
 .site-header :is(.header-publish,.header-stories-button),.hero-actions .button,.free-publish-actions .button { border-radius:999px; }
 .directory-city-options button { font-weight:550; }

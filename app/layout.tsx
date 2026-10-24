@@ -8,6 +8,7 @@ import "./footer-access.css";
 import "./account-form-controls.css";
 import "./admin-record-layout.css";
 import "./modern-controls.css";
+import "./panel-controls.css";
 import "./public-controls.css";
 import "./public-reading.css";
 import "./public-desktop.css";

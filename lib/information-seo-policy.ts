@@ -6,6 +6,7 @@ export const INFORMATION_PAGES = {
   terminos: { path: '/terminos', label: 'Términos' },
   privacidad: { path: '/privacidad', label: 'Privacidad' },
   reglas: { path: '/reglas-de-publicacion', label: 'Reglas de publicación' },
+  nosotros: { path: '/quienes-somos', label: 'Quiénes somos' },
 } as const;
 export type InformationPageId = keyof typeof INFORMATION_PAGES;
 export function informationPageId(value: unknown): InformationPageId | null {
@@ -20,7 +21,7 @@ export type InfoSeoOverrides = Partial<Record<InfoTextField, string>> & {
 };
 export const INFO_SETTING_KEYS = {
   contacto: 'seo_info_contacto', faq: 'seo_info_faq', terminos: 'seo_info_terminos',
-  privacidad: 'seo_info_privacidad', reglas: 'seo_info_reglas',
+  privacidad: 'seo_info_privacidad', reglas: 'seo_info_reglas', nosotros: 'seo_info_nosotros',
 } as const;
 
 /** Static same-origin raster assets only. No private media, remote fetch,

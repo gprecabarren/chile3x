@@ -28,13 +28,13 @@ try{
   assert.ok(publicPage.text.includes(current.effective.title.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')));
   const noOp=await save(id,current,current.overrides);assert.equal(noOp.status,200,noOp.text);assert.equal(JSON.parse(noOp.text).unchanged,true);assert.equal((await state(id)).revision,current.revision);
  }
- console.log('PASS effective defaults on five pages, one H1 and no-op saves do not change settings revisions.');
+ console.log('PASS effective defaults on all informational pages, one H1 and no-op saves do not change settings revisions.');
  const current=await state('contacto');
  // Empty bodies exercise early authorization without Wrangler's loopback
  // proxy retaining an unread POST body. The real mutation payload is tested below.
  for(const role of ['owner','anonymous']){const denied=await request('/api/admin/contenido/seo/contacto',role,{method:'POST',body:''});assert.ok([401,403,409].includes(denied.status),denied.status);}
  assert.equal((await request('/api/admin/contenido/seo/contacto','admin',{method:'POST',body:'',headers:{origin:'https://attacker.invalid'}})).status,403);
- for(const id of ['inicio','admin','escorts','nosotros','__proto__'])assert.equal((await request('/api/admin/contenido/seo/'+id,'admin',{method:'POST',body:''})).status,404);
+ for(const id of ['inicio','admin','escorts','__proto__'])assert.equal((await request('/api/admin/contenido/seo/'+id,'admin',{method:'POST',body:''})).status,404);
  for(const overrides of [{title:'<script>bad</script>'},{title:'C:/Users/name'},{image:'https://attacker.invalid/card.png'},{canonical:'https://other.invalid/'},{noarchive:true},{maxSnippet:-2}])assert.equal((await save('contacto',current,overrides)).status,400);
  assert.equal((await save('contacto',current,{indexing:'noindex'})).status,400);
  assert.equal((await save('contacto',{...current,snapshot:'0'.repeat(64)},{title:'QA stale'})).status,409);
@@ -51,9 +51,20 @@ try{
  assert.deepEqual(metadata((await request('/','anonymous')).text),homeBefore);assert.deepEqual(metadata((await request('/quienes-somos','anonymous')).text),aboutBefore);
  console.log('PASS saved metadata/social/robots reach the public HTML; noindex page leaves sitemap; other pages and Home stay unchanged.');
  // Verify all remaining editors map to their own single settings key.
- for(const id of ['faq','terminos','privacidad','reglas']){const before=await state(id);const result=await save(id,before,{...before.overrides,socialTitle:'Tarjeta QA '+id});assert.equal(result.status,200,result.text);assert.equal((await state(id)).overrides.socialTitle,'Tarjeta QA '+id);}
+ for(const id of ['faq','terminos','privacidad','reglas','nosotros']){const before=await state(id);const result=await save(id,before,{...before.overrides,socialTitle:'Tarjeta QA '+id});assert.equal(result.status,200,result.text);assert.equal((await state(id)).overrides.socialTitle,'Tarjeta QA '+id);}
+ const about=await state('nosotros');
+ const aboutValues={...about.overrides,title:'Quiénes somos QA | Chile3X',description:'Descripción QA local.',socialTitle:'Tarjeta de información QA',socialDescription:'Descripción social QA local.',image:'/chile3x-favicon-512-20261020.png',imageAlt:'Imagen informativa QA',indexing:'noindex',noSnippet:true,maxImagePreview:'none'};
+ assert.equal((await save('nosotros',about,aboutValues)).status,400);
+ const aboutSaved=await save('nosotros',about,aboutValues,{confirmRobots:true});assert.equal(aboutSaved.status,200,aboutSaved.text);
+ const aboutPublic=await request('/quienes-somos','anonymous');
+ assert.match(aboutPublic.text,/<title>Quiénes somos QA \| Chile3X<\/title>/);
+ assert.match(aboutPublic.text,/noindex/);assert.match(aboutPublic.text,/nosnippet/);assert.match(aboutPublic.text,/max-image-preview:none/);
+ assert.ok(aboutPublic.text.includes('Tarjeta de información QA'));assert.ok(aboutPublic.text.includes('Descripción social QA local.'));
+ assert.ok(!(await request('/sitemap.xml','anonymous')).text.includes('<loc>https://chile3x.cl/quienes-somos</loc>'));
+ assert.equal((await save('nosotros',about,aboutValues,{confirmRobots:true})).status,409);
+ assert.deepEqual(metadata((await request('/','anonymous')).text),homeBefore);
  const restrictive=await state('contacto');const noSnippet=await save('contacto',restrictive,{...restrictive.overrides,noSnippet:true},{confirmRobots:true});assert.equal(noSnippet.status,200);assert.match((await request('/contacto','anonymous')).text,/nosnippet/);
- console.log('PASS all five pages save independently and no-snippet is rendered.');
+ console.log('PASS all six pages save independently; about metadata/social/image/robots reach public HTML and sitemap; stale saves are rejected.');
 }finally{
  if(changed)for(const id of Object.keys(INFORMATION_PAGES)){const current=await state(id);const restored=await save(id,current,baseline[id].config,{confirmRobots:true});assert.equal(restored.status,200,restored.text);}
  for(const [id,page]of Object.entries(INFORMATION_PAGES))assert.deepEqual(metadata((await request(page.path,'anonymous')).text),baseline[id].metadata,page.path+' restored');

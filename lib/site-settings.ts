@@ -18,6 +18,7 @@ export const siteSettingDefaults = {
   seo_info_terminos: "",
   seo_info_privacidad: "",
   seo_info_reglas: "",
+  seo_info_nosotros: "",
   visual_theme: "classic",
   account_help_enabled: "enabled",
   sponsors_enabled: "enabled",

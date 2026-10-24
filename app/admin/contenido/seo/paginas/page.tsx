@@ -9,7 +9,6 @@ import { informationPageId, INFORMATION_PAGES } from '@/lib/information-seo-poli
 import { currentRevision } from '@/lib/collaboration';
 import { parseHomeTexts } from '@/lib/home-content-policy';
 import { readHomeLayout } from '@/lib/home-layout-policy';
-import { metadata as aboutMetadata } from '@/app/quienes-somos/page';
 import { AdminShell, AdminPageHeading } from '@/app/admin/_components';
 import { ReviewScope } from '@/app/admin/ReviewScope';
 import { ActionAnchor } from '@/app/ActionButton';
@@ -23,26 +22,26 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ p
   if (!admin) redirect('/api/auth/github/start?return_to=/admin/contenido/seo/paginas');
   if (!adminHasCapability(admin, 'settings.manage')) redirect('/admin/acceso-denegado?reason=permission');
   const [query, revision] = await Promise.all([searchParams, currentRevision('settings:site')]);
-  const readOnly = query.pagina === 'inicio' || query.pagina === 'nosotros';
+  const readOnly = query.pagina === 'inicio';
   const id = informationPageId(query.pagina) ?? 'contacto';
   const data = readOnly ? null : await getInformationSeo(id);
   const settings = readOnly ? await getSiteSettings() : null;
   const layout = settings ? readHomeLayout(settings.home_layout) : 'classic';
   const home = settings ? parseHomeTexts(settings[`home_content_${layout}`], layout) : null;
   return <AdminShell user={admin}><div className="admin-content info-seo-page">
-    <AdminPageHeading eyebrow="CONTENIDO DEL SITIO" title="Metadatos por página" description="Consulta los valores efectivos y su origen. Abrir este editor no cambia lo publicado. La puntuación mide campos técnicos, no posiciones en Google." backHref="/admin/contenido/seo" />
+    <AdminPageHeading eyebrow="SEO Y BUSCADORES · POR PÁGINA" title={readOnly ? 'Inicio · consulta de metadatos' : `SEO de ${INFORMATION_PAGES[id].label}`} description="Editas títulos y descripciones para buscadores, tarjetas sociales e indexación. No cambia el texto visible dentro de la página. Abrir este editor no publica cambios." backHref="/admin/contenido" />
+    <p className="content-editing-notice content-tone-search"><strong>Estás editando configuración SEO.</strong> Los valores actuales ya están cargados. Primero revisas las diferencias y luego las aplicas a la página seleccionada. La puntuación comprueba campos técnicos, no posiciones en Google.</p>
     <nav className="info-seo-navigation" aria-label="Página a revisar">
-      {Object.entries(INFORMATION_PAGES).map(([key, page]) => <ActionAnchor className="button button-outline" key={key} href={`?pagina=${key}`} aria-current={!readOnly && key === id ? 'page' : undefined}>{page.label}</ActionAnchor>)}
+      {Object.entries(INFORMATION_PAGES).map(([key, page]) => <ActionAnchor className="button button-outline" key={key} href={`?pagina=${key}`} aria-current={!readOnly && key === id ? 'page' : undefined}>{!readOnly && key === id ? <span aria-hidden="true">✓</span> : null}{page.label}</ActionAnchor>)}
       <ActionAnchor className="button button-outline" href="?pagina=inicio" aria-current={query.pagina === 'inicio' ? 'page' : undefined}>Inicio · consulta</ActionAnchor>
-      <ActionAnchor className="button button-outline" href="?pagina=nosotros" aria-current={query.pagina === 'nosotros' ? 'page' : undefined}>Quiénes somos · consulta</ActionAnchor>
     </nav>
-    {readOnly && settings ? <section className="info-seo-card"><h2>{query.pagina === 'inicio' ? `Inicio · diseño activo ${layout === 'classic' ? 'clásico' : 'compacto'}` : 'Quiénes somos'}</h2><p>Consulta de la configuración actual, sin campos de edición en esta herramienta.</p><dl className="info-seo-values">
-      <dt>Título</dt><dd>{query.pagina === 'inicio' ? home?.seoTitle : typeof aboutMetadata.title === 'object' && aboutMetadata.title && 'absolute' in aboutMetadata.title ? aboutMetadata.title.absolute : ''}</dd>
-      <dt>Descripción</dt><dd>{query.pagina === 'inicio' ? home?.seoDescription : aboutMetadata.description}</dd>
-      <dt>Canónica</dt><dd>{query.pagina === 'inicio' ? '/' : '/quienes-somos'}</dd>
+    {readOnly && settings ? <section className="info-seo-card"><h2>{`Inicio · diseño activo ${layout === 'classic' ? 'clásico' : 'compacto'}`}</h2><p>Consulta de la configuración actual, sin campos de edición en esta herramienta.</p><dl className="info-seo-values">
+      <dt>Título</dt><dd>{home?.seoTitle}</dd>
+      <dt>Descripción</dt><dd>{home?.seoDescription}</dd>
+      <dt>Canónica</dt><dd>/</dd>
       <dt>Indexación global</dt><dd>{settings.robots_indexing === 'enabled' ? 'Permitida' : 'Desactivada'}</dd>
       <dt>Imagen social vigente</dt><dd><Image className="info-seo-current-image" src={socialCardImageUrl} alt="Imagen social actual" width={320} height={180} unoptimized/><code>{socialCardImageUrl}</code></dd>
-    </dl>{query.pagina === 'inicio' ? <><p>Los valores de la portada dependen del diseño activo. Esta consulta no activa el otro Home ni crea una URL pública nueva.</p>{(['classic','compact'] as const).map(mode=>{const values=parseHomeTexts(settings[`home_content_${mode}`],mode);return <details key={mode} className="info-seo-card"><summary>Configuración guardada · {mode==='classic'?'clásico':'compacto'}{mode===layout?' · activo':''}</summary><dl className="info-seo-values"><dt>Título SEO</dt><dd>{values.seoTitle}</dd><dt>Descripción SEO</dt><dd>{values.seoDescription}</dd><dt>Título social</dt><dd>{values.socialTitle||values.seoTitle}</dd><dt>Descripción social</dt><dd>{values.socialDescription||values.seoDescription}</dd></dl></details>;})}</> : <p>Origen: definición de metadatos de la página. Esta consulta no modifica su contenido ni sus datos estructurados.</p>}</section> : data ? <ReviewScope resource="settings:site" revision={revision ?? 0}>
+    </dl><p>Los valores de la portada dependen del diseño activo. Esta consulta no activa el otro Home ni crea una URL pública nueva.</p>{(['classic','compact'] as const).map(mode=>{const values=parseHomeTexts(settings[`home_content_${mode}`],mode);return <details key={mode} className="info-seo-card"><summary>Configuración guardada · {mode==='classic'?'clásico':'compacto'}{mode===layout?' · activo':''}</summary><dl className="info-seo-values"><dt>Título SEO</dt><dd>{values.seoTitle}</dd><dt>Descripción SEO</dt><dd>{values.seoDescription}</dd><dt>Título social</dt><dd>{values.socialTitle||values.seoTitle}</dd><dt>Descripción social</dt><dd>{values.socialDescription||values.seoDescription}</dd></dl></details>;})}</section> : data ? <ReviewScope resource="settings:site" revision={revision ?? 0}>
       {query.saved === '1' ? <p className="admin-success" role="status">Metadatos de esta página guardados.</p> : null}
       <InformationSeoEditor key={id} pageId={id} defaults={data.defaults} initial={data.overrides} indexingEnabled={data.indexingEnabled} revision={revision ?? 0} snapshot={await informationSeoSnapshot(data)} />
     </ReviewScope> : null}

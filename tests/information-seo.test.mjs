@@ -3,14 +3,15 @@ import test from 'node:test';
 import {readFile} from 'node:fs/promises';
 import {INFORMATION_PAGES,INFO_SETTING_KEYS,informationPageId,informationImagePath,parseInfoSeoOverrides,readInfoSeoOverrides,resolveInfoSeo,informationTechnicalChecks,infoSeoChanges,infoRobotsChanged} from '../lib/information-seo-policy.ts';
 import {readBoundedJson} from '../lib/bounded-json.ts';
+import {INFORMATION_SEO_DEFAULTS} from '../lib/information-seo-defaults.ts';
 const source=path=>readFile(new URL('../'+path,import.meta.url),'utf8');
 const origin='https://chile3x.cl';
 const defaults={title:'Contacto | Chile3X',description:'Canales oficiales del sitio.',socialTitle:'Contacto',socialDescription:'Información de contacto.',image:'/chile3x-logo-dark.jpeg?v=3',imageAlt:'Marca del sitio',path:'/contacto',origin,source:'Configuración de la página'};
 
 test('information editor is limited to documents; no Home, catalog or private overrides',()=>{
- assert.equal(Object.keys(INFORMATION_PAGES).length,5);
- for(const key of ['contacto','faq','terminos','privacidad','reglas']){assert.equal(informationPageId(key),key);assert.ok(INFO_SETTING_KEYS[key]);}
- for(const key of ['inicio','/','nosotros','perfil','escorts','admin','__proto__','constructor',null,[]])assert.equal(informationPageId(key),null);
+ assert.equal(Object.keys(INFORMATION_PAGES).length,6);
+ for(const key of ['contacto','faq','terminos','privacidad','reglas','nosotros']){assert.equal(informationPageId(key),key);assert.ok(INFO_SETTING_KEYS[key]);}
+ for(const key of ['inicio','/','perfil','escorts','admin','__proto__','constructor',null,[]])assert.equal(informationPageId(key),null);
 });
 test('empty installation inherits exact metadata and never writes defaults into overrides',()=>{
  assert.deepEqual(readInfoSeoOverrides('',origin),{});
@@ -57,4 +58,19 @@ test('editor and API protect authorization, stale snapshots, confirmation and im
  const renderer=await source('lib/information-seo.ts');assert.match(renderer,/if \(!Object.keys\(overrides\).length\) return base/);
  assert.match(await source('app/sitemap.ts'),/hiddenInformationPages/);
  const css=await source('app/admin/contenido/seo/paginas/information-seo.css');assert.doesNotMatch(css,/backdrop-filter|transform:|\.public-header/);
+});
+
+test('about metadata has one source of truth and preserves its separate social description and absolute title',async()=>{
+ const about=INFORMATION_SEO_DEFAULTS.nosotros;
+ assert.notEqual(about.description,about.socialDescription);
+ assert.equal(about.socialTitle,about.title+' | Chile3X');
+ assert.equal(INFORMATION_PAGES.nosotros.path,'/quienes-somos');
+ const publicPage=await source('app/quienes-somos/page.tsx'),server=await source('lib/information-seo.ts'),admin=await source('app/admin/contenido/seo/paginas/page.tsx');
+ assert.match(publicPage,/generateMetadata\(\).*informationPageMetadata\('nosotros'\)/);
+ assert.doesNotMatch(publicPage,/export const metadata/);
+ assert.match(server,/if \(pageId === 'nosotros'\) base.title = \{ absolute: defaults.title \}/);
+ assert.match(server,/socialDescription: defaults.socialDescription/);
+ assert.doesNotMatch(admin,/Quiénes somos · consulta|import \{ metadata as aboutMetadata/);
+ assert.match(admin,/const readOnly = query.pagina === 'inicio';/);
+ assert.match(await source('lib/site-settings.ts'),/seo_info_nosotros: ""/);
 });

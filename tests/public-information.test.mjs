@@ -27,13 +27,15 @@ test("anonymous visitors do not receive the editorial-news note in Novedades", a
 });
 
 test("Quiénes somos presents the emerging launch with useful SEO and honest roadmap", async () => {
-  const [page, styles, sitemap] = await Promise.all([
+  const [page, styles, sitemap, defaults] = await Promise.all([
     source("app/quienes-somos/page.tsx"),
     source("app/globals.css"),
     source("app/sitemap.ts"),
+    source("lib/information-seo-defaults.ts"),
   ]);
-  assert.match(page, /title: "Quiénes somos: directorio de escorts en Chile"/);
-  assert.match(page, /Publicación gratuita en esta etapa/);
+  assert.match(page, /informationPageMetadata\('nosotros'\)/);
+  assert.match(defaults, /title: 'Quiénes somos: directorio de escorts en Chile'/);
+  assert.match(defaults, /Publicación gratuita en esta etapa/);
   assert.match(page, /"@type": "AboutPage"/);
   assert.match(page, /"@type": "Organization"/);
   assert.match(page, /"@type": "BreadcrumbList"/);

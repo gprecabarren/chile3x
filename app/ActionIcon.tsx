@@ -1,4 +1,5 @@
 const paths = {
+  grid: "M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z",
   plus: "M12 5v14M5 12h14",
   edit: "m15 4 5 5M4 20l4-1L21 6l-5-5L3 14z",
   trash: "M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7",

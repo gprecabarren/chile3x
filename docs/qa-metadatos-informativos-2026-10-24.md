@@ -4,7 +4,7 @@
 
 Contenido del sitio → SEO e identidad → Abrir editor por página (`/admin/contenido/seo/paginas`). Requiere una sesión administradora y permiso `settings.manage`.
 
-Se pueden editar los metadatos de Contacto, FAQ, Términos, Privacidad y Reglas de publicación. El inicio (ambos diseños) y Quiénes somos tienen consultas de su configuración vigente, sin edición nueva en esta herramienta. No se añadieron controles a anuncios, ciudades ni directorios.
+Se pueden editar los metadatos de Contacto, FAQ, Términos, Privacidad, Reglas de publicación y, desde la ampliación posterior del mismo día, Quiénes somos. El inicio (ambos diseños) mantiene su consulta en esta herramienta y su editor preexistente de textos/metadatos en `/admin/contenido/inicio`. No se añadieron controles a anuncios, ciudades ni directorios. La navegación actual separa Textos e imágenes de SEO y buscadores, con acceso directo a SEO por página. Ver `qa-editor-quienes-somos-2026-10-24.md` para la ampliación.
 
 ## Valores efectivos, no campos falsamente vacíos
 
@@ -32,7 +32,7 @@ La API aplica autenticación, autorización, mismo origen, una lista cerrada de 
 
 Cambios limitados a `min-width:1100px` en `app/public-desktop.css`: cuerpos de lectura de 20px, preguntas FAQ de 22px y metadatos/etiquetas secundarios más legibles. Las columnas se agrupan centradas dentro del marco público compartido; no se lleva el lateral al extremo de una pantalla ultraancha. Los textos de Quiénes somos también se hacen más legibles y sus columnas se equilibran. Reglas, sin índice lateral, utiliza una columna de lectura. No se cambian header, tarjetas de perfiles, móviles ni contenido SEO.
 
-## Verificación
+## Verificación de la primera publicación
 
 Build, tipos y pruebas; validaciones unitarias de alcance, imágenes, campos, robots, lectura limitada y conservación de defaults. Pruebas locales integradas de los cinco guardados, no-op, permisos, origen, datos inválidos, conflictos, confirmación de robots, HTML público, sitemap y restauración de ajustes. Prueba de interfaz editar → revisar → guardar → volver al respaldo. Matrices responsive en ambos temas con fixtures desechables locales. Las comprobaciones públicas de producción son solo de lectura; no se crean datos de prueba allí.
 

@@ -5,18 +5,9 @@ import { getPortalContacts, getPortalTelegramLink, getPortalWhatsappLink } from 
 import { getSiteSettings, siteBaseUrl } from "@/lib/site-settings";
 import { PortalWhatsappLink } from "@/app/PortalWhatsappLink";
 import { safeJsonLd } from "@/lib/json-ld";
-import { publicPageMetadata } from "@/lib/seo";
+import { informationPageMetadata } from "@/lib/information-seo";
 
-export const metadata: Metadata = {
-  ...publicPageMetadata({
-  title: "Quiénes somos: directorio de escorts en Chile",
-  description: "Conoce Chile3X, directorio de escorts, agencias y arriendos en Chile para mayores de 18 años. Publicación gratuita en esta etapa, revisión manual y contacto directo.",
-  path: "/quienes-somos",
-  socialTitle: "Quiénes somos: directorio de escorts en Chile | Chile3X",
-  socialDescription: "Conoce nuestro directorio de escorts, agencias y arriendos: publicación gratuita durante el lanzamiento, revisión manual y contacto directo.",
-  }),
-  title: { absolute: "Quiénes somos: directorio de escorts en Chile | Chile3X" },
-};
+export async function generateMetadata(): Promise<Metadata> { return informationPageMetadata('nosotros'); }
 
 export const dynamic = "force-dynamic";
 

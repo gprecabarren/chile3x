@@ -1,7 +1,7 @@
 .info-seo-page { min-width:0; }
 .info-seo-navigation,.info-seo-actions { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:18px 0; }
 .info-seo-page .button { width:auto; max-width:100%; min-height:44px; white-space:normal; text-align:center; }
-.info-seo-page .button[aria-current="page"],.info-seo-page .button[aria-pressed="true"] { border-color:#ed8797; background:#40232e; color:#fff; }
+.info-seo-page .info-seo-navigation .button[aria-current="page"],.info-seo-page .info-seo-previews .button[aria-pressed="true"] { border:2px solid #bbd9ff; background:#15273f; color:#fff; box-shadow:none; }
 .info-seo-editor { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr); gap:24px; align-items:start; }
 .info-seo-editor > *, .info-seo-fields > * { min-width:0; }
 .info-seo-card { min-width:0; margin:20px 0; padding:22px; border:1px solid #3d485f; border-radius:var(--corner-16); background:#111722; color:#e9eef8; }

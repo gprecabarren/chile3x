@@ -10,7 +10,7 @@ test('public action text uses a readable rem baseline, outside private workspace
  assert.match(css,/font-size:var\(--public-action-size\);/);
  assert.match(css,/height:auto;/);
  assert.doesNotMatch(css,/\.admin-workspace|\.account-workspace|font-size:\s*(?:[5-9]|1[0-3])px/);
- assert.match(await source('app/modern-controls.css'),/font-size:13px !important/);
+ assert.match(await source('app/modern-controls.css'),/font-size:14px !important/);
 });
 
 test('public navigation, city choices, filters, contacts and legal-footer links share readable actions',async()=>{

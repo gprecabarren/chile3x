@@ -71,7 +71,10 @@ test('home/about titles include escorts and single branding, preserve About styl
     assert.equal((copy.seoTitle.match(/Chile3X/g)??[]).length,1);
     assert.equal(copy.title+' '+copy.titleAccent,'Directorio de escorts en Chile por ciudad.');
   }
-  assert.match(about,/absolute: "Quiénes somos: directorio de escorts en Chile \| Chile3X"/);
+  const {INFORMATION_SEO_DEFAULTS}=await import('../lib/information-seo-defaults.ts');
+  assert.equal(INFORMATION_SEO_DEFAULTS.nosotros.socialTitle,'Quiénes somos: directorio de escorts en Chile | Chile3X');
+  assert.match(about,/informationPageMetadata\('nosotros'\)/);
+  assert.match(await source('lib/information-seo.ts'),/if \(pageId === 'nosotros'\) base.title = \{ absolute: defaults.title \}/);
   assert.match(about,/className="about-hero"/); assert.match(about,/Sitio operativo en fase beta/);
   assert.match(await source('app/mi-cuenta/_components.tsx'),/account-brand-home" href="\/mi-cuenta"/);
   for(const path of ['app/ingresar/page.tsx','app/registro/page.tsx']) {

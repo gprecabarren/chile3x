@@ -5,6 +5,7 @@ import { incompatibleProfileTags,profileTagsForGender,PROFILE_TAG_COMBINATION_ME
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DateField } from "@/app/DateField";
+import { travelDateBounds, travelDateError } from "@/lib/travel-date-policy";
 import { regions } from "@/app/locations";
 import {
   additionalServices,
@@ -61,6 +62,7 @@ type ProfileFormInitial = {
 };
 
 type ProfileFormProps = {
+  travelToday: string;
   review?: {key:string;revision:number};
   action: string;
   submitLabel: string;
@@ -88,10 +90,18 @@ function metadataValue(initial: ProfileFormInitial | undefined, key: string) {
   return initial?.details.metadata?.[key] ?? "";
 }
 
-export function ProfileForm({ action, submitLabel, initial, allowEscort = true, adminAssisted = false, adminEdit = false, privateSample = false, review }: ProfileFormProps) {
+export function ProfileForm({ action, submitLabel, initial, travelToday, allowEscort = true, adminAssisted = false, adminEdit = false, privateSample = false, review }: ProfileFormProps) {
   const [sampleBusy,setSampleBusy]=useState(false),[sampleError,setSampleError]=useState("");
   const formRef = useRef<HTMLFormElement>(null);
   const optionalRef = useRef<HTMLDetailsElement>(null);
+  const travelRef = useRef<HTMLDetailsElement>(null);
+  const [travelBounds, setTravelBounds] = useState(() => ({ min: travelToday, max: `${Number(travelToday.slice(0, 4)) + 1}-12-31` }));
+  const [travelCity, setTravelCity] = useState(metadataValue(initial, "travel_city"));
+  const [travelDates, setTravelDates] = useState(() => ({ start: metadataValue(initial, "travel_start"), end: metadataValue(initial, "travel_end") }));
+  const [travelError, setTravelError] = useState("");
+  const storedTravelUnchanged = Boolean(initial && travelCity === metadataValue(initial, "travel_city") && travelDates.start === metadataValue(initial, "travel_start") && travelDates.end === metadataValue(initial, "travel_end"));
+  const storedTravelOutsideRange = storedTravelUnchanged && travelDates.start && (travelDates.start < travelBounds.min || travelDates.end > travelBounds.max);
+  const travelEndMin = /^\d{4}-\d{2}-\d{2}$/.test(travelDates.start) && travelDates.start > travelBounds.min ? travelDates.start : travelBounds.min;
   const storageKey = `chile3x-profile-draft:${action}`;
   const availableProfileTypes = useMemo(() => profileTypes.filter((item) => initial || allowEscort || item !== "escort"), [allowEscort, initial]);
   const [type, setType] = useState<ProfileType>(initial?.type ?? (allowEscort ? "escort" : "agency"));
@@ -113,6 +123,20 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
   const [selectedTier, setSelectedTier] = useState(initial?.tier ?? "vip");
   const [underageNotice, setUnderageNotice] = useState(false);
   const typeLocked = Boolean(initial)||privateSample;
+
+  useEffect(() => {
+    // Refresh after hydration, on returning to the tab and across Chile midnight.
+    // The server still validates against its own clock when saving.
+    const refresh = () => {
+      const next = travelDateBounds();
+      setTravelBounds(current => current.min === next.min && current.max === next.max ? current : next);
+    };
+    const frame = window.requestAnimationFrame(refresh);
+    const timer = window.setInterval(refresh, 60_000);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => { window.cancelAnimationFrame(frame); window.clearInterval(timer); window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); };
+  }, []);
 
   useEffect(() => {
     if(privateSample)return;
@@ -147,11 +171,14 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
       if (visibilityTiers.some(tier => tier === saved.tier?.[0])) setSelectedTier(saved.tier[0]);
       setEnabledAvailabilityDays(new Set(availabilityDays.filter((day) => saved[`availability_${day.key}_enabled`]?.includes("on")).map((day) => day.key)));
       setAvailabilityHours(Object.fromEntries(availabilityDays.map(day => [day.key, { opens: saved[`availability_${day.key}_opens`]?.[0] ?? "", closes: saved[`availability_${day.key}_closes`]?.[0] ?? "" }])));
+      setTravelCity(saved.travel_city?.[0] ?? "");
+      setTravelDates({ start: saved.travel_start?.[0] ?? "", end: saved.travel_end?.[0] ?? "" });
       // Wait for the selected listing type to render its own fields before
       // restoring them (especially agency/rental after a server error).
       restoreFields = window.requestAnimationFrame(() => {
         const form = formRef.current;
         if (!form) return;
+        if (saved.travel_city?.[0] && travelRef.current) travelRef.current.open = true;
         for (const [name, values] of Object.entries(saved)) {
           const fields = Array.from(form.elements).filter((element): element is HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement =>
             "name" in element && (element as HTMLInputElement).name === name,
@@ -212,6 +239,19 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
       }
     }} onSubmit={(event) => {
       if(type==="escort"&&incompatibleProfileTags(effectiveProfileTags)){event.preventDefault();document.getElementById("profile-tag-combination-help")?.scrollIntoView({block:"center"});return;}
+      if (type === "escort" && !contentOnly && (travelCity || travelDates.start || travelDates.end)) {
+        const nextBounds = travelDateBounds();
+        setTravelBounds(nextBounds);
+        const error = !travelCity ? "Selecciona la ciudad del viaje o borra sus fechas si no tienes un viaje programado." : storedTravelUnchanged ? null : travelDateError(travelDates.start, travelDates.end);
+        if (error) {
+          event.preventDefault();
+          setTravelError(error);
+          if (optionalRef.current) optionalRef.current.open = true;
+          if (travelRef.current) travelRef.current.open = true;
+          window.requestAnimationFrame(() => { document.getElementById("travel-date-error")?.focus(); });
+          return;
+        }
+      }
       if(privateSample){
         event.preventDefault();if(sampleBusy)return;
         const body=new FormData(event.currentTarget);body.set("intent","submit");
@@ -393,10 +433,9 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
               </label>
             </div>
             <details className="availability-editor">
-              <summary><strong>Horarios de disponibilidad</strong><span>{enabledAvailabilityDays.size ? `${enabledAvailabilityDays.size} ${enabledAvailabilityDays.size === 1 ? "día seleccionado" : "días seleccionados"}` : "Sin horario definido"}</span></summary>
+              <summary><strong>Horarios de disponibilidad</strong><span className="disclosure-description">{type === "escort" ? "Activa solo los días en que atiendes." : "Activa los días de disponibilidad del anuncio."} En el perfil se indicará si está disponible ahora, usando la hora de Chile.</span><span className="disclosure-status">{enabledAvailabilityDays.size ? `${enabledAvailabilityDays.size} ${enabledAvailabilityDays.size === 1 ? "día seleccionado" : "días seleccionados"}` : "Sin horario definido"}</span></summary>
               <div className="availability-editor-content">
               {initial?.details.schedule && !savedAvailability.size && <input type="hidden" name="legacy_schedule" value={initial.details.schedule} />}
-              <p>{type === "escort" ? "Activa solo los días en que atiendes." : "Activa los días de disponibilidad del anuncio."} En el perfil se indicará si está disponible ahora, usando la hora de Chile.</p>
               <div className="availability-bulk-actions"><ActionButton className="button button-outline availability-toggle-all" type="button" aria-pressed={enabledAvailabilityDays.size === availabilityDays.length} onClick={() => setEnabledAvailabilityDays((current) => current.size === availabilityDays.length ? new Set() : new Set(availabilityDays.map((day) => day.key)))}>
                 {enabledAvailabilityDays.size === availabilityDays.length ? "Desmarcar todos los días" : "Seleccionar todos los días"}
               </ActionButton>
@@ -440,11 +479,14 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
                 <label>Tamaño de busto<select name="bust_size" defaultValue={metadataValue(initial, "bust_size")}><option value="">Seleccionar</option>{bustSizes.map((item) => <option key={item}>{item}</option>)}</select></label>
               </div>
               <fieldset className="language-checklist"><legend>Idiomas</legend><p>Marca todos los idiomas que puedes atender.</p><div className="check-grid">{spokenLanguages.map((language) => <label key={language}><input name="languages" type="checkbox" value={language} defaultChecked={metadataValue(initial, "languages").split(", ").includes(language)} />{language}</label>)}</div></fieldset>
-              {!contentOnly && <details className="travel-agenda-editor"><summary><strong>Agenda de viajes</strong><span>Opcional</span></summary><div className="travel-agenda-editor-content"><p>Informa una visita temporal a otra ciudad. Tu anuncio seguirá perteneciendo a su ciudad habitual.</p><div className="form-grid form-grid-two">
-                <label>Ciudad del próximo viaje<select name="travel_city" defaultValue={metadataValue(initial, "travel_city")}><option value="">Sin viaje programado</option>{regions.map((item) => <optgroup label={item.displayTitle} key={item.title}>{item.cities.map((travelCity) => <option value={travelCity} key={travelCity}>{travelCity}</option>)}</optgroup>)}</select></label>
+              {!contentOnly && <details ref={travelRef} className="travel-agenda-editor"><summary><strong>Agenda de viajes</strong><span className="disclosure-description">Informa una visita temporal a otra ciudad. Tu anuncio seguirá perteneciendo a su ciudad habitual.</span></summary><div className="travel-agenda-editor-content"><p>Selecciona fechas desde hoy, según la hora de Chile, hasta el 31 de diciembre de {travelBounds.max.slice(0, 4)}. Si cambia el día antes de guardar, revisa las fechas.</p>
+              {storedTravelOutsideRange && <p>Este viaje guardado comenzó antes de hoy o está fuera del período actual. Puedes conservarlo al editar otros datos. Para programar otro viaje, actualiza la ciudad y ambas fechas; para quitarlo, selecciona “Sin viaje programado”.</p>}
+              {travelError && <p id="travel-date-error" className="form-alert" role="alert" tabIndex={-1}>{travelError}</p>}
+              <div className="form-grid form-grid-two">
+                <label>Ciudad del próximo viaje<select name="travel_city" value={travelCity} onChange={event => { setTravelCity(event.target.value); setTravelError(""); if (!event.target.value) setTravelDates({ start: "", end: "" }); }} required={Boolean(travelDates.start || travelDates.end)}><option value="">Sin viaje programado</option>{regions.map((item) => <optgroup label={item.displayTitle} key={item.title}>{item.cities.map((travelCity) => <option value={travelCity} key={travelCity}>{travelCity}</option>)}</optgroup>)}</select></label>
                 <label>Nota breve<input name="travel_note" maxLength={180} defaultValue={metadataValue(initial, "travel_note")} placeholder="Ej. Agenda abierta durante esos días" /></label>
-                <DateField label="Desde" name="travel_start" defaultValue={metadataValue(initial, "travel_start")} />
-                <DateField label="Hasta" name="travel_end" defaultValue={metadataValue(initial, "travel_end")} />
+                <DateField label="Desde" name="travel_start" value={travelDates.start} onChange={value => { setTravelDates(current => ({ ...current, start: value })); setTravelError(""); }} min={travelBounds.min} max={travelBounds.max} required={Boolean(travelCity)} />
+                <DateField label="Hasta" name="travel_end" value={travelDates.end} onChange={value => { setTravelDates(current => ({ ...current, end: value })); setTravelError(""); }} min={travelEndMin} max={travelBounds.max} required={Boolean(travelCity)} />
               </div></div></details>}
             </section>
           )}

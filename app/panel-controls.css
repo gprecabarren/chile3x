@@ -1,3 +1,90 @@
+/* Private reading hierarchy: labels and body copy remain distinct from
+   secondary metadata, without changing public navigation or previews. */
+:is(.admin-workspace,.account-workspace) {
+  --panel-label-size:1rem;
+  --panel-copy-size:1rem;
+  --panel-secondary-size:.875rem;
+  --panel-meta-size:.8125rem;
+}
+:is(.admin-workspace,.account-workspace) :is(.admin-root,.account-root) :is(.admin-content,.account-content) :is(label,legend) {
+  min-width:0; font-size:var(--panel-label-size); line-height:1.5; overflow-wrap:break-word;
+}
+:is(.admin-workspace,.account-workspace) :is(.admin-root,.account-root) :is(.admin-content,.account-content) small {
+  font-size:var(--panel-secondary-size); line-height:1.6;
+}
+:is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) label:has(> input:is([type="checkbox"],[type="radio"])) {
+  min-height:44px; align-items:center; gap:10px;
+}
+:is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) input:is([type="checkbox"],[type="radio"]) {
+  width:22px !important; height:22px; min-width:22px; min-height:22px; flex:0 0 22px; accent-color:var(--red);
+}
+:is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) :is(.admin-featured-toggle,.admin-danger-confirm) {
+  font-size:var(--panel-label-size) !important;
+}
+:is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) :is(.form-alert,.admin-note,.admin-notice,.admin-empty,.account-empty,.admin-email-notice,.content-editing-notice,.mail-settings-note,.account-identity-note,.account-comments-help,.account-profile-rule-note,.admin-profile-rule-note,.media-manager-notice,.media-manager-independent-notice) {
+  font-size:var(--panel-copy-size); line-height:1.65;
+}
+:is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) :is(.account-heading,.admin-heading) > span,
+:is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) :is(.account-password-panel,.account-social-access,.account-access-row,.account-identity-optional,.account-comments-list,.own-pending-reviews,.private-document-card,.private-documents-status,.admin-settings-section,.admin-settings-hub,.admin-review-list,.admin-report-list,.admin-profile-review-bar,.admin-media-card,.admin-media-processing,.admin-account-password-actions,.admin-account-email-policy,.admin-email-list,.admin-notification-list,.admin-recent-activity,.admin-sponsor-visibility,.admin-sponsor-create-layout,.admin-sponsor-section-heading) p:not(.eyebrow),
+.admin-workspace .admin-root .admin-content .admin-settings-section > div:first-child > span {
+  font-size:var(--panel-copy-size); line-height:1.65;
+}
+:is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) :is(.account-access-row > a,.account-access-row summary,.account-access-history summary,.account-access-history li,.account-access-history-list li,.account-comments-list a,.account-report-list header > a,.account-report-list dd,.profile-statistics-cards span,.profile-contact-breakdown span,.admin-filter-summary,.admin-review-tabs a,.admin-private-documents,.admin-media-profile-group header span,.admin-media-group-hint,.admin-profile-media-link,.admin-settings-hub small,.admin-moderation-inbox header span,.admin-moderation-counts b,.admin-moderation-counts div span,.admin-moderation-queue span,.admin-moderation-queue nav a,.admin-moderation-inbox footer a,.admin-email-stats span,.admin-email-list header span,.admin-email-list dd,.admin-email-list details,.admin-whatsapp-click-list article > div a,.admin-whatsapp-click-list dd,.admin-notification-list nav a,.admin-notification-read-all button,.admin-notification-list nav button) {
+  font-size:var(--panel-secondary-size); line-height:1.6; overflow-wrap:break-word;
+}
+:is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) :is(.account-report-status,.account-report-list dt,.account-report-evidence span,.admin-news-list span,.admin-email-status,.admin-email-list dt,.admin-email-list time,.admin-whatsapp-click-list dt,.admin-notification-list article span,.admin-notification-list article time,.admin-recent-activity span,.admin-recent-activity time,.admin-sponsor-group > summary b,.admin-moderation-inbox header p,.admin-home-active) {
+  font-size:var(--panel-meta-size); line-height:1.5;
+}
+:is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) :is(.admin-notification-list article strong,.admin-whatsapp-click-list article > div strong,.private-document-card > strong) {
+  font-size:var(--panel-label-size); line-height:1.5;
+}
+:is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) :is(th,td) { font-size:var(--panel-secondary-size); line-height:1.6; }
+:is(.admin-workspace,.account-workspace) :is(.admin-sidebar-navigation,.account-sidebar-navigation) nav small { font-size:12px; line-height:1.5; }
+:is(.admin-workspace,.account-workspace) :is(.admin-sidebar-identity,.account-sidebar-identity) small { font-size:13px; line-height:1.5; }
+:is(.admin-workspace,.account-workspace) :is(.admin-sidebar-footer,.account-sidebar-footer) button { font-size:14px; line-height:1.5; }
+.account-workspace .account-sidebar .account-legal-links :is(summary,a) { font-size:14px; line-height:1.5; }
+.admin-workspace .admin-content :is(.admin-content-home small,.admin-content-current > span,.admin-content-current > small,.admin-content-nav-group > p,.admin-content-active-mark,.admin-content-scope) { font-size:14px; line-height:1.5; }
+.admin-workspace .admin-content .admin-create-profile-note { margin:20px 0; font-size:var(--panel-copy-size); line-height:1.65; }
+:is(.admin-workspace,.account-workspace) :is(.admin-root,.account-root) :is(.admin-content,.account-content) .date-parts-field label { font-size:var(--panel-secondary-size); }
+.admin-workspace .admin-root .admin-content .admin-settings-section > div:first-child > p { font-size:var(--panel-meta-size); line-height:1.5; }
+.admin-workspace .admin-content .admin-settings-grid .x-activation-confirmation span { font-size:var(--panel-label-size); line-height:1.6; }
+:is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) .page-back-link { min-height:36px; align-items:center; font-size:var(--panel-secondary-size); line-height:1.5; }
+.account-workspace .account-content .account-danger-panel p { font-size:var(--panel-copy-size); line-height:1.65; }
+.account-workspace .account-content .account-danger-panel :is(summary,li) { font-size:var(--panel-secondary-size); line-height:1.6; }
+.admin-workspace .admin-content :is(.admin-account-control-actions summary,.admin-review-alert span,.portal-whatsapp-stat-totals span,.portal-whatsapp-stats > header > span) { font-size:var(--panel-secondary-size); line-height:1.6; }
+:is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) .profile-public-gallery-manager > div > p:not(.eyebrow) { font-size:var(--panel-secondary-size); line-height:1.6; }
+/* Older panel assets contain compact 9–12px text. Keep the shared correction
+   here so both themes receive it, without changing cached theme assets. */
+:is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) :is(.account-identity-card,.account-overview,.account-section-heading,.owner-profile-card,.exclusive-content-manager,.exclusive-access-manager,.buyer-content-library,.profile-visibility-panel,.admin-account-control-panel,.admin-account-control-actions,.admin-account-history,.admin-account-owned-profiles,.admin-account-telegram,.admin-stat,.admin-audit-summary,.admin-role-guide,.telegram-user-flow,.telegram-link-steps,.telegram-launch-fallback,.telegram-admin-guide-grid,.telegram-command-guide,.help-answer,.help-question) p:not(.eyebrow),
+:is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) :is(.account-metrics-help,.account-feature-note,.account-media-review-note,.profile-media-empty,.profile-statistics-empty,.help-beta-notice,.admin-audit-summary-text,.admin-media-empty,.admin-success,.account-success,.account-error,.admin-error,.session-privacy-note,.telegram-launch-error,.telegram-link-pending,.telegram-implementation-note,.telegram-webhook-error) {
+  font-size:var(--panel-copy-size); line-height:1.65;
+}
+:is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) :is(.account-heading > p,.admin-heading > p,.account-status,.admin-status,.media-status,.admin-audit-category,.admin-audit-outcome,.admin-access-role,.admin-access-status,.admin-access-protected,.help-header p,.help-beta,.account-listing-filters b,.admin-media-tabs b) {
+  font-size:var(--panel-meta-size); line-height:1.5;
+}
+:is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) :is(.account-identity-card a,.account-identity-values span,.account-summary-card span,.account-listing-filters a,.account-story-category,.account-story-card li,.account-story-date,.account-story-date time,.profile-statistics-periods a,.profile-statistics-total span,.profile-statistics-table > div,.account-username-edit summary,.admin-stat span,.admin-note > span,.admin-account-card header a,.admin-account-card dt,.admin-account-card dd,.admin-profile-count-link,.admin-account-pending-link,.admin-account-detail-status > span,.admin-account-detail-summary dt,.admin-account-detail-summary dd,.admin-profile-card header p:not(.eyebrow),.admin-profile-card-owner dt,.admin-profile-card-owner dd,.admin-profile-card-documents > strong,.admin-media-tabs a,.admin-pagination > span,.admin-pagination-number a,.admin-pagination-number b,.admin-audit-summary span,.admin-audit-event dt,.admin-audit-event dd,.admin-audit-event dd span,.admin-audit-details > summary,.admin-audit-change-list > div > strong,.admin-audit-change-list > div > span,.admin-audit-metadata > span,.admin-audit-metadata > strong,.admin-account-telegram dt,.admin-account-telegram dd,.session-card dt,.session-card header > strong,.session-manager-heading > span,.operational-health span,.profile-media-manager-heading span,.profile-photo-manager span,.media-quota,.profile-media-notice p,.profile-trash-control p,.telegram-status,.telegram-link-card dt,.telegram-command-guide dt,.telegram-command-guide dd,.telegram-admin-metrics span,.telegram-chat-grid dt,.telegram-chat-grid dd,.telegram-chat-grid header span,.help-answer > strong,.help-action-link,.help-header > div > span,.help-human-links a) {
+  font-size:var(--panel-secondary-size); line-height:1.6; overflow-wrap:anywhere;
+}
+.account-workspace .account-content .account-story-unavailable { font-size:var(--panel-secondary-size); line-height:1.6; }
+.account-workspace .account-content .account-story-card-heading small { font-size:var(--panel-secondary-size); }
+.admin-workspace .admin-content .legal-editor-check { font-size:var(--panel-label-size) !important; }
+.admin-workspace .admin-content :is(.legal-editor-help,.legal-editor-status p,.legal-editor-publish p) { font-size:var(--panel-copy-size); line-height:1.65; }
+.admin-workspace .admin-content :is(.legal-editor-block > header strong,.legal-add-block > span) { font-size:var(--panel-secondary-size); line-height:1.5; }
+.admin-workspace .admin-content :is(.legal-item-actions,.legal-add-block,.legal-section-toolbar,.legal-format-tools,.legal-editor-switch) button { font-size:14px !important; min-height:44px; }
+:is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) :is(.account-stories-overview-heading > div > p:not(.eyebrow),.profile-story-manager p:not(.eyebrow),.help-human-support p) { font-size:var(--panel-copy-size); line-height:1.65; }
+:is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) :is(.help-support-links a,.help-guide-results button span,.help-feedback,.help-footer,.owner-story-details time) { font-size:var(--panel-secondary-size); line-height:1.6; }
+:is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) .owner-story-details > span { font-size:var(--panel-meta-size); line-height:1.5; }
+.admin-workspace .admin-content .admin-profile-card-documents strong { font-size:var(--panel-secondary-size); line-height:1.5; }
+.account-workspace .account-content .owner-profile-list { grid-template-columns:minmax(0,1fr); min-width:0; }
+.account-workspace .account-content .owner-profile-card,
+.account-workspace .account-content .owner-profile-card > div { min-width:0; max-width:100%; }
+.account-workspace .account-content .owner-profile-card :is(h2,p) { overflow-wrap:anywhere; }
+.account-workspace .account-content :is(.membership-list,.membership-incoming,.membership-outgoing) p { font-size:var(--panel-copy-size); line-height:1.65; }
+.account-workspace .account-content .membership-list > strong { font-size:var(--panel-meta-size); line-height:1.5; }
+.admin-workspace .admin-content :is(.admin-recent-activity a,.operational-metrics span,.operational-details > summary,.admin-media-quota span,.admin-media-quota > strong,.admin-account-advanced-filters > summary b) { font-size:var(--panel-secondary-size); line-height:1.6; }
+.admin-workspace .admin-content .operational-panel p:not(.eyebrow) { font-size:var(--panel-copy-size); line-height:1.65; }
+.account-workspace .account-content .exclusive-content-manager > header > strong { font-size:var(--panel-secondary-size); line-height:1.5; }
+:is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) .help-footer :is(span,a,summary) { font-size:var(--panel-secondary-size); line-height:1.6; }
 /* Private panels only: public headers, cards and actions keep their sizing. */
 :is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) :is(input:not([type="checkbox"],[type="radio"],[type="hidden"],[type="file"],[type="button"],[type="submit"],[type="reset"],[type="range"],[type="color"],[type="image"]),select,textarea) {
   font-size:16px; line-height:1.5; min-height:44px; max-width:100%; min-width:0;
@@ -10,6 +97,16 @@
 .admin-workspace .admin-account-card-actions { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
 .admin-workspace .admin-account-card-actions > .button,.admin-workspace .admin-account-card-actions > form { flex:0 1 auto; width:auto; }
 .admin-workspace .admin-account-card-actions .button { width:auto; min-height:44px; height:auto; padding:10px 16px; border-radius:var(--corner-10); }
+/* Keep each account's review controls inside its own complete resource card. */
+.admin-workspace .admin-content .admin-account-card > .review-coordination { width:100%; margin:0; }
+.admin-workspace .admin-content .admin-account-card dl { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.admin-workspace .admin-content .admin-account-card dl > div { min-height:0; padding:8px 10px; gap:3px; }
+.admin-workspace .admin-content .admin-account-email-policy + .admin-account-detail-layout { margin-top:20px; }
+.admin-workspace .admin-content .admin-account-telegram > .admin-media-empty { margin:16px 0 0; }
+.admin-workspace .admin-content .admin-account-history > .admin-media-empty { margin:16px 0; }
+.admin-workspace .admin-content .admin-account-history > .admin-account-reregistered { margin:16px 0 0; }
+.admin-workspace .admin-content .admin-github-profile-link { display:inline-flex; align-items:center; gap:7px; max-width:100%; overflow-wrap:anywhere; }
+.admin-github-profile-link > .action-icon { flex:0 0 16px; width:16px; height:16px; margin:0; }
 
 .content-tone-content { --content-tone:#ffd49d; --content-border:#85633f; --content-surface:#292218; }
 .content-tone-search { --content-tone:#bbd9ff; --content-border:#496c98; --content-surface:#15273f; }

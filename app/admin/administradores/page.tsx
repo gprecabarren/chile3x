@@ -1,4 +1,5 @@
 import { ActionButton } from "@/app/ActionButton";
+import { ActionIcon } from "@/app/ActionIcon";
 import { desc, eq } from "drizzle-orm";
 import Link from "@/app/NavigationLink";
 import { redirect } from "next/navigation";
@@ -115,7 +116,7 @@ export default async function AdministratorsPage({ searchParams }: { searchParam
       <header><p>PERSONAS AUTORIZADAS</p><h2>{grants.length} acceso{grants.length === 1 ? "" : "s"} registrado{grants.length === 1 ? "" : "s"}</h2></header>
       <div className="admin-access-cards">{grants.map((grant) => <article className={`admin-access-card${grant.isActive ? "" : " is-revoked"}`} key={grant.id}>
         <header>
-          <div><span className="admin-access-role">{ADMIN_ACCESS_LABELS[grant.accessLevel]}</span><h3>{administratorName(grant.displayName, grant.githubLogin)}</h3><Link href={`https://github.com/${encodeURIComponent(grant.githubLogin)}`} target="_blank" rel="noreferrer">@{grant.githubLogin} ↗</Link></div>
+          <div><span className="admin-access-role">{ADMIN_ACCESS_LABELS[grant.accessLevel]}</span><h3>{administratorName(grant.displayName, grant.githubLogin)}</h3><Link className="admin-github-profile-link" href={`https://github.com/${encodeURIComponent(grant.githubLogin)}`} target="_blank" rel="noreferrer">@{grant.githubLogin}<ActionIcon name="open" /></Link></div>
           <span className={`admin-access-status${grant.isActive ? " is-active" : ""}`}>{grant.isActive ? (grant.userId ? "Activo" : "Invitado") : "Revocado"}</span>
         </header>
         {grant.isProtectedOwner && <p className="admin-access-protected">Identidad propietaria protegida. No puede ser removida ni modificada desde el panel.</p>}

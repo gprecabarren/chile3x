@@ -6,6 +6,8 @@ El proyecto está construido para operar en Cloudflare con Workers, D1 y R2, sin
 
 Para continuar el desarrollo desde este repositorio: [mapa de arquitectura y flujos](docs/mapa-desarrollo.md), [esquema completo de D1](docs/esquema-base-datos.md) e [inventario de rutas](docs/rutas-aplicacion.md). Leer también [AGENTS.md](AGENTS.md). Cada publicación en Cloudflare debe corresponder a un commit enviado a GitHub; comprobar ambas partes antes de darla por terminada.
 
+Revisión del 24 de octubre: [formularios, fechas de viaje, paneles y WhatsApp en escritorio](docs/qa-paneles-viajes-2026-10-24.md). Las fechas nuevas se validan con el día de Chile tanto en el navegador como al guardar; los viajes terminados se conservan como datos privados y dejan de anunciarse como próximas visitas.
+
 <!-- TECHNICAL_HANDOFF_START -->
 ## Guía técnica de traspaso — 24 de octubre de 2026
 

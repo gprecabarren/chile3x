@@ -4,7 +4,7 @@ import { collaborationGuards,listingPeriods,privateProfileSamples,privateSampleM
 import { adminHasCapability } from "./admin-permissions";
 import type { AdminUser } from "./auth";
 import { guardedBatch,type ReviewVersion,CollaborationConflict } from "./collaboration";
-import { readProfileSubmission,resolveProfileHandle,ProfileValidationError } from "./profile-submission";
+import { readProfileSubmission,resolveProfileHandle,ProfileValidationError,validateProfileTravelDates } from "./profile-submission";
 import { sampleForm,sampleFormJson,sampleIsAvailable,sampleTokenHash,SAMPLE_ID,PRIVATE_SAMPLES_ENABLED } from "./private-sample-policy";
 import { slugify } from "./profile";
 import type { PublicProfile } from "./directory";
@@ -29,7 +29,7 @@ export async function canOpenSample(id:string,token:string|undefined) {
   const candidate=await crypto.subtle.importKey("raw",new TextEncoder().encode(hash),{name:"HMAC",hash:"SHA-256"},false,["verify"]);
   return await crypto.subtle.verify("HMAC",candidate,signature,new TextEncoder().encode("sample-access"))?row:null;
 }
-export function sampleSubmission(row:{formJson:string}) { return readProfileSubmission(sampleForm(row.formJson)); }
+export function sampleSubmission(row:{formJson:string}) { return readProfileSubmission(sampleForm(row.formJson), {travelDateValidation:"stored"}); }
 export function sampleInitial(row:{formJson:string}) {
   const s=sampleSubmission(row);return {...s,comuna:s.comuna??"",contactWhatsapp:s.contactWhatsapp??"",contactTelegram:s.contactTelegram??"",details:{...s.details,contactPhone:s.details.contactPhone??"",contactEmail:s.details.contactEmail??"",referenceLocation:s.details.referenceLocation??"",schedule:s.details.schedule??"",metadata:JSON.parse(s.details.metadata) as Record<string,string>}};
 }
@@ -41,7 +41,10 @@ export async function createPrivateSample(form:FormData,admin:AdminUser) {
   return id;
 }
 export async function updatePrivateSample(id:string,form:FormData,version:ReviewVersion,admin:AdminUser) {
-  const formJson=sampleFormJson(form),s=readProfileSubmission(sampleForm(formJson));
+  const formJson=sampleFormJson(form),s=readProfileSubmission(sampleForm(formJson), {travelDateValidation:"stored"});
+  const existing=await getPrivateSample(id);
+  if(!existing||existing.migratedAt)throw new CollaborationConflict();
+  validateProfileTravelDates(s,sampleSubmission(existing).details.metadata);
   await guardedBatch(version,[(await getDb()).update(privateProfileSamples).set({displayName:s.displayName,formJson,updatedAt:new Date().toISOString()}).where(and(eq(privateProfileSamples.id,id),isNull(privateProfileSamples.migratedAt)))],admin.id);
 }
 export async function privateSampleView(row:NonNullable<Awaited<ReturnType<typeof getPrivateSample>>>):Promise<PublicProfile> {
@@ -53,13 +56,14 @@ export async function migratePrivateSample(row:NonNullable<Awaited<ReturnType<ty
   const db=await getDb(),owner=(await db.select().from(users).where(eq(users.email,email.trim().toLowerCase())).limit(1))[0];
   if(!owner||owner.role==="admin"||!owner.isActive||owner.selfDisabledAt||owner.adminDisabledAt)throw new ProfileValidationError("Selecciona el correo de una cuenta de anunciante activa. Puedes crearla desde Cuentas y volver aquí.");
   if(!owner.emailVerifiedAt&&!owner.emailVerificationExemptAt)throw new ProfileValidationError("La cuenta debe verificar su correo antes de publicar la muestra.");
-  const s=sampleSubmission(row),files=await sampleMedia(row.id);
+  const s=readProfileSubmission(sampleForm(row.formJson)),files=await sampleMedia(row.id);
   if(!files.some(f=>f.mediaType==="image"))throw new ProfileValidationError("Sube al menos una foto antes de publicar.");
   const handle=await resolveProfileHandle(s.handle,s.displayName),id=`prf_${crypto.randomUUID()}`,now=new Date().toISOString(),guard=crypto.randomUUID();
   const tags=s.tags.map(tag=>({id:`tag_${crypto.randomUUID()}`,profileId:id,tag}));
   const services=[...s.servicesIncluded.map(service=>({id:`srv_${crypto.randomUUID()}`,profileId:id,service,kind:"included" as const})),...s.servicesAdditional.map(service=>({id:`srv_${crypto.randomUUID()}`,profileId:id,service,kind:"additional" as const}))];
   // The sample revision, account state, new listing and ownership transfer
   // commit in ONE D1 batch. No half-published listing or duplicate migration.
+  validateProfileTravelDates(s);
   await guardedBatch(version,[
     db.insert(collaborationGuards).values({id:guard,allowed:sql`case when exists(select 1 from users where id=${owner.id} and revision=${owner.revision} and is_active=1 and role!='admin' and self_disabled_at is null and admin_disabled_at is null) and exists(select 1 from private_profile_samples where id=${row.id} and migrated_at is null) then 1 else 0 end`}),
     db.insert(profiles).values({id,ownerId:owner.id,type:"escort",status:"approved",slug:`${slugify(s.displayName)}-${crypto.randomUUID().slice(0,8)}`,handle,displayName:s.displayName,shortDescription:s.shortDescription,description:s.description,region:s.region,city:s.city,comuna:s.comuna,contactWhatsapp:s.contactWhatsapp,contactTelegram:s.contactTelegram,tier:s.tier,creationSource:"admin",createdByAdminId:admin.id,createdByAdminLogin:admin.githubLogin,verificationStatus:"unreviewed",updatedAt:now}),

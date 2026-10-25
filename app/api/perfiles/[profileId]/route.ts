@@ -17,7 +17,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   try {
     const formData = await request.formData();
-    const submission = readProfileSubmission(formData);
+    const submission = readProfileSubmission(formData, {travelDateValidation: "stored"});
     const result = await updateProfile(profileId, user.id, submission, {version:expectedVersion(formData,`profile:${profileId}`)});
     const notice = result.contactOnly ? "contacts_saved" : submission.intent === "submit" ? "submitted" : "saved";
     return mutationRedirect(request,new URL(result.updated ? `/mi-cuenta/${profileId}/editar?notice=${notice}` : "/mi-cuenta?notice=error", request.url));

@@ -24,7 +24,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try {
     const form = await request.formData();
     const version = expectedVersion(form,`profile:${profileId}`);
-    const submission = readProfileSubmission(form);
+    const submission = readProfileSubmission(form, {travelDateValidation: "stored"});
     const result = await updateProfile(profileId, before.profile.ownerId, submission, { adminEditor: true, version, actorId:admin.id });
     if (!result.updated) return new Response("El anuncio ya no está disponible para editar.", { status: 409 });
     const [savedState] = await db.select({ status: profiles.status, verificationStatus: profiles.verificationStatus }).from(profiles).where(eq(profiles.id, profileId)).limit(1);

@@ -7,6 +7,7 @@ import { hasUnlimitedEscortListings } from "@/lib/profile-limits";
 import { profileMetadataForType } from "@/lib/profile-type-metadata";
 import { profileDemographicsError } from "@/lib/profile-demographics";
 import { incompatibleProfileTags, profileTagsForGender, PROFILE_TAG_COMBINATION_MESSAGE } from "@/lib/profile-tag-policy";
+import { travelDateError, travelDateShapeError } from "@/lib/travel-date-policy";
 import {
   additionalServices,
   compactText,
@@ -182,7 +183,7 @@ function normalizeTelegram(value: string) {
   return username;
 }
 
-export function readProfileSubmission(formData: FormData): ProfileSubmission {
+export function readProfileSubmission(formData: FormData, options: { travelDateValidation?: "stored" } = {}): ProfileSubmission {
   const typeValue = compactText(formData.get("type"), 20);
   const tierValue = compactText(formData.get("tier"), 20);
   const region = compactText(formData.get("region"), 120);
@@ -261,15 +262,23 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
   if (availabilityError) throw new ProfileValidationError(availabilityError);
   const availability = serializeAvailability(formData);
   const travelCity = typeValue === "escort" && !contentOnly ? compactText(formData.get("travel_city"), 120) : "";
-  const travelStart = compactText(formData.get("travel_start"), 10);
-  const travelEnd = compactText(formData.get("travel_end"), 10);
+  const travelStart = compactText(formData.get("travel_start"), 180);
+  const travelEnd = compactText(formData.get("travel_end"), 180);
   const travelNote = compactText(formData.get("travel_note"), 180);
   const allowedTravelCities = new Set([...citiesByRegion.values()].flat());
   if (typeValue === "escort" && !contentOnly && [travelCity, travelStart, travelEnd].some(Boolean) && !(travelCity && travelStart && travelEnd)) {
     throw new ProfileValidationError("Para publicar un viaje indica ciudad, fecha de inicio y fecha de término.");
   }
-  if (travelCity && (!allowedTravelCities.has(travelCity) || !/^\d{4}-\d{2}-\d{2}$/.test(travelStart) || !/^\d{4}-\d{2}-\d{2}$/.test(travelEnd) || travelStart > travelEnd)) {
+  if (travelCity && !allowedTravelCities.has(travelCity)) {
     throw new ProfileValidationError("La agenda de viaje no es válida.");
+  }
+  if (travelCity) {
+    // Stored dates may describe a trip already underway or finished. Only the
+    // mutation can compare them with trusted persisted data before allowing it.
+    const travelError = options.travelDateValidation === "stored"
+      ? travelDateShapeError(travelStart, travelEnd)
+      : travelDateError(travelStart, travelEnd);
+    if (travelError) throw new ProfileValidationError(travelError);
   }
 
   if (!contactWhatsapp) {
@@ -278,7 +287,7 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
 
   const metadata = Object.fromEntries(
     metadataFields
-      .filter(field => !contentOnly || !field.startsWith("travel_"))
+      .filter(field => !field.startsWith("travel_") || (typeValue === "escort" && !contentOnly))
       .filter((field) => typeValue === "escort" || !["gender", "age", "nationality", "skin_color", "languages", "height_cm", "weight_kg", "measurements", "hair_color", "body_type", "bust_size"].includes(field))
       .filter((field) => typeValue !== "rental" || !["agency_years", "website", "facebook_url", "twitter_url", "arsmate_url", "onlyfans_url", "promotions", "contact_methods"].includes(field))
       .map((field) => [field, compactText(formData.get(field), field === "promotions" ? 500 : 180)] as const)
@@ -407,6 +416,19 @@ async function replaceProfileCollections(profileId: string, submission: ProfileS
   }
 }
 
+export function validateProfileTravelDates(submission: ProfileSubmission, existingMetadata?: string) {
+  if (submission.type !== "escort") return;
+  const metadata = normalizedMetadata(submission.details.metadata);
+  if (metadata.content_only === "1" || !metadata.travel_city) return;
+  const stored = existingMetadata ? normalizedMetadata(existingMetadata) : {};
+  // Preserve an unchanged historical/ongoing trip when editing contacts or its
+  // note. A changed city or either changed date must satisfy today's bounds.
+  const unchanged = ["travel_city", "travel_start", "travel_end"].every(key => metadata[key] === stored[key]);
+  if (unchanged) return;
+  const error = travelDateError(String(metadata.travel_start ?? ""), String(metadata.travel_end ?? ""));
+  if (error) throw new ProfileValidationError(error);
+}
+
 export async function createProfile(ownerId: string, submission: ProfileSubmission, options: { adminCreator?: { id: string; githubLogin: string } } = {}) {
   const db = await getDb();
   if (submission.type === "escort") {
@@ -428,6 +450,9 @@ export async function createProfile(ownerId: string, submission: ProfileSubmissi
   const updatedAt = now.toISOString();
   const slug = [slugify(submission.displayName), slugify(submission.city), crypto.randomUUID().slice(0, 8)].join("-");
   const handle = await resolveProfileHandle(submission.handle, submission.displayName);
+  // Recheck with the server clock immediately before writing; parsing the form
+  // may have happened on the other side of midnight in Chile.
+  validateProfileTravelDates(submission);
 
   try {
     await db.insert(profiles).values({
@@ -584,6 +609,7 @@ export async function updateProfile(profileId: string, ownerId: string, submissi
     ...(submission.tags.length?[db.insert(profileTagRows).values(submission.tags.map(tag=>({id:`tag_${crypto.randomUUID()}`,profileId,tag})))]:[]),
     ...serviceWrites,
   ] : contactTagUpdates;
+  validateProfileTravelDates(submission, existing.details?.metadata);
   await guardedBatch(options.version ?? {key:`profile:${profileId}`,revision:existing.profile.revision}, [profileUpdate,detailsUpdate,...collectionUpdates],options.actorId);
   if (!options.adminEditor) await createAdminNotification({
     kind: "profile_updated",

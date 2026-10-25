@@ -1,4 +1,5 @@
 import { ActionButton } from "@/app/ActionButton";
+import { currentTravelAgenda } from "@/lib/travel-date-policy";
 import { PrivateSampleShell } from "@/app/muestra/PrivateSampleShell";
 import type { Metadata } from "next";
 import { Suspense } from 'react';
@@ -166,12 +167,7 @@ export default async function PublicProfilePage({ params, searchParams, sample }
   const exclusiveMedia = exclusiveContent.media;
   const age = publicProfileAge(profile.type,profile.details.metadata);
   const hasExclusiveAccess = exclusiveMedia.length > 0 && exclusiveContent.hasAccess;
-  const travel = profile.type === "escort" && !isContentOnly(profile) && profile.details.metadata.travel_city && profile.details.metadata.travel_start && profile.details.metadata.travel_end ? {
-    city: profile.details.metadata.travel_city,
-    start: profile.details.metadata.travel_start,
-    end: profile.details.metadata.travel_end,
-    note: profile.details.metadata.travel_note,
-  } : null;
+  const travel = profile.type === "escort" && !isContentOnly(profile) ? currentTravelAgenda(profile.details.metadata) : null;
 
   const ProfileShell = sample ? PrivateSampleShell : DirectoryShell;
   return (

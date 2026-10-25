@@ -95,7 +95,7 @@ export function PrivacyConsent() {
       <div>
         <p className="eyebrow">TU ELECCIÓN</p>
         <h2 id="privacy-consent-title">Privacidad y medición</h2>
-        <p>Usamos almacenamiento y cookies necesarias para que Chile3X funcione. Con tu permiso, medimos visitas y acciones generales sin enviar nombres, correos, teléfonos, RUT, direcciones, archivos ni otros datos personales a Google.</p>
+        <p>Usamos almacenamiento y cookies necesarias para que Chile3X funcione.</p>
       </div>
       <div className="privacy-consent-actions">
         <ActionButton className="button button-primary" type="button" onClick={() => chooseConsent("granted")}>Aceptar medición</ActionButton>

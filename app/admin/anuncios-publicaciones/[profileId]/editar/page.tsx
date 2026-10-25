@@ -1,3 +1,4 @@
+import { chileanDay } from "@/lib/chile-day";
 import { ActionAnchor } from "@/app/ActionButton";
 import { and, eq, isNull } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
@@ -78,7 +79,7 @@ export default async function AdminEditProfilePage({ params, searchParams }: {
     {row.ownerActive && profile.status === "approved" && !profile.ownerHiddenAt
       ? <ProfileStoryManager adminMode canUploadImages={adminHasCapability(admin, "media.moderate")} profileId={profileId} profileName={profile.displayName} stories={stories} />
       : <section id="historias" className="admin-empty"><h2>Historias y estados de texto</h2><p>Para publicar historias, el anuncio debe estar publicado, visible y pertenecer a una cuenta activa. No se cambia su estado automáticamente.</p></section>}
-    {row.ownerActive && <section id="datos-del-anuncio" className="profile-editor-fields"><ProfileForm adminEdit action={`/api/admin/profiles/${profileId}/editar`} submitLabel="Guardar cambios del anuncio" initial={{
+    {row.ownerActive && <section id="datos-del-anuncio" className="profile-editor-fields"><ProfileForm travelToday={chileanDay()} adminEdit action={`/api/admin/profiles/${profileId}/editar`} submitLabel="Guardar cambios del anuncio" initial={{
       type: profile.type, handle: profile.handle, displayName: profile.displayName, region: profile.region, city: profile.city, comuna: profile.comuna ?? "",
       shortDescription: profile.shortDescription, description: profile.description, contactWhatsapp: profile.contactWhatsapp ?? "", contactTelegram: profile.contactTelegram ?? "", tier: profile.tier,
       details: { contactPhone: row.details?.contactPhone ?? "", contactEmail: row.details?.contactEmail ?? "", referenceLocation: row.details?.referenceLocation ?? "", schedule: row.details?.schedule ?? "", priceAmount: row.details?.priceAmount, currency: row.details?.currency ?? "CLP", metadata: readMetadata(row.details?.metadata ?? "{}") },

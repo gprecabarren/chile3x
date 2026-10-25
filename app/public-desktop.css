@@ -1,6 +1,9 @@
 /* Desktop composition; phone layouts retain their existing CSS exactly.
    More space means more columns, not oversized buttons, images or paragraphs. */
 @media (min-width:1100px) {
+  /* Keep the existing fixed vertical position and shared contact dialog. */
+  :root body .portal-whatsapp-widget { left:auto; right:16px; }
+
   :is(.home-layout,.directory-root) {
     --public-wide-max:3200px;
     --public-page-gutter:clamp(24px,2.5vw,80px);
@@ -112,6 +115,9 @@
   :root body .home-city-directory-links > a { max-width:280px; }
   :root body .home-discovery-controls > .home-location-summary { width:min(100%,1100px); grid-template-columns:minmax(0,1fr) minmax(280px,420px); }
   :root body .home-layout:not(.home-layout--compact) .hero { grid-template-columns:minmax(0,1fr); min-height:0; padding-block:64px 56px; gap:0; }
+  /* The portrait starts near the artwork's top edge. Wider viewports must
+     crop the lower scenery rather than the head, including browser zoom. */
+  :root body .home-layout--classic .hero-backdrop img { object-position:center top; }
   :root body .home-layout .hero-copy { max-width:980px; }
   :root body .home-layout--classic .hero h1 { max-width:1000px; font-size:clamp(44px,3.9vw,72px); line-height:1.04; }
   :root body .home-layout--classic .hero-text { max-width:72ch; }

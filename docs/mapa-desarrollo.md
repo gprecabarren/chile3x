@@ -61,6 +61,8 @@ El borrador y el envío a revisión son intenciones distintas. El envío normal 
 
 Una edición relevante normal vuelve a revisión. Un cambio solo de contactos conserva un anuncio aprobado. La edición administrativa tiene una opción autorizada para conservar moderación. La versión y los cambios se guardan con `guardedBatch`; si la revisión quedó antigua, responder `409` sin repetir automáticamente la escritura.
 
+La agenda usa `lib/travel-date-policy.ts`: los viajes nuevos o modificados admiten desde hoy en `America/Santiago` hasta el 31 de diciembre del año siguiente. El servidor vuelve a comprobar el reloj antes de escribir. Un viaje ya guardado puede conservarse sin cambios al editar contactos o notas; modificar ciudad o fechas exige el período vigente. Las muestras se pueden editar con esa misma excepción, pero su publicación exige fechas vigentes. El perfil público omite viajes terminados y fechas inválidas sin borrar el historial guardado. Los selectores históricos de nacimiento y filtros mantienen sus límites propios.
+
 El formulario comparte datos con agencias, arriendos y muestras: no esconder campos solo visualmente ni relajar la validación de servidor por cambiar el layout.
 
 ### Visibilidad pública y SEO
@@ -145,6 +147,10 @@ Las restricciones de identidad, límite Escort, revisiones, compatibilidad de et
 Tema global `classic`/`liquid-glass` y diseño del inicio `classic`/`compact` son ejes separados seleccionados por servidor. Compartir estructura y controles; el CSS exclusivo de Glass conserva su carga condicional y nombre versionado. No crear URLs duplicadas por tema ni selección solo en almacenamiento del navegador.
 
 DM Sans local es la familia global, con excepciones técnicas para código/IP. Cambiar tamaños o pesos no implica cambiar la fuente. Mantener radios mediante `corner-tokens.css`, botones compartidos y selects nativos; evitar contextos de apilado que atrapen diálogos.
+
+Los campos de creación comparten etiquetas de 16 px y ayudas de 14 px. Los resúmenes de Horarios y Agenda muestran su explicación antes de abrirse; los horarios también indican los días seleccionados. Los paneles privados conservan una jerarquía de texto principal, secundario y metadatos; las correcciones se acotan fuera del encabezado público. WhatsApp flotante se ancla a la derecha desde 1100 px, manteniendo el diálogo, el movimiento y las reglas móviles existentes. Evidencia en [qa-paneles-viajes-2026-10-24.md](qa-paneles-viajes-2026-10-24.md).
+
+La portada clásica alinea arriba su arte en escritorio para conservar la cabeza completa. La nota bajo regiones admite un vacío explícito y no deja un párrafo vacío; la descripción de cobertura usa lenguaje del directorio ya publicado. Los textos continúan en los JSON de ajustes de cada diseño, editables con su SEO desde administración. Los valores efectivos de D1 y los predeterminados del código son capas distintas; la clave de caché pública incluye la revisión de ajustes. El listado administrativo de cuentas coloca su coordinación dentro de la tarjeta sin cambiar el alcance ni la revisión del recurso.
 
 Esta entrega añadió Hombres derivado de Masculino en cliente/servidor; controles legibles; íconos compartidos de contacto; horarios y Agenda de viajes desplegables. Las selecciones se conservan y la validación abre los grupos necesarios. También corrige la próxima disponibilidad semanal y la hidratación de actividad. Evidencia en [qa-escort-form-2026-10-24.md](qa-escort-form-2026-10-24.md).
 

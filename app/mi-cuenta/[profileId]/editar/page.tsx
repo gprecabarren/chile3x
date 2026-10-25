@@ -1,3 +1,4 @@
+import { chileanDay } from "@/lib/chile-day";
 import { ActionAnchor, ActionButton } from "@/app/ActionButton";
 import { and, eq, isNull } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
@@ -66,7 +67,7 @@ export default async function EditProfilePage({ params, searchParams }: { params
         {row.profile.type === "escort" && <ProfileVerificationDocuments profileId={profileId} initialDocuments={documents} />}
         <section className="profile-visibility-panel"><div><p className="eyebrow">VISIBILIDAD</p><h2>{row.profile.ownerHiddenAt ? "Tu anuncio está oculto" : "Ocultar este anuncio"}</h2><p>Ocultarlo lo retira del directorio sin borrar sus datos, medios ni estado de revisión. Puedes volver a mostrarlo cuando quieras.</p></div><form action={`/api/perfiles/${profileId}/visibilidad`} method="post"><input name="return_to" type="hidden" value={`/mi-cuenta/${profileId}/editar`} /><input name="action" type="hidden" value={row.profile.ownerHiddenAt ? "show" : "hide"} /><ActionButton className="button button-outline" type="submit">{row.profile.ownerHiddenAt ? "Volver a mostrar" : "Ocultar anuncio"}</ActionButton></form></section>
         <details className="profile-trash-control is-destructive"><summary>🗑 Eliminar este anuncio</summary><form action={`/api/perfiles/${profileId}/papelera`} method="post"><p>El aviso dejará de verse públicamente y saldrá de tu panel. Solo administración podrá restaurarlo.</p><label>Escribe ELIMINAR<input name="confirmation" required autoComplete="off" /></label><ActionButton className="button button-danger" type="submit">Confirmar eliminación</ActionButton></form></details>
-        <ProfileForm
+        <ProfileForm travelToday={chileanDay()}
           review={{key:`profile:${profileId}`,revision:row.profile.revision}}
           action={`/api/perfiles/${profileId}`}
           submitLabel="Guardar cambios del anuncio"

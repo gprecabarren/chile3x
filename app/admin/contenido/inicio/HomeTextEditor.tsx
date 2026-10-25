@@ -12,6 +12,9 @@ const FIELD_HELP:Partial<Record<HomeTextKey,string>>={
   socialDescription:"Descripción de la tarjeta social. Si la dejas vacía se usa la descripción SEO de este diseño.",
   title:"Este es el encabezado H1 que se lee dentro de la página. Cambiarlo no cambia automáticamente el título SEO.",
   titleAccent:"Continuación visual del mismo H1. No es otro título SEO.",
+  regionsAccent:"Continuación del título de regiones del Home clásico.",
+  coverageNote:"Se muestra bajo las regiones del Home clásico. Déjalo vacío para ocultar la nota sin reservar espacio en la portada.",
+  feature2Text:"Descripción de la segunda ventaja, visible en ambos diseños de la portada.",
 };
 export function HomeTextEditor({classic,compact,revision,activeLayout}:{classic:HomeTexts;compact:HomeTexts;revision:number;activeLayout:HomeLayout}) {
   const [busy,setBusy]=useState(false),[error,setError]=useState("");

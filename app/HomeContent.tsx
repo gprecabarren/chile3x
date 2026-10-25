@@ -153,7 +153,7 @@ export async function HomeContent({ layout, preview = false }: { layout: HomeLay
             </section>
           ))}
         </div>
-        <p className="directory-note">{copy.coverageNote}</p></>}
+        {copy.coverageNote && <p className="directory-note">{copy.coverageNote}</p>}</>}
         <form className="home-search home-search-after-coverage" action="/escorts" method="get" role="search">
           <label htmlFor="home-profile-search">{copy.searchLabel}</label>
           <div><input id="home-profile-search" name="nombre" type="search" minLength={2} maxLength={80} placeholder={copy.searchPlaceholder} /><ActionButton type="submit">{copy.searchButton}</ActionButton></div>

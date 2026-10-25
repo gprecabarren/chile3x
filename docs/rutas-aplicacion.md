@@ -2,7 +2,7 @@
 
 Referencia de código: `main` en `5d42099` más los cambios locales de esta entrega, 24 de octubre de 2026. Incluye las rutas de archivos presentes; no prueba publicación ni autorización de cada una. Las reglas efectivas están en el Worker, los layouts, cada handler y sus servicios.
 
-Hay **83 páginas**, **121 handlers en app/api** y **11 handlers adicionales**. Los parámetros entre corchetes representan rutas dinámicas.
+Hay **83 páginas**, **124 handlers en app/api** y **11 handlers adicionales**. Los parámetros entre corchetes representan rutas dinámicas.
 
 ## Páginas
 
@@ -116,6 +116,9 @@ Hay **83 páginas**, **121 handlers en app/api** y **11 handlers adicionales**. 
 | `/api/admin/media/[mediaId]` | POST | [handler](../app/api/admin/media/[mediaId]/route.ts) |
 | `/api/admin/moderacion-resumen` | GET | [handler](../app/api/admin/moderacion-resumen/route.ts) |
 | `/api/admin/muestras/[sampleId]` | POST | [handler](../app/api/admin/muestras/[sampleId]/route.ts) |
+| `/api/admin/muestras/[sampleId]/media` | POST / PATCH | [handler](../app/api/admin/muestras/[sampleId]/media/route.ts) |
+| `/api/admin/muestras/[sampleId]/media/[mediaId]` | PATCH / DELETE | [handler](../app/api/admin/muestras/[sampleId]/media/[mediaId]/route.ts) |
+| `/api/admin/muestras/[sampleId]/media/[mediaId]/procesar` | GET / POST | [handler](../app/api/admin/muestras/[sampleId]/media/[mediaId]/procesar/route.ts) |
 | `/api/admin/muestras` | POST | [handler](../app/api/admin/muestras/route.ts) |
 | `/api/admin/noticias/[postId]` | POST | [handler](../app/api/admin/noticias/[postId]/route.ts) |
 | `/api/admin/noticias/media` | POST | [handler](../app/api/admin/noticias/media/route.ts) |
@@ -236,3 +239,5 @@ Hay **83 páginas**, **121 handlers en app/api** y **11 handlers adicionales**. 
 - `worker/moderation-mail.ts`: reenvío de correo entrante configurado.
 
 La ausencia de una ruta en `app/api` no la convierte en un archivo público: por ejemplo, `/contenido/:id`, `/media/:id`, archivos de muestras y evidencias aplican sus controles de acceso propios.
+
+Actualización de muestras (25 de octubre de 2026): el parámetro público `/muestra/[sampleId]` acepta también el usuario privado corto; conserva alias por ID, acceso por fragmento/cookie y archivos privados sin indexación. La API administrativa principal incluye recuperar/compartir/conservar/revocar enlace, extender, contacto, papelera, restauración y conversión confirmada. Los endpoints de medios exigen autorización y revisión de la misma muestra.

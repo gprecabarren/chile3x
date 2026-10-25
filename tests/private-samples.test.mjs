@@ -50,14 +50,15 @@ test('expired sample cleanup atomically queues only privately owned files and re
   const {purgeExpiredSamples}=await import('../worker/private-sample-cleanup.ts');
   const sqlite=new DatabaseSync(':memory:');
   try{
-   sqlite.exec("PRAGMA foreign_keys=ON;CREATE TABLE users(id TEXT PRIMARY KEY);CREATE TABLE profiles(id TEXT PRIMARY KEY);INSERT INTO users VALUES('admin');CREATE TABLE data_deletion_jobs(id TEXT PRIMARY KEY,r2_key TEXT UNIQUE,created_at TEXT);");
+   sqlite.exec("PRAGMA foreign_keys=ON;CREATE TABLE users(id TEXT PRIMARY KEY);CREATE TABLE profiles(id TEXT PRIMARY KEY,owner_id TEXT,type TEXT,trashed_at TEXT,creation_source TEXT,created_by_admin_id TEXT);CREATE TABLE profile_media(r2_key TEXT);INSERT INTO users VALUES('admin');CREATE TABLE data_deletion_jobs(id TEXT PRIMARY KEY,r2_key TEXT UNIQUE,created_at TEXT);");
    sqlite.exec(await source('drizzle/0062_private_profile_samples.sql'));
+   sqlite.exec(await source('drizzle/0064_private_sample_workflow.sql'));
    const now=Date.now(),old=now-SAMPLE_RETENTION_MS-1;
    for(const [id,expires] of [['expired',old],['renewed',old],['active',now+1000]])sqlite.prepare('INSERT INTO private_profile_samples(id,display_name,form_json,expires_at,created_by) VALUES(?,?,?,?,?)').run(id,id,'[]',expires,'admin');
    for(const id of ['expired','renewed','active'])sqlite.prepare('INSERT INTO private_sample_media VALUES(?,?,?,?,?,?,?,?)').run(id+'-file',id,id+'-key',10,'image/png','image',1,0);
    let renewed=false;
-   const prepare=(sql,args=[])=>({bind:(...values)=>prepare(sql,values),async all(){return {results:sqlite.prepare(sql).all(...args)};},run(){return sqlite.prepare(sql).run(...args);}});
-   const binding={prepare,async batch(statements){if(!renewed){sqlite.prepare('UPDATE private_profile_samples SET expires_at=? WHERE id=?').run(now+1000,'renewed');renewed=true;}sqlite.exec('BEGIN');try{const result=statements.map(s=>s.run());sqlite.exec('COMMIT');return result;}catch(error){sqlite.exec('ROLLBACK');throw error;}}};
+   const prepare=(sql,args=[])=>({bind:(...values)=>prepare(sql,values),async all(){return {results:sqlite.prepare(sql).all(...args)};},run(){const result=sqlite.prepare(sql).run(...args);return {meta:{changes:Number(result.changes)}};}});
+   const binding={prepare,async batch(statements){if(!renewed){sqlite.prepare('UPDATE private_profile_samples SET expires_at=?,trashed_at=NULL,trash_reason=NULL WHERE id=?').run(now+1000,'renewed');renewed=true;}sqlite.exec('BEGIN');try{const result=statements.map(s=>s.run());sqlite.exec('COMMIT');return result;}catch(error){sqlite.exec('ROLLBACK');throw error;}}};
    await purgeExpiredSamples(binding,now);
    assert.deepEqual(sqlite.prepare('SELECT id FROM private_profile_samples ORDER BY id').all().map(r=>r.id),['active','renewed']);
    assert.deepEqual(sqlite.prepare('SELECT r2_key FROM data_deletion_jobs').all().map(r=>r.r2_key),['expired-key']);
@@ -75,11 +76,11 @@ test('private presentation omits analytics, public structured data and shared ca
 });
 
 test('conversion transfers ownership without duplicating objects or granting identity verification',async()=>{
- const library=await source('lib/private-samples.ts'),upload=await source('app/api/admin/muestras/[sampleId]/route.ts');
- assert.match(library,/await guardedBatch\(version,\[/);assert.match(library,/verificationStatus:"unreviewed"/);assert.match(library,/r2Key:file.r2Key/);assert.match(library,/db.delete\(privateSampleMedia\)/);assert.match(library,/emailVerifiedAt/);
+ const library=await source('lib/private-samples.ts'),upload=await source('lib/private-sample-media.ts');
+ assert.match(library,/await guardedBatch\(version,\s*\[/);assert.match(library,/verificationStatus:\s*"unreviewed"/);assert.match(library,/r2Key:\s*file.r2Key/);assert.match(library,/db.delete\(privateSampleMedia\)/);assert.match(library,/emailVerifiedAt/);
  assert.doesNotMatch(library,/\.MEDIA\.(?:put|delete)/);
- assert.match(upload,/reference\?\.inUse===0/);assert.match(upload,/profile_media where r2_key/);assert.match(upload,/sample_upload_cleanup_deferred/);
- assert.match(upload,/validatePreparedVideo\(await file.arrayBuffer\(\),video\)/);
+ assert.match(upload,/row\?\.inUse\s*===\s*0/);assert.match(upload,/profile_media where r2_key/);assert.match(upload,/sample_media_cleanup_deferred/);
+ assert.match(upload,/validatePreparedVideo\(await file.arrayBuffer\(\),\s*video\)/);
 });
 
 test('account invitation forms let long native selects shrink instead of clipping their mobile actions',async()=>{

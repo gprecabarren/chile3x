@@ -8,6 +8,8 @@ Para continuar el desarrollo desde este repositorio: [mapa de arquitectura y flu
 
 Revisión del 24 de octubre: [formularios, fechas de viaje, paneles y WhatsApp en escritorio](docs/qa-paneles-viajes-2026-10-24.md). Las fechas nuevas se validan con el día de Chile tanto en el navegador como al guardar; los viajes terminados se conservan como datos privados y dejan de anunciarse como próximas visitas.
 
+Actualización del 25 de octubre: [muestras privadas y seguimiento de contacto](docs/qa-muestras-2026-10-25.md). El mapa de desarrollo describe enlaces persistentes, papelera, galería compartida y conversión con autorización de un Escort adicional.
+
 <!-- TECHNICAL_HANDOFF_START -->
 ## Guía técnica de traspaso — 24 de octubre de 2026
 

@@ -516,6 +516,9 @@ export const profiles = sqliteTable("profiles", {
   creationSource: text("creation_source", { enum: ["self", "admin", "unknown"] }).notNull().default("unknown"),
   createdByAdminId: text("created_by_admin_id"),
   createdByAdminLogin: text("created_by_admin_login"),
+  // Applies only to this explicitly confirmed administrative sample migration,
+  // never as an account-wide allowance or a field accepted from public forms.
+  adminEscortLimitOverride: integer("admin_escort_limit_override", { mode: "boolean" }).notNull().default(false),
   type: text("type", { enum: ["escort", "agency", "rental"] }).notNull(),
   status: text("status", { enum: ["draft", "pending", "approved", "paused", "rejected", "expired"] }).notNull().default("draft"),
   slug: text("slug").notNull().unique(),
@@ -623,10 +626,13 @@ export const profileMedia = sqliteTable("profile_media", {
 
 export const privateProfileSamples = sqliteTable("private_profile_samples", {
   id:text("id").primaryKey(),displayName:text("display_name").notNull(),formJson:text("form_json").notNull(),
-  revision:integer("revision").notNull().default(0),tokenHash:text("token_hash").unique(),expiresAt:integer("expires_at").notNull(),
+  handle:text("handle").unique(),provenance:text("provenance",{enum:["sexosur","publiescort","relaxchile","elsilencio","otros"]}).notNull().default("otros"),
+  revision:integer("revision").notNull().default(0),tokenHash:text("token_hash").unique(),tokenEncrypted:text("token_encrypted"),legacyTokenHash:text("legacy_token_hash"),expiresAt:integer("expires_at").notNull(),
+  trashedAt:integer("trashed_at"),trashedBy:text("trashed_by").references(()=>users.id,{onDelete:"set null"}),trashReason:text("trash_reason",{enum:["manual","expired"]}),
+  contactedAt:text("contacted_at"),contactedBy:text("contacted_by").references(()=>users.id,{onDelete:"set null"}),contactedByLogin:text("contacted_by_login"),
   createdBy:text("created_by").notNull().references(()=>users.id),migratedProfileId:text("migrated_profile_id").references(()=>profiles.id,{onDelete:"set null"}),
   migratedAt:text("migrated_at"),createdAt,updatedAt:text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
-},table=>[index("private_profile_samples_updated").on(table.updatedAt),index("private_profile_samples_expiry").on(table.expiresAt)]);
+},table=>[index("private_profile_samples_updated").on(table.updatedAt),index("private_profile_samples_expiry").on(table.expiresAt),index("private_profile_samples_trash").on(table.trashedAt),index("private_profile_samples_provenance").on(table.provenance,table.updatedAt),index("private_profile_samples_contacted").on(table.contactedAt,table.updatedAt)]);
 export const privateSampleMedia = sqliteTable("private_sample_media", {
   id:text("id").primaryKey(),sampleId:text("sample_id").notNull().references(()=>privateProfileSamples.id,{onDelete:"cascade"}),
   r2Key:text("r2_key").notNull(),byteSize:integer("byte_size").notNull(),contentType:text("content_type").notNull(),

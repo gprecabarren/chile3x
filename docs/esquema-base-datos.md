@@ -1,8 +1,8 @@
 # Mapa del esquema D1
 
-Referencia: `db/schema.ts` del checkout de `main` en `5d42099`, contrastado el 24 de octubre de 2026. Inventario de código, sin consultar ni exportar datos remotos. Las 64 migraciones de `drizzle/` determinan el esquema SQL aplicado, sus triggers e índices adicionales; este documento no demuestra cuáles están aplicadas en producción.
+Referencia: `db/schema.ts` del checkout de trabajo de esta entrega, contrastado el 25 de octubre de 2026. Inventario de código, sin consultar ni exportar datos remotos. Las 65 migraciones de `drizzle/` determinan el esquema SQL aplicado, sus triggers e índices adicionales; este documento no demuestra cuáles están aplicadas en producción.
 
-El esquema tipado declara **92 tablas**, **802 columnas** y **103 relaciones de clave foránea**. Los nombres son metadatos públicos del código; aquí no hay valores de cuentas, tokens ni archivos.
+El esquema tipado declara **92 tablas**, **813 columnas** y **105 relaciones de clave foránea**. Los nombres son metadatos públicos del código; aquí no hay valores de cuentas, tokens ni archivos.
 
 Convenciones: PK = clave primaria; obligatorio = NOT NULL; predeterminado = el esquema declara un default. Las enumeraciones de Drizzle son contratos de tipo y deben contrastarse con los CHECK y triggers del SQL; no equivalen por sí solas a validación del motor.
 
@@ -516,9 +516,9 @@ Exportación: `portalWhatsappEvents` en [schema.ts](../db/schema.ts).
 
 Exportación: `privateProfileSamples` en [schema.ts](../db/schema.ts).
 
-**Columnas:** `id:text` PK; `display_name:text` obligatorio; `form_json:text` obligatorio; `revision:integer` obligatorio predeterminado; `token_hash:text`; `expires_at:integer` obligatorio; `created_by:text` obligatorio; `migrated_profile_id:text`; `migrated_at:text`; `created_at:text` obligatorio predeterminado; `updated_at:text` obligatorio predeterminado.
+**Columnas:** `id:text` PK obligatorio; `display_name:text` obligatorio; `form_json:text` obligatorio; `handle:text`; `provenance:text` obligatorio predeterminado {`sexosur`, `publiescort`, `relaxchile`, `elsilencio`, `otros`}; `revision:integer` obligatorio predeterminado; `token_hash:text`; `token_encrypted:text`; `legacy_token_hash:text`; `expires_at:integer` obligatorio; `trashed_at:integer`; `trashed_by:text`; `trash_reason:text` {`manual`, `expired`}; `contacted_at:text`; `contacted_by:text`; `contacted_by_login:text`; `created_by:text` obligatorio; `migrated_profile_id:text`; `migrated_at:text`; `created_at:text` obligatorio predeterminado; `updated_at:text` obligatorio predeterminado.
 
-**Relaciones:** `created_by` → `users(id)`; `migrated_profile_id` → `profiles(id)` (delete set null).
+**Relaciones:** `trashed_by` → `users(id)` (delete set null); `contacted_by` → `users(id)` (delete set null); `created_by` → `users(id)`; `migrated_profile_id` → `profiles(id)` (delete set null).
 
 **Índices del esquema:** `private_profile_samples_updated` (updated_at); `private_profile_samples_expiry` (expires_at).
 
@@ -662,7 +662,7 @@ Exportación: `profileViews` en [schema.ts](../db/schema.ts).
 
 Exportación: `profiles` en [schema.ts](../db/schema.ts).
 
-**Columnas:** `revision:integer` obligatorio predeterminado; `id:text` PK; `owner_id:text` obligatorio; `creation_source:text` obligatorio predeterminado {`self`, `admin`, `unknown`}; `created_by_admin_id:text`; `created_by_admin_login:text`; `type:text` obligatorio {`escort`, `agency`, `rental`}; `status:text` obligatorio predeterminado {`draft`, `pending`, `approved`, `paused`, `rejected`, `expired`}; `slug:text` obligatorio; `handle:text`; `display_name:text` obligatorio; `short_description:text` obligatorio predeterminado; `description:text` obligatorio predeterminado; `region:text` obligatorio; `city:text` obligatorio; `comuna:text`; `contact_whatsapp:text`; `contact_telegram:text`; `tier:text` obligatorio predeterminado {`bronze`, `premium`, `vip`}; `verification_status:text` obligatorio predeterminado {`unreviewed`, `in_review`, `reviewed`}; `verified_at:text`; `health_review_status:text` obligatorio predeterminado {`not_requested`, `in_review`, `reviewed`}; `is_featured:integer` obligatorio predeterminado; `is_demo:integer` obligatorio predeterminado; `owner_hidden_at:text`; `trashed_at:text`; `trashed_by_kind:text` {`self`, `admin`, `email_verification`}; `trashed_by_actor_id:text`; `trashed_by_admin_login:text`; `created_at:text` obligatorio predeterminado; `updated_at:text` obligatorio predeterminado.
+**Columnas:** `revision:integer` obligatorio predeterminado; `id:text` PK obligatorio; `owner_id:text` obligatorio; `creation_source:text` obligatorio predeterminado {`self`, `admin`, `unknown`}; `created_by_admin_id:text`; `created_by_admin_login:text`; `admin_escort_limit_override:integer` obligatorio predeterminado; `type:text` obligatorio {`escort`, `agency`, `rental`}; `status:text` obligatorio predeterminado {`draft`, `pending`, `approved`, `paused`, `rejected`, `expired`}; `slug:text` obligatorio; `handle:text`; `display_name:text` obligatorio; `short_description:text` obligatorio predeterminado; `description:text` obligatorio predeterminado; `region:text` obligatorio; `city:text` obligatorio; `comuna:text`; `contact_whatsapp:text`; `contact_telegram:text`; `tier:text` obligatorio predeterminado {`bronze`, `premium`, `vip`}; `verification_status:text` obligatorio predeterminado {`unreviewed`, `in_review`, `reviewed`}; `verified_at:text`; `health_review_status:text` obligatorio predeterminado {`not_requested`, `in_review`, `reviewed`}; `is_featured:integer` obligatorio predeterminado; `is_demo:integer` obligatorio predeterminado; `owner_hidden_at:text`; `trashed_at:text`; `trashed_by_kind:text` {`self`, `admin`, `email_verification`}; `trashed_by_actor_id:text`; `trashed_by_admin_login:text`; `created_at:text` obligatorio predeterminado; `updated_at:text` obligatorio predeterminado.
 
 **Relaciones:** `owner_id` → `users(id)`.
 
@@ -879,3 +879,7 @@ Exportación: `xRegistrationIntents` en [schema.ts](../db/schema.ts).
 - `0063_incompatible_profile_tags.sql`: incompatibilidad MILF con Hombres/Trans. La derivación de Hombres desde Masculino vive también en `lib/profile-tag-policy.ts` y `lib/profile-submission.ts`.
 
 Los triggers pueden incrementar revisiones al insertar o eliminar relaciones. Una actualización de tags o medios debe usar la versión del recurso, no asumir que cambiar una tabla secundaria no altera el anuncio.
+
+## Muestras y autorización administrativa — 25 de octubre de 2026
+
+`0064_private_sample_workflow.sql` añade usuario privado estable, token cifrado y hash heredado, procedencia, papelera y seguimiento manual de contacto. El trigger de cambios de medios invalida revisiones antiguas. `profiles.admin_escort_limit_override` permite un Escort adicional confirmado por administración sin abrir el cupo normal de la cuenta; los triggers siguen bloqueando duplicados ordinarios y transferencias que arrastren la excepción. La aplicación valida la cuenta, revisión y cantidad de Escort en la misma transacción de conversión. No se guardan tokens en texto plano ni se indexan muestras.

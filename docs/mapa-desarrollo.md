@@ -99,7 +99,15 @@ Las solicitudes de asociación agencia–Escort requieren aceptación de la cuen
 
 `lib/exclusive-content.ts` conserva colección por cuenta, vínculo opcional con un Escort y permisos de compradores. `/contenido/:id` sirve medios después de autorización, también para bibliotecas que no dependen de la publicación del anuncio. Los cobros se acuerdan fuera del sitio; no crear un checkout por inferencia.
 
-`private-sample-policy.ts` y `private-samples.ts` separan muestras, formulario saneado, tokens, caducidad, medios y migración autorizada. `/muestra/:id` y sus archivos son privados y noindex. No mezclar sus fotos, credenciales o contadores con anuncios reales.
+`private-sample-policy.ts` y `private-samples.ts` separan muestras, formulario saneado, caducidad, seguimiento de contacto, medios y conversión autorizada. `/admin/muestras` filtra nombre/usuario, procedencia, estado y contacto; pendientes primero, contactados después. WhatsApp abre el contacto sin marcarlo automáticamente; la marca manual guarda fecha y administrador. La procedencia admite Sexosur, Publiescort, Relaxchile, Elsilencio y Otros.
+
+`/muestra/:usuario` y sus archivos son privados y noindex; las rutas antiguas por ID siguen siendo alias, con cookies acotadas al identificador usado. `private-sample-links.ts` cifra los enlaces recuperables mediante AES-GCM, dominio independiente de la clave protegida existente y autenticación del ID. Copiar/recuperar no renueva ni rota el enlace. Los hashes antiguos no permiten recuperar su token: se puede conservar pegando el enlace vigente en el panel, o crear uno persistente sin invalidar el anterior vigente. Revocar invalida ambos. Nunca registrar tokens ni cifrados en auditoría.
+
+La muestra vence a los 7 días y aparece en Papelera aunque el cron aún no haya materializado el vencimiento; restaurar conserva el enlace y concede 7 días nuevos. La retención es de 30 días desde su entrada en papelera. `private-sample-cleanup.ts` comprueba nuevamente el estado al borrar y respeta restauraciones concurrentes. Las convertidas se retienen 30 días sin borrar los objetos transferidos al anuncio.
+
+`SampleMediaManager` reutiliza `ProfileMediaManager` y `AdminPhotoTools`: foto principal, galería, marca de agua, privacidad, videos, orden y efectos. Los endpoints dedicados `/api/admin/muestras/:id/media` y sus hijos verifican permiso, revisión, reserva y caducidad; los límites multipart del Worker incluyen estas rutas. Solo se conserva la versión final del archivo en R2 privado. Elegir nueva principal conserva la anterior en galería. La conversión transfiere las referencias R2 y sus opciones de edición sin duplicar bytes ni conceder verificaciones.
+
+Convertir requiere cuenta activa y correo verificado. Si ya posee un Escort, exige confirmar expresamente la cuenta, su revisión y su cantidad actual de anuncios; una guarda transaccional evita cambios concurrentes. La excepción `profiles.admin_escort_limit_override` autoriza exclusivamente el nuevo anuncio creado por administración, conserva el cupo normal de la cuenta y no se traslada automáticamente a otro propietario. La migración `0064_private_sample_workflow.sql` mantiene también la excepción heredada acotada que ya existía. Creación, edición, contacto, enlaces, papelera y conversión guardan auditoría administrativa. Ver [QA de muestras](qa-muestras-2026-10-25.md).
 
 ### Administración, contenidos y comunidad
 
@@ -111,7 +119,7 @@ Telegram se integra en el Worker con webhook, D1, cola, outbox y cron; vinculaci
 
 ## Base de datos y persistencia
 
-El inventario actual del esquema tipado tiene **92 tablas, 802 columnas y 103 claves foráneas**; hay **64 migraciones SQL**. Son conteos de código, no una inspección de producción. Los comentarios antiguos que hablan de 62 tablas y los inventarios de otros commits no reemplazan esta medición. El detalle completo de columnas, enumeraciones, índices y relaciones está en [esquema-base-datos.md](esquema-base-datos.md).
+El inventario actual del esquema tipado tiene **92 tablas, 813 columnas y 105 claves foráneas**; hay **65 migraciones SQL**. Son conteos de código, no una inspección de producción. Los comentarios antiguos que hablan de 62 tablas y los inventarios de otros commits no reemplazan esta medición. El detalle completo de columnas, enumeraciones, índices y relaciones está en [esquema-base-datos.md](esquema-base-datos.md).
 
 Dominios principales:
 

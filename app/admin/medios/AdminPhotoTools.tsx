@@ -17,7 +17,9 @@ type Row = {saved:SavedState;options:PhotoEditOptions;source?:File;preview?:{fil
 type SavedResult = {revision:number;mediaId:string;options:PhotoEditOptions;quota:{bytes:number;level:"ok"|"warning"|"blocked";message:string}};
 const selectedOptions=(row:SavedState):PhotoEditOptions=>({watermark:row.watermark,blur:row.blur,faceRegions:row.faceRegions});
 
-export function AdminPhotoTools({images,profileName="este anuncio",onSaved,onBusyChange,disabled=false}:{images:Photo[];profileName?:string;onSaved?:(result:SavedResult)=>void;onBusyChange?:(busy:boolean)=>void;disabled?:boolean}) {
+export function AdminPhotoTools({images,profileName="este anuncio",onSaved,onBusyChange,disabled=false,sampleId}:{images:Photo[];profileName?:string;onSaved?:(result:SavedResult)=>void;onBusyChange?:(busy:boolean)=>void;disabled?:boolean;sampleId?:string}) {
+  const endpoint=(id:string)=>sampleId?`/api/admin/muestras/${encodeURIComponent(sampleId)}/media/${encodeURIComponent(id)}/procesar`:`/api/admin/media/${encodeURIComponent(id)}/procesar`;
+  const reviewKey=(id:string)=>`${sampleId?"sample":"profile"}:${id}`;
   const root=useRef<HTMLDetailsElement>(null),revision=useRef<number|null>(null),rowsRef=useRef<Record<string,Row>>({}),stop=useRef(false),alive=useRef(true);
   const [rows,setRows]=useState<Record<string,Row>>({}),[open,setOpen]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState("");
   const ids=images.map(photo=>photo.id),idsKey=ids.join("|");
@@ -38,14 +40,15 @@ export function AdminPhotoTools({images,profileName="este anuncio",onSaved,onBus
     window.addEventListener("chile3x:edit-saved-photo",activate);return()=>window.removeEventListener("chile3x:edit-saved-photo",activate);
   },[idsKey]);
   useEffect(()=>{
-    const ownCommit=(event:Event)=>{const detail=(event as CustomEvent).detail;if(revision.current===detail?.previousRevision&&Object.values(rowsRef.current).some(row=>`profile:${row.saved.profileId}`===detail.key))revision.current=detail.revision;};
+    const ownCommit=(event:Event)=>{const detail=(event as CustomEvent).detail;if(revision.current===detail?.previousRevision&&Object.values(rowsRef.current).some(row=>`${sampleId?"sample":"profile"}:${row.saved.profileId}`===detail.key))revision.current=detail.revision;};
     window.addEventListener("chile3x:own-review-commit",ownCommit);return()=>window.removeEventListener("chile3x:own-review-commit",ownCommit);
-  },[]);
+  },[sampleId]);
   async function load(id:string) {
     if(rowsRef.current[id])return rowsRef.current[id];
-    const state=await readUploadResponse<SavedState>(await fetch(`/api/admin/media/${encodeURIComponent(id)}/procesar`,{cache:"no-store",signal:AbortSignal.timeout(15000)}));
+    const state=await readUploadResponse<SavedState>(await fetch(endpoint(id),{cache:"no-store",signal:AbortSignal.timeout(15000)}));
     const options=parsePhotoEditOptions(JSON.stringify(state));
-    if(!options||!Number.isSafeInteger(state.revision)||typeof state.profileId!=="string"||!state.sourceUrl?.startsWith("/api/admin/media/"))throw Error("La respuesta de edición no es válida.");
+    const expectedSource=sampleId?`/api/admin/muestras/${encodeURIComponent(sampleId)}/media/`:"/api/admin/media/";
+    if(!options||!Number.isSafeInteger(state.revision)||typeof state.profileId!=="string"||(sampleId&&state.profileId!==sampleId)||!state.sourceUrl?.startsWith(expectedSource))throw Error("La respuesta de edición no es válida.");
     if(revision.current!==null&&revision.current!==state.revision)throw Error("El anuncio cambió durante la revisión. Recarga antes de editar más fotos.");
     revision.current=state.revision;
     const row:Row={saved:state,options};update(id,row);return row;
@@ -75,18 +78,18 @@ export function AdminPhotoTools({images,profileName="este anuncio",onSaved,onBus
   }
   async function save(id:string) {
     const row=rowsRef.current[id];if(!row?.preview||revision.current===null)return;
-    const before=revision.current,data=new FormData();data.set("review_key",`profile:${row.saved.profileId}`);data.set("review_revision",String(before));data.set("mutation_id",crypto.randomUUID());data.set("options",JSON.stringify(row.options));
+    const before=revision.current,data=new FormData();data.set("review_key",reviewKey(row.saved.profileId));data.set("review_revision",String(before));data.set("mutation_id",crypto.randomUUID());data.set("options",JSON.stringify(row.options));
     data.set("file",row.preview.file);
-    const result=await uploadMediaRequest<SavedResult>(`/api/admin/media/${encodeURIComponent(id)}/procesar`,data);
+    const result=await uploadMediaRequest<SavedResult>(endpoint(id),data);
     if(!Number.isSafeInteger(result.revision)||result.mediaId!==id)throw Error("No se confirmó la edición. Revisa la foto antes de repetir.");
     revision.current=result.revision;
     URL.revokeObjectURL(row.preview.url);update(id,{saved:{...row.saved,...row.options,hasBase:true,revision:result.revision},preview:undefined,failed:false,message:"Foto final guardada, sin copias extra. Puedes deshacer desde esta pestaña mientras siga abierta."});
-    window.dispatchEvent(new CustomEvent("chile3x:own-review-commit",{detail:{key:`profile:${row.saved.profileId}`,previousRevision:before,revision:result.revision}}));onSaved?.(result);
+    window.dispatchEvent(new CustomEvent("chile3x:own-review-commit",{detail:{key:reviewKey(row.saved.profileId),previousRevision:before,revision:result.revision}}));onSaved?.(result);
   }
   const prepared=ids.filter(id=>!!rows[id]?.preview);
   return <details ref={root} className="saved-photo-tools" open={open} onToggle={event=>setOpen(event.currentTarget.open)}>
     <summary>{images.length===1?"Editar marca de agua y difuminado":"Editar fotos guardadas · principal y galería"}</summary>
-    {open&&<div className="saved-photo-tools-content"><p>Edita las fotos de {profileName} sin cambiar su aprobación. Solo se guarda la foto final en el servidor. Esta pestaña conserva temporalmente la foto de partida para deshacer cambios; al cerrarla o recargarla se pierde esa posibilidad. Los efectos ya incorporados requieren una copia limpia para poder quitarlos.</p>
+    {open&&<div className="saved-photo-tools-content"><p>Edita las fotos de {profileName}{sampleId?", manteniéndolas privadas":" sin cambiar su aprobación"}. Solo se guarda la foto final en el servidor. Esta pestaña conserva temporalmente la foto de partida para deshacer cambios; al cerrarla o recargarla se pierde esa posibilidad. Los efectos ya incorporados requieren una copia limpia para poder quitarlos.</p>
       {images.length>1&&<div className="saved-photo-bulk-actions" aria-label="Opciones para todas las fotos guardadas">
         <ActionButton type="button" className="button button-outline" disabled={busy||disabled} onClick={()=>run(ids,id=>prepare(id,"watermark",true))}><ActionIcon name="image" />Marca de agua en todas</ActionButton>
         <ActionButton type="button" className="button button-outline" disabled={busy||disabled} onClick={()=>run(ids,id=>prepare(id,"blur",true))}><ActionIcon name="eye" />Difuminar rostros en todas</ActionButton>

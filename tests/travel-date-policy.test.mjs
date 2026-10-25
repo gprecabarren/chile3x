@@ -89,6 +89,8 @@ test('server parsing and writes reject stale/new trips while preserving stored t
     }
     sqlite.exec(await readFile(new URL('../drizzle/0056_admin_collaboration.sql', import.meta.url), 'utf8'));
     sqlite.exec(await readFile(new URL('../drizzle/0062_private_profile_samples.sql', import.meta.url), 'utf8'));
+    // Other tables use the current typed schema; apply the new sample DDL only.
+    sqlite.exec((await readFile(new URL('../drizzle/0064_private_sample_workflow.sql', import.meta.url), 'utf8')).split('-- A confirmed migration')[0]);
     sqlite.exec("INSERT INTO users(id,email,role) VALUES('owner','qa@example.invalid','advertiser'),('new_owner','new@example.invalid','advertiser')");
     const {readProfileSubmission, updateProfile, createProfile, ProfileValidationError} = await import('../lib/profile-submission.ts');
     const base = {
@@ -163,9 +165,9 @@ test('server parsing and writes reject stale/new trips while preserving stored t
 
     await t.test('stored private samples remain readable and editable but cannot publish an expired trip', async () => {
       const {sampleFormJson} = await import('../lib/private-sample-policy.ts');
-      const {sampleInitial, createPrivateSample, updatePrivateSample, migratePrivateSample} = await import('../lib/private-samples.ts');
+      const {sampleInitial, createPrivateSample, updatePrivateSample, migratePrivateSample, getPrivateSample} = await import('../lib/private-samples.ts');
       const dates = {travel_start: '2026-09-01', travel_end: '2026-09-03'};
-      const id = 'sam_' + crypto.randomUUID(), admin = {id: 'owner'};
+      const id = 'sam_' + crypto.randomUUID(), admin = {id: 'owner',accessLevel:'owner',email:'qa@example.invalid',displayName:'QA',githubLogin:'qa'};
       const row = {id, formJson: sampleFormJson(form(dates)), migratedAt: null};
       assert.equal(sampleInitial(row).details.metadata.travel_start, dates.travel_start);
       const createForm = form(dates); createForm.set('sample_permission', 'on');
@@ -180,7 +182,7 @@ test('server parsing and writes reject stale/new trips while preserving stored t
       await assert.rejects(updatePrivateSample(id, form({...dates, travel_note: 'Sobrescritura antigua'}), version(before.revision - 1), admin), /información cambió/);
       assert.deepEqual(sample(), before);
       sqlite.exec("UPDATE users SET is_active=1,email_verified_at='2026-10-01T00:00:00Z' WHERE id='new_owner'");
-      await assert.rejects(migratePrivateSample({...row, formJson: before.form_json}, 'new@example.invalid', version(before.revision), admin), /desde hoy/);
+      await assert.rejects(migratePrivateSample(await getPrivateSample(id), 'new@example.invalid', version(before.revision), admin), /desde hoy/);
       assert.equal(sqlite.prepare("SELECT count(*) n FROM profiles WHERE owner_id='new_owner'").get().n, 0);
     });
 

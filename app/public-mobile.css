@@ -178,6 +178,58 @@
   :root body .admin-workspace .admin-content .admin-settings-page-form {
     gap:16px;
   }
+
+  /* Private sample records keep the same compact panel hierarchy, including
+     long contact actions and the full listing editor on narrow phones. */
+  :root body .admin-workspace .samples-admin-content :is(.sample-list-card,.sample-admin-card,.sample-filters,.samples-empty) {
+    padding:16px;
+  }
+  :root body .admin-workspace .samples-admin-content :is(.sample-list-card,.sample-summary-card,.sample-filters) {
+    gap:14px;
+  }
+  :root body .admin-workspace .samples-admin-content :is(.sample-list-card,.sample-admin-card,.samples-empty) h2 {
+    font-size:22px;
+    line-height:1.3;
+  }
+  :root body .admin-workspace .samples-admin-content .sample-row-metadata {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:12px;
+  }
+  :root body .admin-workspace .samples-admin-content .sample-status {
+    min-height:0;
+    padding:3px 7px;
+    font-size:11.5px;
+    line-height:1.4;
+  }
+  :root body .admin-workspace .samples-admin-content .sample-view-tabs .button {
+    width:auto;
+    flex:1 1 0;
+  }
+  :root body .admin-workspace .samples-admin-content .sample-row-actions {
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr));
+    align-items:stretch;
+    gap:8px;
+    padding-top:14px;
+  }
+  :root body .admin-workspace .samples-admin-content .sample-row-actions :is(form,.button) {
+    width:100%;
+  }
+  :root body .admin-workspace .samples-admin-content .sample-admin-actions {
+    gap:8px;
+  }
+  :root body .admin-workspace .samples-admin-content .sample-admin-actions .button {
+    flex:1 1 160px;
+  }
+  :root body .admin-workspace .samples-admin-content .sample-contact-status {
+    padding:10px 12px;
+  }
+  :root body .admin-workspace .samples-admin-content .sample-editor-content {
+    padding-top:16px;
+  }
+  .sample-public-header span {
+    font-size:11px;
+  }
 }
 
 @media (max-width:620px) {

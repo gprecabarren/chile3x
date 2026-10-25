@@ -2,6 +2,7 @@
 import { ActionButton } from "@/app/ActionButton";
 import { PortalContactIcon } from "@/app/PortalContactIcon";
 import { incompatibleProfileTags,profileTagsForGender,PROFILE_TAG_COMBINATION_MESSAGE } from "@/lib/profile-tag-policy";
+import { SAMPLE_PROVENANCES, SAMPLE_PROVENANCE_LABELS } from "@/lib/private-sample-policy";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DateField } from "@/app/DateField";
@@ -71,6 +72,7 @@ type ProfileFormProps = {
   adminAssisted?: boolean;
   adminEdit?: boolean;
   privateSample?: boolean;
+  sampleProvenance?: string;
 };
 
 function socialUsername(value: string) {
@@ -90,7 +92,7 @@ function metadataValue(initial: ProfileFormInitial | undefined, key: string) {
   return initial?.details.metadata?.[key] ?? "";
 }
 
-export function ProfileForm({ action, submitLabel, initial, travelToday, allowEscort = true, adminAssisted = false, adminEdit = false, privateSample = false, review }: ProfileFormProps) {
+export function ProfileForm({ action, submitLabel, initial, travelToday, allowEscort = true, adminAssisted = false, adminEdit = false, privateSample = false, sampleProvenance = "otros", review }: ProfileFormProps) {
   const [sampleBusy,setSampleBusy]=useState(false),[sampleError,setSampleError]=useState("");
   const formRef = useRef<HTMLFormElement>(null);
   const optionalRef = useRef<HTMLDetailsElement>(null);
@@ -309,9 +311,9 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
             </div>
           </div>}
           <label>
-            Usuario del anuncio (opcional)
+            {privateSample ? "Usuario del futuro anuncio (opcional)" : "Usuario del anuncio (opcional)"}
             <span className="profile-handle-input"><b>@</b><input name="handle" minLength={3} maxLength={41} defaultValue={initial?.handle ?? ""} placeholder={type === "agency" ? "agenciaejemplo" : type === "rental" ? "arriendo-centro" : "tu-nombre"} autoCapitalize="none" autoCorrect="off" /></span>
-            <small>Será parte de tu enlace. Si lo dejas vacío, Chile3X crea uno único basado en el nombre del anuncio.</small>
+            <small>{privateSample ? "Se usará al convertirla en anuncio real. El enlace privado de esta muestra conserva su usuario aunque cambies este campo." : "Será parte de tu enlace. Si lo dejas vacío, Chile3X crea uno único basado en el nombre del anuncio."}</small>
           </label>
           {type !== "escort" && <input name="tier" type="hidden" value="bronze" />}
         </div>
@@ -576,10 +578,11 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
         </div>
       </details>
 
+      {privateSample && <section className="profile-form-section sample-provenance-field"><h2>Procedencia de la muestra</h2><label>Procedencia<select name="sample_provenance" defaultValue={sampleProvenance}>{SAMPLE_PROVENANCES.map(value => <option key={value} value={value}>{SAMPLE_PROVENANCE_LABELS[value]}</option>)}</select></label></section>}
       <section className="profile-media-notice" aria-label="Estado de carga de fotos y videos">
         <strong>Galería y videos</strong>
         {privateSample&&<p>Guarda la muestra para cargar sus fotos y videos. Quedarán privados, separados de los anuncios reales. Compartir el enlace no publica la ficha.</p>}
-        <p>{adminEdit ? "Este formulario guarda los datos del anuncio sin cambiar su estado de publicación o verificación. Los medios y documentos se gestionan por separado desde los accesos de esta página." : initial ? "Las fotos y videos se envían desde su sección al inicio y no necesitan este guardado. Este formulario guarda únicamente los datos del anuncio; cambiar información relevante vuelve a revisión." : adminAssisted ? "Al crear el anuncio pasarás directamente a la carga de la foto principal, hasta 10 fotos y hasta 3 videos. El material que subas como administrador se aprobará al instante; el anuncio se publica desde moderación." : <>Guarda y envía el anuncio a revisión. Luego encontrarás al inicio la carga de fotos y videos; puedes adjuntarlos sin esperar la aprobación del anuncio. Cada imagen puede pesar hasta 10 MB y los archivos se revisan por separado.{type === "escort" && " También podrás adjuntar tu carnet o examen médico privado (JPG, PNG, WebP o PDF de hasta 15 MB)."}</>}</p>
+        {!privateSample && <p>{adminEdit ? "Este formulario guarda los datos del anuncio sin cambiar su estado de publicación o verificación. Los medios y documentos se gestionan por separado desde los accesos de esta página." : initial ? "Las fotos y videos se envían desde su sección al inicio y no necesitan este guardado. Este formulario guarda únicamente los datos del anuncio; cambiar información relevante vuelve a revisión." : adminAssisted ? "Al crear el anuncio pasarás directamente a la carga de la foto principal, hasta 10 fotos y hasta 3 videos. El material que subas como administrador se aprobará al instante; el anuncio se publica desde moderación." : <>Guarda y envía el anuncio a revisión. Luego encontrarás al inicio la carga de fotos y videos; puedes adjuntarlos sin esperar la aprobación del anuncio. Cada imagen puede pesar hasta 10 MB y los archivos se revisan por separado.{type === "escort" && " También podrás adjuntar tu carnet o examen médico privado (JPG, PNG, WebP o PDF de hasta 15 MB)."}</>}</p>}
       </section>
 
       <div className="profile-form-actions">

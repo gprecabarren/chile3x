@@ -22,7 +22,15 @@ export const ADMIN_AUDIT_CATEGORIES = {
 
 export const ADMIN_AUDIT_ACTIONS = {
   "sample.create":"Creó una muestra privada",
-  "sample.share":"Renovó el enlace de una muestra",
+  "sample.share":"Guardó el enlace privado de una muestra",
+  "sample.adopt_link":"Conservó un enlace privado anterior",
+  "sample.extend":"Extendió el plazo de una muestra",
+  "sample.trash":"Envió una muestra a papelera",
+  "sample.restore":"Restauró una muestra privada",
+  "sample.contact_mark":"Marcó un posible anunciante como contactado",
+  "sample.contact_clear":"Retiró la marca de contacto de una muestra",
+  "sample.process_photo":"Editó una foto privada de muestra",
+  "sample.reorder_media":"Ordenó los medios de una muestra",
   "sample.save":"Editó una muestra privada",
   "sample.upload":"Subió un archivo privado de muestra",
   "sample.remove_media":"Retiró un archivo de muestra",

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {readFile} from 'node:fs/promises';
+import {createRequire} from 'node:module';
+const {parse}=createRequire(import.meta.resolve('vite'))('postcss');
 const source=path=>readFile(new URL('../'+path,import.meta.url),'utf8');
 
 test('desktop composition is gated above mobile and uses shared fluid page edges',async()=>{
@@ -9,7 +11,12 @@ test('desktop composition is gated above mobile and uses shared fluid page edges
  assert.equal((css.match(/@media/g)??[]).length,2);
  assert.match(css,/@media \(min-width:621px\) and \(max-width:1099px\)/);
  for(const token of ['--public-wide-max:3200px','--public-page-gutter:clamp(24px,2.5vw,80px)','--public-wide-size:','--public-wide-inset:'])assert.ok(css.includes(token));
- assert.doesNotMatch(css,/\.admin-workspace|\.account-workspace|@font-face|@import|backdrop-filter/);
+ assert.doesNotMatch(css,/@font-face|@import|backdrop-filter/);
+ parse(css).walkRules(rule=>{
+  if(!/\.(?:admin|account)-workspace/.test(rule.selector))return;
+  assert.equal(rule.parent.type,'atrule');
+  assert.equal(rule.parent.params,'(min-width:1100px)');
+ });
  assert.match(await source('app/layout.tsx'),/import "\.\/public-desktop.css";/);
 });
 

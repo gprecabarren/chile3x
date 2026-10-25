@@ -1,13 +1,23 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {readFile} from 'node:fs/promises';
+import {createRequire} from 'node:module';
+const {parse}=createRequire(import.meta.resolve('vite'))('postcss');
 const source=path=>readFile(new URL('../'+path,import.meta.url),'utf8');
 
-test('mobile compactness is isolated from desktop and private panels',async()=>{
+test('mobile compactness stays inside phone breakpoints and private overrides stay scoped',async()=>{
  const css=(await source('app/public-mobile.css')).replace(/\/\*[\s\S]*?\*\//g,'').trim();
  assert.ok(css.startsWith('@media (max-width:860px) {'));
  assert.equal((css.match(/@media/g)??[]).length,3);
- assert.doesNotMatch(css,/min-width:|\.admin-workspace|\.account-workspace|@font-face|@import|url\(|backdrop-filter|!important/);
+ assert.doesNotMatch(css,/@font-face|@import|url\(|backdrop-filter/);
+ parse(css).walkRules(rule=>{
+  let parent=rule.parent;
+  while(parent&&parent.type!=='atrule')parent=parent.parent;
+  assert.ok(parent&&parent.name==='media'&&/^\(max-width:(860|620|360)px\)$/.test(parent.params),rule.selector);
+  const privatePanel=/\.(?:admin|account)-workspace/.test(rule.selector);
+  if(privatePanel)assert.equal(parent.params,'(max-width:860px)');
+  else rule.walkDecls(declaration=>assert.equal(declaration.important,undefined,rule.selector));
+ });
  const layout=await source('app/layout.tsx');
  assert.ok(layout.indexOf('import "./public-mobile.css";')>layout.indexOf('import "./public-desktop.css";'));
 });

@@ -21,6 +21,163 @@
     font-size:1rem;
     line-height:1.2;
   }
+
+  /* Private panels use a denser reading hierarchy on phones. Native form
+     values stay at 16px to avoid focus zoom, while actions retain 44px targets. */
+  :root body :is(.admin-workspace,.account-workspace) {
+    --panel-label-size:.875rem;
+    --panel-copy-size:.875rem;
+    --panel-secondary-size:.8125rem;
+    --panel-meta-size:.75rem;
+  }
+  :root body :is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) .button {
+    min-height:44px;
+    height:auto;
+    padding:9px 12px;
+    gap:7px;
+    font-size:14px !important;
+    line-height:1.4 !important;
+  }
+  :root body :is(.admin-workspace,.account-workspace) :is(.admin-root,.account-root) :is(.admin-heading,.account-heading) h1 {
+    font-size:28px;
+    line-height:1.15;
+  }
+  :root body :is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) :is(
+    .admin-stat,.admin-note,.admin-empty,.admin-account-card,.admin-access-card,.admin-settings-section,
+    .admin-settings-form:not(.admin-settings-page-form),.admin-account-password-actions,.admin-account-telegram,.admin-account-history,
+    .admin-account-control-panel,.admin-account-owned-profiles,.admin-moderation-inbox,.account-identity-card,
+    .account-details-form,.account-password-panel,.account-social-access,.account-danger-panel,.account-empty,
+    .owner-profile-card,.profile-form-section,.profile-statistics-panel,.profile-media-manager,
+    .profile-photo-manager,.profile-story-manager,.private-documents-status,.agency-membership-panel,
+    .account-story-card,.help-center,.operational-panel,.account-telegram-entry,.telegram-admin-section,.telegram-link-card
+  ) {
+    padding:16px;
+  }
+  :root body :is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) :is(
+    .admin-account-card,.admin-access-card,.admin-account-detail-layout,.account-identity-card,.account-password-panel,
+    .profile-form,.profile-form .form-grid,.profile-optional-fields-content,.account-stories-grid
+  ) {
+    gap:12px;
+  }
+  :root body :is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) :is(
+    .admin-note,.admin-empty,.admin-account-list,.admin-access-intro,.admin-access-list,.admin-settings-section,
+    .admin-account-password-actions,.admin-account-telegram,.admin-account-history,.admin-account-owned-profiles,
+    .admin-account-control-panel,.admin-moderation-inbox,.operational-heading,.account-identity-card,.account-overview,
+    .account-section-heading,.account-password-panel,.account-social-access,.account-danger-panel,.account-empty,
+    .owner-profile-card,.profile-form-section-heading,.profile-statistics-panel,.profile-media-manager-heading,
+    .profile-photo-manager,.profile-story-manager,.private-documents-status,.agency-membership-panel,.help-header,
+    .session-manager-heading,.profile-visibility-panel,.account-telegram-entry,.telegram-admin-section > header,
+    .admin-sponsor-visibility,.admin-sponsor-section-heading,.admin-media-profile-group,.account-report-list,.admin-role-guide > header
+  ) h2 {
+    font-size:22px;
+    line-height:1.25;
+  }
+  :root body :is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) :is(.admin-account-card,.admin-access-card,.account-story-card,.agency-management-card) h3 {
+    font-size:20px;
+    line-height:1.25;
+  }
+  :root body :is(.admin-workspace,.account-workspace) .profile-submission-confirmation h2 {
+    font-size:24px;
+    line-height:1.25;
+  }
+  :root body :is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) :is(
+    .account-status,.admin-status,.admin-access-status,.media-status,.admin-audit-outcome,.admin-email-status,
+    .account-report-status,.session-current-badge,.telegram-status,.admin-home-active
+  ) {
+    display:inline-flex;
+    width:fit-content;
+    max-width:100%;
+    min-height:0;
+    height:auto;
+    align-self:start;
+    justify-self:start;
+    align-items:center;
+    padding:3px 6px;
+    font-size:11.5px;
+    line-height:1.35;
+    letter-spacing:.03em;
+  }
+  :root body .admin-workspace .admin-content .admin-account-state-badges {
+    display:flex;
+    flex-wrap:wrap;
+    align-items:flex-start;
+    justify-content:flex-start;
+    gap:6px;
+  }
+  :root body .admin-workspace .admin-content .review-coordination {
+    gap:8px;
+    padding:8px;
+    font-size:12px;
+    line-height:1.45;
+  }
+  :root body :is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) :is(.account-summary-card,.profile-statistics-cards article,.admin-access-summary > div,.admin-email-stats > div) {
+    padding:12px;
+    gap:7px;
+  }
+  :root body :is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) :is(.account-summary-card,.profile-statistics-cards article,.admin-access-summary > div,.admin-email-stats > div) > strong {
+    font-size:28px;
+    line-height:1.15;
+  }
+  :root body .admin-workspace .admin-content .admin-stat {
+    min-height:0;
+  }
+  :root body .admin-workspace .admin-content .admin-stat strong {
+    margin-block:12px;
+    font-size:36px;
+    line-height:1.1;
+  }
+  :root body :is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) input:is([type="checkbox"],[type="radio"]) {
+    width:20px !important;
+    height:20px;
+    min-width:20px;
+    min-height:20px !important;
+    flex:0 0 20px;
+  }
+  :root body :is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) .profile-form :is(.check-grid label,.availability-editor-row label) {
+    font-size:14px !important;
+  }
+  :root body :is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) .profile-form :is(
+    .profile-contact-label,.profile-type-locked strong,.profile-tags-fieldset legend,.language-checklist legend,
+    .profile-content-mode legend,.profile-contact-fieldset legend,.availability-editor > summary strong,.travel-agenda-editor > summary strong
+  ) {
+    font-size:14px;
+    line-height:1.5;
+  }
+  :root body :is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) .profile-form :is(
+    label > small,.profile-form-help,.profile-type-locked small,.profile-optional-fields > summary small,
+    .profile-tags-fieldset > p,.language-checklist > p,.profile-content-mode > p,
+    .availability-editor > summary > span,.travel-agenda-editor > summary > span,
+    .availability-editor-content > p,.travel-agenda-editor-content > p
+  ) {
+    font-size:13px;
+    line-height:1.5;
+  }
+  :root body :is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) .profile-form :is(.availability-editor,.travel-agenda-editor) > summary {
+    min-height:56px;
+    padding:12px;
+    column-gap:10px;
+  }
+  :root body :is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) .profile-form :is(.availability-editor-content,.travel-agenda-editor-content) {
+    padding:12px;
+  }
+  :root body :is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) .profile-contact-label > svg {
+    width:20px;
+    height:20px;
+    flex-basis:20px;
+  }
+  :root body :is(.admin-workspace,.account-workspace) :is(.admin-content,.account-content) .profile-form-section-heading {
+    margin-bottom:16px;
+  }
+  :root body .admin-workspace .admin-create-profile-content > .admin-heading {
+    margin-bottom:16px;
+  }
+  :root body .admin-workspace .admin-create-profile-content .profile-form-actions-top {
+    padding-top:0;
+    margin-bottom:8px;
+  }
+  :root body .admin-workspace .admin-content .admin-settings-page-form {
+    gap:16px;
+  }
 }
 
 @media (max-width:620px) {

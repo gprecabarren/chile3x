@@ -4,6 +4,10 @@
   /* Keep the existing fixed vertical position and shared contact dialog. */
   :root body .portal-whatsapp-widget { left:auto; right:16px; }
 
+  /* Separate the dashboard sections while keeping the desktop type scale. */
+  :root body .admin-workspace .admin-stat-grid + .admin-recent-activity { margin-top:24px; }
+  :root body .admin-workspace .admin-sidebar-footer button { font-size:12px; line-height:1.4; }
+
   :is(.home-layout,.directory-root) {
     --public-wide-max:3200px;
     --public-page-gutter:clamp(24px,2.5vw,80px);

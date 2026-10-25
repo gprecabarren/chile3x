@@ -251,7 +251,8 @@ export function getAvailabilityStatus(entries: AvailabilityEntry[], date = new D
   }
 
   const currentIndex = availabilityDays.findIndex((day) => day.key === currentKey);
-  for (let offset = 0; offset < availabilityDays.length; offset += 1) {
+  // A listing open only today still has its next opening one week later.
+  for (let offset = 0; offset <= availabilityDays.length; offset += 1) {
     const day = availabilityDays[(currentIndex + offset) % availabilityDays.length];
     const entry = entries.find((item) => item.key === day.key);
     if (!entry) continue;

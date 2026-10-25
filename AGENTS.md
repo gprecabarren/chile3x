@@ -1,3 +1,11 @@
+# Project context and release synchronization
+
+- Before starting work, read the technical handoff in `README.md` and `docs/mapa-desarrollo.md`. Use `docs/esquema-base-datos.md` and `docs/rutas-aplicacion.md` to locate the relevant schema and endpoints, then verify behavior in the current source and migrations.
+- Treat historical release notes as dated evidence. Keep implemented behavior, effective D1 settings, external credentials, local changes, committed GitHub source and the active Cloudflare deployment distinct.
+- Every Cloudflare publication must have its corresponding commit and push to GitHub. Do not deploy uncommitted or unpushed source, and do not report a release complete until the GitHub commit/checks and active Cloudflare version have been verified.
+- `main` is linked to Workers Builds in the documented setup: a push can deploy automatically. Prefer that single release path and do not start a parallel manual deployment. Record the source SHA and deployment version together; if either side fails, report the partial state and complete synchronization before calling it done.
+- Keep this project context updated when changing business flows, schema, permissions or release processes. Never include credentials, private account data, QA accounts or unrelated working files in a commit.
+
 # Visual themes and responsive controls
 
 - The site has two global themes: `classic` and `liquid-glass`, independently of the home layout. Preserve both when adding or editing UI.

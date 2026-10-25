@@ -61,7 +61,7 @@ test('button icons preserve native controls and are not installed by DOM mutatio
 });
 
 test('OnlyFans keeps its validated contact flow and uses a local decorative brand symbol',async()=>{
- const [components,profile,form,submission,styles]=await Promise.all(['app/directorio/_components.tsx','app/perfil/[slug]/page.tsx','app/mi-cuenta/ProfileForm.tsx','lib/profile-submission.ts','app/action-controls.css'].map(source));
+ const [components,profile,form,submission,styles]=await Promise.all(['app/PortalContactIcon.tsx','app/perfil/[slug]/page.tsx','app/mi-cuenta/ProfileForm.tsx','lib/profile-submission.ts','app/action-controls.css'].map(source));
  assert.match(components,/onlyfans-brand-mark/);assert.match(components,/<circle cx="16" cy="16" r="15" fill="#00AFF0"/);
  assert.doesNotMatch(components,/aria-hidden="true">OF<\/span>/);
  assert.match(profile,/safeExternalUrl\(profile.details.metadata.onlyfans_url, "onlyfans.com"\)/);

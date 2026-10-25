@@ -6,7 +6,7 @@ import { createAdminNotification } from "@/lib/admin-notifications";
 import { hasUnlimitedEscortListings } from "@/lib/profile-limits";
 import { profileMetadataForType } from "@/lib/profile-type-metadata";
 import { profileDemographicsError } from "@/lib/profile-demographics";
-import { incompatibleProfileTags,PROFILE_TAG_COMBINATION_MESSAGE } from "@/lib/profile-tag-policy";
+import { incompatibleProfileTags, profileTagsForGender, PROFILE_TAG_COMBINATION_MESSAGE } from "@/lib/profile-tag-policy";
 import {
   additionalServices,
   compactText,
@@ -302,7 +302,9 @@ export function readProfileSubmission(formData: FormData): ProfileSubmission {
     if (travelNote) metadata.travel_note = travelNote;
   }
 
-  const tags = typeValue === "escort" ? listFromForm(formData.getAll("tags"), profileTags).filter(tag => !contentOnly || tag !== "masajes") : [];
+  const tags = typeValue === "escort"
+    ? profileTagsForGender(listFromForm(formData.getAll("tags"), profileTags).filter(tag => !contentOnly || tag !== "masajes"), gender)
+    : [];
   if (contentOnly && !tags.includes("venta-contenido")) tags.push("venta-contenido");
   if (incompatibleProfileTags(tags)) throw new ProfileValidationError(PROFILE_TAG_COMBINATION_MESSAGE);
 
@@ -535,10 +537,15 @@ export async function updateProfile(profileId: string, ownerId: string, submissi
     metadata: normalizedMetadata(submission.details.metadata, true),
   };
   const sorted = (values: string[]) => [...values].sort((left, right) => left.localeCompare(right, "es-CL"));
+  const savedTagValues = savedTags.map((item) => item.tag);
+  const savedGender = typeof moderatedDetailsValues.metadata.gender === "string" ? moderatedDetailsValues.metadata.gender : "";
+  // Legacy listings could select Hombres independently. Reconcile that derived
+  // tag without treating an unchanged, already moderated gender as a new edit.
+  const moderatedTags = existing.profile.type === "escort" ? profileTagsForGender(savedTagValues, savedGender) : savedTagValues;
   const contactOnly = existing.profile.status === "approved"
     && sameValues(moderatedProfileValues, submittedProfileValues)
     && sameValues(moderatedDetailsValues, submittedDetailsValues)
-    && sameValues(sorted(savedTags.map((item) => item.tag)), sorted(submission.tags))
+    && sameValues(sorted(moderatedTags), sorted(submission.tags))
     && sameValues(sorted(savedServices.filter((item) => item.kind === "included").map((item) => item.service)), sorted(submission.servicesIncluded))
     && sameValues(sorted(savedServices.filter((item) => item.kind === "additional").map((item) => item.service)), sorted(submission.servicesAdditional));
   // Only a capability-checked administrative route may preserve moderation.
@@ -566,12 +573,17 @@ export async function updateProfile(profileId: string, ownerId: string, submissi
   });
   const services=[...submission.servicesIncluded.map(service=>({id:`srv_${crypto.randomUUID()}`,profileId,service,kind:"included" as const})),...submission.servicesAdditional.map(service=>({id:`srv_${crypto.randomUUID()}`,profileId,service,kind:"additional" as const}))];
   const serviceWrites=[];for(let start=0;start<services.length;start+=20)serviceWrites.push(db.insert(profileServices).values(services.slice(start,start+20)));
+  const contactTagUpdates = contactOnly && existing.profile.type === "escort" && savedTagValues.includes("hombres") !== submission.tags.includes("hombres")
+    ? submission.tags.includes("hombres")
+      ? [db.insert(profileTagRows).values({ id: `tag_${crypto.randomUUID()}`, profileId, tag: "hombres" })]
+      : [db.delete(profileTagRows).where(and(eq(profileTagRows.profileId, profileId), eq(profileTagRows.tag, "hombres")))]
+    : [];
   const collectionUpdates = !contactOnly ? [
     db.delete(profileTagRows).where(eq(profileTagRows.profileId,profileId)),
     db.delete(profileServices).where(eq(profileServices.profileId,profileId)),
     ...(submission.tags.length?[db.insert(profileTagRows).values(submission.tags.map(tag=>({id:`tag_${crypto.randomUUID()}`,profileId,tag})))]:[]),
     ...serviceWrites,
-  ] : [];
+  ] : contactTagUpdates;
   await guardedBatch(options.version ?? {key:`profile:${profileId}`,revision:existing.profile.revision}, [profileUpdate,detailsUpdate,...collectionUpdates],options.actorId);
   if (!options.adminEditor) await createAdminNotification({
     kind: "profile_updated",

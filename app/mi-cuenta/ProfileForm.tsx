@@ -1,6 +1,7 @@
 "use client";
 import { ActionButton } from "@/app/ActionButton";
-import { incompatibleProfileTags,PROFILE_TAG_COMBINATION_MESSAGE } from "@/lib/profile-tag-policy";
+import { PortalContactIcon } from "@/app/PortalContactIcon";
+import { incompatibleProfileTags,profileTagsForGender,PROFILE_TAG_COMBINATION_MESSAGE } from "@/lib/profile-tag-policy";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DateField } from "@/app/DateField";
@@ -105,7 +106,9 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
   const [availabilityHours, setAvailabilityHours] = useState<Record<string, { opens: string; closes: string }>>(() => Object.fromEntries(availabilityDays.map(day => [day.key, { opens: savedAvailability.get(day.key)?.opensAt ?? "", closes: savedAvailability.get(day.key)?.closesAt ?? "" }])));
   const previousAvailabilityHours = useRef<Record<string, { opens: string; closes: string }>>({});
   const allSelectedHours = enabledAvailabilityDays.size > 0 && [...enabledAvailabilityDays].every(key => availabilityHours[key]?.opens === "00:00" && availabilityHours[key]?.closes === "24:00");
-  const [selectedProfileTags, setSelectedProfileTags] = useState<string[]>(initial?.tags ?? []);
+  const [gender, setGender] = useState(metadataValue(initial, "gender"));
+  const [selectedProfileTags, setSelectedProfileTags] = useState<string[]>((initial?.tags ?? []).filter(tag => tag !== "hombres"));
+  const effectiveProfileTags = profileTagsForGender(selectedProfileTags, gender);
   const [contentOnly, setContentOnly] = useState(metadataValue(initial, "content_only") === "1");
   const [selectedTier, setSelectedTier] = useState(initial?.tier ?? "vip");
   const [underageNotice, setUnderageNotice] = useState(false);
@@ -138,7 +141,8 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
       if (!typeLocked && savedType && availableProfileTypes.includes(savedType as ProfileType)) setType(savedType as ProfileType);
       if (savedRegion && regions.some((item) => item.title === savedRegion)) setRegion(savedRegion);
       if (savedCity) setCity(savedCity);
-      setSelectedProfileTags((saved.tags ?? []).filter((tag) => profileTags.some((allowedTag) => allowedTag === tag)));
+      setGender(saved.gender?.[0] ?? "");
+      setSelectedProfileTags((saved.tags ?? []).filter((tag) => tag !== "hombres" && profileTags.some((allowedTag) => allowedTag === tag)));
       setContentOnly(saved.content_only?.includes("on") ?? false);
       if (visibilityTiers.some(tier => tier === saved.tier?.[0])) setSelectedTier(saved.tier[0]);
       setEnabledAvailabilityDays(new Set(availabilityDays.filter((day) => saved[`availability_${day.key}_enabled`]?.includes("on")).map((day) => day.key)));
@@ -184,7 +188,7 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
   function toggleProfileTag(tag: string) {
     setSelectedProfileTags((current) => {
       if (current.includes(tag)) return current.filter((item) => item !== tag);
-      if (incompatibleProfileTags([...current,tag])) return current;
+      if (incompatibleProfileTags(profileTagsForGender([...current,tag], gender))) return current;
       return [...current, tag];
     });
   }
@@ -199,9 +203,15 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
     <form ref={formRef} action={action} method="post" className="profile-form" onInvalidCapture={(event) => {
       // Native validation must be able to focus a field in the collapsed group.
       const field = event.target;
-      if (field instanceof HTMLElement && field.closest(".profile-optional-fields") && optionalRef.current) optionalRef.current.open = true;
+      if (field instanceof HTMLElement) {
+        let parent = field.parentElement;
+        while (parent && parent !== event.currentTarget) {
+          if (parent instanceof HTMLDetailsElement) parent.open = true;
+          parent = parent.parentElement;
+        }
+      }
     }} onSubmit={(event) => {
-      if(type==="escort"&&incompatibleProfileTags(selectedProfileTags)){event.preventDefault();document.getElementById("profile-tag-combination-help")?.scrollIntoView({block:"center"});return;}
+      if(type==="escort"&&incompatibleProfileTags(effectiveProfileTags)){event.preventDefault();document.getElementById("profile-tag-combination-help")?.scrollIntoView({block:"center"});return;}
       if(privateSample){
         event.preventDefault();if(sampleBusy)return;
         const body=new FormData(event.currentTarget);body.set("intent","submit");
@@ -313,7 +323,7 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
         </div>
         <div className="form-grid form-grid-two">
           {type === "escort" && <>
-            <label>Género (obligatorio)<select name="gender" required defaultValue={metadataValue(initial, "gender")}><option value="">Seleccionar</option>{escortGenders.map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label>Género (obligatorio)<select name="gender" required value={gender} onChange={event => setGender(event.target.value)}><option value="">Seleccionar</option>{escortGenders.map((item) => <option key={item}>{item}</option>)}</select><small>Al elegir Masculino, la etiqueta Hombres se agrega automáticamente.</small></label>
             <label>Edad (obligatoria)<input name="age" type="number" required min="18" max="99" step="1" inputMode="numeric" defaultValue={metadataValue(initial, "age")} placeholder="Ej. 28" onChange={(event) => setUnderageNotice(Boolean(event.target.value && Number(event.target.value) < 18))} /><small className={underageNotice ? "field-warning" : undefined} role={underageNotice ? "alert" : undefined}>{underageNotice ? "Solo se admiten publicaciones de personas mayores de 18 años." : "Debes tener al menos 18 años. Género y edad son obligatorios para enviar a revisión."}</small></label>
           </>}
           <label className="form-grid-full">
@@ -329,10 +339,10 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
           <legend>Etiquetas complementarias (opcionales)</legend>
           <p>Selecciona solo las que correspondan a tu anuncio. Puedes dejarlas sin marcar.</p>
           <p id="profile-tag-combination-help">{PROFILE_TAG_COMBINATION_MESSAGE}</p>
-          {incompatibleProfileTags(selectedProfileTags)&&<p role="alert">Este anuncio tiene una combinación antigua no válida. Desmarca MILF o la otra etiqueta antes de guardar.</p>}
+          {incompatibleProfileTags(effectiveProfileTags)&&<p role="alert">MILF no se puede combinar con el género Masculino ni con la etiqueta Trans. Revisa el género o desmarca la etiqueta incompatible antes de guardar.</p>}
           <div className="check-grid">
-            {profileTags.map((tag) => {
-              const blocked = (!selectedProfileTags.includes(tag)&&incompatibleProfileTags([...selectedProfileTags,tag])) || (contentOnly && (tag === "masajes" || tag === "venta-contenido"));
+            {profileTags.filter(tag => tag !== "hombres").map((tag) => {
+              const blocked = (!selectedProfileTags.includes(tag)&&incompatibleProfileTags([...effectiveProfileTags,tag])) || (contentOnly && (tag === "masajes" || tag === "venta-contenido"));
               return <label key={tag} className={blocked ? "is-blocked" : ""} title={blocked?PROFILE_TAG_COMBINATION_MESSAGE:undefined}><input name="tags" type="checkbox" value={tag} checked={(contentOnly && tag === "venta-contenido") || selectedProfileTags.includes(tag)} disabled={blocked} aria-describedby="profile-tag-combination-help" onChange={() => toggleProfileTag(tag)} />{tagLabels[tag]}</label>;
             })}
           </div>
@@ -342,7 +352,7 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
       <section className="profile-form-section">
         <div className="profile-form-section-heading"><p>04 · CONTACTO PRINCIPAL</p><h2>Cómo te pueden contactar</h2></div>
         <div className="form-grid form-grid-two">
-          <label>WhatsApp público<input name="contact_whatsapp" required inputMode="numeric" pattern="[0-9]{8,15}" defaultValue={initial?.contactWhatsapp} placeholder="56912345678" aria-describedby="profile-whatsapp-help" /><small id="profile-whatsapp-help">Ingresa el código de país y el número, sin + ni espacios.</small></label>
+          <label><span className="profile-contact-label"><PortalContactIcon kind="whatsapp" /><span>WhatsApp público</span></span><input name="contact_whatsapp" required inputMode="numeric" pattern="[0-9]{8,15}" defaultValue={initial?.contactWhatsapp} placeholder="56912345678" aria-describedby="profile-whatsapp-help" /><small id="profile-whatsapp-help">Ingresa el código de país y el número, sin + ni espacios.</small></label>
         </div>
         <p className="profile-form-help">Los demás contactos y redes están en Características opcionales.</p>
       </section>
@@ -382,9 +392,10 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
                 </select>
               </label>
             </div>
-            <fieldset className="availability-editor">
+            <details className="availability-editor">
+              <summary><strong>Horarios de disponibilidad</strong><span>{enabledAvailabilityDays.size ? `${enabledAvailabilityDays.size} ${enabledAvailabilityDays.size === 1 ? "día seleccionado" : "días seleccionados"}` : "Sin horario definido"}</span></summary>
+              <div className="availability-editor-content">
               {initial?.details.schedule && !savedAvailability.size && <input type="hidden" name="legacy_schedule" value={initial.details.schedule} />}
-              <legend>Horarios de disponibilidad</legend>
               <p>{type === "escort" ? "Activa solo los días en que atiendes." : "Activa los días de disponibilidad del anuncio."} En el perfil se indicará si está disponible ahora, usando la hora de Chile.</p>
               <div className="availability-bulk-actions"><ActionButton className="button button-outline availability-toggle-all" type="button" aria-pressed={enabledAvailabilityDays.size === availabilityDays.length} onClick={() => setEnabledAvailabilityDays((current) => current.size === availabilityDays.length ? new Set() : new Set(availabilityDays.map((day) => day.key)))}>
                 {enabledAvailabilityDays.size === availabilityDays.length ? "Desmarcar todos los días" : "Seleccionar todos los días"}
@@ -406,7 +417,8 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
                 })}
               </div>
               {initial?.details.schedule && !savedAvailability.size && <small>Tu horario anterior (“{initial.details.schedule}”) se reemplazará al guardar rangos semanales.</small>}
-            </fieldset>
+              </div>
+            </details>
           </section>
 
           {type === "escort" && (
@@ -428,12 +440,12 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
                 <label>Tamaño de busto<select name="bust_size" defaultValue={metadataValue(initial, "bust_size")}><option value="">Seleccionar</option>{bustSizes.map((item) => <option key={item}>{item}</option>)}</select></label>
               </div>
               <fieldset className="language-checklist"><legend>Idiomas</legend><p>Marca todos los idiomas que puedes atender.</p><div className="check-grid">{spokenLanguages.map((language) => <label key={language}><input name="languages" type="checkbox" value={language} defaultChecked={metadataValue(initial, "languages").split(", ").includes(language)} />{language}</label>)}</div></fieldset>
-              {!contentOnly && <fieldset className="travel-agenda-editor"><legend>Agenda de viajes</legend><p>Informa una visita temporal a otra ciudad. Tu anuncio seguirá perteneciendo a su ciudad habitual.</p><div className="form-grid form-grid-two">
+              {!contentOnly && <details className="travel-agenda-editor"><summary><strong>Agenda de viajes</strong><span>Opcional</span></summary><div className="travel-agenda-editor-content"><p>Informa una visita temporal a otra ciudad. Tu anuncio seguirá perteneciendo a su ciudad habitual.</p><div className="form-grid form-grid-two">
                 <label>Ciudad del próximo viaje<select name="travel_city" defaultValue={metadataValue(initial, "travel_city")}><option value="">Sin viaje programado</option>{regions.map((item) => <optgroup label={item.displayTitle} key={item.title}>{item.cities.map((travelCity) => <option value={travelCity} key={travelCity}>{travelCity}</option>)}</optgroup>)}</select></label>
                 <label>Nota breve<input name="travel_note" maxLength={180} defaultValue={metadataValue(initial, "travel_note")} placeholder="Ej. Agenda abierta durante esos días" /></label>
                 <DateField label="Desde" name="travel_start" defaultValue={metadataValue(initial, "travel_start")} />
                 <DateField label="Hasta" name="travel_end" defaultValue={metadataValue(initial, "travel_end")} />
-              </div></fieldset>}
+              </div></div></details>}
             </section>
           )}
 
@@ -483,25 +495,25 @@ export function ProfileForm({ action, submitLabel, initial, allowEscort = true, 
             <fieldset className="profile-contact-fieldset">
               <legend>Contacto directo</legend>
             <div className="form-grid form-grid-three">
-                <label>Teléfono alternativo<input name="contact_phone" inputMode="numeric" pattern="[0-9]{8,15}" defaultValue={initial?.details.contactPhone} placeholder="Ej. 56912345678" /></label>
-              <label>Telegram<input name="contact_telegram" maxLength={80} defaultValue={initial?.contactTelegram} placeholder="@usuario o t.me/usuario" /><small>Puedes ingresar usuario, @usuario o un enlace t.me.</small></label>
+                <label><span className="profile-contact-label"><PortalContactIcon kind="call" /><span>Teléfono alternativo</span></span><input name="contact_phone" inputMode="numeric" pattern="[0-9]{8,15}" defaultValue={initial?.details.contactPhone} placeholder="Ej. 56912345678" /></label>
+              <label><span className="profile-contact-label"><PortalContactIcon kind="telegram" /><span>Telegram</span></span><input name="contact_telegram" maxLength={80} defaultValue={initial?.contactTelegram} placeholder="@usuario o t.me/usuario" /><small>Puedes ingresar usuario, @usuario o un enlace t.me.</small></label>
               {type === "agency" && <>
                 <label>Métodos preferidos<input name="contact_methods" maxLength={120} defaultValue={metadataValue(initial, "contact_methods")} placeholder="WhatsApp, correo" /></label>
               </>}
-              <label>Correo de contacto<input name="contact_email" type="email" maxLength={160} defaultValue={initial?.details.contactEmail} placeholder="Ej. contacto@correo.cl" /></label>
+              <label><span className="profile-contact-label"><PortalContactIcon kind="email" /><span>Correo de contacto</span></span><input name="contact_email" type="email" maxLength={160} defaultValue={initial?.details.contactEmail} placeholder="Ej. contacto@correo.cl" /></label>
             </div>
             </fieldset>
             <fieldset className="profile-contact-fieldset">
               <legend>Redes y plataformas</legend>
               <div className="form-grid form-grid-three">
-                <label>Usuario de Instagram<input name="instagram_url" maxLength={64} defaultValue={socialUsername(metadataValue(initial, "instagram_url"))} placeholder="nombredeusuario" /><small>Se enlazará a instagram.com/tuusuario.</small></label>
+                <label><span className="profile-contact-label"><PortalContactIcon kind="instagram" /><span>Usuario de Instagram</span></span><input name="instagram_url" maxLength={64} defaultValue={socialUsername(metadataValue(initial, "instagram_url"))} placeholder="nombredeusuario" /><small>Se enlazará a instagram.com/tuusuario.</small></label>
                 {type === "agency" && <>
                 <label>Sitio web<input name="website" type="url" maxLength={180} defaultValue={metadataValue(initial, "website")} placeholder="https://" /></label>
                 <label>Facebook<input name="facebook_url" type="url" maxLength={180} defaultValue={metadataValue(initial, "facebook_url")} placeholder="https://" /></label>
                 <label>Twitter/X<input name="twitter_url" type="url" maxLength={180} defaultValue={metadataValue(initial, "twitter_url")} placeholder="https://" /></label>
                 </>}
-                {type !== "rental" && <><label>Usuario de Arsmate<input name="arsmate_url" maxLength={64} defaultValue={socialUsername(metadataValue(initial, "arsmate_url"))} placeholder="nombredeusuario" /><small>Se enlazará a arsmate.com/tuusuario.</small></label>
-                <label>Usuario de OnlyFans<input name="onlyfans_url" maxLength={64} defaultValue={socialUsername(metadataValue(initial, "onlyfans_url"))} placeholder="nombredeusuario" /><small>Se enlazará a onlyfans.com/tuusuario.</small></label></>}
+                {type !== "rental" && <><label><span className="profile-contact-label"><PortalContactIcon kind="arsmate" /><span>Usuario de Arsmate</span></span><input name="arsmate_url" maxLength={64} defaultValue={socialUsername(metadataValue(initial, "arsmate_url"))} placeholder="nombredeusuario" /><small>Se enlazará a arsmate.com/tuusuario.</small></label>
+                <label><span className="profile-contact-label"><PortalContactIcon kind="onlyfans" /><span>Usuario de OnlyFans</span></span><input name="onlyfans_url" maxLength={64} defaultValue={socialUsername(metadataValue(initial, "onlyfans_url"))} placeholder="nombredeusuario" /><small>Se enlazará a onlyfans.com/tuusuario.</small></label></>}
               </div>
             </fieldset>
             {type !== "rental" && !contentOnly && <div className="service-columns">

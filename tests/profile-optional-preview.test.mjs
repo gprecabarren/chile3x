@@ -7,7 +7,7 @@ const source = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
 test('secondary fields share one collapsed group; important optional fields remain visible', async () => {
   const form = await source('app/mi-cuenta/ProfileForm.tsx');
-  const start = form.indexOf('<details ref={optionalRef}'), end = form.indexOf('</details>', start);
+  const start = form.indexOf('<details ref={optionalRef}'), end = form.lastIndexOf('</details>');
   const optional = form.slice(start, end), core = form.slice(form.indexOf('<form ref='), start);
   assert.ok(start > 0 && end > start);
   assert.match(optional, /Características opcionales/);
@@ -21,7 +21,7 @@ test('secondary fields share one collapsed group; important optional fields rema
     assert.ok(!optional.includes(`name="${name}"`));
   }
   assert.doesNotMatch(form, /name="artist_name"|Nombre artista|className="language-selector"/);
-  assert.match(form, /onInvalidCapture=[\s\S]*optionalRef.current.open = true/);
+  assert.match(form, /onInvalidCapture=[\s\S]*parent instanceof HTMLDetailsElement\) parent.open = true/);
   assert.match(form, /sessionStorage.setItem/);
   assert.match(core, /name="gender" required/);
   assert.match(core, /name="age" type="number" required min="18" max="99"/);

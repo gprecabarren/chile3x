@@ -5,7 +5,7 @@ import { ActionButton } from "@/app/ActionButton";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { PublicStory } from "@/lib/stories";
-import { activeStories, newestStories, storyTimestamp, storyUploadLabel } from "@/lib/story-order";
+import { activeStories, newestStories, storyActivityLabel, storyTimestamp, storyUploadLabel } from "@/lib/story-order";
 
 type StoryRailProps = {
   stories: PublicStory[];
@@ -27,13 +27,6 @@ function storyTimeLabel(expiresAt: string, now = new Date()) {
   return minutes >= 60 ? `Disponible ${Math.ceil(minutes / 60)} h más` : `Disponible ${minutes} min más`;
 }
 
-function activityTimeLabel(createdAt: string, now = new Date()) {
-  const minutes = Math.max(1, Math.floor((now.getTime() - storyTimestamp(createdAt)) / 60_000));
-  if (minutes < 60) return `hace ${minutes} min`;
-  const hours = Math.floor(minutes / 60);
-  return hours < 24 ? `hace ${hours} h` : `hace ${Math.floor(hours / 24)} d`;
-}
-
 function groupStories(stories: PublicStory[]) {
   const groups = new Map<string, StoryGroup>();
   for (const story of stories) {
@@ -52,7 +45,7 @@ function useActiveStories(stories: PublicStory[]) {
     const timer = window.setInterval(tick, 30_000);
     return () => { window.clearTimeout(first); window.clearInterval(timer); };
   }, []);
-  return useMemo(() => now === null ? stories : activeStories(stories, now), [stories, now]);
+  return useMemo(() => ({ active: now === null ? stories : activeStories(stories, now), now }), [stories, now]);
 }
 
 function StoryViewer({ group: initialGroup, startAt, onClose, onViewed }: { group: StoryGroup; startAt: number; onClose: () => void; onViewed?: (storyId: string) => void }) {
@@ -141,7 +134,7 @@ function StoryViewer({ group: initialGroup, startAt, onClose, onViewed }: { grou
   </div>, document.body);
 }
 
-function StoryActivityPanel({ stories }: { stories: PublicStory[] }) {
+function StoryActivityPanel({ stories, now }: { stories: PublicStory[]; now: number | null }) {
   const [visible, setVisible] = useState(8);
   const groups = useMemo(() => new Map(groupStories(stories).map(group => [group.profileId, group])), [stories]);
   const [open, setOpen] = useState<StoryGroup | null>(null);
@@ -150,14 +143,14 @@ function StoryActivityPanel({ stories }: { stories: PublicStory[] }) {
   if (!activity.length) return null;
   return <aside id="directory-activity" className="story-activity-panel" aria-label="Última actividad">
     <header><h2>Última actividad</h2><span>24 h</span></header>
-    <div>{activity.slice(0, visible).map((story) => <article key={story.id} className="story-activity-item"><ActionButton type="button" className="story-activity-avatar" aria-label={`Ver historias de ${story.profileName} desde actividad`} onClick={() => setOpen(groups.get(story.profileId) ?? null)}>{story.profileImageUrl ? <img src={story.profileImageUrl} alt="" loading="lazy" /> : story.profileName.slice(0, 1)}</ActionButton><a href={profileHref(story)}><strong>{story.profileName}</strong><small>{story.city} · {activityTimeLabel(story.createdAt)}</small><p>{story.body}</p></a></article>)}</div>
+    <div>{activity.slice(0, visible).map((story) => <article key={story.id} className="story-activity-item"><ActionButton type="button" className="story-activity-avatar" aria-label={`Ver historias de ${story.profileName} desde actividad`} onClick={() => setOpen(groups.get(story.profileId) ?? null)}>{story.profileImageUrl ? <img src={story.profileImageUrl} alt="" loading="lazy" /> : story.profileName.slice(0, 1)}</ActionButton><a href={profileHref(story)}><strong>{story.profileName}</strong><small>{story.city} · {storyActivityLabel(story.createdAt, now)}</small><p>{story.body}</p></a></article>)}</div>
     {activity.length > visible && <ActionButton className="story-activity-more" type="button" onClick={() => setVisible((value) => value + 8)}>Ver más actividad</ActionButton>}
     {open && <StoryViewer group={open} startAt={0} onClose={close} />}
   </aside>;
 }
 
 export function StoryRail({ stories, city, profileOnly = false, compactRegion = false }: StoryRailProps) {
-  const active = useActiveStories(stories);
+  const { active } = useActiveStories(stories);
   const groups = useMemo(() => groupStories(active), [active]);
   const [seenIds, setSeenIds] = useState<string[]>([]);
   const [open, setOpen] = useState<{ group: StoryGroup; index: number } | null>(null);
@@ -211,7 +204,7 @@ export function StoryRail({ stories, city, profileOnly = false, compactRegion = 
 }
 
 export function DirectoryStoryLayout({ stories, city, children, listingsLabel = "Anuncios" }: { stories: PublicStory[]; city?: string; children: ReactNode; listingsLabel?: string }) {
-  const active = useActiveStories(stories);
+  const { active, now } = useActiveStories(stories);
   const [activityOpen, setActivityOpen] = useState(false);
   const tabsRef = useRef<HTMLDivElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -227,13 +220,13 @@ export function DirectoryStoryLayout({ stories, city, children, listingsLabel = 
   return <div className={`directory-stories-layout${hasActivity ? " has-activity" : ""}${activityOpen && hasActivity ? " is-activity-open" : ""}`}>
     <StoryRail stories={active} city={city} />
     {hasActivity && <div ref={tabsRef} className="directory-activity-tabs" role="group" aria-label="Vista del directorio"><ActionButton type="button" aria-pressed={!activityOpen} aria-controls="directory-listings" onClick={() => showListings()}>▦ {listingsLabel}</ActionButton><ActionButton type="button" aria-pressed={activityOpen} aria-controls="directory-activity" onClick={() => setActivityOpen(true)}>◷ Actividad</ActionButton></div>}
-    <div ref={resultsRef} className="directory-live-layout"><div id="directory-listings" className="directory-main-results">{children}</div>{hasActivity && <StoryActivityPanel stories={active} />}</div>
+    <div ref={resultsRef} className="directory-live-layout"><div id="directory-listings" className="directory-main-results">{children}</div>{hasActivity && <StoryActivityPanel stories={active} now={now} />}</div>
     {hasActivity && activityOpen && <div className="directory-activity-tabs directory-activity-footer" role="group" aria-label="Vista del directorio, final"><ActionButton type="button" aria-pressed={false} aria-controls="directory-listings" onClick={() => showListings(true)}>▦ {listingsLabel}</ActionButton><ActionButton type="button" aria-pressed={true} aria-controls="directory-activity">◷ Actividad</ActionButton></div>}
   </div>;
 }
 
 export function ProfileStoryTrigger({ stories }: { stories: PublicStory[] }) {
-  const active = useActiveStories(stories);
+  const { active } = useActiveStories(stories);
   const groups = useMemo(() => groupStories(active), [active]);
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);

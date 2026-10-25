@@ -1,0 +1,169 @@
+# Contexto para continuar el desarrollo de Chile3X
+
+Referencia revisada el 24 de octubre de 2026: GitHub `gprecabarren/chile3x`, rama `main`, checkout `5d42099` más los cambios locales de esta entrega. Se leyó y contrastó la guía técnica del README remoto con la copia local: ambos tenían el mismo blob `f6e248afb278cb944eb6efa20665a32560682532` antes de añadir estos enlaces. Este mapa complementa esa guía y el historial; no sustituye el código ni afirma una auditoría semántica de cada línea.
+
+## Orden para retomar una sesión
+
+1. Leer [AGENTS.md](../AGENTS.md) y la guía técnica de [README.md](../README.md).
+2. Revisar rama, SHA, `git status` y diff antes de editar. Una copia con trabajo local no equivale a GitHub ni al despliegue activo.
+3. Localizar la superficie en [rutas-aplicacion.md](rutas-aplicacion.md) y las tablas en [esquema-base-datos.md](esquema-base-datos.md).
+4. Leer la página/componente, su API, servicio, política y pruebas correspondientes. Para cambios de datos, leer también las migraciones y triggers relacionados.
+5. Confirmar la configuración efectiva y flags del entorno cuando la tarea dependa de ellos. No deducir activación, permisos ni entregabilidad de la existencia de una pantalla.
+
+## Producto y entidades
+
+Chile3X es una vitrina para adultos en Chile con anuncios Escort, Agencia y Arriendo; el contacto y los acuerdos se realizan directamente entre las personas. El modelo no equivale a una plataforma de pagos ni de suscripciones automatizadas.
+
+- **Cuenta:** identidad autenticada, datos privados, correo, rol y estado. `users`, `auth_sessions` e identidades de proveedores.
+- **Anuncio:** publicación de una cuenta con su propio identificador público, tipo, ciudad, moderación, detalles, servicios y medios. La identidad de cuenta y el handle de anuncio son distintos.
+- **Biblioteca exclusiva:** colección propiedad de la cuenta, con archivos moderados y accesos manuales. Vincularla a un Escort no transfiere su propiedad ni convierte enlaces de redes en una biblioteca.
+- **Muestra privada:** preparación separada de un anuncio, con token de acceso y caducidad. Compartirla no publica ni crea automáticamente una cuenta.
+- **Permiso administrativo:** acceso interno autorizado en D1 y basado en capacidades; tener acceso al repositorio GitHub no concede permisos en el sitio.
+
+## Arquitectura y recorrido de una petición
+
+```mermaid
+flowchart LR
+  B[Navegador] --> W[Worker y políticas]
+  W --> C[Caché HTML anónima permitida]
+  W --> R[App Router / React / Vinext]
+  R --> S[Servicios y validaciones de lib]
+  S --> D[(D1 / Drizzle)]
+  S --> M[(R2 privado)]
+  W --> T[Cola y cron]
+  T --> D
+  T --> M
+```
+
+La base usa React 19, convenciones App Router de Next 16 y compilación Vinext/Vite para Cloudflare. Versiones exactas en `package.json` y `pnpm-lock.yaml`; no asumir que corre en Vercel ni en un servidor Next tradicional.
+
+`worker/index.ts` primero filtra probes, protege muestras, intercepta Telegram, resuelve conflictos de sesión, comprueba bloqueo de correo y limita multipart. Selecciona tema/diseño en servidor, consulta caché admisible, delega el render/API y aplica cabeceras. El optimizador de imágenes tiene una ruta específica; las fotos públicas de perfiles conservan sus originales según la política visual del proyecto.
+
+`db/index.ts` obtiene el binding `DB` y deduplica el cliente por petición. No añadir caché global de identidad ni pasar todo el esquema a Drizzle para activar consultas relacionales que no se usan.
+
+## Flujos del sitio
+
+### Registro, acceso y sesiones
+
+`app/api/auth` → `lib/auth.ts` y módulos del proveedor → `users`, identidades, tokens e intentos → cookie de sesión y preparación de contexto del navegador.
+
+La sesión pública y la administrativa se aíslan. `BrowserSessionSetup`, `BrowserSessionBoundary`, `worker/session-isolation.ts` y las políticas de sesión coordinan pestañas y conflictos; una cookie de navegador no sustituye una credencial. El acceso administrativo usa GitHub y su concesión vigente en D1. Google, Apple y X tienen contratos y configuración propios: revisar su política y estado antes de describirlos como habilitados.
+
+La verificación de correo tiene plazos, reenvío y bloqueo en servidor (`email-verification-policy` y Worker). La identidad restringida de recuperación/verificación no tiene todos los permisos de una cuenta activa. Deshabilitación voluntaria, bloqueo administrativo, borrado y recuperación son operaciones diferentes.
+
+### Crear, editar y publicar anuncios
+
+`app/mi-cuenta/ProfileForm.tsx` → `/api/perfiles/nuevo` o `/api/perfiles/:id` → `readProfileSubmission` → `createProfile` / `updateProfile` en `lib/profile-submission.ts` → D1 → destino privado/confirmación.
+
+La creación asistida y edición administrativa reutilizan la validación central. El tipo queda fijado al crear. Normalmente hay un Escort fuera de papelera por cuenta; existe una excepción de identidad controlada por servidor y reflejada en triggers. No generalizarla ni copiar sus datos personales a documentación.
+
+El borrador y el envío a revisión son intenciones distintas. El envío normal queda `pending`; la aprobación administrativa se hace mediante `/api/admin/profiles/:id/status`. Los estados permitidos son `draft`, `pending`, `approved`, `paused`, `rejected` y `expired`, además de estados independientes de verificación y revisión médica. No asumir que todos están expuestos en cada interfaz.
+
+Una edición relevante normal vuelve a revisión. Un cambio solo de contactos conserva un anuncio aprobado. La edición administrativa tiene una opción autorizada para conservar moderación. La versión y los cambios se guardan con `guardedBatch`; si la revisión quedó antigua, responder `409` sin repetir automáticamente la escritura.
+
+El formulario comparte datos con agencias, arriendos y muestras: no esconder campos solo visualmente ni relajar la validación de servidor por cambiar el layout.
+
+### Visibilidad pública y SEO
+
+`publicProfileCondition` exige anuncio aprobado, propietario activo, sin ocultamiento y sin papelera. La pausa, el estado de moderación, `owner_hidden_at`, la papelera y el estado de cuenta no son intercambiables.
+
+`lib/directory.ts`, políticas de categorías/orden y consultas de perfiles construyen catálogo y filtros. `app/perfil/[slug]/page.tsx` renderiza el detalle; el handle público y las rutas históricas tienen su política de canónica. El contenido solo digital usa `content_only`: se declara explícitamente, no se deduce de OnlyFans, Arsmate o de una colección privada. Mantener sus exclusiones de categorías y servicios presenciales.
+
+Metadatos globales, SEO de cada diseño de inicio, metadatos de páginas informativas y cuerpo visible son capas distintas. Conservar títulos, H1, canónicas, robots, JSON-LD y sitemap. Los valores predeterminados del código son respaldos; los valores efectivos suelen estar en D1.
+
+### Medios y documentos
+
+Editor de medios → políticas de imagen/video y preparación local cuando corresponde → API autenticada → R2 más referencia D1 → moderación del archivo → lectura autorizada.
+
+Los medios y el anuncio se moderan por separado. No retirar la publicación aprobada al subir un archivo nuevo ni perder la foto principal aprobada antes de aceptar el reemplazo. `/media/:id` vuelve a comprobar propietario/estado del archivo y anuncio; soporta rangos sin saltarse autorización. Documentos de identidad, salud, evidencias y adjuntos tienen rutas y reglas propias. R2 no es un bucket público ni una copia de los datos de Git.
+
+Privacidad manual, recorte, marca de agua, formatos, tamaños y duración se consultan en `profile-media-upload`, `photo-edit-policy`, `verification-documents`, `video-policy` y `video-validation`. Las cifras antiguas del README no deben reemplazar esos contratos.
+
+### Historias y actividad
+
+`lib/stories.ts` y `story-upload.ts` seleccionan/cargan historias; `story-data.ts` define sus reglas y `story-order.ts` sus fechas y orden. El directorio acota las historias a sus anuncios mostrados. `app/historias/StoryRail.tsx` implementa rail, actividad, pestañas móviles y visor con foco/teclado.
+
+Las historias expiran y se limpian mediante `worker/story-cleanup.ts`. No ejecutar mantenimiento remoto para probar un visor. Los rótulos relativos usan un reloj compartido iniciado tras hidratar: no calcular la hora actual independientemente durante SSR y el primer render cliente.
+
+### Interacciones, mensajes y agencias
+
+Favoritos, likes, reseñas, reportes y avisos de cambio de ciudad viven en APIs de perfiles y servicios específicos. Las reseñas las aprueba/rechaza el propietario; administración consulta/elimina según capacidad. Un pendiente no se vuelve público por estar visible para su autor.
+
+`lib/internal-messages.ts` y `/api/mensajes` verifican participación, estado público del anuncio, bloqueos y límites de frecuencia. Historial, no leídos, silencio y bloqueo son estados distintos. La presencia se deriva de actividad reciente; no representa disponibilidad comercial. El horario usa `America/Santiago` y los contactos registrados no equivalen a clientes ni a mensajes realmente enviados.
+
+Las solicitudes de asociación agencia–Escort requieren aceptación de la cuenta propietaria. Consultar `agency_members`, `agency_membership_requests` y las APIs de agencias/asociaciones antes de cambiar el vínculo.
+
+### Contenido exclusivo y muestras
+
+`lib/exclusive-content.ts` conserva colección por cuenta, vínculo opcional con un Escort y permisos de compradores. `/contenido/:id` sirve medios después de autorización, también para bibliotecas que no dependen de la publicación del anuncio. Los cobros se acuerdan fuera del sitio; no crear un checkout por inferencia.
+
+`private-sample-policy.ts` y `private-samples.ts` separan muestras, formulario saneado, tokens, caducidad, medios y migración autorizada. `/muestra/:id` y sus archivos son privados y noindex. No mezclar sus fotos, credenciales o contadores con anuncios reales.
+
+### Administración, contenidos y comunidad
+
+La navegación y las capacidades de administración se consultan en `_components`, `admin-permissions` y `admin-content-navigation`. Sus editores cubren cuentas, anuncios, medios, reportes, noticias, asociados, contenido/SEO, documentos legales, configuración y otros módulos sujetos a flags.
+
+El cuerpo legal y sus versiones están en `legal_documents`/`legal_document_versions`; las aceptaciones por cuenta en `account_legal_acceptances`. Cambiar metadatos de una página no equivale a editar su documento. La ayuda usa audiencia/capacidad y el foro tiene acceso propio; el documento histórico `product-scope.md` no es una lista vigente de funciones deshabilitadas.
+
+Telegram se integra en el Worker con webhook, D1, cola, outbox y cron; vinculación de cuenta, identidad administrativa, membresía, novedades y moderación son contratos distintos. No enviar mensajes, activar proveedores ni cambiar espacios externos al revisar código.
+
+## Base de datos y persistencia
+
+El inventario actual del esquema tipado tiene **92 tablas, 802 columnas y 103 claves foráneas**; hay **64 migraciones SQL**. Son conteos de código, no una inspección de producción. Los comentarios antiguos que hablan de 62 tablas y los inventarios de otros commits no reemplazan esta medición. El detalle completo de columnas, enumeraciones, índices y relaciones está en [esquema-base-datos.md](esquema-base-datos.md).
+
+Dominios principales:
+
+| Dominio | Tablas o familias |
+| --- | --- |
+| Identidad | `users`, `auth_sessions`, `account_*_identities`, intentos de proveedores, `account_tokens`, presencia y aceptaciones legales |
+| Administración | `admin_github_*`, auditoría, notificaciones, recibos de mutación y revisiones |
+| Publicación | `profiles`, `profile_details`, `profile_tags`, `profile_services`, `listing_periods`, agencias y solicitudes |
+| Medios y confianza | `profile_media`, `profile_verification_files`, reportes/evidencias, muestras y sus medios |
+| Interacciones | visitas/contactos, favoritos, likes, reseñas, bloqueos, alertas de ciudad y `profile_statuses` |
+| Mensajes y bibliotecas | `message_*`, `exclusive_content_*`; `profile_exclusive_access` conserva un contrato heredado que debe verificarse antes de modificar |
+| Contenido | noticias/medios, sitios asociados/grupos, ajustes, ayuda y documentos legales/versiones |
+| Comunidad | `forum_*` y `telegram_*` |
+| Operaciones | `operational_*`, correos, retenciones, trabajos de eliminación y coordinación |
+
+Las restricciones de identidad, límite Escort, revisiones, compatibilidad de etiquetas y limpieza de objetos incluyen triggers de migración. Un cambio en tablas hijas puede incrementar la revisión del recurso. Revisar FK/cascadas y referencias R2 antes de una eliminación. GitHub respalda fuente/migraciones, pero no D1, R2, secretos ni configuración externa; el rollback del Worker no revierte datos.
+
+## Mapa rápido de código compartido
+
+| Trabajo | Referencias principales en lib/worker |
+| --- | --- |
+| Acceso y proveedores | `auth`, `session-*`, `browser-session-view`, `google-*`, `apple-*`, `x-*`, `turnstile-*`, verificación y recuperación |
+| Cuenta | `account-*`, `creation-provenance`, datos, eliminación, reactivación y username |
+| Catálogo/perfil | `directory`, `directory-order`, `profile-*`, `public-profile-visibility`, popularidad de ciudad |
+| Medios | `media*`, `image-*`, `photo-*`, `face-privacy`, `video-*`, `verification-documents`, `report-evidence` |
+| Comunidad/interacción | `internal-messages`, `stories`, `story-*`, `forum*`, `telegram*`, `profile-interactions` |
+| Configuración/editorial | `site-settings`, `home-*`, `information-seo*`, `news*`, `legal-*`, `faq`, reglas, asociados y contactos |
+| Coordinación/observabilidad | `collaboration`, `admin-*`, `operations`, `email-history*`, trabajos de correo y retención |
+| Infraestructura | Worker, `public-cache`, `site-presentation`, aislamiento de sesión, correo entrante y limpieza |
+
+## Interfaz y reglas de mantenimiento
+
+Tema global `classic`/`liquid-glass` y diseño del inicio `classic`/`compact` son ejes separados seleccionados por servidor. Compartir estructura y controles; el CSS exclusivo de Glass conserva su carga condicional y nombre versionado. No crear URLs duplicadas por tema ni selección solo en almacenamiento del navegador.
+
+DM Sans local es la familia global, con excepciones técnicas para código/IP. Cambiar tamaños o pesos no implica cambiar la fuente. Mantener radios mediante `corner-tokens.css`, botones compartidos y selects nativos; evitar contextos de apilado que atrapen diálogos.
+
+Esta entrega añadió Hombres derivado de Masculino en cliente/servidor; controles legibles; íconos compartidos de contacto; horarios y Agenda de viajes desplegables. Las selecciones se conservan y la validación abre los grupos necesarios. También corrige la próxima disponibilidad semanal y la hidratación de actividad. Evidencia en [qa-escort-form-2026-10-24.md](qa-escort-form-2026-10-24.md).
+
+## Desarrollo, QA y publicación coordinada
+
+Usar el gestor/versiones fijados, instalación congelada, typecheck, lint y pruebas proporcionales. `pnpm test` incluye build; no hacer builds simultáneos sobre `dist`. El desarrollo local usa `.wrangler/visual-state`; los scripts pueden escribir datos y algunos apuntan a producción: leerlos antes de ejecutarlos.
+
+Para Vinext local, el argumento de escucha es `--hostname`, no `--host`. Los proxies de `qa-account-stories` dependen de la instancia en `127.0.0.1:3880`. Crear y limpiar exclusivamente fixtures locales, con verificación de prefijos/propietarios. No reutilizar credenciales de prueba antiguas ni publicarlas.
+
+**Instrucción del propietario:** toda publicación en Cloudflare debe tener su commit y push correspondientes en GitHub. `main` está documentada como vinculada a Workers Builds: enviar un commit puede publicar y no debe duplicarse con un despliegue manual paralelo. Cuando se vaya a publicar, revisar exactamente qué archivos se incluyen, ejecutar las comprobaciones, enviar ese SHA y verificar checks, versión activa y rutas afectadas. Registrar SHA y versión juntos. Si algo falla, mantener explícito el estado parcial hasta sincronizar ambas partes.
+
+La revisión de contexto se realizó localmente y no cambió la visibilidad del repositorio. El estado de publicación del trabajo se verifica por separado mediante el commit y su despliegue. GitHub mostraba el repositorio público al leer sus metadatos. La recomendación para este proyecto comercial es mantenerlo privado; cambiar la visibilidad es una operación separada.
+
+## Qué actualizar al cambiar el proyecto
+
+- Flujos, permisos o decisiones de producto: este mapa y la guía del README correspondiente.
+- Esquema: fuente tipada, migración revisada, mapa D1 y pruebas de invariantes.
+- Rutas: inventario de rutas y enlaces de navegación/SEO afectados.
+- Presentación: reglas de AGENTS, ambos temas/diseños y evidencias responsive.
+- Publicación: commit GitHub, checks, versión Cloudflare y resultado verificado; no presentar QA local como producción.
+
+Los datos vivos, secretos, permisos externos y la salud real de proveedores requieren consulta específica cuando una tarea los involucre. Este contexto persiste en archivos del repositorio para retomarlo sin depender de una conversación anterior.

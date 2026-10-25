@@ -54,6 +54,9 @@
     white-space:nowrap;
   }
   :root body .directory-filter-form .filter-mobile-toggle::after { margin-left:auto; }
+  .profile-form .availability-editor-row { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .profile-form .availability-day-toggle { grid-column:1 / -1; }
+  .travel-agenda-editor .date-parts-field > div { grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr)); }
 }
 
 @media (max-width:360px) {
@@ -68,4 +71,6 @@
     gap:3px;
     font-size:.875rem;
   }
+  .profile-form .availability-editor-row { grid-template-columns:minmax(0,1fr); }
+  .profile-form .availability-day-toggle { grid-column:auto; }
 }

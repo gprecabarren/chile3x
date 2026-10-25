@@ -16,6 +16,35 @@
 .auth-form .login-password-entry input { height:46px; min-height:46px; margin:0; font-size:16px; }
 .auth-form .login-password-entry .login-password-toggle { display:inline-flex; align-items:center; justify-content:center; width:46px; height:46px; min-width:46px; min-height:46px; margin:0; padding:10px; align-self:start; }
 .login-password-toggle .action-icon { width:20px; height:20px; margin:0; flex:0 0 20px; max-width:none; max-height:none; }
+.profile-form .travel-agenda-editor { margin-top:20px; }
+/* Shared listing editor: readable native checkboxes in both visual themes. */
+.profile-form :is(.profile-tags-fieldset,.language-checklist) legend { font-size:1rem; line-height:1.5; }
+.profile-form .check-grid label,
+.profile-form .availability-editor-row .availability-day-toggle { min-height:44px; font-size:1rem !important; line-height:1.5; font-weight:600; }
+.profile-form .check-grid label { display:flex; gap:10px; align-items:center; min-width:0; overflow-wrap:anywhere; }
+.profile-form .check-grid input[type="checkbox"],
+.profile-form .availability-day-toggle input[type="checkbox"] { width:22px !important; height:22px; min-height:22px !important; flex:0 0 22px; margin:0; padding:0; accent-color:var(--red); }
+.profile-form .check-grid label.is-blocked { opacity:1; color:#aeb8c9; }
+.profile-form .check-grid label.is-blocked input { opacity:.55; }
+.profile-form :is(.availability-editor,.travel-agenda-editor) { min-width:0; padding:0; border:1px solid #49546a; border-radius:var(--corner-10); background:transparent; }
+.profile-form :is(.availability-editor,.travel-agenda-editor) > summary { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px 16px; align-items:center; min-height:64px; padding:16px; cursor:pointer; list-style:none; }
+.profile-form :is(.availability-editor,.travel-agenda-editor) > summary::-webkit-details-marker { display:none; }
+.profile-form :is(.availability-editor,.travel-agenda-editor) > summary strong { min-width:0; font-size:1rem; line-height:1.5; color:#f5f7fc; overflow-wrap:anywhere; }
+.profile-form :is(.availability-editor,.travel-agenda-editor) > summary > span { grid-column:1; font-size:.8125rem; line-height:1.5; color:#b4bdcd; }
+.profile-form :is(.availability-editor,.travel-agenda-editor) > summary::after { content:"+"; grid-column:2; grid-row:1 / 3; font-size:24px; color:#ff8995; }
+.profile-form :is(.availability-editor,.travel-agenda-editor)[open] > summary::after { content:"−"; }
+.profile-form :is(.availability-editor,.travel-agenda-editor) > summary:focus-visible { outline:2px solid #9fcaff; outline-offset:3px; border-radius:var(--corner-10); }
+.profile-form :is(.availability-editor-content,.travel-agenda-editor-content) { min-width:0; padding:16px; border-top:1px solid #49546a; }
+.profile-form :is(.availability-editor-content,.travel-agenda-editor-content) > p { margin:0 0 16px; color:#b4bdcd; font-size:.875rem; line-height:1.6; }
+.profile-form :is(.availability-editor-content,.travel-agenda-editor-content) > small { display:block; margin:12px 0 16px; font-size:.8125rem; line-height:1.5; color:#b4bdcd; }
+.profile-form .availability-editor-row { min-width:0; grid-template-columns:minmax(0,1fr) repeat(2,minmax(0,.8fr)); }
+.profile-form .availability-editor-row label { min-width:0; font-size:.875rem !important; }
+.profile-form .availability-editor-row select { width:100%; min-width:0; }
+.profile-form .availability-bulk-actions .button { max-width:100%; white-space:normal; text-align:center; }
+.profile-form .profile-contact-label { display:flex; align-items:center; gap:10px; min-height:24px; min-width:0; font-size:1rem; line-height:1.5; }
+.profile-contact-label > span { min-width:0; overflow-wrap:anywhere; }
+.profile-contact-label > svg { width:22px; height:22px; flex:0 0 22px; }
+.profile-contact-label > .arsmate-brand-mark { width:58px; height:22px; flex:0 0 58px; object-fit:contain; }
 @media(max-width:620px) {
   .admin-account-details-form :is(.account-location-grid,.account-identity-optional .form-grid) { grid-template-columns:minmax(0,1fr); }
   .admin-account-details-form .account-identity-optional { padding:16px; }

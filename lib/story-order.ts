@@ -16,3 +16,14 @@ export function storyUploadLabel(value: string) {
   const timestamp = storyTimestamp(value);
   return Number.isFinite(timestamp) ? uploadedFormatter.format(timestamp) : "Fecha no disponible";
 }
+
+// SSR and the first hydration render use the same fixed publication time.
+// Relative labels start only after the shared client clock has mounted.
+export function storyActivityLabel(createdAt: string, now: number | null) {
+  const timestamp = storyTimestamp(createdAt);
+  if (now === null || !Number.isFinite(timestamp)) return storyUploadLabel(createdAt);
+  const minutes = Math.max(1, Math.floor((now - timestamp) / 60_000));
+  if (minutes < 60) return `hace ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  return hours < 24 ? `hace ${hours} h` : `hace ${Math.floor(hours / 24)} d`;
+}

@@ -19,6 +19,20 @@ test('24-hour weekly schedules cover the final minute and preserve normal ranges
   assert.equal(readAvailability('mon=24:00-24:00|tue=09:00-18:00|wed=00:00-24:30').length,1);
   const normal=readAvailability('mon=09:00-18:00'); assert.equal(normal[0].closesAt,'18:00');
 });
+
+test('weekly availability keeps its next opening after the only working day closes',()=>{
+  const entries = readAvailability('mon=09:00-18:00');
+  assert.deepEqual(getAvailabilityStatus(entries, new Date('2026-10-26T11:00:00Z'), 'atiende'), {
+    isOpen: false, text: 'No disponible ahora · atiende hoy a las 09:00',
+  });
+  assert.equal(getAvailabilityStatus(entries, new Date('2026-10-26T12:00:00Z')).isOpen, true);
+  for (const instant of ['2026-10-26T21:00:00Z', '2026-10-26T23:00:00Z', '2026-11-02T02:59:59Z']) {
+    assert.deepEqual(getAvailabilityStatus(entries, new Date(instant), 'atiende'), {
+      isOpen: false, text: 'No disponible ahora · atiende lunes a las 09:00',
+    });
+  }
+  assert.equal(getAvailabilityStatus([], new Date('2026-10-26T23:00:00Z')), null);
+});
 test('crop bounds preserve source limits, aspect ratio and never upscale',()=>{
   assert.deepEqual(photoCropBounds(323,559,defaultPhotoCrop),{x:0,y:0,width:323,height:559,outputWidth:323,outputHeight:559});
   for (const ratio of ['original','square','portrait','landscape']) for (const zoom of [1,2,4]) for(const position of [0,50,100]) {

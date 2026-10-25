@@ -4,6 +4,8 @@ Chile3X es un directorio nacional para adultos en Chile. Reúne anuncios de Esco
 
 El proyecto está construido para operar en Cloudflare con Workers, D1 y R2, sin depender de WordPress ni de un hosting tradicional.
 
+Para continuar el desarrollo desde este repositorio: [mapa de arquitectura y flujos](docs/mapa-desarrollo.md), [esquema completo de D1](docs/esquema-base-datos.md) e [inventario de rutas](docs/rutas-aplicacion.md). Leer también [AGENTS.md](AGENTS.md). Cada publicación en Cloudflare debe corresponder a un commit enviado a GitHub; comprobar ambas partes antes de darla por terminada.
+
 <!-- TECHNICAL_HANDOFF_START -->
 ## Guía técnica de traspaso — 24 de octubre de 2026
 

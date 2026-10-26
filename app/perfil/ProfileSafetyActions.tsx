@@ -2,12 +2,14 @@
 import { ActionButton } from "@/app/ActionButton";
 
 import Link from "@/app/NavigationLink";
+import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { MAX_REPORT_EVIDENCE_BYTES, MAX_REPORT_EVIDENCE_IMAGES, MAX_REPORT_EVIDENCE_TOTAL_BYTES } from "@/lib/report-evidence";
 import { TURNSTILE_PROFILE_REPORT_ACTION, TURNSTILE_PROFILE_REVIEW_SITEKEY } from "@/lib/turnstile";
 import { TurnstileWidget } from "./TurnstileWidget";
 
-export function ProfileSafetyActions({ profileId, profileSlug, signedIn, viewerOwnsProfile }: { profileId: string; profileSlug: string; displayName: string; signedIn: boolean; viewerOwnsProfile: boolean }) {
+export function ProfileSafetyActions({ profileId, profileSlug, signedIn, viewerOwnsProfile, preview = false }: { profileId: string; profileSlug: string; displayName: string; signedIn: boolean; viewerOwnsProfile: boolean; preview?: boolean }) {
+  const router = useRouter();
   const [reportOpen, setReportOpen] = useState(false);
   const [reason, setReason] = useState("wrong_information");
   const [body, setBody] = useState("");
@@ -32,6 +34,7 @@ export function ProfileSafetyActions({ profileId, profileSlug, signedIn, viewerO
 
   async function report(event: React.FormEvent) {
     event.preventDefault();
+    if (preview) return;
     if (!token) return setNotice("Completa la verificación antispam.");
     setBusy(true); setNotice("");
     const data = new FormData();
@@ -47,22 +50,22 @@ export function ProfileSafetyActions({ profileId, profileSlug, signedIn, viewerO
   }
 
   async function block() {
-    if (!signedIn) return;
+    if (preview || !signedIn) return;
     if (!window.confirm("¿Quieres ocultar este anuncio? Podrás recuperarlo desde Mi cuenta.")) return;
     setBusy(true);
     try {
       const response = await fetch(`/api/perfiles/${profileId}/bloqueo`, { method: "POST" });
       const payload = await response.json() as { error?: string };
       if (!response.ok) throw new Error(payload.error ?? "No se pudo ocultar el anuncio.");
-      window.location.assign("/escorts");
+      router.push("/escorts");
     } catch (cause) { setNotice(cause instanceof Error ? cause.message : "No se pudo ocultar el anuncio."); setBusy(false); }
   }
 
-  return <section className="profile-safety-actions">
-    {signedIn ? <ActionButton type="button" disabled={viewerOwnsProfile} title={viewerOwnsProfile ? "No puedes reportar tu propio anuncio." : undefined} onClick={() => { setReportOpen((value) => !value); setNotice(""); }}>⚑ Reportar anuncio</ActionButton> : <Link href={`/ingresar?return_to=${encodeURIComponent(`/perfil/${profileSlug}`)}`}>Inicia sesión para reportar</Link>}
-    {signedIn ? <ActionButton type="button" disabled={busy || viewerOwnsProfile} title={viewerOwnsProfile ? "No puedes ocultar tu propio anuncio." : undefined} onClick={block}>Ocultar anuncio</ActionButton> : <Link href={`/ingresar?return_to=${encodeURIComponent(`/perfil/${profileSlug}`)}`}>Inicia sesión para ocultarlo</Link>}
+  return <section className={`profile-safety-actions${preview ? " profile-preview-inactive" : ""}`}>
+    {(signedIn || preview) ? <ActionButton type="button" disabled={preview || viewerOwnsProfile} title={viewerOwnsProfile ? "No puedes reportar tu propio anuncio." : undefined} onClick={() => { setReportOpen((value) => !value); setNotice(""); }}>⚑ Reportar anuncio</ActionButton> : <Link href={`/ingresar?return_to=${encodeURIComponent(`/perfil/${profileSlug}`)}`}>Inicia sesión para reportar</Link>}
+    {(signedIn || preview) ? <ActionButton type="button" disabled={preview || busy || viewerOwnsProfile} title={viewerOwnsProfile ? "No puedes ocultar tu propio anuncio." : undefined} onClick={block}>Ocultar anuncio</ActionButton> : <Link href={`/ingresar?return_to=${encodeURIComponent(`/perfil/${profileSlug}`)}`}>Inicia sesión para ocultarlo</Link>}
     {signedIn && viewerOwnsProfile && <span className="profile-safety-owner-notice">Este es tu anuncio.</span>}
-    {signedIn && reportOpen && <form className="profile-report-form" onSubmit={report}>
+    {!preview && signedIn && reportOpen && <form className="profile-report-form" onSubmit={report}>
       <div><strong>Reporte privado para Chile3X</strong><ActionButton type="button" aria-label="Cerrar" onClick={() => setReportOpen(false)}>×</ActionButton></div>
       <p className="profile-report-intro">Cuéntanos qué ocurre y, si ayuda a explicarlo, adjunta pantallazos. Solo el equipo de Chile3X y tú podrán verlos.</p>
       <label>Motivo<select value={reason} onChange={(event) => setReason(event.target.value)}><option value="wrong_information">Información incorrecta</option><option value="impersonation">Suplantación de identidad</option><option value="fraud">Posible fraude</option><option value="underage">Posible persona menor de edad</option><option value="inappropriate">Contenido que incumple las reglas</option><option value="other">Otro motivo</option></select></label>

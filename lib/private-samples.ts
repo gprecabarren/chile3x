@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, or, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/db";
 import { adminAuditLogs, collaborationGuards, listingPeriods, privateProfileSamples, privateSampleMedia, profileDetails, profileMedia, profileServices, profileTags, profiles, users } from "@/db/schema";
 import { adminHasCapability } from "./admin-permissions";
@@ -7,12 +7,29 @@ import { guardedBatch, type ReviewVersion, CollaborationConflict } from "./colla
 import { readProfileSubmission, resolveProfileHandle, ProfileValidationError, validateProfileTravelDates } from "./profile-submission";
 import { sampleCanEdit, sampleForm, sampleFormJson, sampleIsAvailable, sampleTokenHash, readSampleProvenance, SAMPLE_ID, SAMPLE_HANDLE, SAMPLE_LIFETIME_MS, PRIVATE_SAMPLES_ENABLED } from "./private-sample-policy";
 import { hasUnlimitedEscortListings } from "./profile-limits";
-import { slugify } from "./profile";
+import { citiesByRegion, escortGenders, slugify } from "./profile";
+import { boundedSampleFilter, samplePhoneSearchTerms } from "./private-sample-filters";
 import type { PublicProfile } from "./directory";
 
 export { sampleCanEdit } from "./private-sample-policy";
 export type PrivateSample = typeof privateProfileSamples.$inferSelect;
-export type SampleFilters = { q?: string; provenance?: string; status?: string; view?: "active" | "trash"; contact?: "all" | "pending" | "contacted" };
+export type SampleFilters = { q?: string; provenance?: string; status?: string; view?: "active" | "trash"; contact?: "all" | "pending" | "contacted"; region?: string; city?: string; phone?: string; gender?: string };
+
+/** Entries are [field,value] pairs, not a JSON object. Guard the document and
+ * each entry before extracting paths, including malformed historical data. */
+function sampleEntryMatches(fields: readonly string[], predicate: (value: SQL) => SQL) {
+  const document = sql`case when json_valid(${privateProfileSamples.formJson}) then case when json_type(${privateProfileSamples.formJson})='array' then ${privateProfileSamples.formJson} else '[]' end else '[]' end`;
+  const pair = sql`case when sample_field.type='array' then sample_field.value else '[]' end`;
+  const key = sql`json_extract(${pair},'$[0]')`, value = sql`json_extract(${pair},'$[1]')`;
+  return sql`exists(select 1 from json_each(${document}) as sample_field where json_array_length(${pair})=2 and json_type(${pair},'$[0]')='text' and json_type(${pair},'$[1]')='text' and ${key} in (${sql.join(fields.map(field => sql`${field}`), sql`,`)}) and ${predicate(value)})`;
+}
+function samplePhoneMatches(terms: string[]) {
+  return sampleEntryMatches(["contact_whatsapp", "contact_phone"], value => {
+    let digits = value;
+    for (const separator of ["+", " ", "(", ")", "-", ".", "\t", "\r", "\n", "\u00a0", "\u202f"]) digits = sql`replace(${digits},${separator},'')`;
+    return sql`(${sql.join(terms.map(term => sql`instr(${digits},${term})>0`), sql` or `)})`;
+  });
+}
 
 export function canManageSamples(admin: AdminUser | null) {
   return PRIVATE_SAMPLES_ENABLED && adminHasCapability(admin, "accounts.manage") && adminHasCapability(admin, "profiles.moderate");
@@ -31,11 +48,24 @@ export async function listPrivateSamples(filters: SampleFilters = {}) {
   const now = Date.now();
   const status = sql<string>`case when ${privateProfileSamples.trashedAt} is not null then 'trashed' when ${privateProfileSamples.migratedAt} is not null then 'migrated' when ${privateProfileSamples.expiresAt}<=${now} then 'trashed' when ${privateProfileSamples.tokenHash} is not null or ${privateProfileSamples.legacyTokenHash} is not null then 'active' else 'unshared' end`;
   const clauses = [filters.view === "trash" ? sql`${status}='trashed'` : sql`${status}!='trashed'`];
-  const q = filters.q?.trim().slice(0, 100).replace(/^@/, "");
+  const q = boundedSampleFilter(filters.q, 100).replace(/^@/, "");
   if (q) {
     // Wildcards are literal, so searching '%' cannot match every sample.
     const pattern = `%${q.replace(/[\\%_]/g, "\\$&")}%`;
-    clauses.push(or(sql`${privateProfileSamples.displayName} like ${pattern} escape '\\'`, sql`${privateProfileSamples.handle} like ${pattern} escape '\\'`)!);
+    const phoneTerms = samplePhoneSearchTerms(q);
+    clauses.push(or(sql`${privateProfileSamples.displayName} like ${pattern} escape '\\'`, sql`${privateProfileSamples.handle} like ${pattern} escape '\\'`, phoneTerms.length ? samplePhoneMatches(phoneTerms) : undefined)!);
+  }
+  const region = boundedSampleFilter(filters.region), city = boundedSampleFilter(filters.city), gender = boundedSampleFilter(filters.gender, 30);
+  if (region) clauses.push(citiesByRegion.has(region) ? sampleEntryMatches(["region"], value => sql`${value}=${region}`) : sql`0`);
+  if (city) {
+    const allowedCities = region ? citiesByRegion.get(region) ?? [] : [...citiesByRegion.values()].flat();
+    clauses.push(allowedCities.includes(city) ? sampleEntryMatches(["city"], value => sql`${value}=${city}`) : sql`0`);
+  }
+  if (gender) clauses.push(escortGenders.some(value => value === gender) ? sampleEntryMatches(["gender"], value => sql`${value}=${gender}`) : sql`0`);
+  const phone = boundedSampleFilter(filters.phone, 80);
+  if (phone) {
+    const terms = samplePhoneSearchTerms(phone);
+    clauses.push(terms.length ? samplePhoneMatches(terms) : sql`0`);
   }
   const provenance = readSampleProvenance(filters.provenance);
   if (provenance) clauses.push(eq(privateProfileSamples.provenance, provenance));
@@ -51,6 +81,7 @@ export async function listPrivateSamples(filters: SampleFilters = {}) {
     createdAt: privateProfileSamples.createdAt, updatedAt: privateProfileSamples.updatedAt,
     contactedAt: privateProfileSamples.contactedAt, contactedBy: privateProfileSamples.contactedBy, contactedByLogin: privateProfileSamples.contactedByLogin,
     shared: sql<boolean>`${privateProfileSamples.tokenHash} is not null or ${privateProfileSamples.legacyTokenHash} is not null`,
+    legacyLink: sql<boolean>`${privateProfileSamples.tokenHash} is not null and ${privateProfileSamples.tokenEncrypted} is null`,
   }).from(privateProfileSamples).where(and(...clauses))
     .orderBy(sql`case when ${privateProfileSamples.contactedAt} is null then 0 else 1 end`, desc(privateProfileSamples.updatedAt), asc(privateProfileSamples.id)).limit(100);
   return rows.map(({ formJson, ...row }) => {

@@ -22,6 +22,27 @@
     line-height:1.2;
   }
 
+  /* Profile actions share one compact row when space permits. Text scaling
+     may reflow them, while the action targets remain usable. */
+  :root body .directory-root .profile-engagement-actions { --public-action-size:13px; gap:6px; align-items:center; }
+  :root body .directory-root .profile-engagement-actions > button,
+  :root body .directory-root .profile-engagement-actions .profile-share-trigger {
+    min-height:44px; gap:5px; padding:8px; font-size:13px; line-height:1.35;
+  }
+  :root body .directory-root .profile-engagement-actions > button > span { font-size:17px; }
+  :root body .directory-root .profile-engagement-actions button small { min-width:16px; padding:2px 3px; font-size:10px; }
+  :root body .directory-root .profile-share-trigger > svg { width:16px; height:16px; }
+  :root body .directory-root .profile-safety-actions { gap:4px 14px; margin-top:10px; padding:10px 0 0; justify-content:flex-start; }
+  :root body .directory-root .profile-safety-actions > :is(a,button) { min-height:32px; padding:5px 0; font-size:12px; line-height:1.45; text-align:left; }
+  :root body .directory-root .profile-detail-layout { padding-bottom:18px; gap:18px; }
+  :root body .directory-root .profile-detail-main > .profile-detail-section:last-child { margin-bottom:0; }
+  :root body .directory-root .profile-reviews { margin-bottom:20px; padding:18px; }
+  :root body .directory-root .profile-reviews-heading { gap:12px; }
+  :root body .directory-root .profile-reviews-heading h2 { font-size:26px; line-height:1.2; }
+  :root body .directory-root .profile-review-login { margin-top:14px; padding:12px; gap:10px; }
+  :root body .directory-root .profile-review-login > div { gap:8px; }
+  :root body .directory-root .profile-review-login .button { width:auto; min-height:44px; padding:8px 10px; font-size:13px; }
+
   /* Private panels use a denser reading hierarchy on phones. Native form
      values stay at 16px to avoid focus zoom, while actions retain 44px targets. */
   :root body :is(.admin-workspace,.account-workspace) {
@@ -201,9 +222,27 @@
     font-size:11.5px;
     line-height:1.4;
   }
-  :root body .admin-workspace .samples-admin-content .sample-view-tabs .button {
+  :root body .admin-workspace .samples-admin-content .sample-heading-actions {
+    justify-content:flex-start;
+    width:100%;
+  }
+  :root body .admin-workspace .samples-admin-content .sample-heading-actions .button {
     width:auto;
-    flex:1 1 0;
+  }
+  :root body .admin-workspace .samples-admin-content .sample-filter-grid {
+    gap:14px;
+  }
+  :root body .admin-workspace .samples-admin-content .sample-filters-heading {
+    gap:8px;
+  }
+  :root body .admin-workspace .samples-admin-content .sample-advanced-filters > summary {
+    padding:10px 12px;
+  }
+  :root body .admin-workspace .samples-admin-content .sample-advanced-filters > .sample-filter-grid {
+    padding:4px 12px 14px;
+  }
+  :root body .admin-workspace .samples-admin-content .sample-applied-filters a {
+    min-height:40px;
   }
   :root body .admin-workspace .samples-admin-content .sample-row-actions {
     display:grid;
@@ -214,6 +253,13 @@
   }
   :root body .admin-workspace .samples-admin-content .sample-row-actions :is(form,.button) {
     width:100%;
+  }
+  :root body .admin-workspace .samples-admin-content .sample-copy-link {
+    align-self:stretch;
+    align-content:start;
+  }
+  :root body .admin-workspace .samples-admin-content .sample-copy-link:has(.sample-copy-fallback) {
+    grid-column:1 / -1;
   }
   :root body .admin-workspace .samples-admin-content .sample-admin-actions {
     gap:8px;

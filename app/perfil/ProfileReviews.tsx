@@ -25,7 +25,7 @@ function ensureTurnstile() {
 
 type ReviewPageResponse = { reviews?: PublicReview[]; total?: number; hasMore?: boolean; error?: string };
 
-export function ProfileReviews({ profileId, profileSlug, signedIn, viewerOwnsProfile, reviews, totalReviews, initialHasMore, ownPendingReviews = [] }: { profileId: string; profileSlug: string; signedIn: boolean; viewerOwnsProfile: boolean; reviews: PublicReview[]; totalReviews: number; initialHasMore: boolean; ownPendingReviews?: OwnPendingReview[] }) {
+export function ProfileReviews({ profileId, profileSlug, signedIn, viewerOwnsProfile, reviews, totalReviews, initialHasMore, ownPendingReviews = [], preview = false }: { profileId: string; profileSlug: string; signedIn: boolean; viewerOwnsProfile: boolean; reviews: PublicReview[]; totalReviews: number; initialHasMore: boolean; ownPendingReviews?: OwnPendingReview[]; preview?: boolean }) {
   const widgetElement = useRef<HTMLDivElement>(null);
   const widgetId = useRef<string | undefined>(undefined);
   const [token, setToken] = useState("");
@@ -41,17 +41,18 @@ export function ProfileReviews({ profileId, profileSlug, signedIn, viewerOwnsPro
   const returnTo = `/perfil/${profileSlug}`;
 
   useEffect(() => {
-    if (!signedIn || viewerOwnsProfile || !widgetElement.current) return;
+    if (preview || !signedIn || viewerOwnsProfile || !widgetElement.current) return;
     let active = true;
     ensureTurnstile().then((turnstile) => {
       if (!active || !widgetElement.current || widgetId.current) return;
       widgetId.current = turnstile.render(widgetElement.current, { sitekey: TURNSTILE_PROFILE_REVIEW_SITEKEY, action: TURNSTILE_PROFILE_REVIEW_ACTION, callback: setToken, "expired-callback": () => setToken(""), "error-callback": () => setToken("") });
     }).catch((error) => active && setNotice(error instanceof Error ? error.message : "No se pudo cargar la protección antispam."));
     return () => { active = false; };
-  }, [signedIn, viewerOwnsProfile]);
+  }, [signedIn, viewerOwnsProfile, preview]);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (preview) return;
     setNotice("");
     if (!token) { setNotice("Completa la verificación antispam antes de enviar."); return; }
     setBusy(true);
@@ -73,7 +74,7 @@ export function ProfileReviews({ profileId, profileSlug, signedIn, viewerOwnsPro
   }
 
   async function withdrawReview(id: string) {
-    if (withdrawing) return;
+    if (preview || withdrawing) return;
     setWithdrawing(id); setNotice("");
     try {
       const response = await fetch(`/api/mi-cuenta/resenas/${encodeURIComponent(id)}`, { method: "DELETE" });
@@ -86,7 +87,7 @@ export function ProfileReviews({ profileId, profileSlug, signedIn, viewerOwnsPro
   }
 
   async function loadMoreReviews() {
-    if (loadingMoreReviews || !hasMoreReviews) return;
+    if (preview || loadingMoreReviews || !hasMoreReviews) return;
     setLoadingMoreReviews(true);
     setNotice("");
     try {
@@ -106,10 +107,10 @@ export function ProfileReviews({ profileId, profileSlug, signedIn, viewerOwnsPro
     }
   }
 
-  return <section className="profile-reviews" aria-label="Reseñas del perfil"><div className="profile-reviews-heading"><div><p className="eyebrow">RESEÑAS</p><h2>Comentarios de la comunidad</h2></div><strong aria-label={`${totalReviews} reseñas publicadas`}>{totalReviews}</strong></div>
+  return <section className={`profile-reviews${preview ? " profile-preview-inactive" : ""}`} aria-label="Reseñas del perfil"><div className="profile-reviews-heading"><div><p className="eyebrow">RESEÑAS</p><h2>Comentarios de la comunidad</h2></div><strong aria-label={`${totalReviews} reseñas publicadas`}>{totalReviews}</strong></div>
     {pendingReviews.length > 0 && <div className="profile-review-list own-pending-reviews" aria-label="Tus reseñas pendientes">{pendingReviews.map(review => <article key={review.id}><strong>Pendiente de aprobación · Vista privada</strong><p>{review.body}</p><small>No es pública. Solo tú, el anunciante y administración pueden consultarla.</small><ActionButton className="button button-outline" type="button" onClick={() => withdrawReview(review.id)} disabled={Boolean(withdrawing)}>{withdrawing === review.id ? "Retirando…" : "Eliminar reseña pendiente"}</ActionButton></article>)}</div>}
     {visibleReviews.length > 0 ? <><div className="profile-review-list">{visibleReviews.map((review) => <article key={review.id}><strong>{review.authorName}</strong><time dateTime={review.createdAt}>{new Intl.DateTimeFormat("es-CL", { dateStyle: "medium" }).format(new Date(review.createdAt))}</time><p>{review.body}</p></article>)}</div>{hasMoreReviews && <div className="profile-reviews-more"><ActionButton className="button button-outline" type="button" onClick={loadMoreReviews} disabled={loadingMoreReviews}>{loadingMoreReviews ? "Cargando reseñas…" : "Ver más reseñas"}</ActionButton><span>Mostrando {visibleReviews.length} de {totalReviews}</span></div>}</> : <p className="profile-reviews-empty">Aún no hay reseñas publicadas para este perfil.</p>}
-    {signedIn ? viewerOwnsProfile ? <div className="profile-review-login profile-review-owner-notice"><p>Este es tu anuncio. Para mantener reseñas auténticas, no puedes dejarte comentarios a ti mismo.</p></div> : <form className="profile-review-form" onSubmit={submit}><label>Deja una reseña<textarea value={body} onChange={(event) => setBody(event.target.value)} minLength={3} maxLength={700} required rows={4} placeholder="Comparte una experiencia respetuosa y útil." /></label><div ref={widgetElement} className="turnstile-widget" /><ActionButton className="button button-primary" type="submit" disabled={busy || !token}>{busy ? "Enviando…" : "Enviar a moderación"}</ActionButton></form> : <div className="profile-review-login"><p>Inicia sesión para dejar una reseña. Todas se revisan antes de publicarse.</p><div><Link className="button button-primary" href={`/ingresar?return_to=${encodeURIComponent(returnTo)}`}>Iniciar sesión</Link><Link className="button button-outline" href={`/registro?return_to=${encodeURIComponent(returnTo)}`}>Crear cuenta</Link></div></div>}
+    {(signedIn || preview) ? viewerOwnsProfile ? <div className="profile-review-login profile-review-owner-notice"><p>Este es tu anuncio. Para mantener reseñas auténticas, no puedes dejarte comentarios a ti mismo.</p></div> : <form className="profile-review-form" onSubmit={submit}><label>Deja una reseña<textarea disabled={preview} value={body} onChange={(event) => setBody(event.target.value)} minLength={3} maxLength={700} required rows={4} placeholder="Comparte una experiencia respetuosa y útil." /></label>{!preview && <div ref={widgetElement} className="turnstile-widget" />}<ActionButton className="button button-primary" type="submit" disabled={preview || busy || !token}>{busy ? "Enviando…" : "Enviar a moderación"}</ActionButton></form> : <div className="profile-review-login"><p>Inicia sesión para dejar una reseña. Todas se revisan antes de publicarse.</p><div><Link className="button button-primary" href={`/ingresar?return_to=${encodeURIComponent(returnTo)}`}>Iniciar sesión</Link><Link className="button button-outline" href={`/registro?return_to=${encodeURIComponent(returnTo)}`}>Crear cuenta</Link></div></div>}
     {notice && <p className="profile-review-notice" role="status">{notice}</p>}
   </section>;
 }

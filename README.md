@@ -10,6 +10,8 @@ Revisión del 24 de octubre: [formularios, fechas de viaje, paneles y WhatsApp e
 
 Actualización del 25 de octubre: [muestras privadas y seguimiento de contacto](docs/qa-muestras-2026-10-25.md). El mapa de desarrollo describe enlaces persistentes, papelera, galería compartida y conversión con autorización de un Escort adicional.
 
+Actualización del 26 de octubre: [filtros y copia de enlaces, presentación compartida de muestras y equilibrio móvil](docs/qa-muestras-perfil-movil-2026-10-26.md).
+
 <!-- TECHNICAL_HANDOFF_START -->
 ## Guía técnica de traspaso — 24 de octubre de 2026
 

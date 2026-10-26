@@ -7,7 +7,7 @@ function ShareIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5" /><circle cx="6" cy="12" r="2.5" /><circle cx="18" cy="19" r="2.5" /><path d="m8.2 10.8 7.6-4.5M8.2 13.2l7.6 4.5" /></svg>;
 }
 
-export function ProfileShareButton({ displayName, profileSlug }: { displayName: string; profileSlug: string }) {
+export function ProfileShareButton({ displayName, profileSlug, preview = false }: { displayName: string; profileSlug: string; preview?: boolean }) {
   const [open, setOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
@@ -27,6 +27,7 @@ export function ProfileShareButton({ displayName, profileSlug }: { displayName: 
   }, []);
 
   async function share() {
+    if (preview) return;
     setNotice("");
     if (navigator.share) {
       try {
@@ -40,6 +41,7 @@ export function ProfileShareButton({ displayName, profileSlug }: { displayName: 
   }
 
   async function copy() {
+    if (preview) return;
     try {
       await navigator.clipboard.writeText(url);
       setNotice("Enlace copiado.");
@@ -52,7 +54,7 @@ export function ProfileShareButton({ displayName, profileSlug }: { displayName: 
   const encodedUrl = encodeURIComponent(url);
   const encodedText = encodeURIComponent(text);
   return <div className="profile-share" ref={rootRef}>
-    <ActionButton className="profile-share-trigger" type="button" aria-expanded={open} aria-haspopup="menu" onClick={share}><ShareIcon />Compartir</ActionButton>
+    <ActionButton className="profile-share-trigger" type="button" disabled={preview} aria-expanded={open} aria-haspopup="menu" onClick={share}><ShareIcon />Compartir</ActionButton>
     {open && <div className="profile-share-menu" role="menu">
       <a role="menuitem" target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodedText}%20${encodedUrl}`}>WhatsApp</a>
       <a role="menuitem" target="_blank" rel="noreferrer" href={`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`}>Telegram</a>

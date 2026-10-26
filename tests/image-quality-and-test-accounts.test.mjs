@@ -49,7 +49,10 @@ test('QA listings remain honest and noindex while normal messaging and moderatio
   const profile=await source('app/perfil/[slug]/page.tsx');
   assert.match(profile,/robots: profile.isDemo \? \{ index: false, follow: false \}/);
   assert.match(profile,/Ficha de prueba: no representa un servicio disponible/);
-  assert.match(profile,/profile.isPublic && <ProfileReviews/);
+  assert.match(profile,/\(sample \|\| profile.isPublic\) && <ProfileReviews preview=\{Boolean\(sample\)\}/);
+  const reviews=await source("app/perfil/ProfileReviews.tsx");
+  assert.match(reviews,/if \(preview \|\| !signedIn/);
+  assert.match(reviews,/<textarea disabled=\{preview\}/);
   const chat=await source('lib/internal-messages.ts');
   assert.doesNotMatch(chat,/if \(!profile \|\| profile.isDemo/);
   assert.match(chat,/profile.ownerUserId === visitorUserId/);

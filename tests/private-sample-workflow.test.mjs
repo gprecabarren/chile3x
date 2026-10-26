@@ -5,8 +5,20 @@ import { registerHooks } from 'node:module';
 import { DatabaseSync } from 'node:sqlite';
 import { drizzle } from 'drizzle-orm/d1';
 import { getTableConfig } from 'drizzle-orm/sqlite-core';
-import { sampleCanEdit, sampleListStatus, sampleIsAvailable, sampleTrashDeadline, SAMPLE_RETENTION_MS, SAMPLE_LIFETIME_MS } from '../lib/private-sample-policy.ts';
+import { sampleFormJson, sampleCanEdit, sampleListStatus, sampleIsAvailable, sampleTrashDeadline, SAMPLE_RETENTION_MS, SAMPLE_LIFETIME_MS } from '../lib/private-sample-policy.ts';
+import { boundedSampleFilter, samplePhoneSearchTerms } from '../lib/private-sample-filters.ts';
 const source = path => readFile(new URL('../' + path, import.meta.url), 'utf8');
+
+test('phone search accepts Chilean country codes, local and partial numbers without treating arbitrary text as a phone', () => {
+  assert.deepEqual(samplePhoneSearchTerms('+56 (9) 8765-4321'), ['56987654321', '987654321']);
+  assert.deepEqual(samplePhoneSearchTerms('0056 9 8765 4321'), ['0056987654321', '987654321']);
+  assert.deepEqual(samplePhoneSearchTerms('0987654321'), ['0987654321', '987654321']);
+  assert.deepEqual(samplePhoneSearchTerms('987654321'), ['987654321']);
+  assert.deepEqual(samplePhoneSearchTerms('+56 9 876'), ['569876', '9876']);
+  assert.deepEqual(samplePhoneSearchTerms('8765'), ['8765']);
+  for (const value of ['abc', '9%87', "9' OR 1=1--", 'x'.repeat(200), null, 123]) assert.deepEqual(samplePhoneSearchTerms(value), []);
+  assert.equal(boundedSampleFilter('  abc  '), 'abc'); assert.equal(boundedSampleFilter(null), ''); assert.equal(boundedSampleFilter('abcde', 3), 'abc');
+});
 
 function adapter(sqlite, beforeBatch = () => {}) {
   const prepare = (query, args = []) => ({
@@ -125,6 +137,53 @@ test('private sample workflow runs against migration triggers, D1 batches and co
       sqlite.prepare('UPDATE private_profile_samples SET expires_at=? WHERE id=?').run(Date.now() - 1, pending.id);
       assert.equal((await service.listPrivateSamples({ q: 'Filtro único', contact: 'pending', view: 'trash' }))[0].id, pending.id);
       assert.equal((await service.listPrivateSamples({ q: 'Filtro único' })).length, 1);
+    });
+
+    await t.test('region, city, phone and gender filters combine before limiting results and match the correct entry pairs', async () => {
+      const local = await create({ display_name: 'Territorial único local', handle: 'territorial-local', region: 'Región del Biobío', city: 'Concepción', contact_whatsapp: '987654321', contact_phone: '56944332211', sample_provenance: 'elsilencio' });
+      const capital = await create({ display_name: 'Territorial único capital', handle: 'territorial-capital', region: 'Región Metropolitana de Santiago', city: 'Santiago Centro', contact_whatsapp: '56987654321', gender: 'Masculino', sample_provenance: 'elsilencio' });
+      const formatted = await create({ display_name: 'Territorial único formato', handle: 'territorial-formato', region: 'Región del Biobío', city: 'Los Ángeles', contact_whatsapp: '56922223333', sample_provenance: 'elsilencio' });
+      const formattedForm = form({ display_name: 'Territorial único formato', region: 'Región del Biobío', city: 'Los Ángeles', contact_whatsapp: '+56\u202f(9) 8765-4321', sample_provenance: 'elsilencio' });
+      sqlite.prepare('UPDATE private_profile_samples SET form_json=?,contacted_at=?,contacted_by_login=? WHERE id=?').run(sampleFormJson(formattedForm), new Date().toISOString(), 'local-admin', formatted.id);
+      const ids = async filters => (await service.listPrivateSamples({ q: 'Territorial único', ...filters })).map(row => row.id);
+      assert.deepEqual(await ids({ region: 'Región del Biobío', city: 'Concepción', phone: '+56 (9) 8765-4321', gender: 'Femenino', provenance: 'elsilencio', contact: 'pending' }), [local.id]);
+      assert.deepEqual(await ids({ city: 'Santiago Centro', phone: '987654321', gender: 'Masculino' }), [capital.id]);
+      assert.deepEqual(await ids({ region: 'Región del Biobío', city: 'Santiago Centro' }), []);
+      assert.deepEqual(await ids({ region: 'Región del Biobío', city: 'Los Ángeles', contact: 'contacted', phone: '569876' }), [formatted.id]);
+      assert.deepEqual(await ids({ phone: '944332211' }), [local.id]);
+      assert.deepEqual(await ids({ phone: '4433' }), [local.id]);
+      for (const needle of ['987654321', '+56 (9) 8765-4321', '0056 9 8765 4321']) {
+        const result = await service.listPrivateSamples({ phone: needle, provenance: 'elsilencio' });
+        assert.equal(result.length, 3); assert.equal(result.at(-1).id, formatted.id);
+      }
+      assert.equal((await service.listPrivateSamples({ q: '+56 (9) 8765-4321', region: 'Región Metropolitana de Santiago' }))[0].id, capital.id);
+      assert.equal((await service.listPrivateSamples({ q: '@territorial-local' }))[0].id, local.id);
+      for (const filters of [{ region: "x' OR 1=1--" }, { city: '%' }, { gender: 'anything' }, { phone: '%' }, { phone: "9' OR 1=1--" }, { q: "%' OR 1=1--" }]) assert.deepEqual(await service.listPrivateSamples(filters), []);
+      // SQL filters inspect actual field/value pairs, not another field that
+      // happens to contain the region, city, phone or gender as prose.
+      const misleading = await create({ display_name: 'Territorial único descripción', region: 'Región de Valparaíso', city: 'Valparaíso', contact_whatsapp: '56922224444', description: 'Región del Biobío Concepción Femenino 987654321' });
+      assert.ok(!(await ids({ region: 'Región del Biobío' })).includes(misleading.id));
+      assert.ok(!(await ids({ city: 'Concepción' })).includes(misleading.id));
+      assert.ok(!(await ids({ phone: '987654321' })).includes(misleading.id));
+      // Place more than 100 newer irrelevant rows ahead of a target. Location
+      // filtering must happen in SQL, before the administrative result cap.
+      const insert = sqlite.prepare('INSERT INTO private_profile_samples(id,handle,display_name,form_json,expires_at,created_by,updated_at) VALUES(?,?,?,?,?,?,?)');
+      for (let index = 0; index < 105; index++) insert.run(`sam_10000000-0000-4000-8000-${String(index).padStart(12, '0')}`, `filter-cap-${index}`, 'Fixture cap', sampleFormJson(form({ region: 'Región del Maule', city: 'Talca' })), Date.now() + 10000, 'admin', '2099-01-01');
+      assert.ok((await service.listPrivateSamples({ region: 'Región del Biobío', city: 'Concepción', phone: '+56 9 8765 4321' })).some(row => row.id === local.id));
+    });
+
+    await t.test('invalid JSON and malformed entry shapes cannot break filtered queries or become territorial matches', async () => {
+      const values = ['not-json', 'null', '{"region":"Región del Biobío"}', '["region","Región del Biobío"]', '[42,null,{"city":"Concepción"}]', '[["region",42],["city",null]]'];
+      const rows = [];
+      for (const [index, value] of values.entries()) {
+        const row = await create({ display_name: 'Malformed local ' + index }); rows.push(row);
+        sqlite.prepare('UPDATE private_profile_samples SET form_json=? WHERE id=?').run(value, row.id);
+      }
+      for (const filters of [{ region: 'Región del Biobío' }, { city: 'Concepción' }, { phone: '+56 9 8765 4321' }, { gender: 'Femenino' }]) {
+        const result = await service.listPrivateSamples({ q: 'Malformed local', ...filters });
+        assert.deepEqual(result, []);
+      }
+      assert.equal((await service.listPrivateSamples({ q: 'Malformed local' })).length, rows.length);
     });
 
     await t.test('conversion validates target, transfers files atomically and keeps identity unreviewed', async () => {

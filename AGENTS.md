@@ -33,3 +33,9 @@
 - Use extra desktop width for additional card columns. Public profile cards stay within the shared 208–252px desktop range; use `auto-fill` (not `auto-fit`) to avoid inflating sparse rows. Keep images unoptimized/original and avoid CSS zoom, scaling or blur over photos.
 - Header navigation wraps into rows, never a horizontal scroller. Do not hide overflow to conceal a layout bug. Keep actions at intrinsic widths and category counts adjacent to their titles.
 - Validate both themes and both home layouts at 1366, 1920, 2560 and ultrawide widths; include signed-in/out headers, populated/empty catalogs, story rails and text activity. Recheck mobile at 320 and 390px for unchanged layout.
+
+# Shared profile and sample presentation
+
+- Real listings and private samples share `app/perfil/[slug]/page.tsx` and its profile components, typography and layout. Update these shared components for future listing appearance changes; do not create a separately styled sample profile.
+- Samples retain authenticated/token access, noindex and private media. Use the shared components' preview mode for visible but disabled interactions, without analytics, message/review submissions or public engagement writes. Maps use the shared reference-city card with the restricted Google Maps frame policy.
+- Photo/video uploads and editing remain in `ProfileMediaManager`/`AdminPhotoTools` for both listings and samples. Preserve gallery, batch effects, crop, privacy and video options together.

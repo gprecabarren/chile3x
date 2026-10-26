@@ -21,12 +21,14 @@ export function ProfileEngagementActions({
   displayName,
   signedIn,
   initialEngagement,
+  preview = false,
 }: {
   profileId: string;
   profileSlug: string;
   displayName: string;
   signedIn: boolean;
   initialEngagement: Engagement;
+  preview?: boolean;
 }) {
   const [engagement, setEngagement] = useState(initialEngagement);
   const [notice, setNotice] = useState("");
@@ -37,6 +39,7 @@ export function ProfileEngagementActions({
   const registerHref = `/registro?return_to=${encodeURIComponent(returnTo)}`;
 
   async function toggle(action: Action) {
+    if (preview) return;
     setNotice("");
     if (!signedIn) {
       setPromptVisible(true);
@@ -65,15 +68,15 @@ export function ProfileEngagementActions({
     }
   }
 
-  return <section className="profile-engagement" aria-label="Interacciones del perfil">
+  return <section className={`profile-engagement${preview ? " profile-preview-inactive" : ""}`} aria-label="Interacciones del perfil">
     <div className="profile-engagement-actions">
-      <ActionButton type="button" className={engagement.viewerHasFavorite ? "is-active" : ""} aria-pressed={engagement.viewerHasFavorite} disabled={busy !== null} onClick={() => toggle("favorite")}>
+      <ActionButton type="button" className={engagement.viewerHasFavorite ? "is-active" : ""} aria-pressed={engagement.viewerHasFavorite} disabled={preview || busy !== null} onClick={() => toggle("favorite")}>
         <span aria-hidden="true">{engagement.viewerHasFavorite ? "♥" : "♡"}</span>{engagement.viewerHasFavorite ? "Guardado" : "Favorito"}<small>{engagement.favoritesCount}</small>
       </ActionButton>
-      <ActionButton type="button" className={engagement.viewerHasLike ? "is-active" : ""} aria-pressed={engagement.viewerHasLike} disabled={busy !== null} onClick={() => toggle("like")}>
+      <ActionButton type="button" className={engagement.viewerHasLike ? "is-active" : ""} aria-pressed={engagement.viewerHasLike} disabled={preview || busy !== null} onClick={() => toggle("like")}>
         <span aria-hidden="true">{engagement.viewerHasLike ? "♥" : "♡"}</span>{engagement.viewerHasLike ? "Te gusta" : "Me gusta"}<small>{engagement.likesCount}</small>
       </ActionButton>
-      <ProfileShareButton displayName={displayName} profileSlug={profileSlug} />
+      <ProfileShareButton preview={preview} displayName={displayName} profileSlug={profileSlug} />
     </div>
     {notice && <p className="profile-engagement-notice" role="status">{notice}</p>}
     {promptVisible && <div className="profile-engagement-login" role="status">

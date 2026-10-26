@@ -4,12 +4,13 @@ import { ActionButton } from "@/app/ActionButton";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export function InternalChatButton({ profileId, signedIn, loginHref }: { profileId: string; signedIn: boolean; loginHref: string }) {
+export function InternalChatButton({ profileId, signedIn, loginHref, preview = false }: { profileId: string; signedIn: boolean; loginHref: string; preview?: boolean }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   async function openChat() {
+    if (preview) return;
     if (!signedIn) {
       router.push(loginHref);
       return;
@@ -32,7 +33,7 @@ export function InternalChatButton({ profileId, signedIn, loginHref }: { profile
   }
 
   return <div className="internal-chat-launcher">
-    <ActionButton className="button contact-internal-chat" type="button" onClick={openChat} disabled={busy}>
+    <ActionButton className="button contact-internal-chat" type="button" onClick={openChat} disabled={preview || busy}>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.5h16v11H8l-4 4v-15Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" /><path d="M8 9h8M8 12h5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
       <span>{busy ? "Abriendo…" : "Chat interno"}</span>
     </ActionButton>

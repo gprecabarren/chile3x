@@ -4,7 +4,7 @@ import { ActionButton } from "@/app/ActionButton";
 import Link from "@/app/NavigationLink";
 import { useMemo, useState } from "react";
 
-export function ProfileCityAlertPanel({ profileId, profileSlug, displayName, currentCity, availableCities, signedIn, viewerOwnsProfile, initialAlerts }: {
+export function ProfileCityAlertPanel({ profileId, profileSlug, displayName, currentCity, availableCities, signedIn, viewerOwnsProfile, initialAlerts, preview = false }: {
   profileId: string;
   profileSlug: string;
   displayName: string;
@@ -13,6 +13,7 @@ export function ProfileCityAlertPanel({ profileId, profileSlug, displayName, cur
   signedIn: boolean;
   viewerOwnsProfile: boolean;
   initialAlerts: string[];
+  preview?: boolean;
 }) {
   const choices = useMemo(() => availableCities.filter((city) => city !== currentCity), [availableCities, currentCity]);
   const [city, setCity] = useState(choices.find((item) => !initialAlerts.includes(item)) ?? choices[0] ?? "");
@@ -22,6 +23,7 @@ export function ProfileCityAlertPanel({ profileId, profileSlug, displayName, cur
   const loginHref = `/ingresar?return_to=${encodeURIComponent(`/perfil/${profileSlug}`)}`;
 
   async function updateAlert(targetCity: string, intent: "create" | "remove") {
+    if (preview) return;
     setBusy(true); setNotice("");
     try {
       const response = await fetch(`/api/perfiles/${profileId}/avisos-ciudad`, {
@@ -40,17 +42,17 @@ export function ProfileCityAlertPanel({ profileId, profileSlug, displayName, cur
     }
   }
 
-  return <section className="profile-city-alert-panel">
+  return <section className={`profile-city-alert-panel${preview ? " profile-preview-inactive" : ""}`}>
     <div>
       <p className="eyebrow">AVISO DE CIUDAD</p>
       <h2>¿Quieres ver a {displayName} en tu ciudad?</h2>
       <p>Elige una ciudad del directorio. Si este anuncio cambia oficialmente a esa ciudad y vuelve a ser aprobado, te enviaremos un correo.</p>
     </div>
-    {viewerOwnsProfile ? <p className="profile-city-alert-owner">Este es tu anuncio; los avisos de ciudad están disponibles para otras cuentas.</p> : choices.length === 0 ? <p className="profile-city-alert-owner">No hay otra ciudad disponible en el directorio por ahora.</p> : signedIn ? <>
+    {viewerOwnsProfile ? <p className="profile-city-alert-owner">Este es tu anuncio; los avisos de ciudad están disponibles para otras cuentas.</p> : choices.length === 0 ? <p className="profile-city-alert-owner">No hay otra ciudad disponible en el directorio por ahora.</p> : (signedIn || preview) ? <>
       <div className="profile-city-alert-form">
         <label htmlFor={`city-alert-${profileId}`}>Ciudad</label>
-        <select id={`city-alert-${profileId}`} value={city} onChange={(event) => setCity(event.target.value)}>{choices.map((item) => <option value={item} key={item}>{item}</option>)}</select>
-        <ActionButton className="button button-primary" type="button" disabled={busy || !city || alerts.includes(city)} onClick={() => updateAlert(city, "create")}>{alerts.includes(city) ? "Aviso activo" : "Invitar y avisarme"}</ActionButton>
+        <select disabled={preview} id={`city-alert-${profileId}`} value={city} onChange={(event) => setCity(event.target.value)}>{choices.map((item) => <option value={item} key={item}>{item}</option>)}</select>
+        <ActionButton className="button button-primary" type="button" disabled={preview || busy || !city || alerts.includes(city)} onClick={() => updateAlert(city, "create")}>{alerts.includes(city) ? "Aviso activo" : "Invitar y avisarme"}</ActionButton>
       </div>
       {alerts.length > 0 && <div className="profile-city-alert-active"><strong>Avisos activos</strong>{alerts.map((item) => <span key={item}>{item}<ActionButton type="button" disabled={busy} aria-label={`Quitar aviso para ${item}`} onClick={() => updateAlert(item, "remove")}>×</ActionButton></span>)}</div>}
     </> : <Link className="button button-outline profile-city-alert-login" href={loginHref}>Inicia sesión para pedir un aviso</Link>}

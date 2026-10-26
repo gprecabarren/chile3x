@@ -8,6 +8,10 @@ import { ActionAnchor, ActionButton } from "@/app/ActionButton";
 import { ActionIcon } from "@/app/ActionIcon";
 import { adminWhatsappHref } from "@/lib/admin-contact";
 import { ReviewScope } from "@/app/admin/ReviewScope";
+import { regions } from "@/app/locations";
+import { escortGenders } from "@/lib/profile";
+import { SampleFilters } from "./SampleFilters";
+import { CopySampleLink, SampleLinkStatus } from "./CopySampleLink";
 import { AdminShell, AdminPageHeading } from "../_components";
 
 export const dynamic = "force-dynamic";
@@ -21,53 +25,69 @@ const notices: Record<string, string> = {
   contact_cleared: "Se quitó la marca de contacto. La muestra vuelve a los pendientes.",
 };
 
-export default async function Page({ searchParams }: { searchParams: Promise<{ q?: string; provenance?: string; sample_status?: string; status?: string; view?: string; contact?: string; notice?: string }> }) {
+export default async function Page({ searchParams }: { searchParams: Promise<{ q?: string; phone?: string; region?: string; city?: string; gender?: string; provenance?: string; sample_status?: string; status?: string; view?: string; contact?: string; notice?: string }> }) {
   const admin = await getCurrentAdmin();
   if (!admin) redirect("/api/auth/github/start?return_to=/admin/muestras");
   if (!canManageSamples(admin)) redirect("/admin/acceso-denegado?reason=permission");
   const query = await searchParams;
   const q = (typeof query.q === "string" ? query.q : "").trim().slice(0, 100);
+  const phone = (typeof query.phone === "string" ? query.phone : "").trim().slice(0, 40);
+  const selectedRegion = regions.find(item => item.title === query.region);
+  const region = selectedRegion?.title ?? "";
+  const cityOptions = selectedRegion ? selectedRegion.cities : regions.flatMap(item => item.cities);
+  const city = cityOptions.find(value => value === query.city) ?? "";
+  const gender = escortGenders.find(value => value === query.gender) ?? "";
   const provenance = SAMPLE_PROVENANCES.find(value => value === query.provenance) ?? "";
   const requestedStatus = query.sample_status ?? query.status;
   const view = query.view === "trash" || requestedStatus === "trashed" ? "trash" : "active";
   const status = view === "trash" ? "trashed" : SAMPLE_STATUSES.find(value => value === requestedStatus && value !== "trashed") ?? "";
   const contact = query.contact === "pending" || query.contact === "contacted" ? query.contact : "all";
-  const rows = await listPrivateSamples({ q, provenance, status, view, contact });
+  const rows = await listPrivateSamples({ q, phone, region, city, gender, provenance, status, view, contact });
   // eslint-disable-next-line react-hooks/purity -- Request-time expiry in a dynamic server page.
   const now = Date.now();
   const filterQuery = new URLSearchParams();
   if (q) filterQuery.set("q", q);
+  if (phone) filterQuery.set("phone", phone);
+  if (region) filterQuery.set("region", region);
+  if (city) filterQuery.set("city", city);
+  if (gender) filterQuery.set("gender", gender);
   if (provenance) filterQuery.set("provenance", provenance);
+  if (status && status !== "trashed") filterQuery.set("sample_status", status);
   if (contact !== "all") filterQuery.set("contact", contact);
   const viewHref = (target: "active" | "trash") => {
     const values = new URLSearchParams(filterQuery);
-    if (target === "trash") values.set("view", "trash");
+    if (target === "trash") { values.set("view", "trash"); values.delete("sample_status"); }
     return `/admin/muestras${values.size ? `?${values}` : ""}`;
   };
   const returnQuery = new URLSearchParams(filterQuery);
   if (view === "trash") returnQuery.set("view", "trash");
   else if (status) returnQuery.set("sample_status", status);
   const returnTo = `/admin/muestras${returnQuery.size ? `?${returnQuery}` : ""}`;
-  const filtered = Boolean(q || provenance || contact !== "all" || (status && status !== "trashed"));
+  const filterLabels: Record<string, string> = {
+    q: `Búsqueda: ${q}`,
+    phone: `Teléfono: ${phone}`,
+    region: `Región: ${selectedRegion?.shortTitle ?? region}`,
+    city: `Ciudad: ${city}`,
+    gender: `Género: ${gender}`,
+    provenance: `Procedencia: ${provenance ? SAMPLE_PROVENANCE_LABELS[provenance] : ""}`,
+    sample_status: `Estado: ${status && status !== "trashed" ? SAMPLE_STATUS_LABELS[status] : ""}`,
+    contact: contact === "pending" ? "Pendientes de contactar" : "Ya contactados",
+  };
+  const applied = [...filterQuery.keys()].map(key => {
+    const values = new URLSearchParams(returnQuery);
+    values.delete(key);
+    if (key === "region") values.delete("city");
+    return { label: filterLabels[key], removeHref: `/admin/muestras${values.size ? `?${values}` : ""}` };
+  });
+  const filtered = applied.length > 0;
 
   return <AdminShell user={admin}><div className="admin-content samples-admin-content">
-    <AdminPageHeading eyebrow="PRESENTACIONES PARA ANUNCIANTES" title="Muestras privadas" description="Prepara y administra presentaciones privadas, sin crear cuentas ni anuncios en el directorio." backHref="/admin">
-      <ActionAnchor className="button button-primary" href="/admin/muestras/nueva">Crear muestra privada</ActionAnchor>
+    <AdminPageHeading eyebrow="PRESENTACIONES PARA ANUNCIANTES" title={view === "trash" ? "Papelera de muestras" : "Muestras privadas"} description={view === "trash" ? "Muestras retiradas o vencidas. Puedes restaurarlas durante 30 días o eliminarlas definitivamente." : "Prepara y administra presentaciones privadas, sin crear cuentas ni anuncios en el directorio."} backHref={view === "trash" ? viewHref("active") : "/admin"}>
+      <div className="sample-heading-actions"><ActionAnchor className="button button-primary" href="/admin/muestras/nueva">Crear muestra privada</ActionAnchor>{view !== "trash" && <ActionAnchor className="button button-outline" href={viewHref("trash")}><ActionIcon name="trash" />Ver papelera</ActionAnchor>}</div>
     </AdminPageHeading>
     <p className="samples-help">Cada muestra tiene un plazo de 7 días. Al vencer pasa a la papelera; desde allí puedes restaurarla o eliminarla definitivamente. Compartir una presentación no publica un anuncio.</p>
     {query.notice && notices[query.notice] && <p className="admin-success" role="status">{notices[query.notice]}</p>}
-    <nav className="sample-view-tabs" aria-label="Ubicación de las muestras">
-      <ActionAnchor className="button button-outline" href={viewHref("active")} aria-current={view === "active" ? "page" : undefined}>Muestras</ActionAnchor>
-      <ActionAnchor className="button button-outline" href={viewHref("trash")} aria-current={view === "trash" ? "page" : undefined}>Papelera</ActionAnchor>
-    </nav>
-    <form className="sample-filters" method="get" role="search">
-      {view === "trash" && <input type="hidden" name="view" value="trash" />}
-      <label>Nombre o usuario de la muestra<input name="q" type="search" maxLength={100} defaultValue={q} placeholder="Buscar por nombre o @usuario" /></label>
-      <label>Procedencia<select name="provenance" defaultValue={provenance}><option value="">Todas las procedencias</option>{SAMPLE_PROVENANCES.map(value => <option key={value} value={value}>{SAMPLE_PROVENANCE_LABELS[value]}</option>)}</select></label>
-      <label>Estado<select name="sample_status" defaultValue={status} disabled={view === "trash"}>{view === "trash" ? <option value="trashed">En papelera</option> : <><option value="">Todos los estados</option>{SAMPLE_STATUSES.filter(value => value !== "trashed").map(value => <option key={value} value={value}>{SAMPLE_STATUS_LABELS[value]}</option>)}</>}</select></label>
-      <label>Seguimiento de contacto<select name="contact" defaultValue={contact}><option value="all">Todos los contactos</option><option value="pending">Pendientes de contactar</option><option value="contacted">Ya contactados</option></select></label>
-      <div className="sample-filter-actions"><ActionButton className="button button-primary" type="submit">Aplicar filtros</ActionButton>{filtered && <ActionAnchor className="button button-outline" href={view === "trash" ? "/admin/muestras?view=trash" : "/admin/muestras"}>Limpiar filtros</ActionAnchor>}</div>
-    </form>
+    <SampleFilters initial={{ q, phone, region, city, gender, provenance, status, contact, view }} applied={applied} clearHref={view === "trash" ? "/admin/muestras?view=trash" : "/admin/muestras"} />
     <p className="sample-results-count" role="status">{rows.length} muestra{rows.length === 1 ? "" : "s"}{view === "trash" ? " en papelera" : ""}{filtered ? " con estos filtros" : ""}. Los contactos pendientes aparecen primero.{rows.length === 100 && " Se muestran hasta 100 resultados."}</p>
     <section className="samples-list" aria-label={view === "trash" ? "Muestras en papelera" : "Muestras privadas"}>
       {rows.map(row => {
@@ -77,7 +97,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
         const deadline = adminAuditDate(new Date(row.trashedAt ?? row.expiresAt).toISOString());
         const whatsappHref = adminWhatsappHref(row.contactWhatsapp, row.displayName);
         return <ReviewScope key={row.id} as="article" className={`sample-list-card${row.contactedAt ? " is-contacted" : ""}`} resource={`sample:${row.id}`} revision={row.revision}>
-          <header className="sample-row-heading"><div><h2>{row.displayName}</h2><p className="sample-row-location">{[row.age ? `${row.age} años` : "Edad sin definir", row.gender, row.city || "Ciudad sin definir"].filter(Boolean).join(" · ")}</p><p className="sample-row-handle">{row.handle ? `@${row.handle}` : "Sin usuario asignado"}</p></div><span className={`sample-status is-${rowStatus}`}>{SAMPLE_STATUS_LABELS[rowStatus]}</span></header>
+          <header className="sample-row-heading"><div><h2>{row.displayName}</h2><p className="sample-row-location">{[row.age ? `${row.age} años` : "Edad sin definir", row.gender, row.city || "Ciudad sin definir"].filter(Boolean).join(" · ")}</p><p className="sample-row-handle">{row.handle ? `@${row.handle}` : "Sin usuario asignado"}</p></div><SampleLinkStatus id={row.id} status={rowStatus} label={SAMPLE_STATUS_LABELS[rowStatus]} /></header>
           <dl className="sample-row-metadata">
             <div><dt>Procedencia</dt><dd>{SAMPLE_PROVENANCE_LABELS[row.provenance]}</dd></div>
             <div><dt>Creación</dt><dd><time dateTime={adminAuditInstant(row.createdAt)}>{adminAuditDate(row.createdAt)}</time></dd></div>
@@ -90,6 +110,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
           </div>
           <div className="sample-row-actions">
             {!trashed && <ActionAnchor className="button button-primary" href={editorHref}>{row.migratedAt ? "Revisar anuncio real" : "Administrar muestra"}</ActionAnchor>}
+            {!trashed && !row.migratedAt && <CopySampleLink id={row.id} revision={row.revision} shared={Boolean(row.shared)} legacyLink={row.legacyLink} />}
             {!trashed && whatsappHref && <ActionAnchor className="button contact-whatsapp" href={whatsappHref} target="_blank" rel="noreferrer">WhatsApp</ActionAnchor>}
             {!trashed && !row.migratedAt && <form action={`/api/admin/muestras/${encodeURIComponent(row.id)}`} method="post">
               <input type="hidden" name="sample_action" value={row.contactedAt ? "contact_clear" : "contact_mark"} />
@@ -107,7 +128,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
           </div>
         </ReviewScope>;
       })}
-      {!rows.length && <div className="samples-empty"><h2>{view === "trash" ? "La papelera está vacía" : "No hay muestras para mostrar"}</h2><p>{filtered ? "Prueba otro nombre, procedencia, estado o seguimiento de contacto." : view === "trash" ? "Las muestras que envíes a la papelera o que venzan aparecerán aquí." : "Crea una muestra privada para comenzar."}</p></div>}
+      {!rows.length && <div className="samples-empty"><h2>{view === "trash" ? "La papelera está vacía" : "No hay muestras para mostrar"}</h2><p>{filtered ? "Prueba otro nombre, teléfono, ubicación o estado de contacto. También puedes quitar los filtros aplicados." : view === "trash" ? "Las muestras que envíes a la papelera o que venzan aparecerán aquí." : "Crea una muestra privada para comenzar."}</p></div>}
     </section>
   </div></AdminShell>;
 }

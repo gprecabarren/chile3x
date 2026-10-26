@@ -1,0 +1,2 @@
+/* Shared profile components retain their sizes; only inactive controls fade. */
+.profile-preview-inactive :is(button,textarea,select),.profile-contact-actions [aria-disabled="true"],.profile-page-location [aria-disabled="true"],.service-detail-section [aria-disabled="true"] { opacity:.58; cursor:default; }

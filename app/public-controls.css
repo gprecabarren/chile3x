@@ -170,3 +170,13 @@
   :root body .public-header .mobile-public-quick-links a { padding-inline:2px; }
   :root body .home-city-directory-links { grid-template-columns:minmax(0,1fr); }
 }
+
+/* Shared review-card header and city action placement for listings/previews. */
+:root body .directory-root .profile-reviews-heading { flex-wrap:nowrap; align-items:flex-start; }
+:root body .directory-root .profile-reviews-heading > div:first-child { min-width:0; flex:1 1 auto; }
+:root body .directory-root .profile-reviews-heading.has-management { flex-wrap:wrap; }
+:root body .directory-root .profile-reviews-heading.has-management > div:first-child { flex-basis:260px; }
+:root body .directory-root .profile-reviews-actions { display:flex; flex:0 1 auto; flex-wrap:wrap; align-items:flex-start; justify-content:flex-end; gap:10px; min-width:0; max-width:100%; margin-left:auto; }
+:root body .directory-root .profile-reviews-management-link { min-width:0; max-width:100%; white-space:normal; }
+:root body .directory-root .profile-reviews-count { flex:0 0 auto; min-width:34px; padding:7px; color:#fff; text-align:center; background:#2b3448; font-size:.8125rem; }
+:root body .directory-root .profile-city-alert-login { justify-self:end; width:auto; max-width:100%; text-align:center; white-space:normal; }

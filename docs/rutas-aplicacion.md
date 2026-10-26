@@ -220,7 +220,7 @@ Hay **83 páginas**, **124 handlers en app/api** y **11 handlers adicionales**. 
 | `/api/perfiles/[profileId]/visibilidad` | POST | [handler](../app/api/perfiles/[profileId]/visibilidad/route.ts) |
 | `/api/perfiles/[profileId]/visualizacion` | POST | [handler](../app/api/perfiles/[profileId]/visualizacion/route.ts) |
 | `/api/perfiles/nuevo` | POST | [handler](../app/api/perfiles/nuevo/route.ts) |
-| `/api/presencia` | POST | [handler](../app/api/presencia/route.ts) |
+| `/api/presencia` | GET / POST | [handler](../app/api/presencia/route.ts) |
 | `/api/reportes/[reportId]/evidencias/[evidenceId]` | GET | [handler](../app/api/reportes/[reportId]/evidencias/[evidenceId]/route.ts) |
 | `/api/solicitudes-agencia/[requestId]` | POST | [handler](../app/api/solicitudes-agencia/[requestId]/route.ts) |
 | `/contenido/[mediaId]` | GET | [handler](../app/contenido/[mediaId]/route.ts) |
@@ -239,5 +239,7 @@ Hay **83 páginas**, **124 handlers en app/api** y **11 handlers adicionales**. 
 - `worker/moderation-mail.ts`: reenvío de correo entrante configurado.
 
 La ausencia de una ruta en `app/api` no la convierte en un archivo público: por ejemplo, `/contenido/:id`, `/media/:id`, archivos de muestras y evidencias aplican sus controles de acceso propios.
+
+Presencia pública (26 de octubre): `GET /api/presencia?id=…` recibe hasta 60 IDs y devuelve solamente los IDs de anuncios públicos con actividad reciente confirmada; no expone cuentas ni fechas. No renueva presencia y responde sin caché. `POST` conserva la sesión y la comprobación de origen para registrar actividad de la propia cuenta.
 
 Actualización de muestras (25 de octubre de 2026): el parámetro público `/muestra/[sampleId]` acepta también el usuario privado corto; conserva alias por ID, acceso por fragmento/cookie y archivos privados sin indexación. La API administrativa principal incluye recuperar/compartir/conservar/revocar enlace, extender, contacto, papelera, restauración y conversión confirmada. Los endpoints de medios exigen autorización y revisión de la misma muestra.

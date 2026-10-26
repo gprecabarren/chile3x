@@ -15,7 +15,7 @@ export function PresenceHeartbeat() {
       const now = Date.now();
       if (document.visibilityState !== "visible" || now - lastInteraction.current > ACTIVE_WINDOW || now - lastSent.current < HEARTBEAT_INTERVAL) return;
       lastSent.current = now;
-      void fetch("/api/presencia", { method: "POST", keepalive: true });
+      void fetch("/api/presencia", { method: "POST", keepalive: true }).catch(() => {});
     }
     function activity() {
       lastInteraction.current = Date.now();

@@ -19,6 +19,7 @@ import { formatRegionName, getRegionByTitle } from "@/app/locations";
 import { PublicMobileMenu } from "./PublicMobileMenu";
 import { ADMIN_ACCESS_LABELS } from "@/lib/admin-permissions";
 import { PresenceHeartbeat } from "@/app/PresenceHeartbeat";
+import { ProfileOnlineBadge } from "@/app/ProfileOnlineBadge";
 import { DirectoryCityBar } from "./DirectoryCityBar";
 import { countUnreadMessages } from "@/lib/internal-messages";
 import { MessageNotifications, PendingReviewsNotice, UnreadMessagesNotice } from "@/app/MessageNotifications";
@@ -223,7 +224,7 @@ export function ProfileCard({ profile }: { profile: PublicProfile }) {
         <div className="public-profile-title">
           <div>
             <h3><Link href={profileHref}>{profile.displayName}</Link>{profile.verificationStatus === "reviewed" && profile.type === "escort" && <span className="verified-sticker" title="Perfil comprobado" aria-label="Perfil comprobado">✓</span>}</h3>
-            {profile.isOnline && <span className="profile-online-badge"><i aria-hidden="true" />Online</span>}
+            {profile.isPublic && !profile.isDemo && <ProfileOnlineBadge profileId={profile.id} initialOnline={profile.isOnline} />}
             {profile.handle && <small className="public-profile-handle">@{profile.handle}</small>}
             {profile.isDemo && <small className="profile-test-caption">Ficha de prueba · sin servicio real</small>}
             <p><Link href={getCityPath(profile.city)}>{profile.city}</Link>{age!==null&&<span className="public-card-age" aria-label={`${age} años`}>, {age}</span>}{subtitle && ` · ${subtitle}`}</p>
@@ -305,17 +306,14 @@ export function SeoContent({ city, region, count }: { city: string; region: stri
     nuble: "Chillán dispone de una guía específica dentro de la cobertura de la Región de Ñuble.",
   };
   return (
-    <section className="seo-content">
-      <p className="eyebrow">GUÍA LOCAL</p>
-      <h2>Escorts y damas de compañía en {city}</h2>
-      <p>Esta página reúne publicaciones asociadas específicamente a {city}, {regionName}. Puedes revisar fotografías, categorías y datos entregados por cada anunciante antes de usar sus canales de contacto directo. Chile3X no participa en pagos ni acuerdos privados.</p>
-      <p>{regionalContext[regionInfo?.id ?? ""] ?? `La ruta de ${city} forma parte de la cobertura territorial de Chile3X y mantiene sus resultados separados de otras ciudades.`}</p>
-      <h3>Cómo explorar publicaciones en {city}</h3>
-      <p>{count > 0 ? `Esta página muestra ${count} ${count === 1 ? "publicación visible" : "publicaciones visibles"}. ` : null}Usa los filtros para acotar por categoría, atributos o servicios y abre cada perfil para consultar su información aprobada. Si necesitas entender la moderación, consulta las preguntas frecuentes y las reglas antes de publicar o contactar.</p>
-      <h3>Escorts, damas de compañía y búsquedas locales</h3>
-      <p>En internet también se utiliza la búsqueda “putas en {city}” para encontrar anuncios para adultos. Chile3X presenta cada publicación según la modalidad y los datos declarados por su titular: revisa su ubicación, descripción y canales de contacto, sin suponer servicios que no estén informados.</p>
-      <h3>¿Venta de contenido significa que la persona es escort?</h3>
-      <p>No. Venta de contenido reúne tanto escorts que también venden material digital como personas que únicamente venden contenido y no son escorts. Estas últimas no aparecen en VIP, Premium, Bronze ni Masajes. La etiqueta no implica que la compra se realice en Chile3X; el canal y las condiciones se consultan directamente a la persona anunciante.</p>
+    <section className="seo-content seo-local-guide">
+      <header className="seo-guide-heading"><div><p className="eyebrow">GUÍA LOCAL</p><h2>Escorts y damas de compañía en {city}</h2></div><p>Esta página reúne publicaciones asociadas específicamente a {city}, {regionName}. Puedes revisar fotografías, categorías y datos entregados por cada anunciante antes de usar sus canales de contacto directo. Chile3X no participa en pagos ni acuerdos privados.</p></header>
+      <div className="seo-guide-grid">
+        <article><h3>Ubicación y cobertura en {regionInfo?.shortTitle ?? regionName}</h3><p>{regionalContext[regionInfo?.id ?? ""] ?? `La ruta de ${city} forma parte de la cobertura territorial de Chile3X y mantiene sus resultados separados de otras ciudades.`}</p></article>
+        <article><h3>Cómo explorar publicaciones en {city}</h3><p>{count > 0 ? `Esta página muestra ${count} ${count === 1 ? "publicación visible" : "publicaciones visibles"}. ` : "Si no hay publicaciones visibles, puedes consultar otras ciudades de la región desde los enlaces de esta guía. "}Usa los filtros para acotar por categoría, atributos o servicios y abre cada perfil para consultar su información aprobada. En las preguntas frecuentes y las reglas encontrarás cómo funciona la moderación.</p></article>
+        <article><h3>Escorts y damas de compañía: información antes de contactar</h3><p>Compara la descripción, las fotografías, los servicios informados y los horarios de cada anuncio. Revisa las tarifas cuando estén publicadas y confirma directamente con la persona anunciante su disponibilidad y ubicación. Los datos son declarados por su titular; una categoría o etiqueta no sustituye esa información.</p></article>
+        <article><h3>¿Venta de contenido significa que la persona es escort?</h3><p>No. Venta de contenido reúne tanto escorts que también venden material digital como personas que únicamente venden contenido y no son escorts. Estas últimas no aparecen en VIP, Premium, Bronze ni Masajes. La etiqueta no implica que la compra se realice en Chile3X; el canal y las condiciones se consultan directamente a la persona anunciante.</p></article>
+      </div>
       <nav className="seo-content-links" aria-label={`Información y ciudades relacionadas con ${city}`}>
         <Link href="/escorts">Directorio de escorts en Chile</Link>
         {nearbyCities.map((nearbyCity) => <Link href={getCityPath(nearbyCity)} key={nearbyCity}>Escorts en {nearbyCity}</Link>)}

@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useState,type FormEvent} from "react";
 import {ActionButton,ActionAnchor} from "@/app/ActionButton";
+import {SampleDeleteAction} from "./SampleDeleteAction";
 type Target={ownerId:string;email:string;displayName:string;revision:number;escortCount:number};
 type Result={error?:string;revision?:number;url?:string;expiresAt?:number;redirectTo?:string;additionalEscortConfirmation?:boolean;target?:Target};
 export function SampleActions({id,revision,handle,shared,expiresAt,trashed=false,legacyLink=false}:{id:string;revision:number;handle?:string|null;shared:boolean;expiresAt:number;trashed?:boolean;legacyLink?:boolean;provenance?:string}) {
@@ -44,6 +45,6 @@ export function SampleActions({id,revision,handle,shared,expiresAt,trashed=false
       <ActionButton className="button button-primary" type="submit" disabled={busy}>{target?"Confirmar anuncio adicional y publicar":"Convertir y publicar anuncio"}</ActionButton></form></section>
     </>}
     <section className="sample-admin-card"><h2>{trashed?"Muestra en papelera":"Papelera"}</h2><p>{trashed?"Restaurar conserva el enlace anterior y habilita la muestra durante otros 7 días, salvo que el acceso haya sido revocado. La eliminación definitiva retira únicamente los archivos que aún pertenecen a la muestra.":"Enviar a papelera suspende el acceso privado y permite recuperar la muestra durante 30 días."}</p><div className="sample-admin-actions"><ActionButton className="button button-outline" disabled={busy} onClick={()=>{if(trashed||confirm("¿Enviar esta muestra a la papelera y suspender sus accesos?"))void perform(trashed?"restore":"trash");}}>{trashed?"Restaurar muestra":"Enviar a papelera"}</ActionButton></div>
-    {trashed&&<details><summary>Eliminar definitivamente</summary><p>Los archivos ya transferidos a un anuncio real se conservan.</p><form onSubmit={form("delete")}><label>Escribe ELIMINAR<input name="confirmation" pattern="ELIMINAR" required disabled={busy}/></label><ActionButton className="button button-outline" type="submit" disabled={busy}>Eliminar muestra permanentemente</ActionButton></form></details>}</section>
+    {trashed&&<SampleDeleteAction id={id} revision={currentRevision} displayName={handle?`@${handle}`:"esta muestra"}/>}</section>
   </div>;
 }

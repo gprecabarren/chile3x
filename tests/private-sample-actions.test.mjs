@@ -49,6 +49,7 @@ test('sample action API preserves invitation state and coordinates private admin
     sqlite.exec(await source('drizzle/0056_admin_collaboration.sql'));
     sqlite.exec(await source('drizzle/0062_private_profile_samples.sql'));
     sqlite.exec(await source('drizzle/0064_private_sample_workflow.sql'));
+    sqlite.exec('CREATE UNIQUE INDEX qa_deletion_job_object_unique ON data_deletion_jobs(r2_key)');
     sqlite.exec("INSERT INTO users(id,email,role,is_active,email_verified_at) VALUES('admin','admin@example.invalid','admin',1,'2026-01-01'),('owner','owner@example.invalid','visitor',1,'2026-01-01')");
     const admin = { id: 'admin', email: 'admin@example.invalid', displayName: 'Local administrator', githubLogin: 'local-admin', role: 'admin', accessLevel: 'administrator', isProtectedOwner: false };
     globalThis.__sampleActionsAdmin = admin;
@@ -182,6 +183,39 @@ test('sample action API preserves invitation state and coordinates private admin
       assert.equal((await call(expired, 'share')).status, 400);
       assert.equal((await call(expired, 'contact_mark')).status, 400);
       assert.equal((await service.getPrivateSample(row.id)).contactedAt, null);
+    });
+
+    await t.test('permanent deletion tolerates an existing cleanup job and preserves objects owned by a real listing or another sample', async () => {
+      const row = await create({ handle: 'safe-delete-actions' }), other = await create({ handle: 'shared-delete-actions' });
+      sqlite.exec("INSERT INTO profiles(id,owner_id,type,trashed_at) VALUES('real-delete-guard','owner','escort',NULL)");
+      sqlite.exec("INSERT INTO profile_media(id,profile_id,r2_key) VALUES('real-shared-file','real-delete-guard','private-samples/shared-real.webp')");
+      for (const [id, sampleId, key] of [
+        ['delete-owned', row.id, 'private-samples/delete-owned.webp'],
+        ['delete-shared-real', row.id, 'private-samples/shared-real.webp'],
+        ['delete-shared-sample', row.id, 'private-samples/shared-sample.webp'],
+        ['other-shared-sample', other.id, 'private-samples/shared-sample.webp'],
+      ]) sqlite.prepare('INSERT INTO private_sample_media VALUES(?,?,?,?,?,?,?,?)').run(id, sampleId, key, 12, 'image/webp', 'image', 0, 0);
+      sqlite.prepare('INSERT INTO data_deletion_jobs(id,r2_key) VALUES(?,?)').run('existing-job', 'private-samples/delete-owned.webp');
+      let current = await service.getPrivateSample(row.id); await call(current, 'trash');
+      const stale = await service.getPrivateSample(row.id); await call(stale, 'restore');
+      assert.equal((await call(stale, 'delete', { confirmation: 'ELIMINAR' })).status, 409);
+      current = await service.getPrivateSample(row.id); assert.equal(current.trashedAt, null);
+      await call(current, 'trash'); current = await service.getPrivateSample(row.id);
+      sqlite.exec("CREATE TRIGGER reject_delete_audit BEFORE INSERT ON admin_audit_logs WHEN NEW.action='sample.delete' BEGIN SELECT RAISE(ABORT,'qa_delete_audit_failure'); END;");
+      assert.equal((await call(current, 'delete', { confirmation: 'ELIMINAR' })).status, 500);
+      assert.ok(await service.getPrivateSample(row.id));
+      assert.equal(sqlite.prepare('SELECT count(*) n FROM private_sample_media WHERE sample_id=?').get(row.id).n, 3);
+      sqlite.exec('DROP TRIGGER reject_delete_audit');
+      const mutationId = crypto.randomUUID();
+      const response = await call(current, 'delete', { confirmation: 'ELIMINAR', mutation_id: mutationId, return_to: '/admin/muestras?view=trash&city=Concepci%C3%B3n' });
+      assert.equal(response.status, 200); assert.equal(new URL((await response.json()).redirectTo).searchParams.get('view'), 'trash');
+      assert.equal(await service.getPrivateSample(row.id), null); assert.ok(await service.getPrivateSample(other.id));
+      assert.equal(sqlite.prepare("SELECT count(*) n FROM data_deletion_jobs WHERE r2_key='private-samples/delete-owned.webp'").get().n, 1);
+      assert.equal(sqlite.prepare("SELECT count(*) n FROM data_deletion_jobs WHERE r2_key IN ('private-samples/shared-real.webp','private-samples/shared-sample.webp')").get().n, 0);
+      assert.equal(sqlite.prepare("SELECT count(*) n FROM profile_media WHERE id='real-shared-file'").get().n, 1);
+      assert.equal(sqlite.prepare("SELECT count(*) n FROM private_sample_media WHERE id='other-shared-sample'").get().n, 1);
+      assert.equal(sqlite.prepare('SELECT count(*) n FROM admin_mutation_receipts WHERE id=?').get(mutationId).n, 1);
+      assert.equal(audits(row.id, 'sample.delete').length, 1);
     });
   } finally { hooks.deregister(); sqlite.close(); delete globalThis.__sampleActionsDb; delete globalThis.__sampleActionsAdmin; }
 });

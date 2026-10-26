@@ -75,7 +75,7 @@ export function FloatingWhatsappMenu({ contacts, title, description, buttonLabel
         <p className="portal-whatsapp-explanation" id={descriptionId}>{advertiser ? "Para consultar este anuncio, escribe directamente a su anunciante. El equipo de Chile3X solo atiende soporte y marketing; no coordina citas ni arriendos." : description}</p>
         <div className="portal-whatsapp-options">
           {advertiser?.href && <TrackedContactLink profileId={advertiser.profileId} kind="whatsapp" className="portal-whatsapp-option portal-whatsapp-advertiser" href={advertiser.href} target="_blank" rel="noopener noreferrer" onClick={() => setPlacement(null)} aria-label={`Contactar directamente a ${advertiser.name} por WhatsApp`}>
-            <span className="portal-whatsapp-option-icon" aria-hidden="true">{icon}</span><span><small>ANUNCIANTE · CONTACTO DIRECTO</small><strong>{advertiser.name}</strong><small>Consultar este anuncio por WhatsApp →</small></span>
+            <span className="portal-whatsapp-option-icon" aria-hidden="true">{icon}</span><span><small>ANUNCIANTE · CONTACTO DIRECTO</small><strong>{advertiser.name}</strong><small className="portal-whatsapp-advertiser-hint" aria-hidden="true">Consultar este anuncio por WhatsApp →</small></span>
           </TrackedContactLink>}
           {advertiser && !advertiser.href && <aside className="portal-whatsapp-unavailable"><strong>{advertiser.name}</strong><p>{advertiser.unavailableMessage || "Este anuncio no tiene un WhatsApp disponible."}</p><small>Los contactos del equipo no sustituyen al anunciante.</small></aside>}
           {advertiser && contacts.length > 0 && <p className="portal-whatsapp-team-label">AYUDA DEL EQUIPO CHILE3X</p>}

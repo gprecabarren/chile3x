@@ -43,6 +43,13 @@
   :root body .directory-root .profile-review-login > div { gap:8px; }
   :root body .directory-root .profile-review-login .button { width:auto; min-height:44px; padding:8px 10px; font-size:13px; }
 
+  :root body .directory-root .profile-reviews-actions.has-management { flex-wrap:nowrap; width:100%; gap:8px; }
+  :root body .directory-root .profile-reviews-management-link { flex:1 1 auto; min-height:44px; padding:8px 10px; font-size:13px; line-height:1.4; }
+  :root body .directory-root .profile-reviews-count { align-self:flex-start; }
+  :root body .directory-root .profile-city-alert-login { justify-self:end; width:auto; min-height:44px; padding:9px 12px; font-size:13px; }
+  :root body .portal-whatsapp-advertiser .portal-whatsapp-advertiser-hint { position:absolute; width:1px; height:1px; margin:-1px; padding:0; clip-path:inset(50%); white-space:nowrap; }
+  :root body .portal-whatsapp-advertiser { padding-block:11px; }
+
   /* Private panels use a denser reading hierarchy on phones. Native form
      values stay at 16px to avoid focus zoom, while actions retain 44px targets. */
   :root body :is(.admin-workspace,.account-workspace) {

@@ -12,6 +12,7 @@ import { regions } from "@/app/locations";
 import { escortGenders } from "@/lib/profile";
 import { SampleFilters } from "./SampleFilters";
 import { CopySampleLink, SampleLinkStatus } from "./CopySampleLink";
+import { SampleDeleteAction } from "./SampleDeleteAction";
 import { AdminShell, AdminPageHeading } from "../_components";
 
 export const dynamic = "force-dynamic";
@@ -110,8 +111,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
           </div>
           <div className="sample-row-actions">
             {!trashed && <ActionAnchor className="button button-primary" href={editorHref}>{row.migratedAt ? "Revisar anuncio real" : "Administrar muestra"}</ActionAnchor>}
-            {!trashed && !row.migratedAt && <CopySampleLink id={row.id} revision={row.revision} shared={Boolean(row.shared)} legacyLink={row.legacyLink} />}
-            {!trashed && whatsappHref && <ActionAnchor className="button contact-whatsapp" href={whatsappHref} target="_blank" rel="noreferrer">WhatsApp</ActionAnchor>}
+            {!trashed && (!row.migratedAt || whatsappHref) && <div className="sample-share-actions">{!row.migratedAt && <CopySampleLink id={row.id} revision={row.revision} shared={Boolean(row.shared)} legacyLink={row.legacyLink} />}{whatsappHref && <ActionAnchor className="button contact-whatsapp" href={whatsappHref} target="_blank" rel="noreferrer">WhatsApp</ActionAnchor>}</div>}
             {!trashed && !row.migratedAt && <form action={`/api/admin/muestras/${encodeURIComponent(row.id)}`} method="post">
               <input type="hidden" name="sample_action" value={row.contactedAt ? "contact_clear" : "contact_mark"} />
               <input type="hidden" name="review_key" value={`sample:${row.id}`} /><input type="hidden" name="review_revision" value={row.revision} />
@@ -125,6 +125,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
               <ActionButton className="button button-outline" type="submit"><ActionIcon name={trashed ? "refresh" : "trash"} />{trashed ? "Restaurar muestra" : "Enviar a papelera"}</ActionButton>
             </form>
             {trashed && <ActionAnchor className="button button-outline" href={`/admin/muestras/${encodeURIComponent(row.id)}`}>Revisar muestra en papelera</ActionAnchor>}
+            {trashed && <SampleDeleteAction id={row.id} revision={row.revision} displayName={row.displayName} returnTo={returnTo} />}
           </div>
         </ReviewScope>;
       })}

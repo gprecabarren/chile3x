@@ -12,6 +12,8 @@ Actualización del 25 de octubre: [muestras privadas y seguimiento de contacto](
 
 Actualización del 26 de octubre: [filtros y copia de enlaces, presentación compartida de muestras y equilibrio móvil](docs/qa-muestras-perfil-movil-2026-10-26.md).
 
+Revisión adicional del 26 de octubre: [galería compartida, papelera, presencia e indexación](docs/qa-muestras-seo-2026-10-26.md). Incluye contraste directo con Search Console; distinguir el informe histórico de la inspección y la prueba en tiempo real.
+
 <!-- TECHNICAL_HANDOFF_START -->
 ## Guía técnica de traspaso — 24 de octubre de 2026
 

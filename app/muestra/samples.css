@@ -101,6 +101,18 @@
 .sample-media-order-actions { display:grid; gap:8px; margin-block:8px; }
 .sample-media-order-actions > div { display:flex; flex-wrap:wrap; gap:8px; }
 .sample-media-order-actions .button { flex:0 1 auto; max-width:100%; white-space:normal; }
+.sample-share-actions { display:flex; flex-wrap:wrap; align-items:center; gap:10px; min-width:0; max-width:100%; }
+.sample-share-actions > .sample-copy-link { flex:0 1 auto; margin:0; }
+.sample-delete-action { min-width:0; max-width:100%; }
+.sample-delete-action.is-open { display:grid; gap:12px; }
+.sample-delete-action > .button { justify-self:start; }
+.sample-delete-action:has(.sample-delete-confirmation) { flex-basis:100%; width:100%; }
+.samples-admin-content .sample-delete-action form.sample-delete-confirmation { display:grid; gap:12px; width:100%; max-width:680px; margin:0; padding:16px; border:1px solid #8d535f; border-radius:var(--corner-10); background:#23161e; }
+.sample-delete-confirmation :is(p,label) { margin:0; color:#e9cbd2; line-height:1.6; }
+.sample-delete-confirmation label { display:grid; gap:8px; min-width:0; }
+.sample-delete-confirmation input { width:100%; min-width:0; min-height:44px; padding:10px 12px; border:1px solid #8d6470; border-radius:var(--corner-8); color:#fff; background:#10131d; font:inherit; font-size:16px; }
+.sample-delete-confirmation-actions { display:flex; flex-wrap:wrap; gap:10px; min-width:0; }
+.sample-delete-confirmation-actions .button { flex:0 1 auto; max-width:100%; white-space:normal; }
 .sample-media-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr)); gap:16px; margin:18px 0; }
 .sample-media-grid figure { min-width:0; margin:0; padding:12px; border:1px solid #394559; border-radius:var(--corner-12); background:#0b101a; }
 .sample-media-grid :is(img,video) { display:block; width:100%; height:200px; object-fit:contain; border-radius:var(--corner-8); }

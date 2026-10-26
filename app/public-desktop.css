@@ -32,6 +32,21 @@
   :root body .home-layout > .story-rail { padding-inline:var(--public-wide-inset); }
   :root body .directory-root > .seo-content { width:var(--public-wide-size); margin-inline:auto; }
 
+  /* Local guides use the catalog frame with balanced reading columns. */
+  :root body .directory-root .seo-local-guide { container:local-guide / inline-size; padding:28px; }
+  :root body .directory-root .seo-guide-heading { display:grid; grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr); gap:28px; align-items:start; }
+  :root body .directory-root .seo-guide-heading h2 { margin:0; font-size:30px; line-height:1.2; }
+  :root body .directory-root .seo-guide-heading > p { margin:0; max-width:80ch; font-size:1rem; line-height:1.7; }
+  :root body .directory-root .seo-guide-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px 32px; margin-top:24px; }
+  :root body .directory-root .seo-guide-grid article { min-width:0; padding-top:18px; border-top:1px solid #354056; }
+  :root body .directory-root .seo-guide-grid h3 { margin:0 0 10px; font-size:20px; line-height:1.35; }
+  :root body .directory-root .seo-guide-grid p { max-width:80ch; margin:0; font-size:1rem; line-height:1.7; }
+  @container local-guide (min-width:1500px) { :root body .directory-root .seo-guide-grid { grid-template-columns:repeat(4,minmax(0,1fr)); } }
+
+  :root body .directory-root .profile-detail-layout { padding-bottom:24px; }
+  :root body .directory-root .profile-detail-main > .profile-detail-section:last-child { margin-bottom:0; }
+
+
   /* Compact identity/actions above navigation. Groups wrap into real rows,
      never into a horizontally scrolling header. No clipping or new layers. */
   :root body .site-header.public-header {

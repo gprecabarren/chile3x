@@ -6,9 +6,9 @@ export function PortalContactIcon({ kind }: { kind: "whatsapp" | "telegram" | "i
   if (kind === "call") return <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7.1 3.8 9.8 3c.65-.2 1.31.16 1.53.8l1.04 3.09c.19.57.02 1.2-.44 1.59l-1.38 1.16a13.9 13.9 0 0 0 3.83 3.83l1.16-1.38c.39-.46 1.02-.63 1.59-.44l3.09 1.04c.64.22 1 .88.8 1.53l-.8 2.7c-.2.66-.8 1.1-1.49 1.08C10.4 18.71 5.29 13.6 4.02 5.3c-.1-.68.32-1.3.99-1.5Z" fill="currentColor" /></svg>;
   if (kind === "videocall") return <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="6" width="13" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="2" /><path d="m16 10 5-3v10l-5-3Z" fill="currentColor" /></svg>;
   if (kind === "arsmate") return <>
-    {/* El recurso se sirve desde Arsmate para conservar su marca oficial vigente. */}
+    {/* Official mark served locally so private previews need no third-party image access. */}
     {/* eslint-disable-next-line @next/next/no-img-element */}
-    <img className="arsmate-brand-mark" src="https://arsmate.com/LOGO-CELESTE.png" alt="" width="58" height="22" />
+    <img className="arsmate-brand-mark" src="/assets/arsmate-logo-celeste-20261026.png" alt="" width="58" height="22" />
   </>;
   // OnlyFans brand symbol (Simple Icons, CC0). Inline to avoid a remote logo
   // request and keep the same compact, accessible contact control as Arsmate.

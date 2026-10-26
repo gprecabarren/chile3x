@@ -1,0 +1,56 @@
+/* One media editor for accounts, assisted listings and private samples.
+   Cards must fit their actions, rather than squeezing actions into the
+   metadata column inherited from the older compact gallery. */
+.profile-media-manager .profile-public-gallery-manager > .media-owner-grid,
+.profile-media-manager .profile-photo-preview-list {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));
+  align-items:start;
+  gap:16px;
+  min-width:0;
+}
+.profile-media-manager :is(.media-owner-grid,.profile-photo-preview-list) > article {
+  min-width:0;
+}
+.profile-media-manager :is(.media-owner-grid,.profile-photo-preview-list) .media-status {
+  justify-self:start;
+  width:fit-content;
+  max-width:100%;
+}
+.profile-media-manager .media-owner-grid > article > div:last-child {
+  grid-template-columns:minmax(0,1fr) auto;
+  align-content:start;
+}
+.profile-media-manager .media-owner-grid > article > div:last-child > :is(.button,.sample-media-order-actions) {
+  grid-column:1 / -1;
+  min-width:0;
+  width:100%;
+}
+:is(.admin-workspace,.account-workspace) .profile-media-manager :is(.media-owner-grid,.profile-photo-preview-list) .button {
+  min-width:0;
+  min-height:44px;
+  height:auto;
+  max-width:100%;
+  width:100%;
+  padding:10px 12px;
+  white-space:normal;
+  line-height:1.45;
+  text-align:center;
+  text-decoration:none;
+  overflow-wrap:break-word;
+}
+.profile-media-manager .sample-media-order-actions {
+  grid-column:1 / -1;
+  min-width:0;
+  margin:0;
+}
+.profile-media-manager .sample-media-order-actions > div {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.profile-media-manager .sample-media-order-actions > div > .button { grid-column:auto; }
+@media(max-width:620px) {
+  .profile-media-manager .profile-public-gallery-manager { padding:14px; }
+  .profile-media-manager :is(.media-owner-grid,.profile-photo-preview-list) > article > div:last-child { padding:10px; }
+}

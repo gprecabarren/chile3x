@@ -63,7 +63,7 @@ export default async function EscortsPage({ searchParams }: { searchParams: Prom
       <section className="seo-content">
         <p className="eyebrow">GUÍA DEL DIRECTORIO</p>
         <h2>Cómo buscar escorts y damas de compañía en Chile</h2>
-        <p>Elige una región o ciudad para revisar anuncios de esa ubicación y compara la información de cada perfil. Búsquedas como “putas en Chile” también se usan en internet para encontrar publicaciones para adultos; aquí cada anuncio conserva su nombre y su modalidad declarada, sin atribuirle servicios no informados.</p>
+        <p>Elige una región o ciudad para revisar anuncios de esa ubicación. Compara fotografías, descripción, horarios y servicios informados en cada perfil y confirma la disponibilidad directamente con su titular. Las categorías ayudan a organizar el directorio; los datos de cada publicación son la referencia para conocer lo que ofrece.</p>
         <h3>Venta de contenido: una modalidad diferente</h3>
         <p>Puedes filtrar por Venta de contenido para encontrar personas que venden material digital, sean o no escorts. Quienes activan Solo vendo contenido aparecen únicamente en esa sección. No es obligatorio utilizar la galería privada: también pueden vender por contacto directo o en otras plataformas. Chile3X no procesa esos pagos.</p>
       </section>

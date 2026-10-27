@@ -2,6 +2,7 @@
 import { ActionButton } from "@/app/ActionButton";
 
 import { useEffect, useState } from "react";
+import { isAdministrativeBrowser } from "@/lib/browser-measurement";
 
 export const analyticsConsentCookie = "chile3x_analytics_consent";
 const googleTagManagerId = "GTM-NCJ3ZNH3";
@@ -24,6 +25,7 @@ function saveConsent(consent: Exclude<AnalyticsConsent, null>) {
 }
 
 function loadGoogleTagManager() {
+  if (isAdministrativeBrowser()) return;
   if (document.getElementById("google-tag-manager")) return;
 
   window.dataLayer = window.dataLayer ?? [];

@@ -6,6 +6,7 @@ import { assertSameOrigin } from "@/lib/auth";
 import { chileanDay } from "@/lib/chile-day";
 import { getSiteSettings } from "@/lib/site-settings";
 import { publicWhatsappContacts, validateWhatsappEvent } from "@/lib/portal-whatsapp";
+import { isAdministrativeContactTraffic } from "@/lib/contact-traffic";
 
 const reply = (status: number) => new Response(null, { status, headers: { "cache-control": "no-store" } });
 
@@ -33,6 +34,7 @@ async function smallJson(request: Request): Promise<unknown> {
 
 export async function POST(request: NextRequest) {
   try { assertSameOrigin(request); } catch { return reply(403); }
+  if (await isAdministrativeContactTraffic(request)) return reply(204);
   const event = validateWhatsappEvent(await smallJson(request));
   if (!event) return reply(400);
   const settings = await getSiteSettings();

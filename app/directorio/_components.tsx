@@ -39,17 +39,20 @@ function toneFor(value: string) {
 
 type PublicHeaderProps = {
   coverageHref?: string;
+  preview?: boolean;
 };
 
 function publicSessionLabel(user: AccountUser) {
   return user.role === "admin" ? user.displayName?.trim() || "Administración" : user.email;
 }
 
-export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeaderProps = {}) {
-  const cookieStore = await cookies();
+export async function PublicHeader({ coverageHref = "/#cobertura", preview = false }: PublicHeaderProps = {}) {
+  // Samples reproduce the anonymous header without resolving or exposing the
+  // administrator's account, polling private counters or recording presence.
+  const cookieStore = preview ? null : await cookies();
   const settings = await getSiteSettings();
-  const hasPotentialUserSession = Boolean(cookieStore.get(getUserSessionCookieName())?.value);
-  const hasPotentialAdminSession = Boolean(cookieStore.get(getSessionCookieName())?.value);
+  const hasPotentialUserSession = Boolean(cookieStore?.get(getUserSessionCookieName())?.value);
+  const hasPotentialAdminSession = Boolean(cookieStore?.get(getSessionCookieName())?.value);
   // Las consultas solo ocurren si existe una cookie. Así la cabecera puede
   // mostrar datos reales a la persona conectada sin añadir consultas a cada
   // visita pública anónima.
@@ -93,7 +96,7 @@ export async function PublicHeader({ coverageHref = "/#cobertura" }: PublicHeade
               <NavLink className={!hasAnySession ? "public-login-link" : undefined} href={sessionAccountHref}>{sessionAccountLabel}</NavLink>
             </div>
           </nav>
-          <PortalContactLinks placement="header" />
+          {preview ? <PortalContactLinks placement="header" preview /> : <PortalContactLinks placement="header" />}
         </div>
         {sessionUser && <Link className="public-account-summary" href={sessionAccountHref} aria-label={`Abrir ${sessionAccountLabel.toLowerCase()}`}>
           <span>{currentUser ? "SESIÓN ACTIVA" : "SESIÓN ADMINISTRATIVA"}</span>
@@ -160,10 +163,12 @@ export async function PublicFooter() {
   );
 }
 
-export async function PortalContactLinks({ placement }: { placement: Extract<WhatsappPlacement, "header" | "footer" | "contact" | "about"> }) {
+export async function PortalContactLinks({ placement, preview = false }: { placement: Extract<WhatsappPlacement, "header" | "footer" | "contact" | "about">; preview?: boolean }) {
   const contacts = getPortalContacts(await getSiteSettings());
   if (contacts.length === 0) return null;
-  return <div className={`portal-contact-links portal-contact-links-${placement}`} aria-label="Canales oficiales de Chile3X">{contacts.map((contact) => contact.key === "whatsapp"
+  return <div className={`portal-contact-links portal-contact-links-${placement}`} aria-label="Canales oficiales de Chile3X">{contacts.map((contact) => preview
+    ? <a key={contact.key} className={`portal-contact-link portal-contact-${contact.key}`} role="link" aria-disabled="true" aria-label={contact.label} title={contact.label}><PortalContactIcon kind={contact.key} /><span className="sr-only">{contact.label}</span></a>
+    : contact.key === "whatsapp"
     ? <PortalWhatsappLink key={contact.key} placement={placement} openHelpPanel={placement === "header" || placement === "footer"} className="portal-contact-link portal-contact-whatsapp" href={contact.href} target="_blank" rel="noopener noreferrer" aria-label={placement === "header" || placement === "footer" ? "Contactos del equipo por WhatsApp" : contact.label} title={placement === "header" || placement === "footer" ? "Contactos del equipo por WhatsApp" : contact.label}><PortalContactIcon kind="whatsapp" /><span className="sr-only">{contact.label}</span></PortalWhatsappLink>
     : <a key={contact.key} className={`portal-contact-link portal-contact-${contact.key}`} href={contact.href} target={contact.external ? "_blank" : undefined} rel={contact.external ? "noreferrer" : undefined} aria-label={contact.label} title={contact.label}><PortalContactIcon kind={contact.key} /><span className="sr-only">{contact.label}</span></a>)}</div>;
 }

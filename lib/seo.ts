@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 // A stable, branded fallback for every public page that does not have its own
 // approved cover. Keep this to the official Chile3X logo only: link previews
 // must never substitute the brand for generic artwork.
-export const socialCardImageUrl = "/chile3x-logo-dark.jpeg?v=3";
+export const socialCardImageUrl = "/assets/chile3x-share-black-20261026.jpeg";
 
 export const socialCardImage = {
   url: socialCardImageUrl,

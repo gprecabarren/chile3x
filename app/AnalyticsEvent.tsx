@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { hasAnalyticsConsent } from "@/app/PrivacyConsent";
+import { isAdministrativeBrowser } from "@/lib/browser-measurement";
 
 type AnalyticsValue = string | number | boolean;
 
@@ -16,7 +17,7 @@ declare global {
  * Never add names, emails, phone numbers, RUTs, profile IDs or free text.
  */
 export function trackAnalyticsEvent(event: string, parameters: Record<string, AnalyticsValue> = {}) {
-  if (typeof window === "undefined" || !hasAnalyticsConsent()) return;
+  if (typeof window === "undefined" || isAdministrativeBrowser() || !hasAnalyticsConsent()) return;
   window.dataLayer = window.dataLayer ?? [];
   window.dataLayer.push({ event, ...parameters });
 }

@@ -3,6 +3,7 @@ import { getDb } from "@/db";
 import { createAdminNotification } from "@/lib/admin-notifications";
 import { profileMedia, profiles } from "@/db/schema";
 import { type PhotoEditOptions } from "@/lib/photo-edit-policy";
+import { logicalProfileMedia } from "@/lib/owner-photo-edit";
 import { CollaborationConflict, currentRevision, guardedBatch, type ReviewVersion } from "@/lib/collaboration";
 import { validatePreparedVideo } from "@/lib/video-validation";
 import {
@@ -13,7 +14,8 @@ import {
 } from "@/lib/media";
 
 export class ProfileMediaUploadError extends Error {
-  constructor(message: string, readonly status = 400) { super(message); }
+  readonly status: number;
+  constructor(message: string, status = 400) { super(message); this.status = status; }
 }
 
 export async function uploadProfileMedia(input: {
@@ -51,7 +53,8 @@ export async function uploadProfileMedia(input: {
   }
   const existing = await getProfileMedia(profileId);
   const activeMedia = existing.filter((item) => item.visibility === "public");
-  const sameTypeCount = activeMedia.filter((item) => item.mediaType === mediaType && !item.isProfilePhoto).length;
+  const logicalMedia = await logicalProfileMedia(activeMedia);
+  const sameTypeCount = logicalMedia.filter((item) => item.mediaType === mediaType && !item.isProfilePhoto).length;
   if (uploadKind === "gallery" && sameTypeCount >= (imageType ? MAX_IMAGES_PER_PROFILE : MAX_VIDEOS_PER_PROFILE)) {
     throw new ProfileMediaUploadError(imageType ? "Este perfil ya alcanzó el máximo de 10 imágenes de galería." : "Este perfil ya alcanzó el máximo de 3 videos de galería.");
   }

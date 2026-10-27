@@ -5,6 +5,7 @@ import type { AccountUser, AdminUser } from "@/lib/auth";
 import { recordOperationalEvent } from "@/lib/operations";
 import { hasUnlimitedEscortListings } from "@/lib/profile-limits";
 import { guardedBatch, type ReviewVersion } from "@/lib/collaboration";
+import { adminHasCapability } from "@/lib/admin-permissions";
 
 export type ProfileTrashResult = "ok" | "not_found" | "already_trashed" | "not_trashed" | "escort_conflict" | "storage_cleanup_failed";
 
@@ -37,12 +38,16 @@ export async function trashProfile(profileId: string, actor: AccountUser | Admin
 }
 
 export async function restoreProfile(profileId: string, admin: AdminUser, version?:ReviewVersion): Promise<ProfileTrashResult> {
+  if (!adminHasCapability(admin, "profiles.recycle")) return "not_found";
   const db = await getDb();
-  const [profile] = await db.select({ revision:profiles.revision, id: profiles.id, ownerId: profiles.ownerId, displayName: profiles.displayName, type: profiles.type, status: profiles.status, trashedAt: profiles.trashedAt, trashedByKind: profiles.trashedByKind, trashedByAdminLogin: profiles.trashedByAdminLogin })
+  const [profile] = await db.select({ revision:profiles.revision, id: profiles.id, ownerId: profiles.ownerId, displayName: profiles.displayName, type: profiles.type, status: profiles.status, trashedAt: profiles.trashedAt, trashedByKind: profiles.trashedByKind, trashedByAdminLogin: profiles.trashedByAdminLogin, adminEscortLimitOverride: profiles.adminEscortLimitOverride, creationSource: profiles.creationSource, createdByAdminId: profiles.createdByAdminId })
     .from(profiles).where(eq(profiles.id, profileId)).limit(1);
   if (!profile) return "not_found";
   if (!profile.trashedAt) return "not_trashed";
-  if (profile.type === "escort") {
+  // Match the database's per-listing exception. Restoration preserves an
+  // authorization already granted by administration; it never creates one.
+  const existingEscortAuthorization = profile.adminEscortLimitOverride && profile.creationSource === "admin" && Boolean(profile.createdByAdminId);
+  if (profile.type === "escort" && !existingEscortAuthorization) {
     const [owner] = await db.select({ id: users.id, email: users.email }).from(users).where(eq(users.id, profile.ownerId)).limit(1);
     if (!owner || !hasUnlimitedEscortListings(owner)) {
       const [other] = await db.select({ id: profiles.id }).from(profiles).where(and(
@@ -62,7 +67,7 @@ export async function restoreProfile(profileId: string, admin: AdminUser, versio
         category: "profiles", action: "profile.restore", outcome: "success", entityType: "profile", entityId: profileId,
         entityLabel: profile.displayName, summary: `Restauró el anuncio ${profile.displayName} desde la papelera.`,
         beforeData: JSON.stringify({ trashedAt: profile.trashedAt, origin: profile.trashedByKind, adminLogin: profile.trashedByAdminLogin }),
-        afterData: JSON.stringify({ trashedAt: null, status: profile.status }),
+        afterData: JSON.stringify({ trashedAt: null, status: profile.status, retainedAdditionalEscortAuthorization: Boolean(existingEscortAuthorization) }),
       }),
     ],admin.id);
   } catch (error) {

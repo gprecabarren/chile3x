@@ -8,12 +8,18 @@ import { verifyTurnstile } from "@/lib/turnstile-server";
 import { ACCOUNT_REACTIVATION_COOKIE, ACCOUNT_REACTIVATION_DURATION_SECONDS, createAccountReactivationIntent } from "@/lib/account-reactivation";
 import { emailVerificationState } from "@/lib/email-verification-policy";
 import { isReservedAdminEmail, isReservedPublicAccountIdentity } from "@/lib/admin-email";
+import { LOGIN_EMAIL_COOKIE, LOGIN_EMAIL_LIFETIME, loginEmail, validLoginEmail } from "@/lib/login-form-state";
+import { LOGIN_DUMMY_PASSWORD_HASH } from "@/lib/password-policy";
 
 function loginError(request: Request, formData: FormData, error = "invalid") {
   const url = new URL("/ingresar", request.url);
   url.searchParams.set("error", error);
   url.searchParams.set("return_to", safeAccountReturnTo(getFormString(formData, "return_to")));
-  return NextResponse.redirect(url, 303);
+  const response = NextResponse.redirect(url, 303);
+  // Keep only the email for a short retry. Never put it or the password in
+  // redirect URLs, access logs, persistent client storage or the response body.
+  response.cookies.set({ name: LOGIN_EMAIL_COOKIE, value: loginEmail(getFormString(formData, "email")), ...sessionCookieOptions(LOGIN_EMAIL_LIFETIME), path: "/ingresar" });
+  return response;
 }
 
 function getFormString(formData: FormData, name: string) {
@@ -29,14 +35,17 @@ export async function POST(request: NextRequest) {
   }
 
   const formData = await request.formData();
-  if (!await verifyTurnstile(request, formData.get("cf-turnstile-response"), TURNSTILE_AUTH_LOGIN_ACTION)) return loginError(request, formData, "antispam");
-  const email = getFormString(formData, "email").trim().toLowerCase().slice(0, 160);
+  const email = loginEmail(getFormString(formData, "email"));
   const password = getFormString(formData, "password");
-  if (!email || !password) return loginError(request, formData);
+  if (!validLoginEmail(email)) return loginError(request, formData, "email_format");
+  if (!password) return loginError(request, formData, "password_required");
+  if (!await verifyTurnstile(request, formData.get("cf-turnstile-response"), TURNSTILE_AUTH_LOGIN_ACTION)) return loginError(request, formData, "antispam");
   if (await isReservedAdminEmail(email)) return loginError(request, formData, "admin_email");
 
   const [user] = await (await getDb()).select({ id: users.id, role: users.role, createdAt: users.createdAt, passwordHash: users.passwordHash, emailVerifiedAt: users.emailVerifiedAt, emailVerificationDeadline: users.emailVerificationDeadline, emailVerificationExemptAt: users.emailVerificationExemptAt, isActive: users.isActive, selfDisabledAt: users.selfDisabledAt, adminDisabledAt: users.adminDisabledAt }).from(users).where(eq(users.email, email)).limit(1);
-  if (!user || !await verifyPassword(password, user.passwordHash)) return loginError(request, formData);
+  const passwordCorrect = await verifyPassword(password, user?.passwordHash || LOGIN_DUMMY_PASSWORD_HASH);
+  if (!user) return loginError(request, formData, "email_unknown");
+  if (!user.passwordHash || !passwordCorrect) return loginError(request, formData, "password_incorrect");
   if (user.role === "admin") return loginError(request, formData, "admin_email");
   if (await isReservedPublicAccountIdentity(user.id)) return loginError(request, formData, "admin_email");
   if (user.adminDisabledAt) return loginError(request, formData, "admin_disabled");
@@ -46,6 +55,7 @@ export async function POST(request: NextRequest) {
     destination.searchParams.set("return_to", returnTo);
     const response = NextResponse.redirect(destination, 303);
     response.cookies.set({ name: ACCOUNT_REACTIVATION_COOKIE, value: await createAccountReactivationIntent(user.id), ...sessionCookieOptions(ACCOUNT_REACTIVATION_DURATION_SECONDS) });
+    response.cookies.set({ name: LOGIN_EMAIL_COOKIE, value: "", ...sessionCookieOptions(0), path: "/ingresar" });
     return response;
   }
   if (!user.isActive) return loginError(request, formData, "admin_disabled");
@@ -56,5 +66,6 @@ export async function POST(request: NextRequest) {
   // A blocked session is restricted to verifying/logout, never normal actions.
   const response = NextResponse.redirect(destination, 303);
   setUserSessionCookie(response, await createUserSession(user.id, request, "password"));
+  response.cookies.set({ name: LOGIN_EMAIL_COOKIE, value: "", ...sessionCookieOptions(0), path: "/ingresar" });
   return response;
 }

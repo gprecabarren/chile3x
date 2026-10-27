@@ -90,7 +90,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   if (action === "set_password") {
     const password = formValue(formData, "password");
-    if (password.length < MIN_PASSWORD_LENGTH) return redirectWithNotice(request, returnTo, "password_invalid");
+    if (password.length < MIN_PASSWORD_LENGTH || password.length > 256) return redirectWithNotice(request, returnTo, "password_invalid");
     const conflict=await save([db.update(users).set({passwordHash:await hashPassword(password)}).where(eq(users.id,target.id)),db.delete(authSessions).where(eq(authSessions.userId,target.id)),db.delete(accountTokens).where(and(eq(accountTokens.userId,target.id),eq(accountTokens.purpose,"reset_password")))]);if(conflict)return conflict;
     await recordAdminAudit(admin, { category: "accounts", action: "account.password_update", summary: `Cambió la contraseña de la cuenta ${target.displayName ?? target.email} y cerró sus sesiones.`, entityType: "account", entityId: target.id, entityLabel: target.displayName ?? target.email, metadata: { sessionsRevoked: true, resetTokensRevoked: true } });
     return redirectWithNotice(request, returnTo, "password_updated");

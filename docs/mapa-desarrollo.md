@@ -51,6 +51,8 @@ La sesión pública y la administrativa se aíslan. `BrowserSessionSetup`, `Brow
 
 La verificación de correo tiene plazos, reenvío y bloqueo en servidor (`email-verification-policy` y Worker). La identidad restringida de recuperación/verificación no tiene todos los permisos de una cuenta activa. Deshabilitación voluntaria, bloqueo administrativo, borrado y recuperación son operaciones diferentes.
 
+El login con contraseña distingue correo no registrado y contraseña incorrecta por decisión expresa de producto; esa distinción revela si un correo tiene cuenta. La consulta queda después de Turnstile y se comprueba un hash de respaldo cuando no existe cuenta o contraseña. `lib/login-form-state.ts` conserva únicamente el correo normalizado durante cinco minutos en una cookie `HttpOnly`, `Secure`, `SameSite=Lax`, limitada a `/ingresar`; nunca incluye la contraseña ni pone el correo en la URL. La cookie se elimina al ingresar correctamente o pasar a reactivación. Esta medida no acredita por sí sola límites externos de frecuencia.
+
 ### Crear, editar y publicar anuncios
 
 `app/mi-cuenta/ProfileForm.tsx` → `/api/perfiles/nuevo` o `/api/perfiles/:id` → `readProfileSubmission` → `createProfile` / `updateProfile` en `lib/profile-submission.ts` → D1 → destino privado/confirmación.
@@ -81,6 +83,12 @@ Los medios y el anuncio se moderan por separado. No retirar la publicación apro
 
 Privacidad manual, recorte, marca de agua, formatos, tamaños y duración se consultan en `profile-media-upload`, `photo-edit-policy`, `verification-documents`, `video-policy` y `video-validation`. Las cifras antiguas del README no deben reemplazar esos contratos.
 
+`ProfileMediaManager`/`AdminPhotoTools` comparten la foto principal, su vista previa y la galería entre cuenta normal, administración y muestras. Las herramientas de fotos guardadas son visibles sin abrir el editor: aplicar/quitar marca de agua y aplicar/quitar difuminado, incluyendo la principal; el difuminado normal respeta el ajuste de servidor. Los botones preparan vistas previas antes de confirmar. La base limpia solo permanece temporalmente en la pestaña: los efectos ya incorporados en archivos antiguos requieren un original limpio para quitarlos.
+
+La edición de una foto guardada por su propietario usa `GET/POST /api/perfiles/:profileId/media/:mediaId/procesar` y `lib/owner-photo-edit.ts`. Una foto aprobada se conserva mientras una fila nueva queda pendiente. El servidor escribe en metadatos privados de R2 el puntero `replacesMediaId` y valida mismo anuncio, imagen pública y aprobación de la base; nunca acepta ese puntero desde el cliente. El editor y el cupo cuentan el par como una foto lógica, mientras almacenamiento cuenta los bytes de ambas versiones. Al aprobar, se publica la nueva versión en el ID público original y se retira la fila pendiente para mantener compatibles las referencias de HTML almacenado en caché. Cancelar la edición pendiente devuelve la aprobada al editor. Las ediciones administrativas y de muestras mantienen sus reglas de aprobación existentes.
+
+«Eliminar todas las fotos» exige escribir `ELIMINAR`; incluye principal y galería, conserva videos y archivos seleccionados sin subir. Usa las APIs existentes con revisiones y permisos, e incluye ambas versiones de una foto pendiente de reemplazo. El lote es secuencial y se detiene ante la primera respuesta fallida o incierta, sin reintento automático. No requiere migración de esquema. Ver [QA de paneles, medios y acceso](qa-paneles-medios-acceso-2026-10-27.md).
+
 ### Historias y actividad
 
 `lib/stories.ts` y `story-upload.ts` seleccionan/cargan historias; `story-data.ts` define sus reglas y `story-order.ts` sus fechas y orden. El directorio acota las historias a sus anuncios mostrados. `app/historias/StoryRail.tsx` implementa rail, actividad, pestañas móviles y visor con foco/teclado.
@@ -95,6 +103,8 @@ Favoritos, likes, reseñas, reportes y avisos de cambio de ciudad viven en APIs 
 
 La etiqueta «En línea» usa la actividad de la cuenta de los últimos tres minutos. `PresenceHeartbeat` registra actividad con sesión, pestaña visible e interacción reciente, como máximo cada 45 segundos. `ProfileOnlineBadge` comparte un controlador de navegador que consulta por lotes hasta 60 anuncios visibles cada 45 segundos y al volver a la pestaña; corrige así las etiquetas iniciales de HTML anónimo almacenado en caché. `GET /api/presencia` solo devuelve IDs públicos confirmados, sin identidad de cuenta ni horas, y no escribe actividad. Las muestras no se suscriben. No interpretar esta etiqueta como un horario de atención.
 
+Los contactos WhatsApp de anuncios y del portal excluyen sesiones administrativas y contextos de cookies ambiguos en servidor mediante `lib/contact-traffic.ts`, antes de escribir contadores o cookies de visitante. El navegador también omite solicitudes y eventos de medición en contexto administrativo; ese marcador visual no concede permisos ni reemplaza la comprobación de servidor. Los enlaces siguen abriendo su destino. La exclusión opera desde esta corrección y no identifica ni descuenta retroactivamente clics históricos.
+
 Las solicitudes de asociación agencia–Escort requieren aceptación de la cuenta propietaria. Consultar `agency_members`, `agency_membership_requests` y las APIs de agencias/asociaciones antes de cambiar el vínculo.
 
 ### Contenido exclusivo y muestras
@@ -107,6 +117,8 @@ Las solicitudes de asociación agencia–Escort requieren aceptación de la cuen
 
 La presentación de muestras usa `app/perfil/[slug]/page.tsx` y los mismos componentes de perfil, mapa, reseñas, contacto y acciones. `preview` deshabilita las interacciones y la protección antispam sin alterar tamaños ni crear estadísticas públicas. El contenedor compartido `directory-root` aplica los mismos estilos de ambos temas. Los mapas de ciudad se permiten únicamente como frames de Google Maps, sin referrer; los scripts/conexiones de analítica siguen excluidos. Los cambios futuros de apariencia se hacen en esos componentes compartidos y deben verificarse también en muestras (regla persistida en AGENTS).
 
+`PrivateSampleShell` reutiliza `PublicHeader` y `DirectoryCityBar` en modo `preview`: conserva las tres franjas del anuncio real, pero no consulta ni muestra identidades, contadores o actividad del administrador; contactos y selector de ciudad permanecen demostrativos. Los metadatos de la muestra son genéricos y usan el recurso de marca con fondo negro compartido por `lib/seo.ts`, sin nombres, correo, token ni imágenes privadas. Se mantienen autenticación/token, archivos privados, CSP y `noindex`; la previsualización de redes sociales puede conservar su propia caché de mensajes antiguos.
+
 La muestra vence a los 7 días y aparece en Papelera aunque el cron aún no haya materializado el vencimiento; restaurar conserva el enlace y concede 7 días nuevos. La retención es de 30 días desde su entrada en papelera. `private-sample-cleanup.ts` comprueba nuevamente el estado al borrar y respeta restauraciones concurrentes. Las convertidas se retienen 30 días sin borrar los objetos transferidos al anuncio.
 
 `SampleMediaManager` reutiliza `ProfileMediaManager` y `AdminPhotoTools`: foto principal, galería, marca de agua, privacidad, videos, orden y efectos. Los endpoints dedicados `/api/admin/muestras/:id/media` y sus hijos verifican permiso, revisión, reserva y caducidad; los límites multipart del Worker incluyen estas rutas. Solo se conserva la versión final del archivo en R2 privado. Elegir nueva principal conserva la anterior en galería. La conversión transfiere las referencias R2 y sus opciones de edición sin duplicar bytes ni conceder verificaciones.
@@ -115,9 +127,15 @@ La galería se titula «Galería pública de muestra» para representar su prese
 
 Convertir requiere cuenta activa y correo verificado. Si ya posee un Escort, exige confirmar expresamente la cuenta, su revisión y su cantidad actual de anuncios; una guarda transaccional evita cambios concurrentes. La excepción `profiles.admin_escort_limit_override` autoriza exclusivamente el nuevo anuncio creado por administración, conserva el cupo normal de la cuenta y no se traslada automáticamente a otro propietario. La migración `0064_private_sample_workflow.sql` mantiene también la excepción heredada acotada que ya existía. Creación, edición, contacto, enlaces, papelera y conversión guardan auditoría administrativa. Ver [QA de muestras](qa-muestras-2026-10-25.md).
 
+Restaurar un anuncio desde papelera conserva una autorización de Escort adicional ya concedida a ese anuncio administrativo; no crea una excepción nueva ni modifica el límite normal de su cuenta. La restauración sigue requiriendo `profiles.recycle` y las guardas de revisión del recurso.
+
 ### Administración, contenidos y comunidad
 
 La navegación y las capacidades de administración se consultan en `_components`, `admin-permissions` y `admin-content-navigation`. Sus editores cubren cuentas, anuncios, medios, reportes, noticias, asociados, contenido/SEO, documentos legales, configuración y otros módulos sujetos a flags.
+
+La coordinación de revisión de publicaciones vive dentro de cada tarjeta de anuncio. El buscador de cuentas anuncia los campos realmente consultados: correo, nombre, usuario, ciudad, teléfono, documento o país. El estado efectivo es una celda del resumen de cuenta, sin una columna alta independiente.
+
+`AdminCollaboration` resuelve destino y método mediante `lib/admin-form-target.ts`, leyendo atributos nativos del formulario y los overrides del botón. Un control llamado `action` puede sombrear `form.action` en el DOM y había desviado el cambio de contraseña a una ruta inexistente. La corrección mantiene validación de origen, revisión, recibos y auditoría. El cambio administrativo invalida las sesiones de la cuenta afectada; el cambio propio conserva la sesión actual y revoca las otras según su API existente. Las verificaciones usan cuentas locales desechables, no cambios de claves reales de producción.
 
 El cuerpo legal y sus versiones están en `legal_documents`/`legal_document_versions`; las aceptaciones por cuenta en `account_legal_acceptances`. Cambiar metadatos de una página no equivale a editar su documento. La ayuda usa audiencia/capacidad y el foro tiene acceso propio; el documento histórico `product-scope.md` no es una lista vigente de funciones deshabilitadas.
 

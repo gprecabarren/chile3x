@@ -6,11 +6,13 @@ import { profileContactEvents, profiles } from "@/db/schema";
 import { assertSameOrigin, createOpaqueToken, getCurrentUser } from "@/lib/auth";
 import { describeUserAgent, sessionContextFromRequest } from "@/lib/session-context";
 import { chileanDay } from "@/lib/chile-day";
+import { isAdministrativeContactTraffic } from "@/lib/contact-traffic";
 
 const VIEWER_COOKIE = "chile3x_profile_viewer";
 const kinds = new Set(["whatsapp", "telegram", "call", "email", "instagram", "arsmate", "onlyfans", "videocall"]);
 export async function POST(request: NextRequest, { params }: { params: Promise<{ profileId: string }> }) {
   try { assertSameOrigin(request); } catch { return new Response(null, { status: 403 }); }
+  if (await isAdministrativeContactTraffic(request)) return new Response(null, { status: 204, headers: { "cache-control": "no-store" } });
   const payload = await request.json().catch(() => null) as { kind?: string } | null;
   if (!payload?.kind || !kinds.has(payload.kind)) return new Response(null, { status: 400 });
   const { profileId } = await params;

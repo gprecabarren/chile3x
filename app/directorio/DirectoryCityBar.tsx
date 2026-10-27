@@ -12,7 +12,7 @@ type DirectoryKind = "escort" | "agency" | "rental" | "content";
 const normalizeCity = (value: string) => value.trim().toLocaleLowerCase("es-CL").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 const cityGroups = regions.map(region => ({ ...region, matches: cityDirectory.filter(city => city.regionSlug === region.id).map(city => ({ ...city, searchName: normalizeCity(city.city) })) }));
 
-export function DirectoryCityBar({ selectedCity, kind }: { selectedCity?: string; kind: DirectoryKind }) {
+export function DirectoryCityBar({ selectedCity, kind, preview = false }: { selectedCity?: string; kind: DirectoryKind; preview?: boolean }) {
   const [search, setSearch] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDetailsElement>(null);
@@ -48,6 +48,7 @@ export function DirectoryCityBar({ selectedCity, kind }: { selectedCity?: string
   }, [menuOpen]);
 
   function chooseCity(citySlug?: string) {
+    if (preview) return;
     const city = cityDirectory.find((item) => item.citySlug === citySlug);
     const params = new URLSearchParams(window.location.search);
     for (const key of ["region", "ciudad", "cerca"]) params.delete(key);
@@ -70,7 +71,7 @@ export function DirectoryCityBar({ selectedCity, kind }: { selectedCity?: string
     <div className="directory-city-bar-inner">
       <div className="directory-city-breadcrumb"><Link href="/" className="directory-home-link">Volver a la página principal</Link><span className="directory-city-crumb">Directorio <span aria-hidden="true">/</span></span></div>
       <details ref={menuRef} onToggle={event => setMenuOpen(event.currentTarget.open)} onKeyDown={(event) => { if (event.key === "Escape") menuRef.current?.removeAttribute("open"); }}>
-        <summary aria-label={`Cambiar ciudad, actual: ${selectedCity ?? "todo Chile"}`}><span aria-hidden="true">⌖</span>{selectedCity ?? "Todo Chile"}<span aria-hidden="true">⌄</span></summary>
+        <summary aria-label={`Cambiar ciudad, actual: ${selectedCity ?? "todo Chile"}`} aria-disabled={preview || undefined} tabIndex={preview ? -1 : undefined} onClick={preview ? event => event.preventDefault() : undefined}><span aria-hidden="true">⌖</span>{selectedCity ?? "Todo Chile"}<span aria-hidden="true">⌄</span></summary>
         {menuOpen && <div className="directory-city-popover" ref={popoverRef}>
           <div className="directory-city-popover-heading"><strong>Elegir ciudad o comuna</strong><ActionButton type="button" className="directory-city-close" aria-label="Cerrar selector de ciudades" onClick={() => { menuRef.current?.removeAttribute("open"); menuRef.current?.querySelector("summary")?.focus(); }}>×</ActionButton></div>
           <label className="sr-only" htmlFor="directory-city-search">Buscar ciudad o comuna</label>

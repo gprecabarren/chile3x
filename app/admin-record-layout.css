@@ -6,6 +6,8 @@
 .profile-admin-tools .admin-profile-review-form { gap:12px; }
 .profile-admin-tools .admin-profile-review-form .button { justify-self:start; width:auto; max-width:100%; min-height:44px; padding:10px 16px; font-size:13px; white-space:normal; }
 .profile-admin-tools .admin-profile-review-form select { min-height:44px; font-size:13px; }
+.profile-admin-tools .admin-profile-review-form .admin-featured-toggle { min-height:44px; padding:0; border:0; background:transparent; box-shadow:none; font-size:13px !important; line-height:1.5; }
+.profile-admin-tools .admin-profile-review-form .admin-featured-toggle input { width:18px; height:18px; margin:0; flex:0 0 18px; }
 
 .admin-account-heading-actions { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:10px; max-width:100%; }
 .admin-account-heading-actions .button { width:auto; max-width:100%; white-space:normal; text-align:center; }

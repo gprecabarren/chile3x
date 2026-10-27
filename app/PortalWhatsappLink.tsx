@@ -4,10 +4,12 @@ import { useContext, type ComponentProps } from "react";
 import type { WhatsappPlacement } from "@/lib/portal-whatsapp";
 import { trackAnalyticsEvent } from "./AnalyticsEvent";
 import { WhatsappMenuContext } from "./WhatsappMenuContext";
+import { isAdministrativeBrowser } from "@/lib/browser-measurement";
 
 // Internal anonymous counters are independent of optional, consented Google
 // measurement. Neither path receives numbers, messages or personal labels.
 export function recordPortalWhatsapp(action: "panel_open" | "contact_click", contactId: string, placement: WhatsappPlacement) {
+  if (isAdministrativeBrowser()) return;
   void fetch("/api/contacto/whatsapp", {
     method: "POST", headers: { "content-type": "application/json" },
     body: JSON.stringify({ action, contactId, placement }), keepalive: true,

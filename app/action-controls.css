@@ -10,6 +10,7 @@ body:has(.directory-city-bar details[open]) .portal-whatsapp-widget { visibility
 .button > .action-icon { margin-inline-end:0; }
 .button:has(> .action-icon) { gap:8px; }
 .button > svg { flex-shrink:0; }
+.exclusive-media-locked > span > .action-icon { width:30px; height:30px; max-width:none; max-height:none; margin:0; }
 .admin-workspace .admin-content .button, .account-workspace .account-content .button { min-width:0; max-width:100%; white-space:normal; overflow-wrap:break-word; }
 .admin-workspace .admin-account-card-actions > form { min-width:0; max-width:100%; }
 button > .action-icon, a > .action-icon { max-width:1.15em; max-height:1.15em; }

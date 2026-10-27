@@ -223,6 +223,26 @@ test('private sample workflow runs against migration triggers, D1 batches and co
       assert.equal(audit.additionalEscortAuthorized, true);
     });
 
+    await t.test('administrative restoration retains an existing additional Escort authorization without granting one to a normal listing', async () => {
+      const { trashProfile, restoreProfile } = await import('../lib/profile-trash.ts');
+      const original = sqlite.prepare('SELECT * FROM profiles WHERE admin_escort_limit_override=1').get();
+      assert.equal(await trashProfile(original.id, admin, 'admin'), 'ok');
+      assert.equal(await restoreProfile(original.id, { ...admin, accessLevel: 'support' }), 'not_found');
+      assert.ok(sqlite.prepare('SELECT trashed_at FROM profiles WHERE id=?').get(original.id).trashed_at);
+      assert.equal(await restoreProfile(original.id, admin), 'ok');
+      const restored = sqlite.prepare('SELECT * FROM profiles WHERE id=?').get(original.id);
+      assert.equal(restored.admin_escort_limit_override, 1); assert.equal(restored.owner_id, original.owner_id);
+      assert.equal(restored.status, original.status); assert.equal(restored.verification_status, original.verification_status);
+      const audit = JSON.parse(sqlite.prepare("SELECT after_data FROM admin_audit_logs WHERE action='profile.restore' AND entity_id=?").get(original.id).after_data);
+      assert.equal(audit.retainedAdditionalEscortAuthorization, true);
+      sqlite.exec("INSERT INTO profiles(id,owner_id,type,status,trashed_at,creation_source,admin_escort_limit_override) VALUES('normal-restore-conflict','owner','escort','approved','2026-10-01','self',0)");
+      const normal = sqlite.prepare("SELECT * FROM profiles WHERE id='normal-restore-conflict'").get();
+      assert.equal(await restoreProfile(normal.id, admin), 'escort_conflict');
+      assert.deepEqual(sqlite.prepare('SELECT * FROM profiles WHERE id=?').get(normal.id), normal);
+      assert.throws(() => sqlite.prepare('UPDATE profiles SET trashed_at=NULL WHERE id=?').run(normal.id), /escort_profile_owner_conflict/);
+      assert.throws(() => sqlite.exec("INSERT INTO profiles(id,owner_id,type,trashed_at) VALUES('ordinary-after-restore','owner','escort',NULL)"), /escort_profile_owner_conflict/);
+    });
+
     await t.test('an allowed ownership transfer clears the old exception before a later trash/create/restore cycle', () => {
       const profile = sqlite.prepare('SELECT id,revision FROM profiles WHERE admin_escort_limit_override=1').get();
       sqlite.prepare('UPDATE profiles SET owner_id=owner_id WHERE id=?').run(profile.id);

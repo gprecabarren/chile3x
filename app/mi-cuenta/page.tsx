@@ -1,4 +1,5 @@
 import { ActionButton } from "@/app/ActionButton";
+import { ActionIcon } from "@/app/ActionIcon";
 import Link from "@/app/NavigationLink";
 import { redirect } from "next/navigation";
 import { getCurrentUser, getUserSessionCookieName } from "@/lib/auth";
@@ -112,7 +113,7 @@ export default async function AccountHome({ searchParams }: { searchParams: Prom
         {(profile.status === "draft" || profile.status === "rejected") && <form action={`/api/perfiles/${profile.id}/enviar-revision`} method="post"><ActionButton className="button button-primary" type="submit">Enviar a revisión</ActionButton></form>}
         <form action={`/api/perfiles/${profile.id}/visibilidad`} method="post"><input type="hidden" name="return_to" value="/mi-cuenta" /><input type="hidden" name="action" value={profile.ownerHiddenAt ? "show" : "hide"} /><ActionButton className="button button-outline" type="submit">{profile.ownerHiddenAt ? "Volver a mostrar" : "Ocultar anuncio"}</ActionButton></form>
       </div>
-      <details className="profile-trash-control is-destructive"><summary>🗑 Eliminar este anuncio</summary><form action={`/api/perfiles/${profile.id}/papelera`} method="post"><p>Se quitará de tu panel y del sitio público. Solo un administrador podrá restaurarlo; sus datos no se borrarán de inmediato.</p><label>Escribe ELIMINAR<input name="confirmation" required autoComplete="off" /></label><ActionButton className="button button-danger" type="submit">Confirmar eliminación</ActionButton></form></details>
+      <details className="profile-trash-control is-destructive"><summary><ActionIcon name="trash"/>Eliminar este anuncio</summary><form action={`/api/perfiles/${profile.id}/papelera`} method="post"><p>Se quitará de tu panel y del sitio público. Solo un administrador podrá restaurarlo; sus datos no se borrarán de inmediato.</p><label>Escribe ELIMINAR<input name="confirmation" required autoComplete="off" /></label><ActionButton className="button button-danger" type="submit">Confirmar eliminación</ActionButton></form></details>
     </article>)}</div>}
     <p className="account-feature-note">La pausa por período de publicación está preparada para los futuros planes pagados, pero sus controles permanecerán deshabilitados hasta activar la facturación. Ocultar un anuncio sí está disponible y no consume pausas.</p>
     </section>

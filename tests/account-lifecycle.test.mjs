@@ -67,5 +67,5 @@ test("activity shows twenty entries per page and the listing trash lives inside 
   assert.match(activity, /const PAGE_SIZE = 20;/);
   assert.match(activity, /\.limit\(PAGE_SIZE\)\.offset\(\(page - 1\) \* PAGE_SIZE\)/);
   assert.doesNotMatch(shell, /href="\/admin\/anuncios-publicaciones\/papelera"/);
-  assert.match(listings, /href="\/admin\/anuncios-publicaciones\/papelera">♻ Ver papelera/);
+  assert.match(listings, /href="\/admin\/anuncios-publicaciones\/papelera"><ActionIcon name="trash" \/>Ver papelera/);
 });

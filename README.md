@@ -16,6 +16,8 @@ Revisión adicional del 26 de octubre: [galería compartida, papelera, presencia
 
 Revisión legal del 26 de octubre: [textos, respaldo técnico y brechas de privacidad](docs/revision-legal-y-respaldo-tecnico-2026-10-26.md). La revisión `2026.10.26.1` mantiene el editor administrativo y prepara pagos futuros; su migración conserva historial, borradores y personalizaciones. La preparación local no acredita una publicación en D1 ni un despliegue.
 
+Revisión del 27 de octubre: [paneles, herramientas de fotos, acceso y muestras](docs/qa-paneles-medios-acceso-2026-10-27.md). Documenta la corrección del cambio de contraseña administrativo, los efectos y el borrado de fotos para todos los roles, la edición normal con reemplazo pendiente, la presentación compartida de muestras y la exclusión de contactos administrativos de las métricas. La verificación local y la publicación se registran por separado.
+
 <!-- TECHNICAL_HANDOFF_START -->
 ## Guía técnica de traspaso — 24 de octubre de 2026
 

@@ -1,5 +1,6 @@
 "use client";
 import { ActionButton } from "@/app/ActionButton";
+import { ActionIcon } from "@/app/ActionIcon";
 
 import { useEffect, useState } from "react";
 
@@ -52,7 +53,7 @@ export function BugReporter() {
   }
 
   return <aside className="tester-reporter" aria-label="Herramientas de prueba">
-    <ActionButton type="button" className="tester-reporter-trigger" onClick={() => { setOpen((value) => !value); setNotice(""); }} aria-expanded={open}>🐞 <span>Reportar bug</span></ActionButton>
+    <ActionButton type="button" className="tester-reporter-trigger" onClick={() => { setOpen((value) => !value); setNotice(""); }} aria-expanded={open}><ActionIcon name="flag" /><span>Reportar bug</span></ActionButton>
     {open && <form className="tester-reporter-form" onSubmit={submit}>
       <header><div><p>HERRAMIENTAS DE TESTER</p><h2>Reportar un problema</h2></div><ActionButton type="button" aria-label="Cerrar reporte" onClick={() => setOpen(false)}>×</ActionButton></header>
       <p>Este reporte llegará sólo al panel de administración. La página, dispositivo y navegador se adjuntan automáticamente.</p>

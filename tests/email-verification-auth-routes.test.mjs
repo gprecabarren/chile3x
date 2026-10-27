@@ -37,7 +37,7 @@ const fixtureModule = `data:text/javascript,${encodeURIComponent(`
 `)}`;
 async function loadRoute(path) {
  let source=await readFile(new URL(`../${path}`,import.meta.url),'utf8');
- source=source.replace(/from (["'])([^"'\n]+)\1/g,(_match,_quote,name)=>`from ${name==='@/lib/email-verification-policy'?pathUrl('lib/email-verification-policy.ts'):JSON.stringify(fixtureModule)}`);
+ source=source.replace(/from (["'])([^"'\n]+)\1/g,(_match,_quote,name)=>`from ${name==='@/lib/email-verification-policy'?pathUrl('lib/email-verification-policy.ts'):name==='@/lib/login-form-state'?pathUrl('lib/login-form-state.ts'):name==='@/lib/password-policy'?pathUrl('lib/password-policy.ts'):JSON.stringify(fixtureModule)}`);
  return import(`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(source)).toString('base64')}`);
 }
 const register = await loadRoute('app/api/auth/register/route.ts');

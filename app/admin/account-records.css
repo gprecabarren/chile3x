@@ -1,0 +1,48 @@
+/* Record-specific structure shared by both visual themes. */
+.admin-workspace .admin-records-page .admin-profile-card > .review-coordination {
+  margin-bottom:18px;
+}
+.admin-workspace .admin-records-page .profile-trash-control > summary > .action-icon {
+  display:inline-block;
+  width:16px;
+  height:16px;
+  margin-right:7px;
+  vertical-align:-3px;
+}
+.admin-workspace .admin-account-detail-page .admin-account-detail-summary {
+  display:block;
+}
+.admin-workspace .admin-account-detail-page .admin-account-detail-summary dl {
+  width:100%;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+.admin-workspace .admin-account-detail-page .admin-account-detail-summary dl > div {
+  min-width:0;
+  min-height:0;
+  padding:12px 14px;
+}
+.admin-workspace .admin-account-detail-page .admin-account-detail-summary .admin-account-detail-status {
+  display:block;
+  border:0;
+  border-radius:0;
+  min-width:0;
+}
+.admin-workspace .admin-account-detail-page .admin-account-detail-status .account-status {
+  display:inline-flex;
+  width:fit-content;
+  max-width:100%;
+  min-height:0;
+  margin:0;
+  padding:4px 8px;
+  line-height:1.4;
+}
+@media(min-width:1100px) {
+  .admin-workspace .admin-account-detail-page .admin-account-detail-summary dl {
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+}
+@media(max-width:360px) {
+  .admin-workspace .admin-account-detail-page .admin-account-detail-summary dl {
+    grid-template-columns:minmax(0,1fr);
+  }
+}

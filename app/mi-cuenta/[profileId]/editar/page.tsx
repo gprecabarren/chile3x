@@ -1,11 +1,13 @@
 import { chileanDay } from "@/lib/chile-day";
 import { ActionAnchor, ActionButton } from "@/app/ActionButton";
+import { ActionIcon } from "@/app/ActionIcon";
 import { and, eq, isNull } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { profileDetails, profileServices, profileTags, profiles } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
-import { getMediaQuotaState, getMediaUsage, getProfileMedia } from "@/lib/media";
+import { getMediaQuotaState, getMediaUsage } from "@/lib/media";
+import { getOwnerEditableProfileMedia } from "@/lib/owner-photo-edit";
 import { AccountHeading, AccountShell } from "../../_components";
 import { ProfileMediaManager } from "../../ProfileMediaManager";
 import { ProfileForm } from "../../ProfileForm";
@@ -47,7 +49,7 @@ export default async function EditProfilePage({ params, searchParams }: { params
   const [tags, services, media, usage, documents, settings] = await Promise.all([
     db.select({ tag: profileTags.tag }).from(profileTags).where(eq(profileTags.profileId, profileId)),
     db.select({ service: profileServices.service, kind: profileServices.kind }).from(profileServices).where(eq(profileServices.profileId, profileId)),
-    getProfileMedia(profileId),
+    getOwnerEditableProfileMedia(profileId),
     getMediaUsage(),
     getVerificationDocuments(profileId),
     getSiteSettings(),
@@ -63,10 +65,10 @@ export default async function EditProfilePage({ params, searchParams }: { params
         {query.notice === "shown" && <p className="account-success" role="status">El anuncio volvió a mostrarse según su estado de moderación.</p>}
         {query.notice === "contacts_saved" && <p className="account-success" role="status">WhatsApp, teléfono, correo y redes fueron actualizados inmediatamente. El anuncio conserva su aprobación.</p>}
         {query.notice === "submitted" && <ProfileSubmissionConfirmation profileId={profileId} profileType={row.profile.type} />}
-        <ProfileMediaManager initialRevision={row.profile.revision} profileId={profileId} initialMedia={media.map((item) => ({ id: item.id, url: `/media/${item.id}`, mediaType: item.mediaType, contentType: item.contentType, moderationStatus: item.moderationStatus, visibility: item.visibility, isProfilePhoto: item.isProfilePhoto, byteSize: item.byteSize }))} initialQuota={{ bytes: usage.bytes, ...getMediaQuotaState(usage.bytes) }} mediaSettings={{ watermarkEnabled: settings.profile_gallery_watermark_enabled === "enabled", faceBlurEnabled: settings.profile_gallery_face_blur_enabled === "enabled" }} />
+        <ProfileMediaManager initialRevision={row.profile.revision} profileId={profileId} initialMedia={media.map((item) => ({ id: item.id, url: `/media/${item.id}`, mediaType: item.mediaType, contentType: item.contentType, moderationStatus: item.moderationStatus, visibility: item.visibility, isProfilePhoto: item.isProfilePhoto, byteSize: item.byteSize, replacementOf: item.replacementOf }))} initialQuota={{ bytes: usage.bytes, ...getMediaQuotaState(usage.bytes) }} mediaSettings={{ watermarkEnabled: settings.profile_gallery_watermark_enabled === "enabled", faceBlurEnabled: settings.profile_gallery_face_blur_enabled === "enabled" }} />
         {row.profile.type === "escort" && <ProfileVerificationDocuments profileId={profileId} initialDocuments={documents} />}
         <section className="profile-visibility-panel"><div><p className="eyebrow">VISIBILIDAD</p><h2>{row.profile.ownerHiddenAt ? "Tu anuncio está oculto" : "Ocultar este anuncio"}</h2><p>Ocultarlo lo retira del directorio sin borrar sus datos, medios ni estado de revisión. Puedes volver a mostrarlo cuando quieras.</p></div><form action={`/api/perfiles/${profileId}/visibilidad`} method="post"><input name="return_to" type="hidden" value={`/mi-cuenta/${profileId}/editar`} /><input name="action" type="hidden" value={row.profile.ownerHiddenAt ? "show" : "hide"} /><ActionButton className="button button-outline" type="submit">{row.profile.ownerHiddenAt ? "Volver a mostrar" : "Ocultar anuncio"}</ActionButton></form></section>
-        <details className="profile-trash-control is-destructive"><summary>🗑 Eliminar este anuncio</summary><form action={`/api/perfiles/${profileId}/papelera`} method="post"><p>El aviso dejará de verse públicamente y saldrá de tu panel. Solo administración podrá restaurarlo.</p><label>Escribe ELIMINAR<input name="confirmation" required autoComplete="off" /></label><ActionButton className="button button-danger" type="submit">Confirmar eliminación</ActionButton></form></details>
+        <details className="profile-trash-control is-destructive"><summary><ActionIcon name="trash"/>Eliminar este anuncio</summary><form action={`/api/perfiles/${profileId}/papelera`} method="post"><p>El aviso dejará de verse públicamente y saldrá de tu panel. Solo administración podrá restaurarlo.</p><label>Escribe ELIMINAR<input name="confirmation" required autoComplete="off" /></label><ActionButton className="button button-danger" type="submit">Confirmar eliminación</ActionButton></form></details>
         <ProfileForm travelToday={chileanDay()}
           review={{key:`profile:${profileId}`,revision:row.profile.revision}}
           action={`/api/perfiles/${profileId}`}

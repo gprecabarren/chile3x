@@ -96,6 +96,6 @@ export function BrowserSessionBoundary({ initial, children }: { initial: Session
   return <>
     {blocked && <main className="session-change-screen session-check-screen"><section role="status"><p className="eyebrow">SEGURIDAD DE LA SESIÓN</p><h1>{state.phase === "offline" ? "No pudimos comprobar tu sesión" : "Comprobando tu sesión"}</h1><p>{state.phase === "offline" ? "La vista anterior permanece oculta por seguridad. Revisa tu conexión e inténtalo nuevamente; tus campos no se han borrado." : "Estamos confirmando la identidad activa de este navegador."}</p>{state.phase === "offline" && <ActionButton className="button button-primary" type="button" onClick={() => retry.current()}>Reintentar</ActionButton>}</section></main>}
     {!protectedView && state.phase === "offline" && <div className="session-check-notice" role="alert">No se pudo actualizar el estado de tu sesión. Puedes seguir usando esta página o <ActionButton type="button" onClick={() => retry.current()}>Reintentar</ActionButton></div>}
-    <div className="browser-session-boundary" data-session-checking={blocked ? "true" : undefined} inert={blocked || undefined} aria-hidden={blocked || undefined} aria-busy={blocked || undefined}>{children}</div>
+    <div className="browser-session-boundary" data-session-mode={mode ?? "anonymous"} data-session-checking={blocked ? "true" : undefined} inert={blocked || undefined} aria-hidden={blocked || undefined} aria-busy={blocked || undefined}>{children}</div>
   </>;
 }

@@ -2,6 +2,7 @@
 import { ActionButton } from "@/app/ActionButton";
 import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { adminFormTarget } from "@/lib/admin-form-target";
 import "./collaboration.css";
 const REFRESH_FAILURE_MESSAGE='No pudimos comprobar las revisiones del equipo. Tus datos se conservan; el servidor volverá a comprobarlos al guardar.';
 
@@ -41,12 +42,12 @@ export function AdminCollaboration({adminMode}:{adminMode:boolean}) {
     }
     async function submit(event:SubmitEvent){
       if(!adminMode)return;
-      const form=event.target;if(!(form instanceof HTMLFormElement)||event.defaultPrevented||form.method.toLowerCase()!=='post')return;
+      const form=event.target;if(!(form instanceof HTMLFormElement)||event.defaultPrevented)return;
+      const submitter=event.submitter instanceof HTMLButtonElement||event.submitter instanceof HTMLInputElement?event.submitter:undefined;
+      const actionUrl=adminFormTarget(form,submitter,location.href);if(!actionUrl)return;
       const scope=form.closest<HTMLElement>('[data-review-resource]'),key=form.querySelector<HTMLInputElement>('input[name="review_key"]')?.value??scope?.dataset.reviewResource;
       if(!key)return;
-      const actionUrl=new URL(form.action,location.href);if(actionUrl.origin!==location.origin)return;
       event.preventDefault();if(pending.has(form))return;pending.add(form);setMessage('');
-      const submitter=event.submitter instanceof HTMLButtonElement||event.submitter instanceof HTMLInputElement?event.submitter:undefined;
       const body=new FormData(form,submitter);if(!body.has('review_key')){body.set('review_key',key);body.set('review_revision',scope?.dataset.reviewRevision??'');}
       if(scope?.dataset.reviewResource===key)body.set('review_revision',scope.dataset.reviewRevision??'');
       const mutationId=crypto.randomUUID();body.set('mutation_id',mutationId);

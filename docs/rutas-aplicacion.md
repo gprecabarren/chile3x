@@ -2,7 +2,7 @@
 
 Referencia de código: `main` en `5d42099` más los cambios locales de esta entrega, 24 de octubre de 2026. Incluye las rutas de archivos presentes; no prueba publicación ni autorización de cada una. Las reglas efectivas están en el Worker, los layouts, cada handler y sus servicios.
 
-Hay **83 páginas**, **124 handlers en app/api** y **11 handlers adicionales**. Los parámetros entre corchetes representan rutas dinámicas.
+Hay **83 páginas**, **125 handlers en app/api** y **11 handlers adicionales**. El inventario se amplió el 27 de octubre de 2026 con la edición de fotografías guardadas por su propietario; los parámetros entre corchetes representan rutas dinámicas.
 
 ## Páginas
 
@@ -211,6 +211,7 @@ Hay **83 páginas**, **124 handlers en app/api** y **11 handlers adicionales**. 
 | `/api/perfiles/[profileId]/favorito` | POST | [handler](../app/api/perfiles/[profileId]/favorito/route.ts) |
 | `/api/perfiles/[profileId]/like` | POST | [handler](../app/api/perfiles/[profileId]/like/route.ts) |
 | `/api/perfiles/[profileId]/media/[mediaId]` | DELETE | [handler](../app/api/perfiles/[profileId]/media/[mediaId]/route.ts) |
+| `/api/perfiles/[profileId]/media/[mediaId]/procesar` | GET, POST | [handler](../app/api/perfiles/[profileId]/media/[mediaId]/procesar/route.ts) |
 | `/api/perfiles/[profileId]/media` | POST | [handler](../app/api/perfiles/[profileId]/media/route.ts) |
 | `/api/perfiles/[profileId]/papelera` | POST | [handler](../app/api/perfiles/[profileId]/papelera/route.ts) |
 | `/api/perfiles/[profileId]/pausa` | POST | [handler](../app/api/perfiles/[profileId]/pausa/route.ts) |

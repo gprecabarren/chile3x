@@ -3,6 +3,7 @@ export function multipartBodyLimit(path: string) {
   if (/^\/api\/admin\/muestras\/[^/]+$/.test(path)) return 12 * MB + 256_000;
   if (/^\/api\/admin\/muestras\/[^/]+\/media$/.test(path)) return 12 * MB + 256_000;
   if (/^\/api\/admin\/muestras\/[^/]+\/media\/[^/]+\/procesar$/.test(path)) return 10 * MB + 256_000;
+  if (/^\/api\/perfiles\/[^/]+\/media\/[^/]+\/procesar$/.test(path)) return 10 * MB + 256_000;
   if (/^\/api\/admin\/foro\/adjuntos\/[^/]+$/.test(path)) return 12 * MB + 256_000;
   // Only final files are stored; no additional private photo bases.
   if (/^\/api\/(?:admin\/profiles|perfiles)\/[^/]+\/media$/.test(path)) return 12 * MB + 256_000;

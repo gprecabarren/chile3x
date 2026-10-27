@@ -179,4 +179,7 @@
 :root body .directory-root .profile-reviews-actions { display:flex; flex:0 1 auto; flex-wrap:wrap; align-items:flex-start; justify-content:flex-end; gap:10px; min-width:0; max-width:100%; margin-left:auto; }
 :root body .directory-root .profile-reviews-management-link { min-width:0; max-width:100%; white-space:normal; }
 :root body .directory-root .profile-reviews-count { flex:0 0 auto; min-width:34px; padding:7px; color:#fff; text-align:center; background:#2b3448; font-size:.8125rem; }
-:root body .directory-root .profile-city-alert-login { justify-self:end; width:auto; max-width:100%; text-align:center; white-space:normal; }
+:root body .directory-root .profile-city-alert-panel:has(> .profile-city-alert-login) > div:first-child { grid-column:1 / -1; }
+:root body .directory-root .profile-city-alert-login { grid-column:1 / -1; justify-self:center; align-self:center; width:auto; max-width:100%; text-align:center; white-space:normal; }
+:root body .auth-register-card .auth-whatsapp-request > svg { width:20px; height:20px; flex:0 0 20px; }
+:root body .auth-register-card .auth-whatsapp-request > span { min-width:0; }

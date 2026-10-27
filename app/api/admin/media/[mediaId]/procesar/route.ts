@@ -8,6 +8,7 @@ import { MediaUploadRequestError, readMediaUploadForm } from "@/lib/media-upload
 import { CollaborationConflict, expectedVersion, guardedBatch, conflictResponse } from "@/lib/collaboration";
 import { parsePhotoEditOptions } from "@/lib/photo-edit-policy";
 import { recordAdminAudit } from "@/lib/admin-audit";
+import { approvedPhotoBeingReplaced } from "@/lib/owner-photo-edit";
 
 export const dynamic = "force-dynamic";
 const headers={"cache-control":"private, no-store","x-robots-tag":"noindex, nofollow","x-content-type-options":"nosniff"};
@@ -55,7 +56,8 @@ export async function POST(request:Request,{params}:{params:Promise<{mediaId:str
   if(!env.MEDIA)return error("Almacenamiento no disponible.",503);
   const extension=contentType==="image/png"?"png":contentType==="image/webp"?"webp":"jpg";
   const key=`profiles/${record.media.profileId}/${mediaId}-edit-${crypto.randomUUID()}.${extension}`;
-  await env.MEDIA.put(key,file.stream(),{httpMetadata:{contentType,cacheControl:"private, no-store"},customMetadata:{profileId:record.media.profileId,processedBy:admin.id,watermark:String(options.watermark),blur:String(options.blur),photoOptions:JSON.stringify(options),mediaType:"image"}});
+  const replaced = await approvedPhotoBeingReplaced(record.media);
+  await env.MEDIA.put(key,file.stream(),{httpMetadata:{contentType,cacheControl:"private, no-store"},customMetadata:{profileId:record.media.profileId,processedBy:admin.id,watermark:String(options.watermark),blur:String(options.blur),photoOptions:JSON.stringify(options),mediaType:"image",...(replaced?{replacesMediaId:replaced.id}:{})}});
   const db=await getDb();let revision=record.profile.revision;
   try {
     const result=await guardedBatch(version,[

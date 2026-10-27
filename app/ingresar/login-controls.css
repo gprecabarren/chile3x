@@ -1,0 +1,10 @@
+/* Login-only control geometry; shared registration and private panels keep
+   their own layout. Both global themes use the same field sizes. */
+.auth-login-card .auth-form { align-content:start; gap:18px; }
+.auth-login-card .auth-form > label { align-content:start; gap:7px; }
+.auth-login-card .login-password-field { align-content:start; grid-template-rows:max-content max-content; gap:7px; min-width:0; }
+.auth-login-card .auth-form .login-password-field > label { display:block; margin:0; line-height:1.4; }
+.auth-login-card .auth-form input:is([type="email"],[type="password"],[type="text"]) { width:100%; min-width:0; height:44px; min-height:44px; margin:0; padding:10px 12px; box-sizing:border-box; font-size:16px; }
+.auth-login-card .login-password-entry { position:relative; grid-template-columns:minmax(0,1fr); gap:0; align-items:start; }
+.auth-login-card .auth-form .login-password-entry input { padding-right:56px; }
+.auth-login-card .auth-form .login-password-entry .login-password-toggle { position:absolute; top:0; right:0; width:44px; height:44px; min-width:44px; min-height:44px; margin:0; padding:9px; border:0; background:transparent; }

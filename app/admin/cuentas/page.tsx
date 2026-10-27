@@ -1,4 +1,5 @@
 import { ActionAnchor, ActionButton } from "@/app/ActionButton";
+import "../account-records.css";
 import { and, count, desc, eq, isNull, or, sql } from "drizzle-orm";
 import Link from "@/app/NavigationLink";
 import { ReviewScope } from "@/app/admin/ReviewScope";
@@ -198,7 +199,7 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
     .offset((page - 1) * PAGE_SIZE);
   const currentAccountsHref = pageHref("/admin/cuentas", currentQuery, page);
 
-  return <AdminShell user={admin}><div className="admin-content">
+  return <AdminShell user={admin}><div className="admin-content admin-records-page">
     <AdminPageHeading eyebrow="CUENTAS DEL PORTAL" title="Cuentas y accesos" description="Busca, revisa y administra las cuentas del portal. Desde cada ficha puedes abrir sus datos, sus anuncios y los accesos de recuperación." backHref="/admin" />
     {params.notice && notices[params.notice] && <p className="admin-success" role="status">{notices[params.notice]}</p>}
     <details className="admin-account-create"><summary><span><b>Crear cuenta</b><small>Abre este formulario solo cuando necesites registrar un anunciante o tester.</small></span></summary><div><form action="/api/admin/users" method="post" className="admin-settings-form">
@@ -211,8 +212,8 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
     </form></div></details>
     <section className="admin-account-list"><div><p className="eyebrow">REGISTRO DE USUARIOS</p><h2>{total} cuenta{total === 1 ? "" : "s"}</h2></div>
       <form className="admin-account-filters" method="get" role="search">
-        <label htmlFor="account-search">Buscar en los datos de la cuenta<input id="account-search" name="q" type="search" defaultValue={params.q ?? ""} placeholder="Correo, nombre, teléfono o documento" /><small>También puedes buscar por ciudad o nombre de usuario.</small></label>
-        <label className="admin-account-important-filter">Anuncios asociados<select name="listings" defaultValue={filters.listings}><option value="">Cualquier cuenta</option><option value="pending">Con anuncios pendientes</option><option value="with_listings">Con anuncios</option><option value="without_listings">Sin anuncios</option></select><small>Filtro prioritario para encontrar rápidamente cuentas con publicaciones pendientes.</small></label>
+        <label htmlFor="account-search">Buscar en los datos de la cuenta<input id="account-search" name="q" type="search" defaultValue={params.q ?? ""} placeholder="Correo, nombre, usuario, ciudad, teléfono, documento o país" /></label>
+        <label className="admin-account-important-filter">Anuncios asociados<select name="listings" defaultValue={filters.listings}><option value="">Cualquier cuenta</option><option value="pending">Con anuncios pendientes</option><option value="with_listings">Con anuncios</option><option value="without_listings">Sin anuncios</option></select></label>
         <div className="admin-account-filter-actions"><ActionButton className="button button-primary" type="submit">Buscar</ActionButton>{hasActiveFilters && <Link prefetch={false} className="button button-outline" href="/admin/cuentas">Limpiar</Link>}</div>
         <details className="admin-account-advanced-filters" open={advancedFilters.length > 0}>
           <summary><span><b>Filtros avanzados</b><small>{advancedFilters.length ? `${advancedFilters.length} filtro${advancedFilters.length === 1 ? "" : "s"} avanzado${advancedFilters.length === 1 ? "" : "s"} activo${advancedFilters.length === 1 ? "" : "s"}` : "Combina estado, contacto, anuncios y fechas"}</small></span></summary>

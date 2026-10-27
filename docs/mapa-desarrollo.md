@@ -121,11 +121,13 @@ La navegación y las capacidades de administración se consultan en `_components
 
 El cuerpo legal y sus versiones están en `legal_documents`/`legal_document_versions`; las aceptaciones por cuenta en `account_legal_acceptances`. Cambiar metadatos de una página no equivale a editar su documento. La ayuda usa audiencia/capacidad y el foro tiene acceso propio; el documento histórico `product-scope.md` no es una lista vigente de funciones deshabilitadas.
 
+La revisión legal preparada el 26 de octubre (`2026.10.26.1`) tiene su fuente en `lib/legal-revision-2026-10-26.ts` y copias de lectura en `docs/legales/`. `0065_legal_privacy_revision.sql` archiva el contenido canónico anterior y publica los nuevos bloques para el texto canónico `2026.10.14.3` y la publicación de Privacidad `2026.10.17.1` cuyo JSON se comparó expresamente con la base durante la comprobación remota del 27 de octubre; conserva `draft_json`, aceptaciones y versiones posteriores. Las filas con contenido distinto o historial incompatible requieren comparación y publicación desde `/admin/documentos-legales`, sin forzar la sustitución. El bootstrap `lib/legal-defaults.ts` y sus metadatos iniciales permanecen históricos: sin aplicar la migración no se presenta un texto nuevo con versión antigua. Los nuevos bloques siguen admitiendo edición, vista previa, borrador e historial mediante las APIs existentes; no se crean rutas públicas ni un segundo editor. Ver [hallazgos y medidas pendientes](revision-legal-y-respaldo-tecnico-2026-10-26.md): la revisión documental no implementa consentimiento granular, bloqueo/exportación, cambios en métricas o el flujo médico, ni activa pagos.
+
 Telegram se integra en el Worker con webhook, D1, cola, outbox y cron; vinculación de cuenta, identidad administrativa, membresía, novedades y moderación son contratos distintos. No enviar mensajes, activar proveedores ni cambiar espacios externos al revisar código.
 
 ## Base de datos y persistencia
 
-El inventario actual del esquema tipado tiene **92 tablas, 813 columnas y 105 claves foráneas**; hay **65 migraciones SQL**. Son conteos de código, no una inspección de producción. Los comentarios antiguos que hablan de 62 tablas y los inventarios de otros commits no reemplazan esta medición. El detalle completo de columnas, enumeraciones, índices y relaciones está en [esquema-base-datos.md](esquema-base-datos.md).
+El inventario actual del esquema tipado tiene **92 tablas, 813 columnas y 105 claves foráneas**; hay **66 migraciones SQL** con la revisión legal `0065`, que no añade tablas permanentes. Son conteos de código, no una inspección de producción. Los comentarios antiguos que hablan de 62 tablas y los inventarios de otros commits no reemplazan esta medición. El detalle completo de columnas, enumeraciones, índices y relaciones está en [esquema-base-datos.md](esquema-base-datos.md).
 
 Dominios principales:
 

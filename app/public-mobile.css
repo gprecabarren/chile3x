@@ -1,6 +1,14 @@
 /* Mobile corrections only: navigation is not an action button. Keep the
    larger action labels without letting them inflate the header's controls. */
 @media (max-width:860px) {
+  /* Long legal references must reflow at user-scaled text sizes. */
+  :root body .directory-root .legal-sources ul {
+    grid-template-columns:minmax(0,1fr);
+  }
+  :root body .directory-root .legal-sources li {
+    min-width:0;
+    overflow-wrap:anywhere;
+  }
   :root body .public-header .mobile-public-quick-links {
     grid-template-columns:1.3fr .8fr 1fr;
     gap:6px;

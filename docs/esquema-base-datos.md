@@ -1,6 +1,6 @@
 # Mapa del esquema D1
 
-Referencia: `db/schema.ts` del checkout de trabajo de esta entrega, contrastado el 25 de octubre de 2026. Inventario de código, sin consultar ni exportar datos remotos. Las 65 migraciones de `drizzle/` determinan el esquema SQL aplicado, sus triggers e índices adicionales; este documento no demuestra cuáles están aplicadas en producción.
+Referencia: `db/schema.ts` del checkout de trabajo de esta entrega, contrastado el 25 de octubre de 2026; revisión documental de migraciones el 26 de octubre. Inventario de código, sin consultar ni exportar datos remotos. Las 66 migraciones de `drizzle/` determinan el esquema SQL aplicado, sus triggers e índices adicionales; este documento no demuestra cuáles están aplicadas en producción. La revisión legal `0065` modifica contenido versionado y no agrega tablas permanentes.
 
 El esquema tipado declara **92 tablas**, **813 columnas** y **105 relaciones de clave foránea**. Los nombres son metadatos públicos del código; aquí no hay valores de cuentas, tokens ni archivos.
 
@@ -874,6 +874,7 @@ Exportación: `xRegistrationIntents` en [schema.ts](../db/schema.ts).
 - `0045_help_and_session_isolation.sql` y `0046_same_origin_apple_completion.sql`: identidad pública/administrativa y conflictos de proveedores.
 - `0056_admin_collaboration.sql`: revisiones, guardas e invalidación ante cambios de colecciones/configuración.
 - `0057_legal_documents_and_city_popularity.sql`: documentos legales y revisión de versiones.
+- `0065_legal_privacy_revision.sql`: archivo del texto canónico `2026.10.14.3`, de la publicación de Privacidad `2026.10.17.1` expresamente revisada, y revisión `2026.10.26.1` en las tablas legales existentes; guarda de versión y contenido, borradores y personalizaciones preservados, incremento de revisión mediante el trigger existente. La tabla auxiliar se crea y elimina en la propia migración; no cambia `account_legal_acceptances`.
 - `0059_reversible_photo_edits_and_mutation_receipts.sql`, `0060_profile_storage_cleanup.sql` y `0061_no_additional_photo_bases.sql`: edición de fotos y limpieza de referencias a objetos.
 - `0062_private_profile_samples.sql`: muestras privadas y revisiones de sus medios.
 - `0063_incompatible_profile_tags.sql`: incompatibilidad MILF con Hombres/Trans. La derivación de Hombres desde Masculino vive también en `lib/profile-tag-policy.ts` y `lib/profile-submission.ts`.

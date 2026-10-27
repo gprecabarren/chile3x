@@ -14,6 +14,8 @@ Actualización del 26 de octubre: [filtros y copia de enlaces, presentación com
 
 Revisión adicional del 26 de octubre: [galería compartida, papelera, presencia e indexación](docs/qa-muestras-seo-2026-10-26.md). Incluye contraste directo con Search Console; distinguir el informe histórico de la inspección y la prueba en tiempo real.
 
+Revisión legal del 26 de octubre: [textos, respaldo técnico y brechas de privacidad](docs/revision-legal-y-respaldo-tecnico-2026-10-26.md). La revisión `2026.10.26.1` mantiene el editor administrativo y prepara pagos futuros; su migración conserva historial, borradores y personalizaciones. La preparación local no acredita una publicación en D1 ni un despliegue.
+
 <!-- TECHNICAL_HANDOFF_START -->
 ## Guía técnica de traspaso — 24 de octubre de 2026
 

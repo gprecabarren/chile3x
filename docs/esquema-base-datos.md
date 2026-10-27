@@ -1,6 +1,6 @@
 # Mapa del esquema D1
 
-Referencia: `db/schema.ts` del checkout de trabajo de esta entrega, contrastado el 25 de octubre de 2026; revisión documental de migraciones el 26 de octubre. Inventario de código, sin consultar ni exportar datos remotos. Las 66 migraciones de `drizzle/` determinan el esquema SQL aplicado, sus triggers e índices adicionales; este documento no demuestra cuáles están aplicadas en producción. La revisión legal `0065` modifica contenido versionado y no agrega tablas permanentes.
+Referencia: `db/schema.ts` del checkout de trabajo de esta entrega, contrastado el 25 de octubre de 2026; revisión documental de migraciones el 27 de octubre. Inventario de código, sin consultar ni exportar datos remotos. Las 67 migraciones de `drizzle/` determinan el esquema SQL aplicado, sus triggers e índices adicionales; este documento no demuestra cuáles están aplicadas en producción. La revisión legal `0065` modifica contenido versionado y la limpieza `0066` elimina ocho instantáneas históricas expresamente indicadas por el propietario; ninguna agrega tablas permanentes.
 
 El esquema tipado declara **92 tablas**, **813 columnas** y **105 relaciones de clave foránea**. Los nombres son metadatos públicos del código; aquí no hay valores de cuentas, tokens ni archivos.
 
@@ -411,6 +411,8 @@ Exportación: `legalDocumentVersions` en [schema.ts](../db/schema.ts).
 **Relaciones:** `document_id` → `legal_documents(id)`.
 
 **Índices del esquema:** `legal_document_version_unique` UNIQUE (document_id, version).
+
+`0066_legal_history_cleanup.sql` elimina únicamente las ocho versiones anteriores identificadas en la propia migración. Excluye de la eliminación la versión que esté vigente en `legal_documents`; conserva esa tabla y las constancias de `account_legal_acceptances`.
 
 ### legal_documents
 

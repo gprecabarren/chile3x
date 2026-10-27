@@ -143,9 +143,11 @@ La revisión legal preparada el 26 de octubre (`2026.10.26.1`) tiene su fuente e
 
 Telegram se integra en el Worker con webhook, D1, cola, outbox y cron; vinculación de cuenta, identidad administrativa, membresía, novedades y moderación son contratos distintos. No enviar mensajes, activar proveedores ni cambiar espacios externos al revisar código.
 
+La migración `0066_legal_history_cleanup.sql`, solicitada expresamente por el propietario el 27 de octubre, elimina de `legal_document_versions` ocho instantáneas anteriores: Términos `2026.10.27.2`, `2026.10.27.1`, `2026.10.26.1`, `2026.10.14.3` y Privacidad `2026.10.27.1`, `2026.10.26.1`, `2026.10.17.1`, `2026.10.14.3`. El editor sigue leyendo el historial guardado, sin ocultación visual ni lista de exclusiones. La limpieza protege la versión vigente de cada documento, conserva íntegra `legal_documents` (incluido cualquier borrador) y mantiene las constancias originales de aceptación de las cuentas. El código de la migración por sí solo no demuestra su aplicación remota.
+
 ## Base de datos y persistencia
 
-El inventario actual del esquema tipado tiene **92 tablas, 813 columnas y 105 claves foráneas**; hay **66 migraciones SQL** con la revisión legal `0065`, que no añade tablas permanentes. Son conteos de código, no una inspección de producción. Los comentarios antiguos que hablan de 62 tablas y los inventarios de otros commits no reemplazan esta medición. El detalle completo de columnas, enumeraciones, índices y relaciones está en [esquema-base-datos.md](esquema-base-datos.md).
+El inventario actual del esquema tipado tiene **92 tablas, 813 columnas y 105 claves foráneas**; hay **67 migraciones SQL** con la revisión legal `0065` y la limpieza de historial `0066`, que no añaden tablas permanentes. Son conteos de código, no una inspección de producción. Los comentarios antiguos que hablan de 62 tablas y los inventarios de otros commits no reemplazan esta medición. El detalle completo de columnas, enumeraciones, índices y relaciones está en [esquema-base-datos.md](esquema-base-datos.md).
 
 Dominios principales:
 

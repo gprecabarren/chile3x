@@ -4,6 +4,8 @@ Referencia de código: `main` en `5d42099` más los cambios locales de esta entr
 
 Hay **83 páginas**, **125 handlers en app/api** y **11 handlers adicionales**. El inventario se amplió el 27 de octubre de 2026 con la edición de fotografías guardadas por su propietario; los parámetros entre corchetes representan rutas dinámicas.
 
+Actualización del 28 de octubre, sin rutas nuevas: `GET /api/auth/github/start?select_account=1` solicita elegir cuenta en GitHub. `POST /api/admin/administradores` comprueba formato y existencia de la cuenta y admite respuestas JSON para conservar el formulario ante errores. `POST /api/admin/administradores/[grantId]` añade `intent=login` para corregir una invitación sin cuenta vinculada; exige propietario protegido, origen válido y que el usuario anterior siga vigente. El correo y el nivel no cambian y se registra `admin.grant_login_correct`. El recorte de videos reutiliza los endpoints existentes de medios y su validación final.
+
 ## Páginas
 
 | Ruta | Fuente |

@@ -18,6 +18,8 @@ Revisión legal del 26 de octubre: [textos, respaldo técnico y brechas de priva
 
 Revisión del 27 de octubre: [paneles, herramientas de fotos, acceso y muestras](docs/qa-paneles-medios-acceso-2026-10-27.md). Documenta la corrección del cambio de contraseña administrativo, los efectos y el borrado de fotos para todos los roles, la edición normal con reemplazo pendiente, la presentación compartida de muestras y la exclusión de contactos administrativos de las métricas. La verificación local y la publicación se registran por separado.
 
+Actualización del 28 de octubre: [recorte de video e invitaciones administrativas](docs/qa-recorte-acceso-2026-10-28.md). El gestor compartido permite elegir inicio y final antes de cargar un video; las invitaciones comprueban la cuenta personal de GitHub, conservan la verificación de correo mediante OAuth y permiten corregir el usuario antes del primer ingreso.
+
 <!-- TECHNICAL_HANDOFF_START -->
 ## Guía técnica de traspaso — 24 de octubre de 2026
 

@@ -21,6 +21,7 @@ export const ADMIN_AUDIT_CATEGORIES = {
 } as const;
 
 export const ADMIN_AUDIT_ACTIONS = {
+  "admin.grant_login_correct": "Corrigió el usuario de una invitación administrativa",
   "sample.create":"Creó una muestra privada",
   "sample.share":"Guardó el enlace privado de una muestra",
   "sample.adopt_link":"Conservó un enlace privado anterior",

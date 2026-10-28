@@ -4,7 +4,7 @@ export const MAX_VIDEO_SECONDS = 15;
 // One or two timestamp ticks can extend an otherwise exact 15-second clip.
 export const VIDEO_DURATION_TOLERANCE = 0.05;
 export const VIDEO_INPUT_ACCEPT = "video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v";
-export const VIDEO_UPLOAD_RULES = `Videos MP4, WebM o MOV (iPhone/Android): hasta ${MAX_VIDEO_SECONDS} segundos y 50 MB originales. Se preparan en tu dispositivo; solo se sube la versión final de hasta ${MAX_PREPARED_VIDEO_BYTES / 1_000_000} MB. Mantén esta pestaña abierta. Si tu navegador no puede leer HEVC, exporta desde Fotos/Galería como MP4/H.264 (Más compatible).`;
+export const VIDEO_UPLOAD_RULES = `Videos MP4, WebM o MOV (iPhone/Android): originales de hasta 50 MB; el resultado final admite hasta ${MAX_VIDEO_SECONDS} segundos. En la galería puedes elegir el inicio y el final antes de subir. Se preparan en tu dispositivo; solo se sube la versión final de hasta ${MAX_PREPARED_VIDEO_BYTES / 1_000_000} MB. Mantén esta pestaña abierta. Si tu navegador no puede leer HEVC, exporta desde Fotos/Galería como MP4/H.264 (Más compatible).`;
 export const VIDEO_CODEC_HELP = "Este navegador no puede convertir el códec de este video. Intenta subirlo desde Safari actualizado en tu iPhone o grábalo en Cámara > Formatos > Más compatible (H.264). En Android, desactiva video de alta eficiencia/HEVC. No se ha subido ningún archivo.";
 
 export function isVideoSource(file: Pick<File, "name" | "type">) {

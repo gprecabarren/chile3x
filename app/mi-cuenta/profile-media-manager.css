@@ -64,6 +64,28 @@
 .profile-media-manager .profile-photo-delete-confirmation input { width:100%; min-width:0; min-height:44px; padding:10px 12px; border:1px solid #98626e; border-radius:var(--corner-8); background:#10131d; color:#fff; font:inherit; font-size:16px; }
 .profile-media-manager .profile-photo-delete-confirmation > div { display:flex; flex-wrap:wrap; gap:10px; }
 .profile-media-manager .profile-photo-delete-confirmation .button { min-width:0; max-width:100%; min-height:44px; white-space:normal; line-height:1.45; }
+.profile-media-manager .gallery-upload-candidates article > .video-trim-editor { grid-column:1 / -1; display:grid; grid-template-columns:minmax(0,380px) minmax(0,1fr); align-items:start; gap:16px; }
+.video-trim-original { display:grid; gap:6px; min-width:0; }
+.video-trim-original video { display:block; width:100%; max-height:300px; background:#05070c; border-radius:var(--corner-8); }
+.video-trim-editor fieldset { min-width:0; margin:0; padding:14px; border:1px solid #53647c; border-radius:var(--corner-10); }
+.video-trim-editor legend { padding:0 6px; color:#fff; font-weight:700; }
+.profile-media-manager .video-trim-editor p { margin:0 0 12px; font-size:13px; line-height:1.5; color:#c1ccdc; }
+.video-trim-points { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.video-trim-points > div { min-width:0; display:grid; gap:8px; }
+.video-trim-points label { color:#f1f4fa; font-size:14px; font-weight:600; }
+.video-trim-points label span { font-size:12px; font-weight:400; color:#c1ccdc; }
+.profile-media-manager .video-trim-points input[type="number"] { width:100%; min-width:0; min-height:44px; padding:9px 10px; font:inherit; font-size:16px; color:#fff; border:1px solid #64748b; border-radius:var(--corner-8); background:#0a0f18; }
+.profile-media-manager .video-trim-points input[type="range"] { position:static; width:100%; min-width:0; height:36px; padding:0; clip:auto; overflow:visible; accent-color:#ff8093; cursor:pointer; }
+.video-trim-editor input:focus-visible { outline:2px solid #ff9baa; outline-offset:3px; }
+.profile-media-manager .video-trim-editor .video-trim-duration { margin:10px 0; }
+.video-trim-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.profile-media-manager .video-trim-actions .button { min-height:44px; max-width:100%; padding:9px 12px; font-size:13px; white-space:normal; }
+.profile-media-manager .video-trim-editor .video-trim-error { color:#ffbdc5; }
+.video-trim-editor fieldset:disabled { opacity:.65; }
+@media(max-width:1000px) {
+  .profile-media-manager .gallery-upload-candidates article > .video-trim-editor { grid-template-columns:minmax(0,1fr); }
+  .video-trim-original { max-width:380px; width:100%; }
+}
 @media(max-width:620px) {
   .profile-media-manager .profile-primary-photo-block { padding:14px; }
   .profile-media-manager .profile-public-gallery-manager { padding:14px; }

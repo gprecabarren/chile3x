@@ -1,0 +1,18 @@
+.admin-workspace .admin-content .admin-access-intro > form { align-items: start; gap: 16px; }
+.admin-workspace .admin-access-intro > form > label { min-width: 0; gap: 8px; }
+.admin-workspace .admin-access-intro > form small { text-transform: none; letter-spacing: normal; line-height: 1.5; color: #b9c3d3; font-weight: 400; }
+.admin-workspace .admin-access-login-field { display: flex; align-items: center; gap: 10px; padding: 0 12px; min-height: 44px; border: 1px solid #647087; border-radius: var(--corner-10); background: #0b0f18; }
+.admin-workspace .admin-access-login-field > span { flex: 0 0 auto; font-size: 16px; }
+.admin-workspace .admin-access-login-field:focus-within { outline: 2px solid #ff8d99; outline-offset: 2px; }
+.admin-workspace .admin-content .admin-access-login-field > input { width: 100%; min-width: 0; min-height: 44px; margin: 0; padding: 9px 0; border: 0; border-radius: 0; outline: 0; background: transparent; box-shadow: none; }
+.admin-workspace .admin-access-intro > form > .button { align-self: end; min-height: 44px; }
+.admin-workspace .admin-access-intro > form > .admin-access-form-error { grid-column:1 / -1; margin:0; padding:12px; border-left:3px solid #f2697e; color:#ffd5de; background:#301923; font-size:14px; line-height:1.5; }
+.admin-access-login-correction { flex:1 1 100%; min-width:0; padding:12px; border:1px solid #485570; border-radius:var(--corner-8); }
+.admin-access-login-correction summary { cursor:pointer; color:#d9e3f4; font-weight:600; }
+.admin-access-login-correction p { margin:12px 0; font-size:13px; line-height:1.5; color:#b9c3d3; }
+.admin-access-login-correction form { display:flex; flex-wrap:wrap; align-items:end; gap:12px; }
+.admin-access-login-correction label { display:grid; gap:8px; flex:1 1 180px; min-width:0; }
+@media (max-width: 620px) {
+  .admin-workspace .admin-content .admin-access-intro { gap: 18px; }
+  .admin-workspace .admin-content .admin-access-intro > form { grid-template-columns: minmax(0, 1fr); gap: 15px; }
+}

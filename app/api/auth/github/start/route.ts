@@ -23,8 +23,11 @@ export async function GET(request: Request) {
   githubUrl.searchParams.set("redirect_uri", callbackUrl);
   githubUrl.searchParams.set("scope", "read:user user:email");
   githubUrl.searchParams.set("state", state);
+  // A denied attempt may have silently reused another signed-in GitHub account.
+  if (requestUrl.searchParams.get("select_account") === "1") githubUrl.searchParams.set("prompt", "select_account");
 
   const response = NextResponse.redirect(githubUrl);
+  response.headers.set("cache-control", "no-store");
   response.cookies.set({
     name: OAUTH_STATE_COOKIE,
     value: state,

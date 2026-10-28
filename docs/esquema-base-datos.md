@@ -106,6 +106,8 @@ Exportación: `adminGithubAccess` en [schema.ts](../db/schema.ts).
 
 **Índices del esquema:** `admin_github_access_login_unique` UNIQUE (github_login); `admin_github_access_id_unique` UNIQUE (github_user_id); `admin_github_access_user_unique` UNIQUE (user_id); `admin_github_access_email_unique` UNIQUE (protected_email); `admin_github_access_active_level_idx` (is_active, access_level).
 
+Flujo de aplicación desde el 28 de octubre: las invitaciones nuevas resuelven `github_user_id` desde la cuenta personal existente en GitHub antes de insertarse. `user_id` se vincula solo después del OAuth con correo verificado. La corrección de una invitación exige `user_id IS NULL`, concesión activa y coincidencia con el usuario/ID previamente leído; conserva correo y nivel. No cambia el esquema ni necesita migración. La autorización efectiva sigue requiriendo la concesión activa y sus capacidades.
+
 ### admin_github_identities
 
 Exportación: `adminGithubIdentities` en [schema.ts](../db/schema.ts).

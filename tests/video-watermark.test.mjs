@@ -62,12 +62,12 @@ test('encoding favors quality without targeting the 12 MB ceiling; photos stay a
 
 test('watermark forces decoding/encoding, preserves sound, and invalidates previews from the original', async () => {
   const prepare = await source('app/mi-cuenta/prepare-video.ts'), manager = await source('app/mi-cuenta/ProfileMediaManager.tsx');
-  assert.match(prepare, /if \(!watermark && compatible/); assert.match(prepare, /const remuxOnly = !watermark/);
+  assert.match(prepare, /if \(!watermark && !trimming && compatible/); assert.match(prepare, /const remuxOnly = !watermark && !trimming/);
   assert.match(prepare, /forceTranscode: true, process: watermark.process/); assert.match(prepare, /allowTransformationMetadata: false/);
   assert.match(prepare, /audio: \{ codec: audioOutputCodec/); assert.match(prepare, /watermark\?\.dispose\(\)/);
   assert.match(manager, /prepareVideo\(candidate.originalFile, \{ watermark: candidate.watermark/);
   assert.match(manager, /file: candidate.image \? candidate.file : candidate.originalFile, prepared: undefined, status: "ready"/);
-  assert.match(manager, /SelectedVideoPreview file=\{candidate.prepared \?\? candidate.originalFile\}/);
+  assert.match(manager, /SelectedVideoPreview file=\{candidate.prepared\}/);
   assert.doesNotMatch(manager, /Los videos no llevan.*marca de agua|Los videos se preparan sin estos efectos/);
 });
 

@@ -9,22 +9,13 @@ import { ADMIN_ACCESS_CAPABILITIES, ADMIN_ACCESS_DESCRIPTIONS, ADMIN_ACCESS_LABE
 import { getCurrentAdmin } from "@/lib/auth";
 import { telegramIdentityLabel } from "@/lib/telegram";
 import { AdminPageHeading, AdminShell } from "../_components";
+import "./administrators.css";
+import { AdminAccessForm } from "./AdminAccessForm";
+import { ADMIN_ACCESS_NOTICES } from "@/lib/admin-access-validation";
 
 export const dynamic = "force-dynamic";
 
-const notices: Record<string, string> = {
-  created: "El acceso quedó autorizado. La persona podrá entrar con ese usuario de GitHub.",
-  updated: "El nivel de acceso fue actualizado.",
-  revoked: "El acceso fue revocado y todas sus sesiones quedaron cerradas.",
-  reactivated: "El acceso fue reactivado.",
-  sessions_revoked: "Todas las sesiones de esa persona quedaron cerradas.",
-  duplicate: "Ese usuario de GitHub ya tiene un acceso activo.",
-  email_conflict: "Ese correo ya pertenece a una cuenta de anunciante o tester. Debes resolver esa cuenta antes de reservarlo para administración.",
-  email_duplicate: "Ese correo ya está reservado para otra identidad administrativa.",
-  invalid: "Revisa el usuario de GitHub y el nivel seleccionado.",
-  protected: "La identidad propietaria está protegida y no puede modificarse desde el panel.",
-  missing: "Ese acceso ya no existe.",
-};
+const notices = ADMIN_ACCESS_NOTICES;
 
 function instant(value: string) {
   return value.includes("T") ? value : `${value.replace(" ", "T")}Z`;
@@ -82,7 +73,7 @@ export default async function AdministratorsPage({ searchParams }: { searchParam
       description="Autoriza identidades de GitHub, limita lo que puede hacer cada persona y revoca accesos de forma inmediata."
       backHref="/admin"
     />
-    {query.notice && notices[query.notice] && <p className={query.notice === "invalid" || query.notice === "duplicate" || query.notice === "email_conflict" || query.notice === "email_duplicate" || query.notice === "protected" || query.notice === "missing" ? "admin-error" : "admin-success"} role="status">{notices[query.notice]}</p>}
+    {query.notice && notices[query.notice] && <p className={["created", "updated", "login_updated", "reactivated", "revoked", "sessions_revoked"].includes(query.notice) ? "admin-success" : "admin-error"} role="status">{notices[query.notice]}</p>}
     <section className="admin-access-summary" aria-label="Resumen de accesos">
       <div><span>Activos</span><strong>{active}</strong></div>
       <div><span>Sin primer ingreso</span><strong>{pending}</strong></div>
@@ -95,17 +86,7 @@ export default async function AdministratorsPage({ searchParams }: { searchParam
         <h2>Agregar una persona</h2>
         <span>Escribe su usuario exacto y un correo que GitHub muestre como verificado. Ese correo quedará reservado para administración y no podrá usarse a la vez en una cuenta de anunciante o tester.</span>
       </div>
-      <form action="/api/admin/administradores" method="post">
-        <label>Usuario de GitHub<div className="admin-access-login-field"><span aria-hidden="true">@</span><input name="github_login" required minLength={1} maxLength={39} autoCapitalize="none" autoCorrect="off" spellCheck={false} placeholder="usuario-github" /></div></label>
-        <label>Correo verificado en GitHub<input name="protected_email" type="email" required maxLength={160} autoComplete="off" placeholder="persona@correo.com" /><small>Al ingresar, GitHub deberá confirmar exactamente este correo.</small></label>
-        <label>Nivel de acceso<select name="access_level" defaultValue="moderator">
-          <option value="moderator">Moderación</option>
-          <option value="administrator">Administrador</option>
-          <option value="editor">Noticias</option>
-          <option value="support">Soporte</option>
-        </select></label>
-        <ActionButton className="button button-primary" type="submit">Autorizar acceso</ActionButton>
-      </form>
+      <AdminAccessForm />
       <details className="admin-access-level-help">
         <summary>Qué permite cada nivel</summary>
         <dl>{Object.entries(ADMIN_ACCESS_DESCRIPTIONS).filter(([level]) => level !== "owner").map(([level, description]) => <div key={level}><dt>{ADMIN_ACCESS_LABELS[level as keyof typeof ADMIN_ACCESS_LABELS]}</dt><dd>{description}</dd></div>)}</dl>
@@ -133,6 +114,7 @@ export default async function AdministratorsPage({ searchParams }: { searchParam
               : "Disponible después del primer ingreso"}</dd></div>
         </dl>
         {!grant.isProtectedOwner && <div className="admin-access-actions">
+          {grant.isActive && !grant.userId && <details className="admin-access-login-correction"><summary>Corregir usuario de la invitación</summary><p>Solo antes del primer ingreso. Conserva el correo y el nivel de acceso; comprueba el usuario real debajo del nombre visible en GitHub.</p><form action={`/api/admin/administradores/${encodeURIComponent(grant.id)}`} method="post"><input type="hidden" name="intent" value="login" /><input type="hidden" name="previous_login" value={grant.githubLogin} /><label>Usuario real de GitHub<input name="github_login" defaultValue={grant.githubLogin} required maxLength={40} autoCapitalize="none" autoCorrect="off" spellCheck={false} /></label><ActionButton className="button button-outline" type="submit">Guardar usuario de GitHub</ActionButton></form></details>}
           <form action={`/api/admin/administradores/${encodeURIComponent(grant.id)}`} method="post">
             <input type="hidden" name="intent" value="level" />
             <label><span>Nivel</span><select name="access_level" defaultValue={grant.accessLevel}>

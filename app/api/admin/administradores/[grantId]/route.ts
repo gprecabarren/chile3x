@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { adminGithubAccess, authSessions } from "@/db/schema";
@@ -6,6 +6,7 @@ import { recordAdminAudit } from "@/lib/admin-audit";
 import { ADMIN_ACCESS_LEVELS, adminHasCapability, isAdminAccessLevel } from "@/lib/admin-permissions";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { hasPublicAccountEmail } from "@/lib/admin-email";
+import { lookupGithubAccount, normalizeGithubLogin } from "@/lib/admin-access-validation";
 
 const ASSIGNABLE_LEVELS = ADMIN_ACCESS_LEVELS.filter((level) => level !== "owner");
 
@@ -40,6 +41,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   // their own browser. Recovery remains possible only through a reviewed D1
   // migration, never through a normal panel request.
   if (grant.isProtectedOwner || grant.userId === admin.id) return destination(request, "protected");
+
+  if (intent === "login") {
+    if (grant.userId || !grant.isActive || String(form.get("previous_login") ?? "") !== grant.githubLogin) return destination(request, "identity_bound");
+    const account = await lookupGithubAccount(normalizeGithubLogin(String(form.get("github_login") ?? "")));
+    if ("error" in account) return destination(request, account.error);
+    let changed;
+    try {
+      changed = await db.update(adminGithubAccess).set({ githubLogin: account.login, githubUserId: account.id, updatedAt: new Date().toISOString() }).where(and(eq(adminGithubAccess.id, grant.id), eq(adminGithubAccess.isActive, true), isNull(adminGithubAccess.userId), eq(adminGithubAccess.githubLogin, grant.githubLogin), grant.githubUserId ? eq(adminGithubAccess.githubUserId, grant.githubUserId) : isNull(adminGithubAccess.githubUserId))).returning({ id: adminGithubAccess.id });
+    } catch { return destination(request, "duplicate"); }
+    if (!changed.length) return destination(request, "identity_bound");
+    await recordAdminAudit(admin, { category: "access", action: "admin.grant_login_correct", entityType: "admin", entityId: grant.id, entityLabel: `@${account.login}`, summary: `Corrigió el usuario de GitHub de una invitación sin primer ingreso.`, before: { githubLogin: grant.githubLogin }, after: { githubLogin: account.login }, metadata: { emailAndLevelUnchanged: true } });
+    return destination(request, "login_updated");
+  }
 
   if (intent === "level") {
     const accessLevel = String(form.get("access_level") ?? "");

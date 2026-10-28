@@ -6,7 +6,7 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
 test("administrative invitations reserve a unique verified GitHub email", async () => {
   const [page, route, callback, schema] = await Promise.all([
-    read("app/admin/administradores/page.tsx"),
+    read("app/admin/administradores/AdminAccessForm.tsx"),
     read("app/api/admin/administradores/route.ts"),
     read("app/api/auth/github/callback/route.ts"),
     read("db/schema.ts"),

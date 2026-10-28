@@ -6,6 +6,7 @@ import { recordAdminAudit } from "@/lib/admin-audit";
 import { ADMIN_ACCESS_LEVELS, adminHasCapability, isAdminAccessLevel } from "@/lib/admin-permissions";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { hasPublicAccountEmail } from "@/lib/admin-email";
+import { ADMIN_ACCESS_NOTICES, lookupGithubAccount, normalizeGithubLogin, validAdminEmail, validGithubLogin } from "@/lib/admin-access-validation";
 
 const ASSIGNABLE_LEVELS = ADMIN_ACCESS_LEVELS.filter((level) => level !== "owner");
 
@@ -13,13 +14,10 @@ function isAssignableLevel(value: unknown): value is Exclude<(typeof ADMIN_ACCES
   return isAdminAccessLevel(value) && value !== "owner";
 }
 
-function validGithubLogin(value: string) {
-  return /^(?=.{1,39}$)[a-z\d](?:[a-z\d]|-(?=[a-z\d]))*$/.test(value);
-}
-
 function destination(request: Request, notice: string) {
   const url = new URL("/admin/administradores", request.url);
   url.searchParams.set("notice", notice);
+  if (request.headers.get("accept")?.includes("application/json")) return NextResponse.json({ notice, message: ADMIN_ACCESS_NOTICES[notice], ...(["created", "reactivated"].includes(notice) ? { redirectTo: url.pathname + url.search } : {}) }, { status: ["created", "reactivated"].includes(notice) ? 200 : 400, headers: { "cache-control": "no-store" } });
   return NextResponse.redirect(url, 303);
 }
 
@@ -35,12 +33,16 @@ export async function POST(request: NextRequest) {
   if (!adminHasCapability(admin, "admins.manage")) return new Response("No tienes permiso para administrar accesos.", { status: 403 });
 
   const form = await request.formData();
-  const githubLogin = String(form.get("github_login") ?? "").trim().toLowerCase();
-  const protectedEmail = String(form.get("protected_email") ?? "").trim().toLowerCase().slice(0, 160);
+  const githubLogin = normalizeGithubLogin(String(form.get("github_login") ?? ""));
+  const protectedEmail = String(form.get("protected_email") ?? "").trim().toLowerCase();
   const accessLevel = String(form.get("access_level") ?? "moderator");
-  if (!validGithubLogin(githubLogin) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(protectedEmail) || !isAssignableLevel(accessLevel) || !ASSIGNABLE_LEVELS.includes(accessLevel)) {
+  if (!validGithubLogin(githubLogin)) return destination(request, "invalid_login");
+  if (!validAdminEmail(protectedEmail)) return destination(request, "invalid_email");
+  if (!isAssignableLevel(accessLevel) || !ASSIGNABLE_LEVELS.includes(accessLevel)) {
     return destination(request, "invalid");
   }
+  const account = await lookupGithubAccount(githubLogin);
+  if ("error" in account) return destination(request, account.error);
 
   const db = await getDb();
   const [[existing], [publicAccountConflict], [reservedGrant], [reservedIdentity]] = await Promise.all([
@@ -54,6 +56,7 @@ export async function POST(request: NextRequest) {
   ]);
 
   if (existing?.isProtectedOwner) return destination(request, "protected");
+  if (existing?.githubUserId && existing.githubUserId !== account.id) return destination(request, "identity_bound");
   if (existing?.isActive) return destination(request, "duplicate");
   if (publicAccountConflict) return destination(request, "email_conflict");
   if (await hasPublicAccountEmail(protectedEmail)) return destination(request, "email_conflict");
@@ -66,6 +69,7 @@ export async function POST(request: NextRequest) {
     const now = new Date().toISOString();
     try {
       await db.update(adminGithubAccess).set({
+        githubUserId: account.id,
         accessLevel,
         protectedEmail,
         isActive: true,
@@ -95,6 +99,7 @@ export async function POST(request: NextRequest) {
     await db.insert(adminGithubAccess).values({
       id,
       githubLogin,
+      githubUserId: account.id,
       protectedEmail,
       accessLevel,
       invitedBy: admin.id,

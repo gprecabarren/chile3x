@@ -29,7 +29,7 @@ type GitHubEmail = {
   verified: boolean;
 };
 
-async function accessDenied(request: Request, reason = "authorization") {
+async function accessDenied(request: Request, reason = "authorization", diagnostic?: { cause: string; githubLogin: string }) {
   if ((reason === "oauth_invalid" || reason === "oauth_provider") && await getCurrentAdmin()) {
     const response = NextResponse.redirect(new URL("/admin", request.url));
     response.headers.set("cache-control", "no-store");
@@ -37,7 +37,7 @@ async function accessDenied(request: Request, reason = "authorization") {
   }
   const url = new URL("/admin/acceso-denegado", request.url);
   if (reason) url.searchParams.set("reason", reason);
-  await recordOperationalEvent({ category: "authentication", eventName: "admin.github_login", outcome: "failure", detail: "El inicio administrativo no se completó.", metadata: { reason } });
+  await recordOperationalEvent({ category: "authentication", eventName: "admin.github_login", outcome: "failure", detail: "El inicio administrativo no se completó.", metadata: { reason, ...diagnostic } });
   const response = NextResponse.redirect(url);
   response.headers.set("cache-control", "no-store");
   response.cookies.delete({ name: OAUTH_STATE_COOKIE, path: "/api/auth/github" });
@@ -144,11 +144,11 @@ export async function GET(request: NextRequest) {
     || !administrativeEmail
     || (grant.protectedEmail && !verifiedEmails.includes(grant.protectedEmail))
   ) {
-    return accessDenied(request);
+    return accessDenied(request, "authorization", { githubLogin, cause: !grant ? "no_active_grant" : grant.githubUserId && grant.githubUserId !== githubUserId ? "github_identity_mismatch" : "verified_email_mismatch" });
   }
 
   const publicAccountConflict = await hasPublicAccountEmail(administrativeEmail);
-  if (publicAccountConflict) return accessDenied(request, "email_conflict");
+  if (publicAccountConflict) return accessDenied(request, "email_conflict", { githubLogin, cause: "public_account_email_conflict" });
 
   if (grant.userId) {
     const [grantedAdmin] = await db.select({ id: users.id, email: users.email, username: users.username, displayName: users.displayName, role: users.role })
@@ -190,7 +190,7 @@ export async function GET(request: NextRequest) {
     if (createdAdmin?.role === "admin") admin = { ...createdAdmin, role: "admin" };
   }
 
-  if (!admin) return accessDenied(request);
+  if (!admin) return accessDenied(request, "authorization", { githubLogin, cause: "inactive_admin_account" });
 
   const now = new Date().toISOString();
   const [existingIdentity] = await db.select({ id: adminGithubIdentities.id })

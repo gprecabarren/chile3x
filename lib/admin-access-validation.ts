@@ -24,17 +24,3 @@ export const ADMIN_ACCESS_NOTICES: Record<string, string> = {
   identity_bound: "Esta persona ya ingresó o la invitación cambió. Recarga la página; una identidad vinculada no puede reasignarse.",
   protected: "La identidad propietaria está protegida y no puede modificarse desde el panel.", missing: "Ese acceso ya no existe.",
 };
-
-/** Public lookup proves existence only. Email ownership is verified by OAuth /user/emails. */
-export async function lookupGithubAccount(login: string, fetcher: typeof fetch = fetch): Promise<{ login: string; id: string } | { error: string }> {
-  if (!validGithubLogin(login)) return { error: "invalid_login" };
-  try {
-    const response = await fetcher(`https://api.github.com/users/${encodeURIComponent(login)}`, { headers: { accept: "application/vnd.github+json", "user-agent": "Chile3X-Administration", "x-github-api-version": "2026-03-10" }, signal: AbortSignal.timeout(8_000), cache: "no-store" });
-    if (response.status === 404) return { error: "github_missing" };
-    if (!response.ok) return { error: "github_unavailable" };
-    const account = await response.json() as { login?: string; id?: number; type?: string };
-    if (account.type === "Organization") return { error: "github_organization" };
-    if (account.type !== "User" || !Number.isSafeInteger(account.id) || Number(account.id) <= 0 || typeof account.login !== "string" || account.login.toLowerCase() !== login) return { error: "github_unavailable" };
-    return { login: account.login.toLowerCase(), id: String(account.id) };
-  } catch { return { error: "github_unavailable" }; }
-}

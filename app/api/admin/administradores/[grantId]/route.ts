@@ -6,7 +6,8 @@ import { recordAdminAudit } from "@/lib/admin-audit";
 import { ADMIN_ACCESS_LEVELS, adminHasCapability, isAdminAccessLevel } from "@/lib/admin-permissions";
 import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { hasPublicAccountEmail } from "@/lib/admin-email";
-import { lookupGithubAccount, normalizeGithubLogin } from "@/lib/admin-access-validation";
+import { normalizeGithubLogin } from "@/lib/admin-access-validation";
+import { lookupGithubAccount } from "@/lib/admin-github-account";
 
 const ASSIGNABLE_LEVELS = ADMIN_ACCESS_LEVELS.filter((level) => level !== "owner");
 

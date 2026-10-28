@@ -6,12 +6,13 @@ import { stripTypeScriptTypes } from 'node:module';
 import { drizzle } from 'drizzle-orm/d1';
 import { getTableColumns } from 'drizzle-orm';
 import { users } from '../db/schema.ts';
-import { lookupGithubAccount, normalizeGithubLogin, validAdminEmail, validGithubLogin } from '../lib/admin-access-validation.ts';
+import { normalizeGithubLogin, validAdminEmail, validGithubLogin } from '../lib/admin-access-validation.ts';
 const file=path=>new URL('../'+path,import.meta.url);
 let state;
 const stub='data:text/javascript,'+encodeURIComponent(`
 const s=()=>globalThis.__adminAccessQA;
 export const NextRequest=Request;
+export async function lookupGithubAccount(...args){return s().lookup(...args);}
 export const NextResponse={json:(body,options)=>Response.json(body,options),redirect(url,status=307){const r=new Response(null,{status,headers:{location:String(url)}});r.cookies={set:(...args)=>s().cookies.push(args),delete:()=>{}};return r;}};
 export async function getDb(){return s().db;} export async function getCurrentAdmin(){return s().admin;}
 export async function hasPublicAccountEmail(){return s().publicConflict;}
@@ -23,6 +24,7 @@ export async function recordOperationalEvent(event){s().events.push(event);}
 export function assertSameOrigin(request){if(request.headers.get('origin')!==new URL(request.url).origin)throw Error('origin');}
 `);
 async function route(path){let source=await readFile(file(path),'utf8');source=source.replace(/from "([^"\n]+)"/g,(_m,p)=>'from '+JSON.stringify(p==='drizzle-orm'?import.meta.resolve(p):p==='@/db/schema'?file('db/schema.ts').href:p==='@/lib/admin-access-validation'?file('lib/admin-access-validation.ts').href:p==='@/lib/admin-permissions'?file('lib/admin-permissions.ts').href:stub));return import('data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(source)).toString('base64'));}
+const {lookupGithubAccount}=await route('lib/admin-github-account.ts');
 const [start,callback,invite,edit]=await Promise.all(['app/api/auth/github/start/route.ts','app/api/auth/github/callback/route.ts','app/api/admin/administradores/route.ts','app/api/admin/administradores/[grantId]/route.ts'].map(route));
 function fixture(){
  const sqlite=new DatabaseSync(':memory:');sqlite.exec(`CREATE TABLE users(id TEXT PRIMARY KEY,email TEXT UNIQUE,username TEXT,display_name TEXT,role TEXT,is_active INTEGER DEFAULT 1,email_verified_at TEXT);
@@ -30,7 +32,7 @@ function fixture(){
  CREATE TABLE admin_github_identities(id TEXT PRIMARY KEY,user_id TEXT UNIQUE,github_user_id TEXT UNIQUE,github_login TEXT UNIQUE,github_email TEXT UNIQUE,last_login_at TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP);`);
  sqlite.exec('DROP TABLE users; CREATE TABLE users('+Object.values(getTableColumns(users)).map(column=>'"'+column.name+'" '+column.getSQLType()+(column.primary?' PRIMARY KEY':column.name==='email'?' UNIQUE':'')).join(',')+');');
  const binding={prepare(sql){const query={bind(...values){return {async raw(){const p=sqlite.prepare(sql);p.setReturnArrays(true);return p.all(...values);},async all(){return {results:sqlite.prepare(sql).all(...values)};},async run(){return {meta:sqlite.prepare(sql).run(...values)};}};}};return query;}};
- state={sqlite,db:drizzle(binding),admin:null,publicConflict:false,sessions:[],cookies:[],audit:[],events:[],fetches:0,github:{login:'test-real-login',id:101,type:'User',name:'Visible name'},emails:[{email:'team@example.test',primary:false,verified:true}]};globalThis.__adminAccessQA=state;
+ state={sqlite,db:drizzle(binding),lookup:lookupGithubAccount,admin:null,publicConflict:false,sessions:[],cookies:[],audit:[],events:[],fetches:0,github:{login:'test-real-login',id:101,type:'User',name:'Visible name'},emails:[{email:'team@example.test',primary:false,verified:true}]};globalThis.__adminAccessQA=state;
  const previous=globalThis.fetch;globalThis.fetch=async url=>{state.fetches++;if(String(url).includes('/users/'))return state.lookupResponse??Response.json({...state.github,login:new URL(url).pathname.split('/').at(-1)});if(String(url).endsWith('/access_token'))return Response.json({access_token:'local-only'});if(String(url).endsWith('/user/emails'))return Response.json(state.emails);return Response.json(state.github);};
  return ()=>{globalThis.fetch=previous;sqlite.close();};
 }
@@ -45,8 +47,11 @@ test('admin input accepts ordinary private email/optional @ and rejects malforme
  for(const email of ['a@localhost','.a@test.cl','a..b@test.cl','a.@test.cl','a@-test.cl','a@test..cl','a b@test.cl','a@test.cl\n','a'.repeat(65)+'@test.cl'])assert.ok(!validAdminEmail(email));
 });
 test('lookup fails closed for missing accounts, organizations, rate limits and network failures',async()=>{
+ const close=fixture();try{
  for(const [response,error]of[[new Response(null,{status:404}),'github_missing'],[Response.json({type:'Organization'}),'github_organization'],[new Response(null,{status:403}),'github_unavailable']])assert.deepEqual(await lookupGithubAccount('test-user',async()=>response),{error});
  assert.deepEqual(await lookupGithubAccount('test-user',async()=>{throw Error('offline');}),{error:'github_unavailable'});
+ const account=await lookupGithubAccount('test-user',async(url,options)=>{assert.equal(new URL(url).hostname,'api.github.com');assert.ok(options.headers.authorization.startsWith('Basic '));assert.ok(!url.includes('local-secret'));assert.equal(options.redirect,'error');return Response.json({type:'User',id:101,login:'test-user'});});assert.equal(account.login,'test-user');assert.ok(!JSON.stringify(state.events).includes('local-secret'));
+ }finally{close();}
 });
 test('explicit account recovery opens the GitHub picker with fresh secure OAuth state',async()=>{
  const close=fixture();try {const r=await start.GET(new Request('https://local.test/api/auth/github/start?select_account=1'));const url=new URL(r.headers.get('location'));assert.equal(url.searchParams.get('prompt'),'select_account');assert.equal(url.searchParams.get('state'),'local-opaque-state');assert.equal(r.headers.get('cache-control'),'no-store');assert.ok(state.cookies.every(([value])=>value.httpOnly&&value.secure&&value.sameSite==='lax'));}finally{close();}

@@ -50,7 +50,7 @@ test('lookup fails closed for missing accounts, organizations, rate limits and n
  const close=fixture();try{
  for(const [response,error]of[[new Response(null,{status:404}),'github_missing'],[Response.json({type:'Organization'}),'github_organization'],[new Response(null,{status:403}),'github_unavailable']])assert.deepEqual(await lookupGithubAccount('test-user',async()=>response),{error});
  assert.deepEqual(await lookupGithubAccount('test-user',async()=>{throw Error('offline');}),{error:'github_unavailable'});
- const account=await lookupGithubAccount('test-user',async(url,options)=>{assert.equal(new URL(url).hostname,'api.github.com');assert.ok(options.headers.authorization.startsWith('Basic '));assert.ok(!url.includes('local-secret'));assert.equal(options.redirect,'error');return Response.json({type:'User',id:101,login:'test-user'});});assert.equal(account.login,'test-user');assert.ok(!JSON.stringify(state.events).includes('local-secret'));
+ const account=await lookupGithubAccount('test-user',async(url,options)=>{assert.equal(new URL(url).hostname,'api.github.com');assert.ok(options.headers.authorization.startsWith('Basic '));assert.ok(!url.includes('local-secret'));assert.equal(options.redirect,'manual');return Response.json({type:'User',id:101,login:'test-user'});});assert.equal(account.login,'test-user');assert.ok(!JSON.stringify(state.events).includes('local-secret'));
  }finally{close();}
 });
 test('explicit account recovery opens the GitHub picker with fresh secure OAuth state',async()=>{

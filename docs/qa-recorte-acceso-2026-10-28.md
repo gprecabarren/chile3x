@@ -23,9 +23,11 @@ La comprobación adicional cubre un original corto compatible con hash idéntico
 
 Las salidas de ejecución, capturas y fixtures permanecen fuera del repositorio. El reporte de compilación/pruebas y la sincronización de publicación se registran por separado. No se incluyen datos privados del incidente en este documento, ni se afirma que una prueba aislada equivale al ingreso real de la persona afectada.
 
-La compilación y batería completa finalizaron con **564 pruebas aprobadas, sin fallos**. TypeScript y ESLint de los archivos afectados aprobaron. Se retiraron mediante las APIs locales los medios, muestra y cuentas desechables; se detuvieron desarrollo/proxies y se eliminó la configuración efímera de QA antes de la compilación final.
+La compilación y batería completa finalizaron con **565 pruebas aprobadas, sin fallos**. TypeScript y ESLint de los archivos afectados aprobaron. Se retiraron mediante las APIs locales los medios, muestra y cuentas desechables; se detuvieron desarrollo/proxies y se eliminó la configuración efímera de QA antes de la compilación final.
 
 La primera comprobación del formulario publicado detectó que la consulta de cuenta no podía completarse desde Cloudflare; el guardado se bloqueó sin cambiar la invitación. La consulta se trasladó a un módulo exclusivo del servidor y utiliza la autenticación de la aplicación OAuth ya configurada, según la [documentación de GitHub para datos públicos](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api#primary-rate-limit-for-oauth-apps). Las credenciales viajan únicamente en la cabecera dirigida a `api.github.com`, nunca en URLs ni código del navegador. Se registran categorías de indisponibilidad, estado HTTP y límites sin guardar secretos ni respuestas del proveedor. No se reintenta automáticamente ante límites de GitHub.
+
+La repetición con diagnóstico y una prueba directa en workerd identificaron un modo de redirección incompatible: Workers admite `follow`/`manual`, y rechaza `error`. La consulta utiliza ahora `manual` y bloquea respuestas redirigidas sin reenviar las credenciales. La prueba de integración en workerd ejecuta el helper real con un proveedor simulado, sin red: cuenta válida, inexistente, organización, límite y redirección a otro host. Comprueba la cabecera de aplicación y que ningún secreto aparezca en URL, mensajes o eventos.
 
 ## Publicación
 

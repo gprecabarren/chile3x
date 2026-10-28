@@ -16,7 +16,7 @@ export async function lookupGithubAccount(login: string, fetcher: typeof fetch =
     // Keep credentials in the server header, never in URLs or browser code.
     const response = await fetcher(`https://api.github.com/users/${encodeURIComponent(login)}`, {
       headers: { accept: "application/vnd.github+json", authorization: `Basic ${btoa(`${config.clientId}:${config.clientSecret}`)}`, "user-agent": "Chile3X-Administration", "x-github-api-version": "2026-03-10", "cache-control": "no-cache" },
-      signal: AbortSignal.timeout(8_000), redirect: "error",
+      signal: AbortSignal.timeout(8_000), redirect: "manual",
     });
     if (response.status === 404) return { error: "github_missing" };
     if (!response.ok) return unavailable(response.status === 429 || response.headers.get("x-ratelimit-remaining") === "0" ? "rate_limit" : "provider_response", response.status);

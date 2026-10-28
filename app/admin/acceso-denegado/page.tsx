@@ -1,7 +1,8 @@
-import { ActionAnchor } from "@/app/ActionButton";
+import { ActionAnchor, ActionButton } from "@/app/ActionButton";
 import Link from "@/app/NavigationLink";
 import { getCurrentAdmin } from "@/lib/auth";
 import { ResumeAdminSession } from "./ResumeAdminSession";
+import { RestartGithubLogin } from "./RestartGithubLogin";
 import "./access-denied.css";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,7 @@ export default async function AccessDeniedPage({ searchParams }: { searchParams:
   // Always revalidate the administrative session; never trust a public account.
   const loginError = reason === "oauth_invalid" || reason === "oauth_provider";
   const admin = await getCurrentAdmin();
+  if (reason === "github_retry") return <main className="admin-denied"><p>CHILE3X · ADMINISTRACIÓN</p><RestartGithubLogin /></main>;
   // vinext probes page components with empty parameters before real rendering.
   // A query-dependent server redirect would incorrectly swallow permission
   // denials in that probe. Resume only after the actual page is hydrated.
@@ -24,7 +26,8 @@ export default async function AccessDeniedPage({ searchParams }: { searchParams:
       {resumeSession || loginError ? <ResumeAdminSession initialConfirmed={resumeSession} failureMessage={loginMessage} /> : <><h1>Este acceso no está autorizado.</h1><span>{emailConflict ? "El correo verificado de esta identidad de GitHub ya pertenece a una cuenta de anunciante o tester. Por seguridad, un mismo correo no puede usarse en ambos paneles." : reason === "permission" ? "No tienes el permiso necesario para esta sección. Puedes volver al panel o solicitar ese permiso a la persona propietaria." : "Tu identidad de GitHub no tiene acceso a esta sección o su autorización fue revocada. Si formas parte del equipo, solicita el permiso correspondiente a la persona propietaria."}</span></>}
       {!admin && <p className="admin-denied-account-help">Comprueba que elegiste el usuario de GitHub autorizado por Chile3X y que esa cuenta tiene verificado el correo administrativo. El correo de autorización de GitHub confirma la conexión de la aplicación; el acceso al panel depende de la autorización de Chile3X.</p>}
       <div className="admin-denied-actions">
-        {admin ? <ActionAnchor className="button button-primary" href="/admin">Volver al panel</ActionAnchor> : <ActionAnchor className="button button-primary" href="/api/auth/github/start?select_account=1">Elegir cuenta de GitHub</ActionAnchor>}
+        {admin && <ActionAnchor className="button button-primary" href="/admin">Volver al panel</ActionAnchor>}
+        <form action="/api/auth/logout" method="post"><input type="hidden" name="intent" value="github_retry" /><ActionButton type="submit" className={`button ${admin ? "button-outline" : "button-primary"}`}>Elegir otra cuenta de GitHub</ActionButton></form>
         <Link className="button button-outline" href="/">Ir al sitio</Link>
       </div>
     </main>

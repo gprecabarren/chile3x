@@ -1,5 +1,6 @@
 .admin-denied > .admin-denied-account-help { color: #b8c3d4; font-size: 14px; line-height: 1.6; letter-spacing: normal; text-transform: none; }
 .admin-denied .admin-denied-actions { flex-wrap: wrap; gap: 10px; }
+.admin-denied-actions > form { margin:0; max-width:100%; }
 @media (max-width: 620px) {
   .admin-denied h1 { font-size: clamp(32px, 9vw, 45px); overflow-wrap: anywhere; }
   .admin-denied .admin-denied-actions .button { max-width: 100%; white-space: normal; }

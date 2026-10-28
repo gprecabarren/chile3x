@@ -8,7 +8,7 @@ import type { AdminAccessLevel } from "@/lib/admin-permissions";
 import { sessionContextFromHeaders, sessionContextFromRequest, type SessionAuthMethod } from "@/lib/session-context";
 import { emailVerificationState, type EmailVerificationRecord } from "@/lib/email-verification-policy";
 import { hasAdministrativeEmailConflict, isReservedPublicAccountIdentity } from "@/lib/admin-email";
-import { ADMIN_SESSION_COOKIE, USER_SESSION_COOKIE, browserSessionKey, browserSessionState, parseSessionToken, sessionMatchesMode, type SessionMode } from "@/lib/session-policy";
+import { ADMIN_SESSION_COOKIE, USER_SESSION_COOKIE, ADMIN_OAUTH_STATE_COOKIE, ADMIN_OAUTH_RETURN_TO_COOKIE, ADMIN_OAUTH_COOKIE_PATH, browserSessionKey, browserSessionState, parseSessionToken, sessionMatchesMode, type SessionMode } from "@/lib/session-policy";
 
 const ADMIN_SESSION_DURATION_SECONDS = 60 * 60 * 12;
 const USER_SESSION_DURATION_SECONDS = 60 * 60 * 24 * 30;
@@ -244,6 +244,7 @@ export async function revokeAuthAttemptSessions(value: string | undefined) {
 
 export function clearSessionCookies(response: NextResponse) {
   for (const name of [ADMIN_SESSION_COOKIE, USER_SESSION_COOKIE]) response.cookies.set({ name, value: "", ...sessionCookieOptions(0) });
+  for (const name of [ADMIN_OAUTH_STATE_COOKIE, ADMIN_OAUTH_RETURN_TO_COOKIE]) response.cookies.set({ name, value: "", ...sessionCookieOptions(0), path: ADMIN_OAUTH_COOKIE_PATH });
 }
 
 function setExclusiveSessionCookie(response: NextResponse, mode: SessionMode, token: string) {

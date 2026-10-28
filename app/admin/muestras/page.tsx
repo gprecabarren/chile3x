@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentAdmin } from "@/lib/auth";
-import { canManageSamples, listPrivateSamples } from "@/lib/private-samples";
+import { canManageSamples, listPrivateSamples, listPrivateSampleCreators } from "@/lib/private-samples";
+import { boundedSampleFilter, sampleCreatorLabel } from "@/lib/private-sample-filters";
 import { SAMPLE_PROVENANCES, SAMPLE_PROVENANCE_LABELS, SAMPLE_STATUSES, SAMPLE_STATUS_LABELS, sampleListStatus } from "@/lib/private-sample-policy";
 import { adminAuditDate, adminAuditInstant } from "@/lib/admin-audit-date";
 import { privatePageMetadata } from "@/lib/seo";
@@ -14,6 +15,7 @@ import { SampleFilters } from "./SampleFilters";
 import { CopySampleLink, SampleLinkStatus } from "./CopySampleLink";
 import { SampleDeleteAction } from "./SampleDeleteAction";
 import { AdminShell, AdminPageHeading } from "../_components";
+import "./samples-list.css";
 
 export const dynamic = "force-dynamic";
 export const metadata = privatePageMetadata({ title: "Muestras privadas", description: "Presentaciones privadas de anuncios, sin crear cuentas ni publicaciones públicas.", path: "/admin/muestras" });
@@ -26,7 +28,7 @@ const notices: Record<string, string> = {
   contact_cleared: "Se quitó la marca de contacto. La muestra vuelve a los pendientes.",
 };
 
-export default async function Page({ searchParams }: { searchParams: Promise<{ q?: string; phone?: string; region?: string; city?: string; gender?: string; provenance?: string; sample_status?: string; status?: string; view?: string; contact?: string; notice?: string }> }) {
+export default async function Page({ searchParams }: { searchParams: Promise<{ q?: string; phone?: string; region?: string; city?: string; gender?: string; provenance?: string; sample_status?: string; status?: string; view?: string; contact?: string; notice?: string; creator?: string }> }) {
   const admin = await getCurrentAdmin();
   if (!admin) redirect("/api/auth/github/start?return_to=/admin/muestras");
   if (!canManageSamples(admin)) redirect("/admin/acceso-denegado?reason=permission");
@@ -43,7 +45,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
   const view = query.view === "trash" || requestedStatus === "trashed" ? "trash" : "active";
   const status = view === "trash" ? "trashed" : SAMPLE_STATUSES.find(value => value === requestedStatus && value !== "trashed") ?? "";
   const contact = query.contact === "pending" || query.contact === "contacted" ? query.contact : "all";
-  const rows = await listPrivateSamples({ q, phone, region, city, gender, provenance, status, view, contact });
+  const creator = boundedSampleFilter(query.creator, 120);
+  const [rows, creators] = await Promise.all([listPrivateSamples({ q, phone, region, city, gender, provenance, status, view, contact, creator }), listPrivateSampleCreators()]);
   // eslint-disable-next-line react-hooks/purity -- Request-time expiry in a dynamic server page.
   const now = Date.now();
   const filterQuery = new URLSearchParams();
@@ -55,6 +58,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
   if (provenance) filterQuery.set("provenance", provenance);
   if (status && status !== "trashed") filterQuery.set("sample_status", status);
   if (contact !== "all") filterQuery.set("contact", contact);
+  if (creator) filterQuery.set("creator", creator);
   const viewHref = (target: "active" | "trash") => {
     const values = new URLSearchParams(filterQuery);
     if (target === "trash") { values.set("view", "trash"); values.delete("sample_status"); }
@@ -73,6 +77,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
     provenance: `Procedencia: ${provenance ? SAMPLE_PROVENANCE_LABELS[provenance] : ""}`,
     sample_status: `Estado: ${status && status !== "trashed" ? SAMPLE_STATUS_LABELS[status] : ""}`,
     contact: contact === "pending" ? "Pendientes de contactar" : "Ya contactados",
+    creator: `Creador: ${sampleCreatorLabel(creators.find(item => item.id === creator)?.login)}`,
   };
   const applied = [...filterQuery.keys()].map(key => {
     const values = new URLSearchParams(returnQuery);
@@ -88,7 +93,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
     </AdminPageHeading>
     <p className="samples-help">Cada muestra tiene un plazo de 7 días. Al vencer pasa a la papelera; desde allí puedes restaurarla o eliminarla definitivamente. Compartir una presentación no publica un anuncio.</p>
     {query.notice && notices[query.notice] && <p className="admin-success" role="status">{notices[query.notice]}</p>}
-    <SampleFilters initial={{ q, phone, region, city, gender, provenance, status, contact, view }} applied={applied} clearHref={view === "trash" ? "/admin/muestras?view=trash" : "/admin/muestras"} />
+    <SampleFilters initial={{ q, phone, region, city, gender, provenance, status, contact, view, creator }} creators={creators} applied={applied} clearHref={view === "trash" ? "/admin/muestras?view=trash" : "/admin/muestras"} />
     <p className="sample-results-count" role="status">{rows.length} muestra{rows.length === 1 ? "" : "s"}{view === "trash" ? " en papelera" : ""}{filtered ? " con estos filtros" : ""}. Los contactos pendientes aparecen primero.{rows.length === 100 && " Se muestran hasta 100 resultados."}</p>
     <section className="samples-list" aria-label={view === "trash" ? "Muestras en papelera" : "Muestras privadas"}>
       {rows.map(row => {
@@ -98,7 +103,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
         const deadline = adminAuditDate(new Date(row.trashedAt ?? row.expiresAt).toISOString());
         const whatsappHref = adminWhatsappHref(row.contactWhatsapp, row.displayName);
         return <ReviewScope key={row.id} as="article" className={`sample-list-card${row.contactedAt ? " is-contacted" : ""}`} resource={`sample:${row.id}`} revision={row.revision}>
-          <header className="sample-row-heading"><div><h2>{row.displayName}</h2><p className="sample-row-location">{[row.age ? `${row.age} años` : "Edad sin definir", row.gender, row.city || "Ciudad sin definir"].filter(Boolean).join(" · ")}</p><p className="sample-row-handle">{row.handle ? `@${row.handle}` : "Sin usuario asignado"}</p></div><SampleLinkStatus id={row.id} status={rowStatus} label={SAMPLE_STATUS_LABELS[rowStatus]} /></header>
+          <header className="sample-row-heading"><div><h2>{row.displayName}</h2><p className="sample-row-location">{[row.age ? `${row.age} años` : "Edad sin definir", row.gender, row.city || "Ciudad sin definir"].filter(Boolean).join(" · ")}</p><p className="sample-row-handle">{row.handle ? `@${row.handle}` : "Sin usuario asignado"}</p><p className="sample-row-creator">Creada por <strong>{sampleCreatorLabel(row.creatorLogin)}</strong></p></div><SampleLinkStatus id={row.id} status={rowStatus} label={SAMPLE_STATUS_LABELS[rowStatus]} /></header>
           <dl className="sample-row-metadata">
             <div><dt>Procedencia</dt><dd>{SAMPLE_PROVENANCE_LABELS[row.provenance]}</dd></div>
             <div><dt>Creación</dt><dd><time dateTime={adminAuditInstant(row.createdAt)}>{adminAuditDate(row.createdAt)}</time></dd></div>

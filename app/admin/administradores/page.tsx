@@ -115,7 +115,7 @@ export default async function AdministratorsPage({ searchParams }: { searchParam
         </dl>
         {!grant.isProtectedOwner && <div className="admin-access-actions">
           {grant.isActive && !grant.userId && <details className="admin-access-login-correction"><summary>Corregir usuario de la invitación</summary><p>Solo antes del primer ingreso. Conserva el correo y el nivel de acceso; comprueba el usuario real debajo del nombre visible en GitHub.</p><form action={`/api/admin/administradores/${encodeURIComponent(grant.id)}`} method="post"><input type="hidden" name="intent" value="login" /><input type="hidden" name="previous_login" value={grant.githubLogin} /><label>Usuario real de GitHub<input name="github_login" defaultValue={grant.githubLogin} required maxLength={40} autoCapitalize="none" autoCorrect="off" spellCheck={false} /></label><ActionButton className="button button-outline" type="submit">Guardar usuario de GitHub</ActionButton></form></details>}
-          <form action={`/api/admin/administradores/${encodeURIComponent(grant.id)}`} method="post">
+          <form className="admin-access-level-form" action={`/api/admin/administradores/${encodeURIComponent(grant.id)}`} method="post">
             <input type="hidden" name="intent" value="level" />
             <label><span>Nivel</span><select name="access_level" defaultValue={grant.accessLevel}>
               <option value="moderator">Moderación</option><option value="administrator">Administrador</option><option value="editor">Noticias</option><option value="support">Soporte</option>

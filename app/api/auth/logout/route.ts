@@ -14,6 +14,14 @@ export async function POST(request: NextRequest) {
     return new Response("Solicitud no válida.", { status: 403 });
   }
 
+  // Account switching is an explicit same-origin POST, never a logout side
+  // effect of visiting the public denial page or a cross-site OAuth link.
+  let retryGithub = false;
+  if (/application\/x-www-form-urlencoded|multipart\/form-data/i.test(request.headers.get("content-type") ?? "")) {
+    try { retryGithub = (await request.formData()).get("intent") === "github_retry"; }
+    catch { return new Response("Solicitud no válida.", { status: 400 }); }
+  }
+
   const admin = await getCurrentAdmin();
   if (admin) {
     await recordAdminAudit(admin, {
@@ -26,7 +34,10 @@ export async function POST(request: NextRequest) {
     });
   }
   await deleteBrowserSessions(request);
-  const response = NextResponse.redirect(new URL("/ingresar?closed=admin", request.url), 303);
+  // Keep the POST redirect on-site: CSP form-action 'self' also checks redirect
+  // chains. A fresh document starts the provider navigation after cleanup.
+  const response = NextResponse.redirect(new URL(retryGithub ? "/admin/acceso-denegado?reason=github_retry" : "/ingresar?closed=admin", request.url), 303);
+  response.headers.set("cache-control", "no-store");
   clearSessionCookies(response);
   return response;
 }

@@ -20,6 +20,8 @@ Revisión del 27 de octubre: [paneles, herramientas de fotos, acceso y muestras]
 
 Actualización del 28 de octubre: [recorte de video e invitaciones administrativas](docs/qa-recorte-acceso-2026-10-28.md). El gestor compartido permite elegir inicio y final antes de cargar un video; las invitaciones comprueban la cuenta personal de GitHub, conservan la verificación de correo mediante OAuth y permiten corregir el usuario antes del primer ingreso.
 
+Revisión posterior del 28 de octubre: [cambio de cuenta de GitHub y creadores de muestras](docs/qa-sesiones-creadores-2026-10-28.md). El acceso normal también muestra el selector de cuentas; el reintento explícito cierra la sesión local y descarta el intento OAuth anterior. Las muestras identifican a su creador y permiten filtrar por él junto con los demás criterios.
+
 <!-- TECHNICAL_HANDOFF_START -->
 ## Guía técnica de traspaso — 24 de octubre de 2026
 

@@ -23,7 +23,7 @@ export async function recordAdminAudit(actor,event){s().audit.push(event);}
 export async function recordOperationalEvent(event){s().events.push(event);}
 export function assertSameOrigin(request){if(request.headers.get('origin')!==new URL(request.url).origin)throw Error('origin');}
 `);
-async function route(path){let source=await readFile(file(path),'utf8');source=source.replace(/from "([^"\n]+)"/g,(_m,p)=>'from '+JSON.stringify(p==='drizzle-orm'?import.meta.resolve(p):p==='@/db/schema'?file('db/schema.ts').href:p==='@/lib/admin-access-validation'?file('lib/admin-access-validation.ts').href:p==='@/lib/admin-permissions'?file('lib/admin-permissions.ts').href:stub));return import('data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(source)).toString('base64'));}
+async function route(path){let source=await readFile(file(path),'utf8');source=source.replace(/from "([^"\n]+)"/g,(_m,p)=>'from '+JSON.stringify(p==='drizzle-orm'?import.meta.resolve(p):p==='@/db/schema'?file('db/schema.ts').href:p==='@/lib/admin-access-validation'?file('lib/admin-access-validation.ts').href:p==='@/lib/admin-permissions'?file('lib/admin-permissions.ts').href:p==='@/lib/session-policy'?file('lib/session-policy.ts').href:stub));return import('data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(source)).toString('base64'));}
 const {lookupGithubAccount}=await route('lib/admin-github-account.ts');
 const [start,callback,invite,edit]=await Promise.all(['app/api/auth/github/start/route.ts','app/api/auth/github/callback/route.ts','app/api/admin/administradores/route.ts','app/api/admin/administradores/[grantId]/route.ts'].map(route));
 function fixture(){
@@ -55,6 +55,9 @@ test('lookup fails closed for missing accounts, organizations, rate limits and n
 });
 test('explicit account recovery opens the GitHub picker with fresh secure OAuth state',async()=>{
  const close=fixture();try {const r=await start.GET(new Request('https://local.test/api/auth/github/start?select_account=1'));const url=new URL(r.headers.get('location'));assert.equal(url.searchParams.get('prompt'),'select_account');assert.equal(url.searchParams.get('state'),'local-opaque-state');assert.equal(r.headers.get('cache-control'),'no-store');assert.ok(state.cookies.every(([value])=>value.httpOnly&&value.secure&&value.sameSite==='lax'));}finally{close();}
+});
+test('ordinary admin entry after logout also forces the account picker',async()=>{
+ const close=fixture();try{const response=await start.GET(new Request('https://local.test/api/auth/github/start?return_to=/admin/muestras'));const destination=new URL(response.headers.get('location'));assert.equal(destination.searchParams.get('prompt'),'select_account');assert.equal(destination.searchParams.get('scope'),'read:user user:email');assert.ok(state.cookies.some(([cookie])=>cookie.name==='chile3x_admin_oauth_return_to'&&cookie.value==='/admin/muestras'));}finally{close();}
 });
 test('a valid grant plus the protected verified private email creates the admin identity and session',async()=>{
  const close=fixture();try{grant();const r=await callback.GET(oauth());assert.equal(new URL(r.headers.get('location')).pathname,'/admin',JSON.stringify({events:state.events,users:state.sqlite.prepare('SELECT id,role,is_active FROM users').all()}));assert.equal(state.sessions.length,1);assert.ok(state.sessionCookie);assert.equal(state.sqlite.prepare('SELECT github_login FROM admin_github_identities').get().github_login,'test-real-login');assert.equal(state.audit[0].action,'admin.login');}finally{close();}

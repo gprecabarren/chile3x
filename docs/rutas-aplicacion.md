@@ -6,6 +6,8 @@ Hay **83 páginas**, **125 handlers en app/api** y **11 handlers adicionales**. 
 
 Actualización del 28 de octubre, sin rutas nuevas: `GET /api/auth/github/start?select_account=1` solicita elegir cuenta en GitHub. `POST /api/admin/administradores` comprueba formato y existencia de la cuenta y admite respuestas JSON para conservar el formulario ante errores. `POST /api/admin/administradores/[grantId]` añade `intent=login` para corregir una invitación sin cuenta vinculada; exige propietario protegido, origen válido y que el usuario anterior siga vigente. El correo y el nivel no cambian y se registra `admin.grant_login_correct`. El recorte de videos reutiliza los endpoints existentes de medios y su validación final.
 
+Revisión posterior del mismo día, sin rutas nuevas: `GET /api/auth/github/start` siempre solicita seleccionar cuenta. `POST /api/auth/logout` acepta `intent=github_retry` bajo verificación de origen; limpia las sesiones y el intento OAuth y redirige a `/admin/acceso-denegado?reason=github_retry`. Esa pantalla inicia una navegación nueva a GitHub, evitando redirecciones externas de un formulario bajo CSP. `GET /admin/muestras?creator=<userId>` filtra por creador junto con los parámetros existentes; la selección se conserva en papelera y retornos de acciones.
+
 ## Páginas
 
 | Ruta | Fuente |

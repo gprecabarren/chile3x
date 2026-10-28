@@ -12,7 +12,10 @@
 .admin-access-login-correction p { margin:12px 0; font-size:13px; line-height:1.5; color:#b9c3d3; }
 .admin-access-login-correction form { display:flex; flex-wrap:wrap; align-items:end; gap:12px; }
 .admin-access-login-correction label { display:grid; gap:8px; flex:1 1 180px; min-width:0; }
+.admin-workspace .admin-access-actions { row-gap:12px; }
+.admin-workspace .admin-access-actions > .admin-access-level-form { display:grid; grid-template-columns:minmax(120px,1fr) auto; align-items:end; gap:12px; flex-basis:100%; }
 @media (max-width: 620px) {
   .admin-workspace .admin-content .admin-access-intro { gap: 18px; }
   .admin-workspace .admin-content .admin-access-intro > form { grid-template-columns: minmax(0, 1fr); gap: 15px; }
+  .admin-workspace .admin-access-actions > .admin-access-level-form { grid-template-columns:minmax(0,1fr); gap:12px; }
 }

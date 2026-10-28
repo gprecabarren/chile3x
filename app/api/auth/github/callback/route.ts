@@ -12,9 +12,7 @@ import {
 import { recordAdminAudit } from "@/lib/admin-audit";
 import { hasPublicAccountEmail } from "@/lib/admin-email";
 import { recordOperationalEvent } from "@/lib/operations";
-
-const OAUTH_STATE_COOKIE = "chile3x_admin_oauth_state";
-const OAUTH_RETURN_TO_COOKIE = "chile3x_admin_oauth_return_to";
+import { ADMIN_OAUTH_STATE_COOKIE as OAUTH_STATE_COOKIE, ADMIN_OAUTH_RETURN_TO_COOKIE as OAUTH_RETURN_TO_COOKIE, ADMIN_OAUTH_COOKIE_PATH } from "@/lib/session-policy";
 
 type GitHubUser = {
   id: number;
@@ -40,8 +38,8 @@ async function accessDenied(request: Request, reason = "authorization", diagnost
   await recordOperationalEvent({ category: "authentication", eventName: "admin.github_login", outcome: "failure", detail: "El inicio administrativo no se completó.", metadata: { reason, ...diagnostic } });
   const response = NextResponse.redirect(url);
   response.headers.set("cache-control", "no-store");
-  response.cookies.delete({ name: OAUTH_STATE_COOKIE, path: "/api/auth/github" });
-  response.cookies.delete({ name: OAUTH_RETURN_TO_COOKIE, path: "/api/auth/github" });
+  response.cookies.delete({ name: OAUTH_STATE_COOKIE, path: ADMIN_OAUTH_COOKIE_PATH });
+  response.cookies.delete({ name: OAUTH_RETURN_TO_COOKIE, path: ADMIN_OAUTH_COOKIE_PATH });
   return response;
 }
 
@@ -251,8 +249,8 @@ export async function GET(request: NextRequest) {
   const returnTo = safeAdminReturnTo(request.cookies.get(OAUTH_RETURN_TO_COOKIE)?.value ?? null);
   const response = NextResponse.redirect(new URL(returnTo, request.url));
   response.headers.set("cache-control", "no-store");
-  response.cookies.delete({ name: OAUTH_STATE_COOKIE, path: "/api/auth/github" });
-  response.cookies.delete({ name: OAUTH_RETURN_TO_COOKIE, path: "/api/auth/github" });
+  response.cookies.delete({ name: OAUTH_STATE_COOKIE, path: ADMIN_OAUTH_COOKIE_PATH });
+  response.cookies.delete({ name: OAUTH_RETURN_TO_COOKIE, path: ADMIN_OAUTH_COOKIE_PATH });
   setAdminSessionCookie(response, sessionToken);
   return response;
   } catch {

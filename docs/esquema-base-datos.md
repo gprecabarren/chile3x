@@ -518,6 +518,8 @@ Exportación: `portalWhatsappEvents` en [schema.ts](../db/schema.ts).
 
 ### private_profile_samples
 
+Desde la revisión del 28 de octubre, el listado usa `created_by` para mostrar y filtrar al creador por su identidad administrativa. El ID de usuario es estable aunque cambie el login de GitHub. La lista de opciones cruza concesiones activas/capacidades con autores históricos, sin modificar roles, datos ni estructura SQL.
+
 Exportación: `privateProfileSamples` en [schema.ts](../db/schema.ts).
 
 **Columnas:** `id:text` PK obligatorio; `display_name:text` obligatorio; `form_json:text` obligatorio; `handle:text`; `provenance:text` obligatorio predeterminado {`sexosur`, `publiescort`, `relaxchile`, `elsilencio`, `otros`}; `revision:integer` obligatorio predeterminado; `token_hash:text`; `token_encrypted:text`; `legacy_token_hash:text`; `expires_at:integer` obligatorio; `trashed_at:integer`; `trashed_by:text`; `trash_reason:text` {`manual`, `expired`}; `contacted_at:text`; `contacted_by:text`; `contacted_by_login:text`; `created_by:text` obligatorio; `migrated_profile_id:text`; `migrated_at:text`; `created_at:text` obligatorio predeterminado; `updated_at:text` obligatorio predeterminado.

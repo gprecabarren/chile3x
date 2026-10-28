@@ -14,6 +14,7 @@ export async function POST(request: NextRequest) {
 
   await deleteBrowserSessions(request);
   const response = NextResponse.redirect(new URL("/ingresar?closed=1", request.url), 303);
+  response.headers.set("cache-control", "no-store");
   clearSessionCookies(response);
   return response;
 }

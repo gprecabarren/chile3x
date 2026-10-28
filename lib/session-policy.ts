@@ -1,4 +1,7 @@
 export const ADMIN_SESSION_COOKIE = "chile3x_admin_session";
+export const ADMIN_OAUTH_STATE_COOKIE = "chile3x_admin_oauth_state";
+export const ADMIN_OAUTH_RETURN_TO_COOKIE = "chile3x_admin_oauth_return_to";
+export const ADMIN_OAUTH_COOKIE_PATH = "/api/auth/github";
 export const USER_SESSION_COOKIE = "chile3x_user_session";
 // A host-only, HttpOnly random coordination key, never an authentication token.
 export const BROWSER_SESSION_COOKIE = "__Host-chile3x_browser";

@@ -1,7 +1,7 @@
-import { and, asc, desc, eq, isNull, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/db";
-import { adminAuditLogs, collaborationGuards, listingPeriods, privateProfileSamples, privateSampleMedia, profileDetails, profileMedia, profileServices, profileTags, profiles, users } from "@/db/schema";
-import { adminHasCapability } from "./admin-permissions";
+import { adminAuditLogs, adminGithubAccess, adminGithubIdentities, collaborationGuards, listingPeriods, privateProfileSamples, privateSampleMedia, profileDetails, profileMedia, profileServices, profileTags, profiles, users } from "@/db/schema";
+import { ADMIN_ACCESS_LEVELS, adminHasCapability } from "./admin-permissions";
 import type { AdminUser } from "./auth";
 import { guardedBatch, type ReviewVersion, CollaborationConflict } from "./collaboration";
 import { readProfileSubmission, resolveProfileHandle, ProfileValidationError, validateProfileTravelDates } from "./profile-submission";
@@ -13,7 +13,7 @@ import type { PublicProfile } from "./directory";
 
 export { sampleCanEdit } from "./private-sample-policy";
 export type PrivateSample = typeof privateProfileSamples.$inferSelect;
-export type SampleFilters = { q?: string; provenance?: string; status?: string; view?: "active" | "trash"; contact?: "all" | "pending" | "contacted"; region?: string; city?: string; phone?: string; gender?: string };
+export type SampleFilters = { q?: string; provenance?: string; status?: string; view?: "active" | "trash"; contact?: "all" | "pending" | "contacted"; region?: string; city?: string; phone?: string; gender?: string; creator?: string };
 
 /** Entries are [field,value] pairs, not a JSON object. Guard the document and
  * each entry before extracting paths, including malformed historical data. */
@@ -31,8 +31,23 @@ function samplePhoneMatches(terms: string[]) {
   });
 }
 
-export function canManageSamples(admin: AdminUser | null) {
+export function canManageSamples(admin: Pick<AdminUser, "accessLevel"> | null) {
   return PRIVATE_SAMPLES_ENABLED && adminHasCapability(admin, "accounts.manage") && adminHasCapability(admin, "profiles.moderate");
+}
+const sampleCreatorLevels = ADMIN_ACCESS_LEVELS.filter(accessLevel => canManageSamples({ accessLevel }));
+const creatorLogin = sql<string | null>`coalesce(nullif(${adminGithubAccess.githubLogin},''),nullif(${adminGithubIdentities.githubLogin},''),nullif(${users.username},''))`;
+
+/** Include every eligible creator, even with zero samples, and retain former
+ * creators for historical filtering without granting them access again. */
+export async function listPrivateSampleCreators() {
+  if (!PRIVATE_SAMPLES_ENABLED) return [];
+  const eligible = and(eq(users.role, "admin"), eq(users.isActive, true), eq(adminGithubAccess.isActive, true), inArray(adminGithubAccess.accessLevel, sampleCreatorLevels))!;
+  const rows = await (await getDb()).select({ id: users.id, login: creatorLogin, eligible: sql<number>`case when ${eligible} then 1 else 0 end` }).from(users)
+    .leftJoin(adminGithubAccess, eq(adminGithubAccess.userId, users.id))
+    .leftJoin(adminGithubIdentities, eq(adminGithubIdentities.userId, users.id))
+    .where(or(eligible, sql`exists(select 1 from ${privateProfileSamples} where ${privateProfileSamples.createdBy}=${users.id})`))
+    .orderBy(asc(creatorLogin), asc(users.id));
+  return rows.map(row => ({ ...row, eligible: Boolean(row.eligible) }));
 }
 export async function getPrivateSample(id: string) {
   if (!PRIVATE_SAMPLES_ENABLED || !SAMPLE_ID.test(id)) return null;
@@ -72,6 +87,8 @@ export async function listPrivateSamples(filters: SampleFilters = {}) {
   if (["active", "unshared", "migrated", "trashed"].includes(filters.status ?? "")) clauses.push(sql`${status}=${filters.status}`);
   if (filters.contact === "pending") clauses.push(isNull(privateProfileSamples.contactedAt));
   if (filters.contact === "contacted") clauses.push(sql`${privateProfileSamples.contactedAt} is not null`);
+  const creator = boundedSampleFilter(filters.creator, 120);
+  if (creator) clauses.push(eq(privateProfileSamples.createdBy, creator));
   const rows = await (await getDb()).select({
     id: privateProfileSamples.id, displayName: privateProfileSamples.displayName, handle: privateProfileSamples.handle,
     provenance: privateProfileSamples.provenance, formJson: privateProfileSamples.formJson,
@@ -79,10 +96,15 @@ export async function listPrivateSamples(filters: SampleFilters = {}) {
     migratedAt: privateProfileSamples.migratedAt, migratedProfileId: privateProfileSamples.migratedProfileId,
     trashedAt: privateProfileSamples.trashedAt, trashReason: privateProfileSamples.trashReason,
     createdAt: privateProfileSamples.createdAt, updatedAt: privateProfileSamples.updatedAt,
+    creatorId: privateProfileSamples.createdBy, creatorLogin,
     contactedAt: privateProfileSamples.contactedAt, contactedBy: privateProfileSamples.contactedBy, contactedByLogin: privateProfileSamples.contactedByLogin,
     shared: sql<boolean>`${privateProfileSamples.tokenHash} is not null or ${privateProfileSamples.legacyTokenHash} is not null`,
     legacyLink: sql<boolean>`${privateProfileSamples.tokenHash} is not null and ${privateProfileSamples.tokenEncrypted} is null`,
-  }).from(privateProfileSamples).where(and(...clauses))
+  }).from(privateProfileSamples)
+    .leftJoin(users, eq(privateProfileSamples.createdBy, users.id))
+    .leftJoin(adminGithubAccess, eq(adminGithubAccess.userId, users.id))
+    .leftJoin(adminGithubIdentities, eq(adminGithubIdentities.userId, users.id))
+    .where(and(...clauses))
     .orderBy(sql`case when ${privateProfileSamples.contactedAt} is null then 0 else 1 end`, desc(privateProfileSamples.updatedAt), asc(privateProfileSamples.id)).limit(100);
   return rows.map(({ formJson, ...row }) => {
     // A converted legacy row that cleared its form cannot break the list.

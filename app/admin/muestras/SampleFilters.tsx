@@ -6,6 +6,7 @@ import { ActionAnchor, ActionButton } from "@/app/ActionButton";
 import { ActionIcon } from "@/app/ActionIcon";
 import { escortGenders } from "@/lib/profile";
 import { SAMPLE_PROVENANCES, SAMPLE_PROVENANCE_LABELS, SAMPLE_STATUSES, SAMPLE_STATUS_LABELS } from "@/lib/private-sample-policy";
+import { sampleCreatorLabel } from "@/lib/private-sample-filters";
 
 type AppliedFilter = { label: string; removeHref: string };
 type Filters = {
@@ -18,14 +19,15 @@ type Filters = {
   contact: "all" | "pending" | "contacted";
   gender: string;
   view: "active" | "trash";
+  creator: string;
 };
 
-export function SampleFilters({ initial, applied, clearHref }: { initial: Filters; applied: AppliedFilter[]; clearHref: string }) {
+export function SampleFilters({ initial, creators, applied, clearHref }: { initial: Filters; creators: { id: string; login: string | null; eligible: boolean }[]; applied: AppliedFilter[]; clearHref: string }) {
   const [region, setRegion] = useState(initial.region);
   const [city, setCity] = useState(initial.city);
   const selectedRegion = regions.find(item => item.title === region);
   const cities = selectedRegion ? selectedRegion.cities : regions.flatMap(item => item.cities);
-  const advancedCount = [initial.provenance, initial.view === "trash" ? "" : initial.status, initial.contact === "all" ? "" : initial.contact, initial.gender].filter(Boolean).length;
+  const advancedCount = [initial.creator, initial.provenance, initial.view === "trash" ? "" : initial.status, initial.contact === "all" ? "" : initial.contact, initial.gender].filter(Boolean).length;
 
   return <form className="sample-filters" method="get" role="search" aria-label="Buscar muestras privadas">
     {initial.view === "trash" && <input type="hidden" name="view" value="trash" />}
@@ -37,8 +39,9 @@ export function SampleFilters({ initial, applied, clearHref }: { initial: Filter
       <label>Ciudad<select aria-label="Ciudad" name="city" value={city} disabled={Boolean(selectedRegion && !cities.length)} onChange={event => { const next = event.target.value; setCity(next); if (!region && next) setRegion(regions.find(item => item.cities.some(value => value === next))?.title ?? ""); }}><option value="">{selectedRegion && !cities.length ? "Sin ciudades disponibles" : "Todas las ciudades"}</option>{cities.map(item => <option key={item} value={item}>{item}</option>)}</select></label>
     </div>
     <details className="sample-advanced-filters" open={advancedCount > 0}>
-      <summary><span><ActionIcon name="filter" />Más filtros</span><small>{advancedCount ? `${advancedCount} activo${advancedCount === 1 ? "" : "s"}` : "Contacto, procedencia y perfil"}</small></summary>
+      <summary><span><ActionIcon name="filter" />Más filtros</span><small>{advancedCount ? `${advancedCount} activo${advancedCount === 1 ? "" : "s"}` : "Creador, contacto y perfil"}</small></summary>
       <div className="sample-filter-grid">
+        <label>Creada por<select aria-label="Creada por" name="creator" defaultValue={initial.creator}><option value="">Todos los creadores</option>{initial.creator && !creators.some(item => item.id === initial.creator) && <option value={initial.creator}>Creador no disponible</option>}{creators.map(item => <option key={item.id} value={item.id}>{sampleCreatorLabel(item.login)}{item.eligible ? "" : " · sin acceso actual"}</option>)}</select></label>
         <label>Seguimiento de contacto<select aria-label="Seguimiento de contacto" name="contact" defaultValue={initial.contact}><option value="all">Todos los contactos</option><option value="pending">Pendientes de contactar</option><option value="contacted">Ya contactados</option></select></label>
         <label>Procedencia<select aria-label="Procedencia" name="provenance" defaultValue={initial.provenance}><option value="">Todas las procedencias</option>{SAMPLE_PROVENANCES.map(value => <option key={value} value={value}>{SAMPLE_PROVENANCE_LABELS[value]}</option>)}</select></label>
         <label>Estado<select aria-label="Estado" name="sample_status" defaultValue={initial.status} disabled={initial.view === "trash"}>{initial.view === "trash" ? <option value="trashed">En papelera</option> : <><option value="">Todos los estados</option>{SAMPLE_STATUSES.filter(value => value !== "trashed").map(value => <option key={value} value={value}>{SAMPLE_STATUS_LABELS[value]}</option>)}</>}</select></label>

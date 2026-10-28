@@ -15,6 +15,7 @@ const stub = 'data:text/javascript,'+encodeURIComponent(`
  export const cache=fn=>fn;
  export const headers=async()=>globalThis.__sessionIsolation.headers;
  export const getDb=async()=>globalThis.__sessionIsolation.db;
+ export const recordAdminAudit=async()=>{};
 `);
 let emailSource=await readFile(new URL('../lib/admin-email.ts',import.meta.url),'utf8');
 emailSource=emailSource.replace(/from "([^"\n]+)"/g,(_match,path)=>'from '+JSON.stringify(path==='drizzle-orm'?import.meta.resolve('drizzle-orm'):path==='@/db/schema'?url('db/schema.ts'):stub));
@@ -33,6 +34,8 @@ const isolation=await import('data:text/javascript;base64,'+Buffer.from(stripTyp
 let setupSource=await readFile(new URL('../app/api/auth/session/browser/route.ts',import.meta.url),'utf8');
 setupSource=setupSource.replace(/from "([^"\n]+)"/g,(_match,path)=>'from '+JSON.stringify(path==='next/server'?import.meta.resolve('next/server.js'):path==='@/lib/auth'?authUrl:url('lib/session-policy.ts')));
 const setup=await import('data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(setupSource)).toString('base64'));
+async function logoutRoute(path){let value=await readFile(new URL('../'+path,import.meta.url),'utf8');value=value.replace(/from "([^"\n]+)"/g,(_m,p)=>'from '+JSON.stringify(p==='next/server'?import.meta.resolve('next/server.js'):p==='@/lib/auth'?authUrl:stub));return import('data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(value)).toString('base64'));}
+const adminLogout=await logoutRoute('app/api/auth/logout/route.ts'),publicLogout=await logoutRoute('app/api/auth/session/logout/route.ts');
 const hash=secret=>createHash('sha256').update(secret).digest('hex');
 const browserCookie=`${BROWSER_SESSION_COOKIE}=${'A'.repeat(43)}`;
 const browserSessionMigration=await readFile(new URL('../drizzle/0055_atomic_browser_sessions.sql',import.meta.url),'utf8');
@@ -58,6 +61,23 @@ function fixture(cookie='') {
  globalThis.__sessionIsolation={headers:new Headers({cookie}),db:drizzle(binding,{schema})};
  return {sqlite,binding,setCookie(value){globalThis.__sessionIsolation.headers=new Headers({cookie:value})},close(){sqlite.close();delete globalThis.__sessionIsolation;}};
 }
+
+test('logout and explicit GitHub retry clear site sessions and path-scoped OAuth attempts',async()=>{
+ for(const retry of [false,true]){const cookie='chile3x_admin_session=admin.secret-admin; '+browserCookie,f=fixture(cookie);try{
+  const request=new Request('https://local.test/api/auth/logout',{method:'POST',headers:{origin:'https://local.test',cookie},...(retry?{body:new URLSearchParams({intent:'github_retry'})}:{})});
+  const response=await adminLogout.POST(request);assert.equal(response.status,303);assert.match(response.headers.get('cache-control'),/no-store/);
+  assert.equal(new URL(response.headers.get('location')).pathname,retry?'/admin/acceso-denegado':'/ingresar');if(retry)assert.equal(new URL(response.headers.get('location')).searchParams.get('reason'),'github_retry');
+  assert.equal(f.sqlite.prepare("SELECT count(*) n FROM auth_sessions WHERE id='admin'").get().n,0);assert.equal(f.sqlite.prepare("SELECT count(*) n FROM auth_sessions WHERE id='user'").get().n,1);
+  const cookies=response.headers.getSetCookie();for(const name of ['chile3x_admin_session','chile3x_user_session','chile3x_admin_oauth_state','chile3x_admin_oauth_return_to']){const cleared=cookies.find(value=>value.startsWith(name+'='));assert.ok(cleared,name);assert.match(cleared,/Max-Age=0/i);if(name.includes('oauth'))assert.match(cleared,/Path=\/api\/auth\/github/);}
+  assert.ok(!cookies.some(value=>value.startsWith('__Host-chile3x_browser=')),'browser coordination is not an identity credential and stays stable');
+ }finally{f.close();}}
+});
+test('retry rejects cross-origin requests and public logout also discards pending GitHub state',async()=>{
+ const f=fixture('chile3x_admin_session=admin.secret-admin');try{
+  const forbidden=await adminLogout.POST(new Request('https://local.test/api/auth/logout',{method:'POST',headers:{origin:'https://elsewhere.test'},body:new URLSearchParams({intent:'github_retry'})}));assert.equal(forbidden.status,403);assert.equal(f.sqlite.prepare('SELECT count(*) n FROM auth_sessions').get().n,2);
+  const response=await publicLogout.POST(new Request('https://local.test/api/auth/session/logout',{method:'POST',headers:{origin:'https://local.test'}}));assert.ok(response.headers.getSetCookie().some(value=>value.startsWith('chile3x_admin_oauth_state=')&&value.includes('Max-Age=0')));
+ }finally{f.close();}
+});
 
 test('strict token and cookie policy reject ambiguity without reinterpreting credentials',()=>{
  for(const value of ['a.b.c','a%2Eb','a.b.','a..b','a.b c','a.'.repeat(500)]) assert.equal(parseSessionToken(value),null);

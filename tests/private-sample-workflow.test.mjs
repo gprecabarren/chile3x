@@ -172,6 +172,32 @@ test('private sample workflow runs against migration triggers, D1 batches and co
       assert.ok((await service.listPrivateSamples({ region: 'Región del Biobío', city: 'Concepción', phone: '+56 9 8765 4321' })).some(row => row.id === local.id));
     });
 
+    await t.test('creators use stable user IDs, combine with other filters and retain historical authors', async () => {
+      const first = await create({ display_name: 'Creador local uno', region: 'Región del Biobío', city: 'Concepción', sample_provenance: 'relaxchile' });
+      const second = await create({ display_name: 'Creador local dos', region: 'Región del Biobío', city: 'Concepción', sample_provenance: 'relaxchile' });
+      for (const [id, role, level, active] of [['creator-other','admin','administrator',1],['creator-empty','admin','owner',1],['creator-moderator','admin','moderator',1],['creator-revoked','admin','administrator',0]]) {
+        sqlite.prepare('INSERT INTO users(id,role,is_active) VALUES(?,?,1)').run(id,role);
+        sqlite.prepare('INSERT INTO admin_github_access(id,user_id,github_login,access_level,is_active) VALUES(?,?,?,?,?)').run(id+'-grant',id,id,level,active);
+      }
+      sqlite.prepare('INSERT INTO admin_github_access(id,user_id,github_login,access_level,is_active) VALUES(?,?,?,?,1)').run('creator-main-grant','admin','local-admin','administrator');
+      sqlite.prepare('UPDATE private_profile_samples SET created_by=?,contacted_at=? WHERE id=?').run('creator-other',new Date().toISOString(),second.id);
+      const filler=sqlite.prepare('INSERT INTO private_profile_samples(id,display_name,form_json,expires_at,created_by,provenance,updated_at) VALUES(?,?,?,?,?,?,?)');
+      for(let index=0;index<105;index++)filler.run('creator-cap-'+index,'Creador local relleno',sampleFormJson(form({region:'Región del Biobío',city:'Concepción'})),Date.now()+10000,'creator-other','relaxchile','2099-01-01');
+      let result=await service.listPrivateSamples({ q:'Creador local',creator:'admin',city:'Concepción',provenance:'relaxchile',contact:'pending' });
+      assert.deepEqual(result.map(row=>row.id),[first.id]);assert.equal(result[0].creatorLogin,'local-admin');
+      sqlite.exec("DELETE FROM private_profile_samples WHERE id LIKE 'creator-cap-%'");
+      assert.deepEqual((await service.listPrivateSamples({q:'Creador local',creator:'creator-other',contact:'contacted'})).map(row=>row.id),[second.id]);
+      assert.deepEqual(await service.listPrivateSamples({q:'Creador local',creator:"' OR 1=1--"}),[]);
+      const options=await service.listPrivateSampleCreators();assert.ok(options.some(row=>row.id==='creator-empty'&&row.eligible));assert.ok(!options.some(row=>row.id==='creator-moderator'));assert.ok(!options.some(row=>row.id==='creator-revoked'));
+      sqlite.prepare('UPDATE admin_github_access SET github_login=? WHERE user_id=?').run('renamed-creator','creator-other');
+      result=await service.listPrivateSamples({creator:'creator-other',q:'Creador local'});assert.equal(result[0].creatorLogin,'renamed-creator');
+      sqlite.prepare('UPDATE admin_github_access SET is_active=0 WHERE user_id=?').run('creator-other');
+      assert.ok((await service.listPrivateSampleCreators()).some(row=>row.id==='creator-other'&&!row.eligible));
+      sqlite.prepare('UPDATE private_profile_samples SET trashed_at=? WHERE id=?').run(Date.now(),second.id);
+      assert.deepEqual(await service.listPrivateSamples({creator:'creator-other',q:'Creador local'}),[]);
+      assert.equal((await service.listPrivateSamples({creator:'creator-other',view:'trash',q:'Creador local'}))[0].id,second.id);
+    });
+
     await t.test('invalid JSON and malformed entry shapes cannot break filtered queries or become territorial matches', async () => {
       const values = ['not-json', 'null', '{"region":"Región del Biobío"}', '["region","Región del Biobío"]', '[42,null,{"city":"Concepción"}]', '[["region",42],["city",null]]'];
       const rows = [];

@@ -1,0 +1,5 @@
+.samples-admin-content .sample-row-heading .sample-row-creator { margin:7px 0 0; color:#b5c2d4; font-size:13px; line-height:1.5; overflow-wrap:anywhere; }
+.sample-row-creator strong { color:#e0e7f2; font-weight:600; }
+@media (min-width:1100px) {
+  .samples-admin-content .sample-advanced-filters > .sample-filter-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+}

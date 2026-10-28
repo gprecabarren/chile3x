@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { createOpaqueToken, getGitHubOAuthConfig, safeAdminReturnTo } from "@/lib/auth";
-
-const OAUTH_STATE_COOKIE = "chile3x_admin_oauth_state";
-const OAUTH_RETURN_TO_COOKIE = "chile3x_admin_oauth_return_to";
+import { ADMIN_OAUTH_STATE_COOKIE as OAUTH_STATE_COOKIE, ADMIN_OAUTH_RETURN_TO_COOKIE as OAUTH_RETURN_TO_COOKIE, ADMIN_OAUTH_COOKIE_PATH } from "@/lib/session-policy";
 
 export async function GET(request: Request) {
   const config = await getGitHubOAuthConfig();
@@ -23,8 +21,9 @@ export async function GET(request: Request) {
   githubUrl.searchParams.set("redirect_uri", callbackUrl);
   githubUrl.searchParams.set("scope", "read:user user:email");
   githubUrl.searchParams.set("state", state);
-  // A denied attempt may have silently reused another signed-in GitHub account.
-  if (requestUrl.searchParams.get("select_account") === "1") githubUrl.searchParams.set("prompt", "select_account");
+  // Signing out of Chile3X cannot clear github.com cookies. Always offer the
+  // account picker, including ordinary entry after logout or browser history.
+  githubUrl.searchParams.set("prompt", "select_account");
 
   const response = NextResponse.redirect(githubUrl);
   response.headers.set("cache-control", "no-store");
@@ -33,7 +32,7 @@ export async function GET(request: Request) {
     value: state,
     httpOnly: true,
     maxAge: 10 * 60,
-    path: "/api/auth/github",
+    path: ADMIN_OAUTH_COOKIE_PATH,
     sameSite: "lax",
     secure: true,
   });
@@ -42,7 +41,7 @@ export async function GET(request: Request) {
     value: returnTo,
     httpOnly: true,
     maxAge: 10 * 60,
-    path: "/api/auth/github",
+    path: ADMIN_OAUTH_COOKIE_PATH,
     sameSite: "lax",
     secure: true,
   });

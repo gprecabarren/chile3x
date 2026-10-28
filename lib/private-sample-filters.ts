@@ -16,3 +16,8 @@ export function samplePhoneSearchTerms(value: unknown): string[] {
 export function boundedSampleFilter(value: unknown, maxLength = 120) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
 }
+
+export function sampleCreatorLabel(login: string | null | undefined) {
+  const value = login?.trim().replace(/^@+/, "");
+  return value ? `@${value}` : "Usuario no disponible";
+}

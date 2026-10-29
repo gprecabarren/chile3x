@@ -140,7 +140,7 @@ Revisión del 29 de octubre, sin rutas nuevas: el gestor compartido separa las c
 | `/api/admin/profiles/[profileId]/historias` | POST | [handler](../app/api/admin/profiles/[profileId]/historias/route.ts) |
 | `/api/admin/profiles/[profileId]/media/[mediaId]` | DELETE | [handler](../app/api/admin/profiles/[profileId]/media/[mediaId]/route.ts) |
 | `/api/admin/profiles/[profileId]/media/aprobar-todos` | POST | [handler](../app/api/admin/profiles/[profileId]/media/aprobar-todos/route.ts) |
-| `/api/admin/profiles/[profileId]/media` | POST | [handler](../app/api/admin/profiles/[profileId]/media/route.ts) |
+| `/api/admin/profiles/[profileId]/media` | POST, PATCH | [handler](../app/api/admin/profiles/[profileId]/media/route.ts) |
 | `/api/admin/profiles/[profileId]/papelera` | POST | [handler](../app/api/admin/profiles/[profileId]/papelera/route.ts) |
 | `/api/admin/profiles/[profileId]/status` | POST | [handler](../app/api/admin/profiles/[profileId]/status/route.ts) |
 | `/api/admin/reportes/[reportId]` | POST | [handler](../app/api/admin/reportes/[reportId]/route.ts) |
@@ -218,7 +218,7 @@ Revisión del 29 de octubre, sin rutas nuevas: el gestor compartido separa las c
 | `/api/perfiles/[profileId]/like` | POST | [handler](../app/api/perfiles/[profileId]/like/route.ts) |
 | `/api/perfiles/[profileId]/media/[mediaId]` | DELETE | [handler](../app/api/perfiles/[profileId]/media/[mediaId]/route.ts) |
 | `/api/perfiles/[profileId]/media/[mediaId]/procesar` | GET, POST | [handler](../app/api/perfiles/[profileId]/media/[mediaId]/procesar/route.ts) |
-| `/api/perfiles/[profileId]/media` | POST | [handler](../app/api/perfiles/[profileId]/media/route.ts) |
+| `/api/perfiles/[profileId]/media` | POST, PATCH | [handler](../app/api/perfiles/[profileId]/media/route.ts) |
 | `/api/perfiles/[profileId]/papelera` | POST | [handler](../app/api/perfiles/[profileId]/papelera/route.ts) |
 | `/api/perfiles/[profileId]/pausa` | POST | [handler](../app/api/perfiles/[profileId]/pausa/route.ts) |
 | `/api/perfiles/[profileId]/reportes` | POST | [handler](../app/api/perfiles/[profileId]/reportes/route.ts) |
@@ -250,3 +250,5 @@ La ausencia de una ruta en `app/api` no la convierte en un archivo público: por
 Presencia pública (26 de octubre): `GET /api/presencia?id=…` recibe hasta 60 IDs y devuelve solamente los IDs de anuncios públicos con actividad reciente confirmada; no expone cuentas ni fechas. No renueva presencia y responde sin caché. `POST` conserva la sesión y la comprobación de origen para registrar actividad de la propia cuenta.
 
 Actualización de muestras (25 de octubre de 2026): el parámetro público `/muestra/[sampleId]` acepta también el usuario privado corto; conserva alias por ID, acceso por fragmento/cookie y archivos privados sin indexación. La API administrativa principal incluye recuperar/compartir/conservar/revocar enlace, extender, contacto, papelera, restauración y conversión confirmada. Los endpoints de medios exigen autorización y revisión de la misma muestra.
+
+Reordenación de galería (29 de octubre): los PATCH de medios de anuncios aceptan `kind=image|video`, la permutación completa `order` de esa galería y revisión vigente. Exigen propietario o capacidades administrativas de cuentas/medios, origen válido y anuncio activo fuera de papelera. Muestras admite el mismo contrato por tipo y conserva el contrato completo anterior para clientes ya abiertos. Los cambios administrativos registran `media.public_reorder` o `sample.reorder_media`. No hay rutas ni tablas nuevas.

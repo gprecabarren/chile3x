@@ -94,6 +94,7 @@ export const ADMIN_AUDIT_ACTIONS = {
   "profile.restore": "Restauró un anuncio de la papelera",
   "profile.delete_permanently": "Eliminó definitivamente un anuncio",
   "media.public_approve": "Aprobó un archivo público",
+  "media.public_reorder": "Ordenó la galería de un anuncio",
   "media.public_process": "Procesó una foto pública",
   "media.public_unapprove": "Devolvió un archivo público a revisión",
   "media.public_delete": "Eliminó un archivo público",

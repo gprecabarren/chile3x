@@ -24,6 +24,8 @@ Revisión posterior del 28 de octubre: [cambio de cuenta de GitHub y creadores d
 
 Revisión del 29 de octubre: [marca de agua masiva y separación de fotos/videos](docs/qa-medios-lotes-2026-10-29.md). Las opciones de archivos seleccionados incluyen videos para la marca de agua; el gestor compartido separa ambas secciones de carga y conserva el recorte al cambiar efectos.
 
+Orden de galería del 29 de octubre: [controles compartidos de izquierda/derecha](docs/qa-orden-galeria-2026-10-29.md) para cuenta normal, administración y muestras, con persistencia por tipo y protección de ediciones pendientes.
+
 <!-- TECHNICAL_HANDOFF_START -->
 ## Guía técnica de traspaso — 24 de octubre de 2026
 

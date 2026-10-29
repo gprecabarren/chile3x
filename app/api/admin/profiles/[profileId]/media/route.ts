@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { profiles, users } from "@/db/schema";
@@ -10,9 +10,32 @@ import { MediaUploadRequestError, readMediaUploadForm } from "@/lib/media-upload
 import { MAX_IMAGE_BYTES, MAX_VIDEO_BYTES } from "@/lib/media";
 import { CollaborationConflict, expectedVersion, conflictResponse } from "@/lib/collaboration";
 import { parsePhotoEditOptions } from "@/lib/photo-edit-policy";
+import { MediaOrderError, reorderProfileMedia } from "@/lib/profile-media-order";
 
 export const dynamic = "force-dynamic";
 const error = (message: string, status: number) => NextResponse.json({ error: message }, { status });
+
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ profileId: string }> }) {
+  try {
+    try { assertSameOrigin(request); } catch { return error("Solicitud no válida.", 403); }
+    const admin = await getCurrentAdmin();
+    if (!admin) return error("No autorizado.", 401);
+    if (!adminHasCapability(admin, "accounts.manage") || !adminHasCapability(admin, "media.moderate")) return error("No tienes permiso para ordenar estos archivos.", 403);
+    const { profileId } = await params;
+    const [row] = await (await getDb()).select({ displayName: profiles.displayName }).from(profiles).innerJoin(users, eq(profiles.ownerId, users.id)).where(and(eq(profiles.id, profileId), isNull(profiles.trashedAt), eq(users.isActive, true))).limit(1);
+    if (!row) return error("Anuncio no disponible.", 404);
+    const form = await readMediaUploadForm(request, 16_000, 32_000);
+    let order: unknown;
+    try { order = JSON.parse(String(form.get("order") ?? "")); } catch { return error("El orden no es válido.", 400); }
+    const result = await reorderProfileMedia(profileId, form.get("kind"), order, expectedVersion(form, `profile:${profileId}`), admin.id);
+    await recordAdminAudit(admin, { category: "media", action: "media.public_reorder", entityType: "profile", entityId: profileId, entityLabel: row.displayName, summary: "Cambió el orden de la galería del anuncio.", after: { kind: result.kind, order: result.order } });
+    return NextResponse.json(result, { headers: { "cache-control": "private, no-store" } });
+  } catch (cause) {
+    if (cause instanceof CollaborationConflict) return conflictResponse();
+    if (cause instanceof MediaOrderError || cause instanceof MediaUploadRequestError) return error(cause.message, cause.status);
+    return error("No se pudo confirmar el orden. Recarga la galería antes de repetirlo.", 500);
+  }
+}
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ profileId: string }> }) {
   try {

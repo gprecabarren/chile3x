@@ -8,10 +8,31 @@ import { MediaUploadRequestError, readMediaUploadForm } from "@/lib/media-upload
 import { MAX_IMAGE_BYTES, MAX_VIDEO_BYTES } from "@/lib/media";
 import { CollaborationConflict, conflictResponse, expectedVersion } from "@/lib/collaboration";
 import { parsePhotoEditOptions } from "@/lib/photo-edit-policy";
+import { MediaOrderError, reorderProfileMedia } from "@/lib/profile-media-order";
 
 export const dynamic = "force-dynamic";
 
 function error(message: string, status: number) { return NextResponse.json({ error: message }, { status }); }
+
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ profileId: string }> }) {
+  try {
+    try { assertSameOrigin(request); } catch { return error("Solicitud no válida.", 403); }
+    const user = await getCurrentUser();
+    if (!user) return error("Ingresa para ordenar tus archivos.", 401);
+    const { profileId } = await params;
+    const [profile] = await (await getDb()).select({ ownerId: profiles.ownerId }).from(profiles).where(and(eq(profiles.id, profileId), isNull(profiles.trashedAt))).limit(1);
+    if (!profile || profile.ownerId !== user.id) return error("No tienes permiso para ordenar estos archivos.", 403);
+    const form = await readMediaUploadForm(request, 16_000, 32_000);
+    let order: unknown;
+    try { order = JSON.parse(String(form.get("order") ?? "")); } catch { return error("El orden no es válido.", 400); }
+    const result = await reorderProfileMedia(profileId, form.get("kind"), order, expectedVersion(form, `profile:${profileId}`));
+    return NextResponse.json(result, { headers: { "cache-control": "private, no-store" } });
+  } catch (cause) {
+    if (cause instanceof CollaborationConflict) return conflictResponse();
+    if (cause instanceof MediaOrderError || cause instanceof MediaUploadRequestError) return error(cause.message, cause.status);
+    return error("No se pudo confirmar el orden. Recarga la galería antes de repetirlo.", 500);
+  }
+}
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ profileId: string }> }) {
   try {

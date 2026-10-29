@@ -28,7 +28,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sa
     let order: unknown;
     try { order = JSON.parse(String(form.get("order") ?? "")); }
     catch { throw new SampleMediaError("El orden de los archivos no es válido."); }
-    const result = await reorderSampleMedia(sampleId, order, expectedVersion(form, `sample:${sampleId}`), admin.id);
+    const result = await reorderSampleMedia(sampleId, order, expectedVersion(form, `sample:${sampleId}`), admin.id, form.has("kind") ? form.get("kind") : undefined);
     await recordAdminAudit(admin, { category: "media", action: "sample.reorder_media", entityType: "sample", entityId: sampleId, entityLabel: "Orden de medios privados", summary: "Cambió el orden de los archivos de una muestra privada.", after: { sampleId, order: result.order } });
     return Response.json(result, { headers: sampleMediaHeaders });
   });

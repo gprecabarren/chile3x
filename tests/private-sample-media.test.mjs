@@ -165,6 +165,19 @@ test('private sample media shares the listing pipeline with transactional revisi
       await assert.rejects(lib.removeSampleMedia('main', chosen.id, stale, 'admin'), CollaborationConflict);
     });
 
+    await t.test('typed sample ordering keeps cover and other formats in place and rejects incomplete or stale galleries', async () => {
+      makeSample('typed_order');
+      await upload('typed_order',{uploadKind:'profile_photo'});await upload('typed_order');await upload('typed_order');
+      for(let i=0;i<2;i++)await upload('typed_order',{file:await preparedWebm(1)});
+      const before=rows('typed_order'),cover=before.find(x=>x.is_profile_photo),photos=before.filter(x=>x.media_type==='image'&&!x.is_profile_photo).map(x=>x.id).reverse(),videos=before.filter(x=>x.media_type==='video').map(x=>x.id);
+      const oldVersion=version('typed_order');
+      let response=await collection.PATCH(request('typed_order','PATCH',formFor('typed_order',{kind:'image',order:JSON.stringify(photos)})),params('typed_order'));
+      assert.equal(response.status,200);assert.deepEqual(rows('typed_order').filter(x=>x.media_type==='image'&&!x.is_profile_photo).map(x=>x.id),photos);assert.deepEqual(rows('typed_order').filter(x=>x.media_type==='video').map(x=>x.id),videos);assert.equal(rows('typed_order').find(x=>x.is_profile_photo).id,cover.id);
+      response=await collection.PATCH(request('typed_order','PATCH',formFor('typed_order',{kind:'video',order:JSON.stringify([...videos].reverse())})),params('typed_order'));assert.equal(response.status,200);assert.deepEqual(rows('typed_order').filter(x=>x.media_type==='video').map(x=>x.id),[...videos].reverse());
+      for(const order of [[cover.id,...photos],[photos[0]],['foreign',photos[1]],[photos[0],photos[0]]])assert.equal((await collection.PATCH(request('typed_order','PATCH',formFor('typed_order',{kind:'image',order:JSON.stringify(order)})),params('typed_order'))).status,400);
+      await assert.rejects(lib.reorderSampleMedia('typed_order',photos,oldVersion,'admin','image'),CollaborationConflict);assert.equal(audit.at(-1).action,'sample.reorder_media');
+    });
+
     await t.test('photo editing retains one final image, metadata and private source; failed deletion is durably queued', async () => {
       const file = rows('main')[0], previous = file.r2_key, before = revision('main'); failDelete = true;
       const response = await editor.POST(request('main', 'POST', formFor('main', { file: png(), options: JSON.stringify(options) })), params('main', file.id));

@@ -596,6 +596,8 @@ Exportación: `profileMedia` en [schema.ts](../db/schema.ts).
 
 **Índices del esquema:** `profile_media_profile_idx` (profile_id, sort_order); `profile_media_pending_review_idx` (profile_id); `profile_media_public_cover_idx` (profile_id, [SQL], sort_order, id).
 
+La reordenación de galería usa `sort_order` existente, por tipo de archivo y sin mover la principal ni medios exclusivos. Una foto pendiente y su base aprobada reciben la misma posición para conservarla al aprobar o cancelar el reemplazo. No requiere migración ni modifica sus objetos R2.
+
 ### profile_report_evidence
 
 Exportación: `profileReportEvidence` en [schema.ts](../db/schema.ts).

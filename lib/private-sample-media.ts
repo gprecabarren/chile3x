@@ -10,6 +10,7 @@ import {
 } from "@/lib/media";
 import { parsePhotoEditOptions, type PhotoEditOptions } from "@/lib/photo-edit-policy";
 import { validatePreparedVideo } from "@/lib/video-validation";
+import { applyGalleryOrder, validGalleryOrder } from "@/lib/media-order";
 
 export class SampleMediaError extends Error {
   readonly status: number;
@@ -141,8 +142,12 @@ export async function setSampleCover(sampleId: string, mediaId: string, version:
   return { ok: true, revision, mediaId, quota: quota(usage.bytes) };
 }
 
-export async function reorderSampleMedia(sampleId: string, order: unknown, version: ReviewVersion, actorId: string) {
+export async function reorderSampleMedia(sampleId: string, order: unknown, version: ReviewVersion, actorId: string, kind?: unknown) {
   const { files } = await editableSampleMedia(sampleId);
+  if (kind !== undefined) {
+    if (!validGalleryOrder(files, kind, order)) throw new SampleMediaError("El orden no coincide con los archivos actuales. Recarga la muestra.");
+    order = applyGalleryOrder(files, kind as "image" | "video", order).map(file => file.id);
+  }
   if (!Array.isArray(order) || order.length !== files.length || order.some(id => typeof id !== "string") || new Set(order).size !== order.length || files.some(file => !order.includes(file.id))) throw new SampleMediaError("El orden no coincide con los archivos actuales. Recarga la muestra.");
   const db = await getDb(), usage = await getMediaUsage();
   const revision = await sampleWrite(sampleId, version, actorId, order.map((id, sortOrder) => db.update(privateSampleMedia).set({ sortOrder }).where(and(eq(privateSampleMedia.id, id), eq(privateSampleMedia.sampleId, sampleId)))));

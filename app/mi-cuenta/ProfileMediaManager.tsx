@@ -17,6 +17,7 @@ import { assertVideoSource, isVideoSource, MAX_PREPARED_VIDEO_BYTES, VIDEO_INPUT
 import { uploadMediaRequest } from "@/lib/upload-response";
 import { MAX_IMAGE_UPLOAD_BYTES, assertImageSource, IMAGE_INPUT_ACCEPT, IMAGE_UPLOAD_RULES, isImageSource } from "@/lib/image-upload-policy";
 import { applyMediaOptionToSelection, type GalleryMediaOption } from "@/lib/gallery-media-options";
+import { applyGalleryOrder, moveGalleryOrder } from "@/lib/media-order";
 import { deletePhotosSequentially, photoDeletionPlan } from "@/lib/profile-photo-batch";
 import dynamic from "next/dynamic";
 const AdminPhotoTools=dynamic(()=>import("@/app/admin/medios/AdminPhotoTools").then(module=>module.AdminPhotoTools));
@@ -208,31 +209,39 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
     } finally { setIsBusy(false); }
   }
 
-  async function updateSampleMedia(mediaId: string | null, order?: string[]) {
+  async function updateSampleMedia(mediaId: string) {
     if (!sampleMode || isBusy) return;
     setIsBusy(true); setNotice("");
     try {
       const fields = reviewFields(), previousRevision = Number(fields.get("review_revision"));
-      if (order) fields.set("order", JSON.stringify(order));
-      const response = await fetch(mediaId ? `${mediaApi}/${mediaId}` : mediaApi, { method: "PATCH", body: fields });
+      const response = await fetch(`${mediaApi}/${mediaId}`, { method: "PATCH", body: fields });
       const payload = await response.json() as { error?: string; revision?: number; quota?: Quota };
       if (!response.ok || !Number.isSafeInteger(payload.revision) || !payload.quota) throw new Error(payload.error ?? "No se pudo confirmar el cambio. Revisa la muestra antes de repetirlo.");
       savedRevision.current = { id: profileId, revision: payload.revision! };
       window.dispatchEvent(new CustomEvent("chile3x:own-review-commit", { detail: { key: reviewKey, previousRevision, revision: payload.revision } }));
-      if (order) setMedia(current => order.map(id => current.find(item => item.id === id)!).filter(Boolean));
-      else setMedia(current => current.map(item => ({ ...item, isProfilePhoto: item.id === mediaId })));
-      setQuota(payload.quota); setNotice(order ? "Se guardó el orden de la galería de la muestra." : "Se guardó la foto principal de la muestra.");
+      setMedia(current => current.map(item => ({ ...item, isProfilePhoto: item.id === mediaId })));
+      setQuota(payload.quota); setNotice("Se guardó la foto principal de la muestra.");
     } catch (cause) { setNotice(cause instanceof Error ? cause.message : "No se pudo confirmar el cambio. Revisa la muestra antes de repetirlo."); }
     finally { setIsBusy(false); }
   }
 
-  function moveSampleMedia(mediaId: string, direction: -1 | 1) {
-    const selected = media.find(item => item.id === mediaId);
-    const gallery = media.filter(item => !item.isProfilePhoto && item.mediaType === selected?.mediaType), index = gallery.findIndex(item => item.id === mediaId), next = gallery[index + direction];
-    if (!next) return;
-    const order = media.map(item => item.id), from = order.indexOf(mediaId), to = order.indexOf(next.id);
-    [order[from], order[to]] = [order[to], order[from]];
-    void updateSampleMedia(null, order);
+  async function moveMedia(mediaId: string, direction: -1 | 1) {
+    if (isBusy) return;
+    const moved = moveGalleryOrder(media, mediaId, direction);
+    if (!moved) return;
+    setIsBusy(true); setNotice("");
+    try {
+      const fields = reviewFields(), previousRevision = Number(fields.get("review_revision"));
+      fields.set("kind", moved.kind); fields.set("order", JSON.stringify(moved.order));
+      const response = await fetch(mediaApi, { method: "PATCH", body: fields }).catch(() => { throw new Error("La conexión se interrumpió. No se pudo confirmar el orden: recarga la galería antes de repetirlo."); });
+      const payload = await response.json().catch(() => { throw new Error("El servidor no confirmó el orden. Recarga la galería antes de repetirlo."); }) as { error?: string; revision?: number };
+      if (!response.ok || !Number.isSafeInteger(payload.revision)) throw new Error(payload.error ?? "No se pudo confirmar el orden. Recarga la galería antes de repetirlo.");
+      savedRevision.current = { id: profileId, revision: payload.revision! };
+      window.dispatchEvent(new CustomEvent("chile3x:own-review-commit", { detail: { key: reviewKey, previousRevision, revision: payload.revision } }));
+      setMedia(current => applyGalleryOrder(current, moved.kind, moved.order));
+      setNotice(`Orden de ${moved.kind === "image" ? "fotos" : "videos"} guardado. Así se mostrará en la galería.`);
+    } catch (cause) { setNotice(cause instanceof Error ? cause.message : "No se pudo confirmar el orden. Recarga antes de repetirlo."); }
+    finally { setIsBusy(false); }
   }
 
   const storedPhotos = media.filter(item => item.mediaType === "image" && item.visibility === "public");
@@ -286,7 +295,8 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
         {candidate.image && candidate.blurFaces && <FacePrivacyEditor file={candidate.file} regions={candidate.faceRegions} disabled={isBusy} onChange={regions => updateCandidate(candidate.id, { faceRegions: regions, prepared: undefined, status: "ready", detail: regions.length ? "Zonas manuales listas para procesar." : "Se usará detección automática." })} />}
         <ActionButton type="button" className="gallery-candidate-remove" disabled={isBusy} onClick={() => setCandidates(current => current.filter(item => item.id !== candidate.id))}>Quitar</ActionButton>
       </article>)}<ActionButton className="button button-primary" type="button" disabled={isBusy || selection.some(candidate => !candidate.image && !candidate.trim)} onClick={() => uploadCandidates(kind)}>{isBusy ? "Procesando archivos…" : sampleMode ? `Guardar ${photos ? "fotos" : "videos"} de la muestra` : adminMode ? `Procesar y aprobar ${photos ? "fotos" : "videos"}` : `Enviar ${photos ? "fotos" : "videos"} a revisión`}</ActionButton></div>}
-      {sectionMedia.length > 0 ? <div className="media-owner-grid">{sectionMedia.map((item, index) => <article key={item.id}><div className="media-owner-preview">{item.mediaType === "image" ? <a href={item.url} target="_blank" rel="noopener noreferrer" aria-label={`Abrir foto ${index + 1} completa`}><Image src={item.url} alt={`Vista previa completa de foto ${index + 1}`} fill unoptimized sizes="(max-width: 620px) 80vw, 240px" /></a> : <MediaVideo src={item.url} contentType={item.contentType} label={sampleMode ? "Video de la muestra" : "Video del anuncio"} />}</div><div><span className={`media-status media-status-${item.moderationStatus}`}>{sampleMode ? "Muestra" : statusLabel[item.moderationStatus]}</span><small>{item.mediaType === "video" ? "Video · " : "Foto · "}{formatBytes(item.byteSize)}</small>{item.mediaType === "image" && <><a className="media-owner-open" href={item.url} target="_blank" rel="noopener noreferrer">Ver foto completa</a>{<ActionButton className="button button-outline" type="button" disabled={isBusy} onClick={()=>editSavedPhoto(item.id)}>Editar marca y rostros</ActionButton>}</>}{sampleMode && <div className="sample-media-order-actions">{item.mediaType === "image" && <ActionButton type="button" className="button button-outline" disabled={isBusy} onClick={() => updateSampleMedia(item.id)}>Usar como foto principal</ActionButton>}<div><ActionButton type="button" className="button button-outline" disabled={isBusy || index === 0} aria-label={`Subir archivo ${index + 1} en la galería`} onClick={() => moveSampleMedia(item.id, -1)}>Subir</ActionButton><ActionButton type="button" className="button button-outline" disabled={isBusy || index === sectionMedia.length - 1} aria-label={`Bajar archivo ${index + 1} en la galería`} onClick={() => moveSampleMedia(item.id, 1)}>Bajar</ActionButton></div></div>}<ActionButton className="button button-outline media-owner-remove" type="button" onClick={() => remove(item.id)} disabled={isBusy}>{item.replacementOf ? "Cancelar edición pendiente" : "Eliminar"}</ActionButton></div></article>)}</div> : <p className="profile-media-empty">{`Aún no has agregado ${photos ? "fotos" : "videos"} a ${sampleMode ? "la galería pública de muestra" : "la galería pública"}.`}</p>}
+      {sectionMedia.length > 1 && <p className="gallery-order-help">Usa Izquierda y Derecha para elegir el orden de la galería. Cada movimiento se guarda automáticamente.</p>}
+      {sectionMedia.length > 0 ? <div className="media-owner-grid">{sectionMedia.map((item, index) => <article key={item.id} data-media-id={item.id}><div className="media-owner-preview">{item.mediaType === "image" ? <a href={item.url} target="_blank" rel="noopener noreferrer" aria-label={`Abrir foto ${index + 1} completa`}><Image src={item.url} alt={`Vista previa completa de foto ${index + 1}`} fill unoptimized sizes="(max-width: 620px) 80vw, 240px" /></a> : <MediaVideo src={item.url} contentType={item.contentType} label={sampleMode ? "Video de la muestra" : "Video del anuncio"} />}</div><div><span className={`media-status media-status-${item.moderationStatus}`}>{sampleMode ? "Muestra" : statusLabel[item.moderationStatus]}</span><small>{item.mediaType === "video" ? "Video · " : "Foto · "}{formatBytes(item.byteSize)}</small>{item.mediaType === "image" && <><a className="media-owner-open" href={item.url} target="_blank" rel="noopener noreferrer">Ver foto completa</a>{<ActionButton className="button button-outline" type="button" disabled={isBusy} onClick={()=>editSavedPhoto(item.id)}>Editar marca y rostros</ActionButton>}</>}{<div className="sample-media-order-actions">{sampleMode && item.mediaType === "image" && <ActionButton type="button" className="button button-outline" disabled={isBusy} onClick={() => updateSampleMedia(item.id)}>Usar como foto principal</ActionButton>}<div><ActionButton type="button" className="button button-outline" disabled={isBusy || index === 0} aria-label={`Mover ${photos ? "foto" : "video"} ${index + 1} a la izquierda`} onClick={() => void moveMedia(item.id, -1)}><ActionIcon name="back" />Izquierda</ActionButton><ActionButton type="button" className="button button-outline" disabled={isBusy || index === sectionMedia.length - 1} aria-label={`Mover ${photos ? "foto" : "video"} ${index + 1} a la derecha`} onClick={() => void moveMedia(item.id, 1)}>Derecha<ActionIcon name="next" /></ActionButton></div></div>}<ActionButton className="button button-outline media-owner-remove" type="button" onClick={() => remove(item.id)} disabled={isBusy}>{item.replacementOf ? "Cancelar edición pendiente" : "Eliminar"}</ActionButton></div></article>)}</div> : <p className="profile-media-empty">{`Aún no has agregado ${photos ? "fotos" : "videos"} a ${sampleMode ? "la galería pública de muestra" : "la galería pública"}.`}</p>}
     </section>;
     })}
   </section>;

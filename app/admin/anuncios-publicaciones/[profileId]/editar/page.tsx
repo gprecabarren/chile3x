@@ -13,9 +13,10 @@ import { getDb } from "@/db";
 import { profileDetails, profileServices, profileTags, profiles, users } from "@/db/schema";
 import { getCurrentAdmin, safeAdminReturnTo } from "@/lib/auth";
 import { adminHasCapability } from "@/lib/admin-permissions";
-import { getMediaQuotaState, getMediaUsage, getProfileMedia } from "@/lib/media";
+import { getMediaQuotaState, getMediaUsage } from "@/lib/media";
 import { getVerificationDocuments } from "@/lib/verification-documents";
 import { getOwnerStories } from "@/lib/stories";
+import { getOwnerEditableProfileMedia } from "@/lib/owner-photo-edit";
 import { getSiteSettings } from "@/lib/site-settings";
 import { profilePublicPath } from "@/lib/profile";
 
@@ -48,7 +49,7 @@ export default async function AdminEditProfilePage({ params, searchParams }: {
   const [tags, services, media, usage, documents, settings, stories, query] = await Promise.all([
     db.select({ tag: profileTags.tag }).from(profileTags).where(eq(profileTags.profileId, profileId)),
     db.select({ service: profileServices.service, kind: profileServices.kind }).from(profileServices).where(eq(profileServices.profileId, profileId)),
-    canUpload ? getProfileMedia(profileId) : Promise.resolve([]),
+    canUpload ? getOwnerEditableProfileMedia(profileId) : Promise.resolve([]),
     canUpload ? getMediaUsage() : Promise.resolve({ bytes: 0 }),
     canReadDocuments && row.profile.type === "escort" ? getVerificationDocuments(profileId) : Promise.resolve([]),
     getSiteSettings(), getOwnerStories(profileId), searchParams,
@@ -74,7 +75,7 @@ export default async function AdminEditProfilePage({ params, searchParams }: {
     {query.notice === "story_deleted" && <p className="admin-success" role="status">Historia eliminada y movimiento registrado.</p>}
     {query.error && <p className="form-alert" role="alert">{query.message ?? "No se pudo guardar. Revisa los campos."}</p>}
     {!row.ownerActive && <p className="form-alert" role="alert">La cuenta propietaria está deshabilitada. Reactívala desde Cuentas antes de editar o publicar historias.</p>}
-    {row.ownerActive && canUpload && <ProfileMediaManager adminMode profileId={profileId} initialMedia={media.map(item => ({ id: item.id, url: `/media/${item.id}`, mediaType: item.mediaType, contentType: item.contentType, moderationStatus: item.moderationStatus, visibility: item.visibility, isProfilePhoto: item.isProfilePhoto, byteSize: item.byteSize }))} initialQuota={{ bytes: usage.bytes, ...getMediaQuotaState(usage.bytes) }} mediaSettings={{ watermarkEnabled: settings.profile_gallery_watermark_enabled === "enabled", faceBlurEnabled: settings.profile_gallery_face_blur_enabled === "enabled" }} />}
+    {row.ownerActive && canUpload && <ProfileMediaManager adminMode profileId={profileId} initialMedia={media.map(item => ({ id: item.id, url: `/media/${item.id}`, mediaType: item.mediaType, contentType: item.contentType, moderationStatus: item.moderationStatus, visibility: item.visibility, isProfilePhoto: item.isProfilePhoto, byteSize: item.byteSize, replacementOf: item.replacementOf }))} initialQuota={{ bytes: usage.bytes, ...getMediaQuotaState(usage.bytes) }} mediaSettings={{ watermarkEnabled: settings.profile_gallery_watermark_enabled === "enabled", faceBlurEnabled: settings.profile_gallery_face_blur_enabled === "enabled" }} />}
     {canReadDocuments && profile.type === "escort" && <ProfileVerificationDocuments profileId={profileId} initialDocuments={documents} />}
     {row.ownerActive && profile.status === "approved" && !profile.ownerHiddenAt
       ? <ProfileStoryManager adminMode canUploadImages={adminHasCapability(admin, "media.moderate")} profileId={profileId} profileName={profile.displayName} stories={stories} />

@@ -15,11 +15,11 @@ test('owner photo edits stay private until approved and preserve ownership, revi
   globalThis.__ownerPhotoAudit=(_actor,input)=>{audits.push(input);};globalThis.__ownerPhotoNotify=input=>notifications.push(input);
   const hooks=registerHooks({resolve(specifier,context,next){const stubs={
     '@/db':'export const getDb=async()=>globalThis.__ownerPhotoDb;',
-    '@/lib/auth':'export const getCurrentUser=async()=>globalThis.__ownerPhotoUser;export const getCurrentAdmin=async()=>globalThis.__ownerPhotoAdmin;export function assertSameOrigin(r){if(r.headers.get("origin")!==new URL(r.url).origin)throw Error("origin");}',
+    '@/lib/auth':'export const hasTesterAutoApproval=()=>false;export const getCurrentUser=async()=>globalThis.__ownerPhotoUser;export const getCurrentAdmin=async()=>globalThis.__ownerPhotoAdmin;export function assertSameOrigin(r){if(r.headers.get("origin")!==new URL(r.url).origin)throw Error("origin");}',
     '@/lib/site-settings':'export const getSiteSettings=async()=>({profile_gallery_face_blur_enabled:globalThis.__ownerPhotoBlur});',
     '@/lib/admin-notifications':'export const createAdminNotification=async input=>globalThis.__ownerPhotoNotify(input);',
     '@/lib/admin-audit':'export const recordAdminAudit=async(actor,input)=>globalThis.__ownerPhotoAudit(actor,input);',
-    '@/lib/admin-permissions':'export const adminHasCapability=()=>true;',
+    '@/lib/admin-permissions':'export const adminHasCapability=()=>globalThis.__ownerPhotoPermission!==false;',
     'cloudflare:workers':'export const env={get MEDIA(){return globalThis.__ownerPhotoBucket;}};',
     'next/server':'export class NextRequest extends Request{};export const NextResponse={json:(data,init)=>Response.json(data,init),redirect:(url,status=307)=>new Response(null,{status,headers:{location:String(url)}})};',
   };if(stubs[specifier])return{url:'data:text/javascript,'+encodeURIComponent(stubs[specifier]),shortCircuit:true};if(specifier.startsWith('@/'))return{url:new URL('../'+specifier.slice(2)+'.ts',import.meta.url).href,shortCircuit:true};if((specifier.startsWith('./')||specifier.startsWith('../'))&&!/\.[a-z]+$/i.test(specifier))return{url:new URL(specifier+'.ts',context.parentURL).href,shortCircuit:true};return next(specifier,context);}});
@@ -71,6 +71,39 @@ test('owner photo edits stay private until approved and preserve ownership, revi
       const {uploadProfileMedia}=await import('../lib/profile-media-upload.ts');
       const result=await uploadProfileMedia({profileId:'many',file:new File([png],'new.png',{type:'image/png'}),uploadKind:'gallery',uploadedBy:'owner',moderationStatus:'pending'});assert.equal(result.media.moderationStatus,'pending');assert.equal((await getOwnerEditableProfileMedia('many')).length,10);assert.equal(sqlite.prepare("SELECT count(*) n FROM profile_media WHERE profile_id='many'").get().n,19);
       await assert.rejects(()=>uploadProfileMedia({profileId:'many',file:new File([png],'new.png',{type:'image/png'}),uploadKind:'gallery',uploadedBy:'owner',moderationStatus:'pending'}),/máximo de 10/);
+    });
+    await t.test('gallery order is authorized, transactional, isolated by format and preserves pending replacement order',async()=>{
+      sqlite.exec("INSERT INTO users(id,role,is_active) VALUES('admin','admin',1),('other_admin','admin',1)");
+      const ownerOrder=await import('../app/api/perfiles/[profileId]/media/route.ts'),adminOrder=await import('../app/api/admin/profiles/[profileId]/media/route.ts');
+      seed('gallery_a');seed('gallery_b');seed('pending_a','profile','image','public','pending','gallery_a');seed('video_2','profile','video');
+      const ids=['gallery_b','pending_a'];
+      const snapshot=()=>sqlite.prepare("SELECT id,sort_order,moderation_status,r2_key,is_profile_photo FROM profile_media WHERE profile_id='profile' ORDER BY id").all();
+      const patch=(handler,{order=ids,kind='image',profile='profile',revision=rev(profile),origin='https://photo.invalid'}={})=>{const body=new FormData();body.set('review_key','profile:'+profile);body.set('review_revision',String(revision));body.set('kind',kind);body.set('order',JSON.stringify(order));body.set('mutation_id',crypto.randomUUID());return handler.PATCH(new Request('https://photo.invalid/api/perfiles/'+profile+'/media',{method:'PATCH',headers:{origin},body}),{params:Promise.resolve({profileId:profile})});};
+      const before=snapshot(),objectKeys=[...objects.keys()];
+      globalThis.__ownerPhotoUser=null;assert.equal((await patch(ownerOrder)).status,401);globalThis.__ownerPhotoUser={id:'other'};assert.equal((await patch(ownerOrder)).status,403);globalThis.__ownerPhotoUser={id:'owner'};
+      assert.equal((await patch(ownerOrder,{origin:'https://other.invalid'})).status,403);
+      for(const order of [[],['gallery_b','gallery_b'],['gallery_b','foreign_photo'],['base','gallery_b','pending_a'],['private_photo','pending_a']])assert.equal((await patch(ownerOrder,{order})).status,400);
+      assert.deepEqual(snapshot(),before);
+      const oldRevision=rev('profile'),response=await patch(ownerOrder);assert.equal(response.status,200,await response.clone().text());assert.equal((await response.json()).revision,rev('profile'));
+      assert.equal(sqlite.prepare("SELECT sort_order FROM profile_media WHERE id='gallery_b'").get().sort_order,0);
+      assert.equal(sqlite.prepare("SELECT sort_order FROM profile_media WHERE id='pending_a'").get().sort_order,1);
+      assert.equal(sqlite.prepare("SELECT sort_order FROM profile_media WHERE id='gallery_a'").get().sort_order,1,'approved base follows pending replacement');
+      assert.equal((await patch(ownerOrder,{revision:oldRevision})).status,409);
+      const imageSnapshot=snapshot().filter(x=>!['video','video_2'].includes(x.id));
+      assert.equal((await patch(ownerOrder,{kind:'video',order:['video_2','video']})).status,200);assert.deepEqual(snapshot().filter(x=>!['video','video_2'].includes(x.id)),imageSnapshot);
+      globalThis.__ownerPhotoAdmin=null;assert.equal((await patch(adminOrder)).status,401);globalThis.__ownerPhotoAdmin={id:'admin'};globalThis.__ownerPhotoPermission=false;assert.equal((await patch(adminOrder)).status,403);globalThis.__ownerPhotoPermission=true;
+      sqlite.prepare('INSERT INTO review_reservations VALUES(?,?,?,?)').run('profile:profile','other_admin','lease',Date.now()+10000);assert.equal((await patch(adminOrder)).status,409);sqlite.exec('DELETE FROM review_reservations');
+      assert.equal((await patch(adminOrder,{order:['pending_a','gallery_b']})).status,200);assert.equal(audits.at(-1).action,'media.public_reorder');
+      assert.deepEqual([...objects.keys()],objectKeys,'ordering never duplicates or deletes storage objects');
+      for(const row of snapshot()){const old=before.find(x=>x.id===row.id);assert.equal(row.r2_key,old.r2_key);assert.equal(row.moderation_status,old.moderation_status);assert.equal(row.is_profile_photo,old.is_profile_photo);}
+      const adminDelete=await import('../app/api/admin/profiles/[profileId]/media/[mediaId]/route.ts'),body=new FormData();body.set('review_key','profile:profile');body.set('review_revision',String(rev('profile')));
+      const canceled=await adminDelete.DELETE(new Request('https://photo.invalid/api/admin/profiles/profile/media/pending_a',{method:'DELETE',headers:{origin:'https://photo.invalid'},body}),params('pending_a'));
+      assert.equal(canceled.status,200);assert.equal((await canceled.json()).restoredMedia.id,'gallery_a');assert.equal(sqlite.prepare("SELECT sort_order FROM profile_media WHERE id='gallery_a'").get().sort_order,0);assert.ok(objects.has('gallery_a.png'));
+      const replacement=(await (await post('gallery_a')).json()).replacement.id;
+      assert.equal((await patch(ownerOrder,{order:['gallery_b',replacement]})).status,200);
+      assert.equal((await adminAction(replacement,'approve')).status,303);assert.equal(sqlite.prepare("SELECT sort_order FROM profile_media WHERE id='gallery_a'").get().sort_order,1,'approval preserves the chosen gallery position');
+      assert.equal((await patch(ownerOrder,{profile:'trash',order:[]})).status,403);assert.equal((await patch(adminOrder,{profile:'off_profile',order:[]})).status,404);
+      delete globalThis.__ownerPhotoPermission;
     });
     assert.ok(notifications.length>=3);
   }finally{hooks.deregister();sqlite.close();for(const key of['__ownerPhotoDb','__ownerPhotoUser','__ownerPhotoAdmin','__ownerPhotoBlur','__ownerPhotoBucket','__ownerPhotoAudit','__ownerPhotoNotify'])delete globalThis[key];}

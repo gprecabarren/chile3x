@@ -69,7 +69,7 @@ export function DirectoryCityBar({ selectedCity, kind, preview = false }: { sele
 
   return <nav className="directory-city-bar" aria-label="Cambiar ciudad del directorio">
     <div className="directory-city-bar-inner">
-      <div className="directory-city-breadcrumb"><Link href="/" className="directory-home-link">Volver a la página principal</Link><span className="directory-city-crumb">Directorio <span aria-hidden="true">/</span></span></div>
+      <div className="directory-city-breadcrumb"><Link href="/" className="directory-home-link">Volver al Inicio</Link><span className="directory-city-crumb">Directorio <span aria-hidden="true">/</span></span></div>
       <details ref={menuRef} onToggle={event => setMenuOpen(event.currentTarget.open)} onKeyDown={(event) => { if (event.key === "Escape") menuRef.current?.removeAttribute("open"); }}>
         <summary aria-label={`Cambiar ciudad, actual: ${selectedCity ?? "todo Chile"}`} aria-disabled={preview || undefined} tabIndex={preview ? -1 : undefined} onClick={preview ? event => event.preventDefault() : undefined}><span aria-hidden="true">⌖</span>{selectedCity ?? "Todo Chile"}<span aria-hidden="true">⌄</span></summary>
         {menuOpen && <div className="directory-city-popover" ref={popoverRef}>

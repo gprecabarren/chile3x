@@ -2,6 +2,18 @@ import vinext from "vinext";
 import { defineConfig } from "vite";
 import hostingConfig from "./.openai/hosting.json";
 import { sites } from "./build/sites-vite-plugin";
+import { execFileSync } from "node:child_process";
+
+function siteRelease() {
+  try {
+    const version = execFileSync("git", ["rev-parse", "--short=7", "HEAD"], { encoding: "utf8" }).trim();
+    const committedAt = execFileSync("git", ["show", "-s", "--format=%cI", "HEAD"], { encoding: "utf8" }).trim();
+    const date = new Intl.DateTimeFormat("es-CL", { timeZone: "America/Santiago", dateStyle: "short", timeStyle: "short" }).format(new Date(committedAt));
+    return `Última actualización: ${date} · Versión ${version}`;
+  } catch {
+    return "Versión de desarrollo";
+  }
+}
 
 const CHILE3X_D1_DATABASE_ID = "ee8796f0-2217-4fdb-9fee-1561c52e3ae3";
 
@@ -75,6 +87,7 @@ export default defineConfig(async () => {
   const { cloudflare } = await import("@cloudflare/vite-plugin");
 
   return {
+    define: { __CHILE3X_RELEASE_LABEL__: JSON.stringify(siteRelease()) },
     build: { sourcemap: false },
     server: isCodexSeatbeltSandbox
       ? { watch: { useFsEvents: false, usePolling: true } }

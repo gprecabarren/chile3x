@@ -1,5 +1,7 @@
 "use client";
 import { ActionAnchor, ActionButton } from "@/app/ActionButton";
+import { siteReleaseLabel } from "@/lib/site-release";
+import "./age-gate-release.css";
 
 import { useEffect, useState } from "react";
 
@@ -22,6 +24,7 @@ export function AgeGate() {
 
   return (
     <div className="age-gate" role="dialog" aria-modal="true" aria-labelledby="age-gate-title">
+      <div className="age-gate-content">
       <div className="age-gate-card">
         <span className="age-gate-mark">+18</span>
         <p className="eyebrow">ACCESO PARA ADULTOS</p>
@@ -33,6 +36,8 @@ export function AgeGate() {
           <ActionAnchor className="button button-outline" href="https://www.google.com/">Salir del sitio</ActionAnchor>
         </div>
         <small>Consulta nuestros <a href="/terminos">términos</a>, <a href="/privacidad">privacidad</a> y <a href="/reglas-de-publicacion">reglas de publicación</a>.</small>
+      </div>
+      <small className="age-gate-release">{siteReleaseLabel}</small>
       </div>
     </div>
   );

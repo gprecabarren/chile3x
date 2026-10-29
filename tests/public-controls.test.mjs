@@ -40,5 +40,5 @@ test('public readability is base CSS: no extra font, script, glass preload or th
 
 test('the public directory return link clearly names the home page',async()=>{
  const bar=await source('app/directorio/DirectoryCityBar.tsx');
- assert.match(bar,/<Link href="\/" className="directory-home-link">Volver a la página principal<\/Link>/);
+ assert.match(bar,/<Link href="\/" className="directory-home-link">Volver al Inicio<\/Link>/);
 });

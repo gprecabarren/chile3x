@@ -221,3 +221,5 @@ La revisión de contexto se realizó localmente y no cambió la visibilidad del 
 - Publicación: commit GitHub, checks, versión Cloudflare y resultado verificado; no presentar QA local como producción.
 
 Los datos vivos, secretos, permisos externos y la salud real de proveedores requieren consulta específica cuando una tarea los involucre. Este contexto persiste en archivos del repositorio para retomarlo sin depender de una conversación anterior.
+
+El aviso +18 muestra debajo una línea pequeña de versión y última actualización. Vite obtiene el SHA corto y la fecha del commit de Git durante la compilación, con hora de Chile; cada build de main incorpora automáticamente su referencia. No consulta GitHub ni expone credenciales al navegador. Sin repositorio Git se identifica como versión de desarrollo.

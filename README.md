@@ -22,6 +22,8 @@ Actualización del 28 de octubre: [recorte de video e invitaciones administrativ
 
 Revisión posterior del 28 de octubre: [cambio de cuenta de GitHub y creadores de muestras](docs/qa-sesiones-creadores-2026-10-28.md). El acceso normal también muestra el selector de cuentas; el reintento explícito cierra la sesión local y descarta el intento OAuth anterior. Las muestras identifican a su creador y permiten filtrar por él junto con los demás criterios.
 
+Revisión del 29 de octubre: [marca de agua masiva y separación de fotos/videos](docs/qa-medios-lotes-2026-10-29.md). Las opciones de archivos seleccionados incluyen videos para la marca de agua; el gestor compartido separa ambas secciones de carga y conserva el recorte al cambiar efectos.
+
 <!-- TECHNICAL_HANDOFF_START -->
 ## Guía técnica de traspaso — 24 de octubre de 2026
 

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { applyPhotoOptionToSelection } from '../lib/gallery-photo-options.ts';
+import { applyMediaOptionToSelection } from '../lib/gallery-media-options.ts';
 
 const source = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -44,20 +44,34 @@ test('new escort listings default to VIP and display descending tiers without ch
   assert.doesNotMatch(form, /garantizan una mejor posición en Google/);
 });
 
-test('global photo controls preserve crops/regions, invalidate only changed photos, and never touch videos or uploaded files', () => {
+test('global media controls preserve crops/regions and include video watermarks while preserving uploaded files', () => {
   const region = [{ x: 0.2, y: 0.3, width: 0.1, height: 0.1 }];
-  const photo = { id: 'photo', image: true, status: 'failed', watermark: false, blurFaces: false, prepared: { name: 'old.jpg' }, file: { name: 'cropped.jpg' }, faceRegions: region, detail: 'old' };
-  const done = { ...photo, id: 'done', status: 'completed' }, video = { ...photo, id: 'video', image: false }, already = { ...photo, id: 'already', watermark: true };
+  const photo = { id: 'photo', image: true, status: 'failed', watermark: false, blurFaces: false, prepared: { name: 'old.jpg' }, file: { name: 'cropped.jpg' }, originalFile: { name: 'original.jpg' }, faceRegions: region, detail: 'old' };
+  const done = { ...photo, id: 'done', status: 'completed' }, video = { ...photo, id: 'video', image: false, trim: { start: 5, end: 12 } }, already = { ...photo, id: 'already', watermark: true };
   const original = [photo, done, video, already];
-  const result = applyPhotoOptionToSelection(original, 'watermark', true);
+  const result = applyMediaOptionToSelection(original, 'watermark', true);
   assert.equal(result[0].watermark, true); assert.equal(result[0].prepared, undefined); assert.equal(result[0].status, 'ready');
   assert.equal(result[0].file, photo.file); assert.equal(result[0].faceRegions, region);
-  assert.equal(result[1], done); assert.equal(result[2], video); assert.equal(result[3], already);
+  assert.equal(result[1], done); assert.equal(result[2].watermark, true); assert.equal(result[2].prepared, undefined); assert.equal(result[2].file, video.originalFile); assert.equal(result[3], already);
+  assert.equal(result[2].trim, video.trim);
   assert.equal(photo.watermark, false); assert.ok(photo.prepared);
-  const blurred = applyPhotoOptionToSelection(result, 'blurFaces', true);
+  const blurred = applyMediaOptionToSelection(result, 'blurFaces', true);
   assert.equal(blurred[0].blurFaces, true); assert.equal(blurred[0].watermark, true);
-  const unblurred = applyPhotoOptionToSelection(blurred, 'blurFaces', false);
+  assert.equal(blurred[2], result[2], 'facial blur never changes a video or its prepared result');
+  const unblurred = applyMediaOptionToSelection(blurred, 'blurFaces', false);
   assert.equal(unblurred[0].blurFaces, false); assert.equal(unblurred[0].faceRegions, region);
+});
+
+test('video-only batches toggle every pending video without touching photos, trim or completed uploads', () => {
+  const originalFile = { name: 'original.mp4' }, prepared = { name: 'marked.mp4' }, trim = { start: 1, end: 3 };
+  const video = { image: false, status: 'ready', watermark: true, blurFaces: false, prepared, file: prepared, originalFile, trim, detail: 'Prepared' };
+  const photo = { ...video, image: true }, done = { ...video, status: 'completed' };
+  const off = applyMediaOptionToSelection([video, photo, done], 'watermark', false, 'video');
+  assert.equal(off[0].watermark, false); assert.equal(off[0].prepared, undefined); assert.equal(off[0].file, originalFile); assert.equal(off[0].trim, trim);
+  assert.equal(off[1], photo); assert.equal(off[2], done); assert.equal(video.prepared, prepared);
+  const on = applyMediaOptionToSelection(off, 'watermark', true, 'video');
+  assert.equal(on[0].watermark, true); assert.equal(on[0].file, originalFile); assert.equal(on[0].trim, trim);
+  assert.equal(applyMediaOptionToSelection(on, 'watermark', true, 'video')[0], on[0], 'an unchanged option keeps its cache');
 });
 
 test('private preview authorization is route-scoped and excluded from public indexing and metrics', async () => {

@@ -8,6 +8,8 @@ Actualización del 28 de octubre, sin rutas nuevas: `GET /api/auth/github/start?
 
 Revisión posterior del mismo día, sin rutas nuevas: `GET /api/auth/github/start` siempre solicita seleccionar cuenta. `POST /api/auth/logout` acepta `intent=github_retry` bajo verificación de origen; limpia las sesiones y el intento OAuth y redirige a `/admin/acceso-denegado?reason=github_retry`. Esa pantalla inicia una navegación nueva a GitHub, evitando redirecciones externas de un formulario bajo CSP. `GET /admin/muestras?creator=<userId>` filtra por creador junto con los parámetros existentes; la selección se conserva en papelera y retornos de acciones.
 
+Revisión del 29 de octubre, sin rutas nuevas: el gestor compartido separa las cargas de fotos y videos y aplica la marca masiva a ambos formatos seleccionados. Las APIs existentes conservan sus comprobaciones, revisiones, moderación y auditoría; no cambia el esquema ni el acceso a muestras privadas.
+
 ## Páginas
 
 | Ruta | Fuente |

@@ -39,7 +39,10 @@ export function bulkMediaReturnTo(value: FormDataEntryValue | null, profileId: s
   try {
     const url = new URL(value, "https://chile3x.cl");
     if (url.origin !== "https://chile3x.cl") return fallback;
-    return url.pathname === "/admin/medios" || /^\/perfil\/[^/]+$/.test(url.pathname) ? `${url.pathname}${url.search}` : fallback;
+    const id = encodeURIComponent(profileId);
+    const editor = url.pathname === `/admin/anuncios-publicaciones/${id}/editar`
+      || url.pathname.match(/^\/admin\/cuentas\/[\w-]+\/perfiles\/([\w-]+)\/medios$/)?.[1] === profileId;
+    return editor || url.pathname === "/admin/medios" || /^\/perfil\/[^/]+$/.test(url.pathname) ? `${url.pathname}${url.search}` : fallback;
   } catch { return fallback; }
 }
 
@@ -48,4 +51,5 @@ export const bulkMediaMessages: Record<string, string> = {
   approved: "Los archivos revisados fueron aprobados. El anuncio mantiene su estado de publicación.",
   unchanged: "Estos archivos ya estaban aprobados. No se hicieron cambios.",
   changed: "Algún archivo cambió desde que abriste la página. Revisa los archivos actualizados y vuelve a intentarlo.",
+  unapproved: "El archivo volvió a revisión. Se conserva para administración y su titular; deja de mostrarse al público.",
 };

@@ -55,3 +55,13 @@ test('QA forms preserve original endpoints and put submit and WhatsApp actions a
  assert.match(submission,/servicesIncluded: typeValue === "rental" \|\| contentOnly \? \[\]/);
  assert.match(status,/existingProfile.type === "escort" \? requestedHealthReviewStatus : "not_requested"/);
 });
+
+test('all administrative media forms bind an explicit profile revision, including the standalone public preview',async()=>{
+ const bulk=await source('app/admin/medios/ApproveAllProfileMedia.tsx'),individual=await source('app/admin/medios/MediaModerationActions.tsx'),preview=await source('app/perfil/[slug]/page.tsx');
+ for(const code of [bulk,individual]){assert.match(code,/name="review_key"/);assert.match(code,/name="review_revision"/);}
+ assert.match(preview,/<ApproveAllProfileMedia revision=\{profile.revision \?\? 0\}/);
+});
+test('moderation returns only to the matching editor and preserves administrative preview context',()=>{
+ for(const path of ['/admin/anuncios-publicaciones/prf_qa/editar?return_to=%2Fadmin%2Fanuncios-publicaciones','/admin/cuentas/usr_qa/perfiles/prf_qa/medios','/perfil/@fixture?return_to=%2Fadmin%2Fanuncios-publicaciones%3Festado%3Dpending'])assert.equal(bulkMediaReturnTo(path,'prf_qa'),path);
+ for(const path of ['/admin/anuncios-publicaciones/prf_other/editar','/admin/cuentas/usr_qa/perfiles/prf_other/medios'])assert.equal(bulkMediaReturnTo(path,'prf_qa'),'/admin/medios?perfil=prf_qa');
+});

@@ -65,7 +65,7 @@ test("image processing is optional, previewed and scoped to media moderators", a
   const [editor, route, adminList] = await Promise.all([
     source("app/admin/medios/AdminPhotoTools.tsx"),
     source("app/api/admin/media/[mediaId]/procesar/route.ts"),
-    source("app/admin/medios/page.tsx"),
+    source("app/admin/medios/PublicMediaCard.tsx"),
   ]);
   assert.match(editor, /Generar vista previa/);
   assert.match(editor, /Confirmar esta foto/);

@@ -105,6 +105,25 @@ test('owner photo edits stay private until approved and preserve ownership, revi
       assert.equal((await patch(ownerOrder,{profile:'trash',order:[]})).status,403);assert.equal((await patch(adminOrder,{profile:'off_profile',order:[]})).status,404);
       delete globalThis.__ownerPhotoPermission;
     });
+    await t.test('bulk moderation merges pending replacements, preserves cover/public IDs and gracefully rejects stale native forms',async()=>{
+      const bulk=await import('../app/api/admin/profiles/[profileId]/media/aprobar-todos/route.ts'),{mediaReviewSnapshot}=await import('../lib/media-bulk-review.ts'),{getProfileMedia}=await import('../lib/media.ts');
+      const pendingCover=(await (await post('base')).json()).replacement.id;
+      seed('bulk_new','profile','image','public','pending');
+      const visible=await getOwnerEditableProfileMedia('profile'),reviewed=visible.filter(x=>x.visibility==='public');
+      const make=async(revision=rev('profile'))=>{const data=new FormData();data.set('review_key','profile:profile');data.set('review_revision',String(revision));data.set('mutation_id',crypto.randomUUID());data.set('review_confirmed','yes');data.set('reviewed_media',JSON.stringify(await mediaReviewSnapshot(reviewed)));data.set('return_to','/perfil/@fixture');return data;};
+      const req=(data,json=false)=>new Request('https://photo.invalid/api/admin/profiles/profile/media/aprobar-todos',{method:'POST',headers:{origin:'https://photo.invalid',...(json?{accept:'application/json'}:{})},body:data});
+      const args={params:Promise.resolve({profileId:'profile'})},oldKey=sqlite.prepare("SELECT r2_key FROM profile_media WHERE id='base'").get().r2_key;
+      globalThis.__ownerPhotoAdmin={id:'admin'};
+      let response=await bulk.POST(req(await make()),args);assert.equal(response.status,303,await response.clone().text());assert.match(response.headers.get('location'),/media_notice=approved/);
+      const rows=await getProfileMedia('profile');assert.equal(rows.some(x=>x.id===pendingCover),false);assert.equal(rows.find(x=>x.id==='base').moderationStatus,'approved');assert.equal(rows.filter(x=>x.isProfilePhoto&&x.moderationStatus==='approved').length,1);assert.equal(rows.find(x=>x.id==='bulk_new').moderationStatus,'approved');assert.ok(!objects.has(oldKey));assert.equal(sqlite.prepare("SELECT status FROM profiles WHERE id='profile'").get().status,'approved');
+      seed('bulk_stale','profile','image','public','pending');const staleFiles=await getProfileMedia('profile'),snapshot=JSON.stringify(await mediaReviewSnapshot(staleFiles.filter(x=>x.visibility==='public'))),version=rev('profile');sqlite.exec("UPDATE profiles SET display_name='changed' WHERE id='profile'");
+      const staleBody=()=>{const data=new FormData();data.set('review_key','profile:profile');data.set('review_revision',String(version));data.set('review_confirmed','yes');data.set('reviewed_media',snapshot);data.set('return_to','/perfil/@fixture');return data;};
+      response=await bulk.POST(req(staleBody()),args);assert.equal(response.status,303);assert.match(response.headers.get('location'),/media_notice=changed/);response=await bulk.POST(req(staleBody(),true),args);assert.equal(response.status,409);assert.equal((await response.json()).conflict,true);assert.equal(sqlite.prepare("SELECT moderation_status FROM profile_media WHERE id='bulk_stale'").get().moderation_status,'pending');assert.equal(audits.filter(x=>x.action==='media.public_bulk_approve').length,1);
+      seed('many_cover','many');sqlite.exec("UPDATE profile_media SET is_profile_photo=1 WHERE id='many_cover'");for(let i=0;i<3;i++)seed('many_video_'+i,'many','video');
+      const logical=await getOwnerEditableProfileMedia('many');assert.equal(logical.length,14);assert.equal((await getProfileMedia('many')).length,23);
+      const large=new FormData();large.set('review_key','profile:many');large.set('review_revision',String(rev('many')));large.set('review_confirmed','yes');large.set('reviewed_media',JSON.stringify(await mediaReviewSnapshot(logical)));large.set('return_to','/admin/medios');
+      response=await bulk.POST(req(large),{params:Promise.resolve({profileId:'many'})});assert.equal(response.status,303,await response.clone().text());const final=await getProfileMedia('many');assert.equal(final.length,14);assert.ok(final.every(x=>x.moderationStatus==='approved'));assert.equal(final.filter(x=>x.isProfilePhoto).length,1);
+    });
     assert.ok(notifications.length>=3);
   }finally{hooks.deregister();sqlite.close();for(const key of['__ownerPhotoDb','__ownerPhotoUser','__ownerPhotoAdmin','__ownerPhotoBlur','__ownerPhotoBucket','__ownerPhotoAudit','__ownerPhotoNotify'])delete globalThis[key];}
 });

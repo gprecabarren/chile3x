@@ -47,7 +47,7 @@ test('watermark is large, monochrome, centered and optional for owners and admin
 
 test('QA listings remain honest and noindex while normal messaging and moderation stay enabled',async()=>{
   const profile=await source('app/perfil/[slug]/page.tsx');
-  assert.match(profile,/robots: profile.isDemo \? \{ index: false, follow: false \}/);
+  assert.match(profile,/robots: profile.isDemo \|\| admin \? \{ index: false, follow: false \}/);
   assert.match(profile,/Ficha de prueba: no representa un servicio disponible/);
   assert.match(profile,/\(sample \|\| profile.isPublic \|\| admin \|\| viewerOwnsProfile\) && <ProfileReviews preview=\{!profile.isPublic\}/);
   const reviews=await source("app/perfil/ProfileReviews.tsx");

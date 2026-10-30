@@ -6,16 +6,17 @@ import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { findProfileMedia } from "@/lib/media";
 import { recordAdminAudit } from "@/lib/admin-audit";
 import { adminHasCapability } from "@/lib/admin-permissions";
-import { CollaborationConflict, expectedVersion, guardedBatch, conflictResponse } from "@/lib/collaboration";
+import { CollaborationConflict, expectedVersion, guardedBatch, conflictResponse, mutationRedirect } from "@/lib/collaboration";
+import { bulkMediaReturnTo } from "@/lib/media-bulk-review";
 import { approvedPhotoBeingReplaced } from "@/lib/owner-photo-edit";
 
 export const dynamic = "force-dynamic";
 
 function destination(request: NextRequest, formData: FormData, notice: string) {
   const requested = String(formData.get("return_to") ?? "");
-  const path = requested.startsWith("/admin/medios") ? requested : "/admin/medios";
+  const path = bulkMediaReturnTo(requested, String(formData.get("review_key") ?? "").slice(8));
   const url = new URL(path, request.url);
-  url.searchParams.set("notice", notice);
+  url.searchParams.set(notice === "changed" || url.pathname !== "/admin/medios" ? "media_notice" : "notice", notice);
   return url;
 }
 
@@ -34,11 +35,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const record = await findProfileMedia(mediaId);
   const formData = await request.formData();
   if (!record) return NextResponse.redirect(destination(request, formData, "missing"), 303);
+  if (record.profile.trashedAt || !record.ownerIsActive) return Response.json({ error: "Restablece la cuenta y el anuncio antes de moderar sus archivos." }, { status: 409 });
   const action = formData.get("action");
   const db = await getDb();
   const version=(()=>{try{return expectedVersion(formData,`profile:${record.media.profileId}`);}catch{return null;}})();
-  if(!version)return conflictResponse();
-  async function save(statements:Parameters<typeof guardedBatch>[1]){try{await guardedBatch(version!,statements,admin!.id);return null;}catch(error){if(error instanceof CollaborationConflict)return conflictResponse();throw error;}}
+  const conflict = () => request.headers.get("accept")?.includes("application/json") ? conflictResponse() : mutationRedirect(request, destination(request, formData, "changed"));
+  if(!version)return conflict();
+  async function save(statements:Parameters<typeof guardedBatch>[1]){try{await guardedBatch(version!,statements,admin!.id);return null;}catch(error){if(error instanceof CollaborationConflict)return conflict();throw error;}}
   if (action === "approve") {
     const replaced = await approvedPhotoBeingReplaced(record.media);
     const isCover = replaced ? replaced.isProfilePhoto : record.media.isProfilePhoto;
@@ -57,13 +60,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const { env } = await import("cloudflare:workers");
       try { await env.MEDIA?.delete(replaced.r2Key); if (env.MEDIA) await db.delete(dataDeletionJobs).where(eq(dataDeletionJobs.r2Key,replaced.r2Key)); } catch { console.error("Approved replacement cleanup deferred",{mediaId}); }
     }
-    return NextResponse.redirect(destination(request, formData, "approved"), 303);
+    return mutationRedirect(request, destination(request, formData, "approved"));
   }
 
   if (action === "unapprove") {
     const conflict=await save([db.update(profileMedia).set({moderationStatus:"pending"}).where(eq(profileMedia.id,mediaId))]);if(conflict)return conflict;
     await recordAdminAudit(admin, { category: "media", action: "media.public_unapprove", summary: `Devolvió a revisión ${record.media.mediaType === "video" ? "un video" : "una foto"} de ${record.profile.displayName}.`, entityType: "public_media", entityId: mediaId, entityLabel: `${record.media.mediaType === "video" ? "Video" : "Foto"} · ${record.profile.displayName}`, before: { moderationStatus: record.media.moderationStatus }, after: { moderationStatus: "pending" }, metadata: { profileId: record.profile.id } });
-    return NextResponse.redirect(destination(request, formData, "unapproved"), 303);
+    return mutationRedirect(request, destination(request, formData, "unapproved"));
   }
 
   if (action === "delete") {

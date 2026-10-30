@@ -83,6 +83,8 @@ Metadatos globales, SEO de cada diseño de inicio, metadatos de páginas informa
 
 ### Medios y documentos
 
+La aprobación individual/masiva está disponible en Medios, Editar anuncio y Gestionar fotos y videos; la previsualización permite la revisión conjunta. Todos usan las mismas APIs, capacidades, revisión explícita y auditoría. La consulta administrativa autorizada incluye pendientes aun en anuncios publicados; visitantes conservan únicamente aprobados. Publicar no aprueba archivos. Los conflictos nativos regresan con aviso y los interceptados se muestran dentro de la página. La aprobación conjunta también resuelve reemplazos pendientes conservando el ID público, con transacción y limpieza duradera de la base retirada. Ver [QA de moderación del 29 de octubre](qa-moderacion-medios-2026-10-29.md).
+
 Editor de medios → políticas de imagen/video y preparación local cuando corresponde → API autenticada → R2 más referencia D1 → moderación del archivo → lectura autorizada.
 
 Los medios y el anuncio se moderan por separado. No retirar la publicación aprobada al subir un archivo nuevo ni perder la foto principal aprobada antes de aceptar el reemplazo. `/media/:id` vuelve a comprobar propietario/estado del archivo y anuncio; soporta rangos sin saltarse autorización. Documentos de identidad, salud, evidencias y adjuntos tienen rutas y reglas propias. R2 no es un bucket público ni una copia de los datos de Git.

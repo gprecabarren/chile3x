@@ -30,6 +30,7 @@ test('real media and engagement reads keep all gallery media but hydrate just th
  const prepare=(sql,args=[])=>({bind:(...values)=>prepare(sql,values),execute(){queries++;return {results:sqlite.prepare(sql).all(...args)}},async raw(){queries++;roundTrips++;const statement=sqlite.prepare(sql);statement.setReturnArrays(true);return statement.all(...args)},async all(){queries++;roundTrips++;return {results:sqlite.prepare(sql).all(...args)}}});
  globalThis.__navigationPerfDb=drizzle({prepare,async batch(statements){roundTrips++;return statements.map(statement=>statement.execute());}});
  const hooks=registerHooks({resolve(specifier,context,next){
+  if(specifier==='@/lib/owner-photo-edit')return {url:'data:text/javascript,export const logicalProfileMedia=async rows=>rows',shortCircuit:true};
   if(specifier==='@/db')return {url:'data:text/javascript,export const getDb=async()=>globalThis.__navigationPerfDb',shortCircuit:true};
   if(specifier.startsWith('@/'))return {url:new URL('../'+specifier.slice(2)+'.ts',import.meta.url).href,shortCircuit:true};
   return next(specifier,context);
@@ -62,6 +63,8 @@ test('real media and engagement reads keep all gallery media but hydrate just th
   const {getPublicProfiles}=await import('../lib/directory.ts');
   const profileTrips=roundTrips;const full=await getPublicProfiles({profileIds:['p1'],includeAssociations:true});assert.equal(roundTrips-profileTrips,3,'profile + relations batch + media, not six separate relation requests');
   assert.deepEqual(full[0].tags,['venta-contenido']);assert.deepEqual(full[0].servicesIncluded,['Videollamada']);assert.deepEqual(full[0].agencyIds,['p2']);assert.deepEqual(full[0].media.map(row=>row.id),['first','video','cover']);
+  const administrative=await getPublicProfiles({profileIds:['p1'],includeUnapproved:true,includePendingMedia:true});assert.ok(administrative[0].media.some(x=>x.id==='pending'),'published profiles retain pending media in authorized administrative review');assert.ok(!administrative[0].media.some(x=>x.id==='private'));
+  const ordinary=await getPublicProfiles({profileIds:['p1'],includePendingMedia:true});assert.ok(!ordinary[0].media.some(x=>x.id==='pending'),'pending media flag alone never grants administrative preview');
   const cardsOnly=await getPublicProfiles({profileIds:['p1'],coverOnly:true});assert.deepEqual(cardsOnly[0].media.map(row=>row.id),['cover']);assert.deepEqual(cardsOnly[0].agencyIds,[]);
  }finally{hooks.deregister();delete globalThis.__navigationPerfDb;sqlite.close();}
 });

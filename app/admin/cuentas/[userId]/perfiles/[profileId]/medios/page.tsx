@@ -3,6 +3,8 @@ import Link from "@/app/NavigationLink";
 import { ReviewScope } from "@/app/admin/ReviewScope";
 import { notFound, redirect } from "next/navigation";
 import { AdminPageHeading, AdminShell } from "@/app/admin/_components";
+import { bulkMediaMessages } from "@/lib/media-bulk-review";
+import { profileModerationControls } from "@/app/admin/medios/profile-moderation-controls";
 import { ProfileMediaManager } from "@/app/mi-cuenta/ProfileMediaManager";
 import { ProfileVerificationDocuments } from "@/app/mi-cuenta/ProfileVerificationDocuments";
 import { getVerificationDocuments } from "@/lib/verification-documents";
@@ -18,7 +20,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminProfileMediaPage({ params, searchParams }: {
   params: Promise<{ userId: string; profileId: string }>;
-  searchParams: Promise<{ notice?: string }>;
+  searchParams: Promise<{ notice?: string; media_notice?: string }>;
 }) {
   const { userId, profileId } = await params;
   const admin = await getCurrentAdmin();
@@ -37,10 +39,11 @@ export default async function AdminProfileMediaPage({ params, searchParams }: {
   const moderationHref = `/admin/anuncios-publicaciones?q=${encodeURIComponent(profile.ownerEmail)}&return_to=${encodeURIComponent(accountHref)}`;
   return <AdminShell user={admin}><div className="admin-content"><ReviewScope resource={`profile:${profileId}`} revision={profile.revision}>
     <AdminPageHeading eyebrow="CREACIÓN ASISTIDA · MEDIOS" title={`Fotos y videos de ${profile.displayName}`} description={`Cuenta propietaria: ${profile.ownerEmail}. Las cargas de administración se aprueban al instante, pero el anuncio solo será público al aprobarlo en moderación.`} backHref={accountHref} />
+    {query.media_notice && bulkMediaMessages[query.media_notice] && <p className="admin-notice" role="status">{bulkMediaMessages[query.media_notice]}</p>}
     {query.notice === "profile_created" && <p className="admin-success" role="status">El anuncio se creó para esta cuenta. Ahora agrega la foto principal y los archivos de galería.</p>}
     {query.notice === "profile_submitted" && <p className="admin-success" role="status">Anuncio guardado y enviado a revisión. Debe aprobarse desde moderación antes de aparecer en el directorio. Mientras tanto puedes adjuntar sus fotos, videos y documentos privados opcionales.</p>}
     {!profile.ownerActive && <p className="form-alert" role="alert">La cuenta está deshabilitada. Reactívala antes de subir archivos o publicar el anuncio.</p>}
-    {profile.ownerActive && <ProfileMediaManager profileId={profileId} initialMedia={media.map((item) => ({ id: item.id, url: `/media/${item.id}`, mediaType: item.mediaType, contentType: item.contentType, moderationStatus: item.moderationStatus, visibility: item.visibility, isProfilePhoto: item.isProfilePhoto, byteSize: item.byteSize, replacementOf: item.replacementOf }))} initialQuota={{ bytes: usage.bytes, ...getMediaQuotaState(usage.bytes) }} mediaSettings={{ watermarkEnabled: settings.profile_gallery_watermark_enabled === "enabled", faceBlurEnabled: settings.profile_gallery_face_blur_enabled === "enabled" }} adminMode />}
+    {profile.ownerActive && <ProfileMediaManager {...profileModerationControls(profileId, profile.revision, media, `/admin/cuentas/${userId}/perfiles/${profileId}/medios`)} profileId={profileId} initialMedia={media.map((item) => ({ id: item.id, url: `/media/${item.id}`, mediaType: item.mediaType, contentType: item.contentType, moderationStatus: item.moderationStatus, visibility: item.visibility, isProfilePhoto: item.isProfilePhoto, byteSize: item.byteSize, replacementOf: item.replacementOf }))} initialQuota={{ bytes: usage.bytes, ...getMediaQuotaState(usage.bytes) }} mediaSettings={{ watermarkEnabled: settings.profile_gallery_watermark_enabled === "enabled", faceBlurEnabled: settings.profile_gallery_face_blur_enabled === "enabled" }} adminMode />}
     {profile.ownerActive && profile.type === "escort" && <ProfileVerificationDocuments profileId={profileId} initialDocuments={documents} />}
     <div className="profile-form-actions"><Link prefetch={false} className="button button-primary" href={moderationHref}>Abrir moderación y publicar</Link><Link prefetch={false} className="button button-outline" href={accountHref}>Volver a la cuenta</Link></div>
     <p className="admin-create-profile-note">Estado actual del anuncio: {profile.status === "approved" ? "Publicado" : profile.status === "pending" ? "En revisión" : profile.status === "draft" ? "Borrador" : profile.status}. Las fotos y videos que suba después la persona propietaria seguirán el flujo normal de revisión.</p>

@@ -12,6 +12,8 @@ Revisión del 29 de octubre, sin rutas nuevas: el gestor compartido separa las c
 
 ## Páginas
 
+Moderación de medios (29 de octubre): los POST existentes de `/api/admin/media/[mediaId]` y `/api/admin/profiles/[profileId]/media/aprobar-todos` aceptan el retorno seguro a los editores del anuncio, distinguen navegación nativa de respuesta JSON y mantienen revisión, autorización y auditoría. No se añaden rutas ni migraciones.
+
 | Ruta | Fuente |
 | --- | --- |
 | `/admin/acceso-denegado` | [página](../app/admin/acceso-denegado/page.tsx) |

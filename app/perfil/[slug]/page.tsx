@@ -11,7 +11,7 @@ import { publicProfileAge } from "@/lib/profile-age";
 import { isContentOnly, publicProfileTypeLabel } from "@/lib/profile-content-category";
 import Link from "@/app/NavigationLink"; import { ReviewScope } from "@/app/admin/ReviewScope";
 import { notFound, redirect } from "next/navigation";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db";
 import { profileMedia, profiles } from "@/db/schema";
 import { DirectoryShell, PortalContactIcon, ProfileCard } from "@/app/directorio/_components";
@@ -95,7 +95,7 @@ function serviceFilterPath(profile: PublicProfile, kind: "included" | "additiona
 
 export async function generateMetadata({ params }: ProfilePageProps): Promise<Metadata> {
   const { slug } = await params;
-  const profile = await getPublicProfileSeoForRoute(slug);
+  const [profile, admin] = await Promise.all([getPublicProfileSeoForRoute(slug), getCurrentAdmin()]);
   if (!profile) return { title: "Vista previa privada del anuncio", robots: { index: false, follow: false, noarchive: true } };
   const socialImage = profile.socialImageId ? `/media/${profile.socialImageId}` : socialCardImageUrl;
   return {
@@ -104,7 +104,7 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
     alternates: { canonical: profilePublicPath(profile) },
     openGraph: { title: profileSeoTitle(profile), description: profileSeoDescription(profile), url: profilePublicPath(profile), locale: "es_CL", type: "profile", siteName: "Chile3X", images: [{ url: socialImage, alt: `${profile.displayName}, ${profile.city}` }] },
     twitter: { card: "summary_large_image", title: profileSeoTitle(profile), description: profileSeoDescription(profile), images: [socialImage] },
-    robots: profile.isDemo ? { index: false, follow: false } : undefined,
+    robots: profile.isDemo || admin ? { index: false, follow: false } : undefined,
   };
 }
 
@@ -119,8 +119,8 @@ export default async function PublicProfilePage({ params, searchParams, sample }
   const adminReturnTo = requestedReturnTo.startsWith("/admin/") ? safeAdminReturnTo(requestedReturnTo) : "/admin/anuncios-publicaciones";
   const previewPath = `${profilePublicPath(profile)}?return_to=${encodeURIComponent(adminReturnTo)}`;
   const isAdminPreview = Boolean(admin) && !profile.isPublic;
-  const reviewableMedia = adminHasCapability(admin, "media.moderate")
-    ? await (await getDb()).select().from(profileMedia).where(and(eq(profileMedia.profileId, profile.id), eq(profileMedia.visibility, "public"))).limit(MAX_BULK_MEDIA + 1)
+  const reviewableMedia = adminHasCapability(admin, "media.moderate") && profile.media.length
+    ? await (await getDb()).select().from(profileMedia).where(and(eq(profileMedia.profileId, profile.id), eq(profileMedia.visibility, "public"), inArray(profileMedia.id, profile.media.map(file => file.id)))).limit(MAX_BULK_MEDIA + 1)
     : [];
   const relatedProfileIds = profile.type === "agency" ? profile.memberIds : profile.agencyIds;
   const facts = profilePublicFacts(profile.type, profile.details.metadata);
@@ -179,7 +179,8 @@ export default async function PublicProfilePage({ params, searchParams, sample }
       {admin && <div className="profile-admin-tools"><ReviewScope resource={`profile:${profile.id}`} revision={profile.revision ?? 0}><section className="admin-profile-review-bar"><Link className="admin-profile-back-link" href={adminReturnTo}><ActionIcon name="back"/>Volver a perfiles</Link><div><p>{isAdminPreview ? "VISTA DE MODERACIÓN" : "ADMINISTRACIÓN DEL AVISO"}</p><h2>{isAdminPreview ? "Este aviso no es público todavía" : "Gestiona este aviso publicado"}</h2><span>Revísalo como lo ve el público y actualiza su estado, verificación o prioridad en el inicio. Los documentos privados nunca aparecen en la ficha pública.</span><Link className="admin-profile-media-link" href={`/admin/medios?perfil=${encodeURIComponent(profile.id)}`}>Revisar fotos y videos de este anuncio</Link></div><form action={`/api/admin/profiles/${profile.id}/status`} method="post" className="admin-profile-review-form"><input type="hidden" name="return_to" value={previewPath} /><label>Publicación<select name="status" defaultValue={profile.status}><option value="draft">Borrador</option><option value="pending">En revisión</option><option value="approved">Aprobar y publicar</option><option value="paused">Pausado</option><option value="rejected">Requiere cambios</option><option value="expired">Vencido</option></select></label><label>Perfil verificado<select name="verification_status" defaultValue={profile.verificationStatus}><option value="unreviewed">No verificado</option><option value="in_review">Verificación en curso</option><option value="reviewed">Verificado ✓</option></select></label>{profile.type === "escort" && <label>Revisión médica<select name="health_review_status" defaultValue={profile.healthReviewStatus}><option value="not_requested">No solicitada</option><option value="in_review">En revisión</option><option value="reviewed">Revisada</option></select></label>}<label className="admin-featured-toggle"><input name="is_featured" type="checkbox" defaultChecked={profile.isFeatured} />Destacar en el inicio</label><ActionButton className="button button-primary" type="submit">Guardar decisión</ActionButton></form></section>
       {adminHasCapability(admin, "profiles.recycle") && <details className="admin-profile-trash-bar profile-trash-control is-destructive"><summary><ActionIcon name="trash"/>Enviar este anuncio a la papelera</summary><form action={`/api/admin/profiles/${profile.id}/papelera`} method="post"><input type="hidden" name="review_key" value={`profile:${profile.id}`} /><input type="hidden" name="review_revision" value={profile.revision ?? 0} /><input type="hidden" name="action" value="trash" /><input type="hidden" name="return_to" value="/admin/anuncios-publicaciones/papelera" /><p>La ficha dejará de ser pública y sus datos quedarán disponibles en la papelera administrativa.</p><label>Escribe PAPELERA<input name="confirmation" required autoComplete="off" /></label><ActionButton className="button button-danger" type="submit">Confirmar envío</ActionButton></form></details>}</ReviewScope></div>}
       {admin && adminWhatsappStatistics && <section className="admin-profile-whatsapp-stat" aria-label="Contador privado de WhatsApp"><div><p className="eyebrow">SOLO ADMINISTRACIÓN</p><h2>Clics en WhatsApp del anuncio</h2><p>Pulsaciones registradas; no confirma mensajes enviados ni personas únicas. El histórico anterior al 10 de octubre cuenta una interacción por navegador y día.</p></div><strong>{adminWhatsappStatistics.clicks.toLocaleString("es-CL")}</strong><small>{adminWhatsappStatistics.dailyBrowsers.toLocaleString("es-CL")} contactos únicos diarios acumulados</small></section>}
-      {adminHasCapability(admin, "media.moderate") && <section className="profile-bulk-media-review">{query.media_notice && bulkMediaMessages[query.media_notice] && <p className="admin-notice" role="status">{bulkMediaMessages[query.media_notice]}</p>}<ApproveAllProfileMedia profileId={profile.id} files={reviewableMedia} returnTo={previewPath} /></section>}
+      {adminHasCapability(admin, "media.moderate") && <section className="profile-bulk-media-review">{query.media_notice && bulkMediaMessages[query.media_notice] && <p className="admin-notice" role="status">{bulkMediaMessages[query.media_notice]}</p>}<ApproveAllProfileMedia revision={profile.revision ?? 0} profileId={profile.id} files={reviewableMedia} returnTo={previewPath} /></section>}
+      {adminHasCapability(admin, "media.moderate") && profile.isPublic && reviewableMedia.some(file => file.moderationStatus !== "approved") && <aside className="profile-private-preview-notice" role="status"><strong>Revisión administrativa de archivos</strong><p>Esta vista incluye archivos pendientes. El público solo ve los archivos aprobados; publicar el anuncio no aprueba sus fotos ni videos.</p></aside>}
       {admin && verificationDocuments.length > 0 && <section className="admin-private-documents"><strong>Documentos privados de verificación</strong>{verificationDocuments.map((document) => <a key={document.kind} href={`/api/perfiles/${profile.id}/documentos/${document.kind}`}>{document.kind === "identity" ? "Descargar carnet" : "Descargar examen médico"}</a>)}</section>}
       {viewerOwnsProfile && <aside className="profile-owner-edit-bar" aria-label="Administrar mi anuncio"><div><strong>Este es tu anuncio</strong><span>Edita sus datos, fotos y videos desde tu cuenta.</span></div><Link className="button button-outline" href={`/mi-cuenta/${profile.id}/editar`} prefetch={false}>Editar anuncio</Link></aside>}
       {!profile.isPublic && <aside className="profile-private-preview-notice" role="status"><strong>Vista previa privada</strong><p>{sample ? "Así podría verse tu anuncio. Esta muestra no está publicada ni tiene cuenta: cualquiera que reciba el enlace completo puede verla hasta que venza o sea revocado. Los botones de contacto son demostrativos." : "Así se verá tu anuncio al publicarse. Solo tú y administración pueden acceder a esta vista; no aparece en el directorio ni en Google. Las fotos y videos pendientes todavía necesitan aprobación."}</p></aside>}

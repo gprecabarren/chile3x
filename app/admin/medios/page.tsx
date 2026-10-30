@@ -12,7 +12,7 @@ import { adminHasCapability } from "@/lib/admin-permissions";
 import { formatMediaBytes, getMediaQuotaState, getMediaUsage } from "@/lib/media";
 import { AdminPageHeading, AdminShell } from "../_components";
 import { AdminPagination, pageHref, readAdminPage } from "../pagination";
-import { AdminMediaImageProcessing } from "./AdminMediaImageProcessing";
+import { PublicMediaCard } from "./PublicMediaCard";
 import { ApproveAllProfileMedia } from "./ApproveAllProfileMedia";
 import { ApproveAllExclusiveMedia } from "./ApproveAllExclusiveMedia";
 import { bulkMediaMessages } from "@/lib/media-bulk-review";
@@ -64,31 +64,6 @@ function mediaHref(params: URLSearchParams, page = 1) {
   return pageHref("/admin/medios", params, page);
 }
 
-function PublicMediaCard({ media, profileName, returnTo }: {
-  media: typeof profileMedia.$inferSelect;
-  profileName: string;
-  returnTo: string;
-}) {
-  return <article className={`admin-media-card is-${media.moderationStatus}`}>
-    <div className="admin-media-preview">
-      {media.mediaType === "image"
-        ? <Image src={`/media/${media.id}`} alt={`Archivo enviado para ${profileName}`} fill unoptimized sizes="(max-width: 620px) 100vw, (max-width: 980px) 50vw, 300px" />
-        : <MediaVideo src={`/media/${media.id}`} contentType={media.contentType} label={`Video de ${profileName}`} />}
-    </div>
-    <div>
-      <span className={`media-status media-status-${media.moderationStatus}`}>{moderationLabel(media.moderationStatus)}</span>
-      <p>{media.isProfilePhoto ? "Foto de perfil" : media.mediaType === "video" ? "Video de galería" : "Foto de galería"} · {formatMediaBytes(media.byteSize)}</p>
-      <form action={`/api/admin/media/${media.id}`} method="post">
-        <input type="hidden" name="return_to" value={returnTo} />
-        {media.moderationStatus === "approved"
-          ? <ActionButton className="button button-outline" type="submit" name="action" value="unapprove">Cancelar aprobación</ActionButton>
-          : <ActionButton className="button button-primary" type="submit" name="action" value="approve">Aprobar archivo</ActionButton>}
-        <ActionButton className="button button-outline" type="submit" name="action" value="delete">Eliminar</ActionButton>
-      </form>
-      {media.mediaType === "image" && <AdminMediaImageProcessing mediaId={media.id} profileName={profileName} />}
-    </div>
-  </article>;
-}
 
 function ExclusiveMediaCard({ media, ownerUsername, returnTo }: {
   media: typeof exclusiveContentMedia.$inferSelect;
@@ -443,9 +418,9 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
           const accountHref = `/admin/cuentas/${encodeURIComponent(group.ownerId)}?return_to=${encodeURIComponent(currentHref)}`;
           return <ReviewScope key={group.id} resource={`profile:${group.id}`} revision={group.revision}><section className="admin-media-profile-group">
             <header><div><p className="eyebrow">ANUNCIO</p><h2>{group.name}</h2><span>{recordPermissions.canAccounts ? <Link prefetch={false} className="admin-media-owner-link" href={accountHref}>{group.ownerUsername ? `@${group.ownerUsername}` : "Abrir cuenta propietaria"}</Link> : group.ownerUsername ? `@${group.ownerUsername}` : "Cuenta propietaria"} · <a href={`mailto:${group.ownerEmail}`}>{group.ownerEmail}</a> · {group.trashedAt ? "En papelera" : listingStatusLabel(group.status)} · {group.items.length} archivo{group.items.length === 1 ? "" : "s"}{pending > 0 ? ` · ${pending} pendiente${pending === 1 ? "" : "s"}` : ""}</span></div><MediaRecordLinks ownerId={group.ownerId} profile={group} returnTo={currentHref} {...recordPermissions} /></header>
-            <ApproveAllProfileMedia profileId={group.id} files={group.items.map(item => item.media)} returnTo={currentHref} />
-            {profilePhoto.length > 0 && <section><h3>Foto de perfil</h3><div className="admin-media-grid">{profilePhoto.map((item) => <PublicMediaCard key={item.media.id} media={item.media} profileName={group.name} returnTo={currentHref} />)}</div></section>}
-            {gallery.length > 0 && <section><h3>Galería pública</h3><div className="admin-media-grid">{gallery.map((item) => <PublicMediaCard key={item.media.id} media={item.media} profileName={group.name} returnTo={currentHref} />)}</div></section>}
+            <ApproveAllProfileMedia revision={group.revision} profileId={group.id} files={group.items.map(item => item.media)} returnTo={currentHref} />
+            {profilePhoto.length > 0 && <section><h3>Foto de perfil</h3><div className="admin-media-grid">{profilePhoto.map((item) => <PublicMediaCard revision={group.revision} key={item.media.id} media={item.media} profileName={group.name} returnTo={currentHref} />)}</div></section>}
+            {gallery.length > 0 && <section><h3>Galería pública</h3><div className="admin-media-grid">{gallery.map((item) => <PublicMediaCard revision={group.revision} key={item.media.id} media={item.media} profileName={group.name} returnTo={currentHref} />)}</div></section>}
           </section></ReviewScope>;
         }) : view === "exclusive" ? exclusivePageGroups.map((group) => {
           const pending = group.items.filter((item) => item.media.moderationStatus === "pending").length;
@@ -469,7 +444,7 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: P
           return <section className="admin-media-profile-group admin-media-account-group" key={group.id}>
             <header><div><p className="eyebrow">CUENTA CON MEDIOS</p><h2>@{group.username ?? group.name ?? "usuario"}</h2><span><a href={`mailto:${group.email}`}>{group.email}</a> · {allItems.length} archivo{allItems.length === 1 ? "" : "s"} · {images} foto{images === 1 ? "" : "s"} · {videos} video{videos === 1 ? "" : "s"}{pending ? ` · ${pending} pendiente${pending === 1 ? "" : "s"}` : ""}</span></div><div><MediaRecordLinks ownerId={group.id} returnTo={currentHref} {...recordPermissions} /><Link prefetch={false} className="button button-public-preview" href={focused ? mediaHref(accountTabParams) : mediaHref(focusParams)}>{focused ? "Ver todas las cuentas" : "Ver medios de la cuenta"}</Link></div></header>
             {focused && <>
-              {group.publicGroups.map((entry) => <section key={entry.id}><ReviewScope resource={`profile:${entry.id}`} revision={entry.revision}><header className="admin-media-subgroup-heading"><h3>Galería pública · {entry.name}</h3><MediaRecordLinks ownerId={group.id} profile={entry} returnTo={currentHref} {...recordPermissions} showAccount={false} /></header><ApproveAllProfileMedia profileId={entry.id} files={entry.items.map(item => item.media)} returnTo={currentHref} /><div className="admin-media-grid">{entry.items.map((item) => <PublicMediaCard key={item.media.id} media={item.media} profileName={entry.name} returnTo={currentHref} />)}</div></ReviewScope></section>)}
+              {group.publicGroups.map((entry) => <section key={entry.id}><ReviewScope resource={`profile:${entry.id}`} revision={entry.revision}><header className="admin-media-subgroup-heading"><h3>Galería pública · {entry.name}</h3><MediaRecordLinks ownerId={group.id} profile={entry} returnTo={currentHref} {...recordPermissions} showAccount={false} /></header><ApproveAllProfileMedia revision={entry.revision} profileId={entry.id} files={entry.items.map(item => item.media)} returnTo={currentHref} /><div className="admin-media-grid">{entry.items.map((item) => <PublicMediaCard revision={entry.revision} key={item.media.id} media={item.media} profileName={entry.name} returnTo={currentHref} />)}</div></ReviewScope></section>)}
               {group.exclusiveGroups.map((entry) => <section key={entry.id}><ReviewScope resource={`library:${entry.id}`} revision={entry.revision}><header className="admin-media-subgroup-heading"><h3>Contenido exclusivo{entry.linkedProfileName ? ` · ${entry.linkedProfileName}` : " · Sin anuncio vinculado"}</h3><MediaRecordLinks ownerId={group.id} profile={entry.linkedProfileId && entry.linkedProfileSlug ? { id: entry.linkedProfileId, slug: entry.linkedProfileSlug, handle: entry.linkedProfileHandle, status: entry.linkedProfileStatus ?? "pending", trashedAt: entry.linkedProfileTrashedAt } : null} returnTo={currentHref} {...recordPermissions} showAccount={false} /></header><ApproveAllExclusiveMedia collectionId={entry.id} files={entry.items.map(item => item.media)} returnTo={currentHref} /><div className="admin-media-grid">{entry.items.map((item) => <ExclusiveMediaCard key={item.media.id} media={item.media} ownerUsername={entry.ownerUsername} returnTo={currentHref} />)}</div></ReviewScope></section>)}
             </>}
           </section>;

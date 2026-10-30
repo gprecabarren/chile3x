@@ -6,6 +6,10 @@ import Link from "@/app/NavigationLink";
 import { ReviewScope } from "@/app/admin/ReviewScope";
 import { AdminPageHeading, AdminShell } from "@/app/admin/_components";
 import { ProfileForm } from "@/app/mi-cuenta/ProfileForm";
+import { bulkMediaMessages } from "@/lib/media-bulk-review";
+import { ApproveAllProfileMedia } from "@/app/admin/medios/ApproveAllProfileMedia";
+import { PublicMediaCard } from "@/app/admin/medios/PublicMediaCard";
+import { profileModerationControls } from "@/app/admin/medios/profile-moderation-controls";
 import { ProfileMediaManager } from "@/app/mi-cuenta/ProfileMediaManager";
 import { ProfileVerificationDocuments } from "@/app/mi-cuenta/ProfileVerificationDocuments";
 import { ProfileStoryManager } from "@/app/mi-cuenta/ProfileStoryManager";
@@ -32,7 +36,7 @@ function readMetadata(value: string | null): Record<string, string> {
 
 export default async function AdminEditProfilePage({ params, searchParams }: {
   params: Promise<{ profileId: string }>;
-  searchParams: Promise<{ notice?: string; error?: string; message?: string; return_to?: string }>;
+  searchParams: Promise<{ media_notice?: string; notice?: string; error?: string; message?: string; return_to?: string }>;
 }) {
   const { profileId } = await params;
   const admin = await getCurrentAdmin();
@@ -44,12 +48,13 @@ export default async function AdminEditProfilePage({ params, searchParams }: {
     .from(profiles).innerJoin(users, eq(profiles.ownerId, users.id)).leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id))
     .where(and(eq(profiles.id, profileId), isNull(profiles.trashedAt))).limit(1);
   if (!row) notFound();
+  const canModerateMedia = adminHasCapability(admin, "media.moderate");
   const canUpload = adminHasCapability(admin, "accounts.manage") && adminHasCapability(admin, "media.moderate");
   const canReadDocuments = adminHasCapability(admin, "private.view");
   const [tags, services, media, usage, documents, settings, stories, query] = await Promise.all([
     db.select({ tag: profileTags.tag }).from(profileTags).where(eq(profileTags.profileId, profileId)),
     db.select({ service: profileServices.service, kind: profileServices.kind }).from(profileServices).where(eq(profileServices.profileId, profileId)),
-    canUpload ? getOwnerEditableProfileMedia(profileId) : Promise.resolve([]),
+    canModerateMedia ? getOwnerEditableProfileMedia(profileId) : Promise.resolve([]),
     canUpload ? getMediaUsage() : Promise.resolve({ bytes: 0 }),
     canReadDocuments && row.profile.type === "escort" ? getVerificationDocuments(profileId) : Promise.resolve([]),
     getSiteSettings(), getOwnerStories(profileId), searchParams,
@@ -66,16 +71,18 @@ export default async function AdminEditProfilePage({ params, searchParams }: {
     </AdminPageHeading>
     <nav className="profile-editor-shortcuts" aria-label="Secciones del anuncio">
       <ActionAnchor className="button button-outline" href="#datos-del-anuncio">Editar datos</ActionAnchor>
-      {canUpload && <ActionAnchor className="button button-outline" href="#fotos-y-videos">Fotos y videos</ActionAnchor>}
-      {canReadDocuments && profile.type === "escort" && <ActionAnchor className="button button-outline" href="#documentos-privados">Documentos privados</ActionAnchor>}
+      {canModerateMedia && <ActionAnchor className="button button-outline" href="#fotos-y-videos">Fotos y videos</ActionAnchor>}
+    {canReadDocuments && profile.type === "escort" && <ActionAnchor className="button button-outline" href="#documentos-privados">Documentos privados</ActionAnchor>}
       <ActionAnchor className="button button-outline" href="#historias">Historias y estados</ActionAnchor>
       <Link className="button button-outline" href={`/admin/anuncios-publicaciones?q=${encodeURIComponent(profile.displayName)}`}>Cambiar estados del anuncio</Link>
     </nav>
+    {query.media_notice && bulkMediaMessages[query.media_notice] && <p className="admin-notice" role="status">{bulkMediaMessages[query.media_notice]}</p>}
     {query.notice === "saved" && <p className="admin-success" role="status">Datos guardados. El anuncio conserva su estado de publicación y verificación.</p>}
     {query.notice === "story_deleted" && <p className="admin-success" role="status">Historia eliminada y movimiento registrado.</p>}
     {query.error && <p className="form-alert" role="alert">{query.message ?? "No se pudo guardar. Revisa los campos."}</p>}
     {!row.ownerActive && <p className="form-alert" role="alert">La cuenta propietaria está deshabilitada. Reactívala desde Cuentas antes de editar o publicar historias.</p>}
-    {row.ownerActive && canUpload && <ProfileMediaManager adminMode profileId={profileId} initialMedia={media.map(item => ({ id: item.id, url: `/media/${item.id}`, mediaType: item.mediaType, contentType: item.contentType, moderationStatus: item.moderationStatus, visibility: item.visibility, isProfilePhoto: item.isProfilePhoto, byteSize: item.byteSize, replacementOf: item.replacementOf }))} initialQuota={{ bytes: usage.bytes, ...getMediaQuotaState(usage.bytes) }} mediaSettings={{ watermarkEnabled: settings.profile_gallery_watermark_enabled === "enabled", faceBlurEnabled: settings.profile_gallery_face_blur_enabled === "enabled" }} />}
+    {row.ownerActive && canUpload && <ProfileMediaManager {...profileModerationControls(profileId, profile.revision, media, currentHref)} adminMode profileId={profileId} initialMedia={media.map(item => ({ id: item.id, url: `/media/${item.id}`, mediaType: item.mediaType, contentType: item.contentType, moderationStatus: item.moderationStatus, visibility: item.visibility, isProfilePhoto: item.isProfilePhoto, byteSize: item.byteSize, replacementOf: item.replacementOf }))} initialQuota={{ bytes: usage.bytes, ...getMediaQuotaState(usage.bytes) }} mediaSettings={{ watermarkEnabled: settings.profile_gallery_watermark_enabled === "enabled", faceBlurEnabled: settings.profile_gallery_face_blur_enabled === "enabled" }} />}
+    {row.ownerActive && canModerateMedia && !canUpload && <section id="fotos-y-videos" className="admin-media-profile-group"><h2>Revisar fotos y videos</h2><ApproveAllProfileMedia profileId={profileId} revision={profile.revision} files={media} returnTo={currentHref} /><div className="admin-media-grid">{media.filter(file => file.visibility === "public").map(file => <PublicMediaCard key={file.id} media={file} profileName={profile.displayName} revision={profile.revision} returnTo={currentHref} />)}</div></section>}
     {canReadDocuments && profile.type === "escort" && <ProfileVerificationDocuments profileId={profileId} initialDocuments={documents} />}
     {row.ownerActive && profile.status === "approved" && !profile.ownerHiddenAt
       ? <ProfileStoryManager adminMode canUploadImages={adminHasCapability(admin, "media.moderate")} profileId={profileId} profileName={profile.displayName} stories={stories} />

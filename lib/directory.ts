@@ -223,9 +223,8 @@ export async function getPublicProfiles(options: PublicProfileOptions = {}) {
   }
 
   const ownerIds = [...new Set(visibleRows.map((row) => row.profile.ownerId))];
-  const previewMediaIds = visibleRows.filter(row => !row.isPublic && (
-    row.profile.ownerId === options.previewOwnerId || options.includeUnapproved && options.includePendingMedia
-  )).map(row => row.profile.id);
+  const previewMediaIds = visibleRows.filter(row => options.includeUnapproved && options.includePendingMedia
+    || !row.isPublic && row.profile.ownerId === options.previewOwnerId).map(row => row.profile.id);
   const onlineCutoff = new Date(Date.now() - 3 * 60_000).toISOString();
   const [[tags, services, memberships, presenceRows], mediaByProfile, previewMedia] = await Promise.all([
     db.batch([
@@ -243,7 +242,10 @@ export async function getPublicProfiles(options: PublicProfileOptions = {}) {
   ]);
   // The preview can include pending uploads, but never rejected files or
   // private verification documents. The media route rechecks every request.
-  for (const id of previewMediaIds) mediaByProfile.set(id, previewMedia.filter(media => media.profileId === id));
+  if (previewMediaIds.length) {
+    const { logicalProfileMedia } = await import("@/lib/owner-photo-edit");
+    for (const id of previewMediaIds) mediaByProfile.set(id, await logicalProfileMedia(previewMedia.filter(media => media.profileId === id)));
+  }
 
   const tagMap = new Map<string, string[]>();
   const includedMap = new Map<string, string[]>();

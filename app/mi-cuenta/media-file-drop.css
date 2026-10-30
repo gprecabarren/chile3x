@@ -1,0 +1,4 @@
+.media-file-drop-surface.is-file-dragging { outline:2px dashed #ff9baa; outline-offset:5px; }
+.media-file-drop-surface .media-drop-intro { color:#c1ccdc; font-size:13px; line-height:1.6; }
+.media-file-drop-surface .media-drop-hint { grid-column:1 / -1; margin:0; padding:10px 12px; border:1px dashed #62728c; border-radius:var(--corner-8); background:#0c1421; color:#c6d5e9; font-size:13px; line-height:1.5; }
+.media-file-drop-surface.is-file-dragging [data-media-kind]:hover > .media-drop-hint { border-color:#ff9baa; color:#fff; background:#2a1c2b; }

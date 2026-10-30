@@ -12,6 +12,8 @@ Revisión del 29 de octubre, sin rutas nuevas: el gestor compartido separa las c
 
 ## Páginas
 
+Carga múltiple (30 de octubre): sin rutas nuevas. Los selectores y el arrastre alimentan la misma selección validada; el envío requiere confirmar cada sección, también en la biblioteca exclusiva (`/api/mi-cuenta/contenido/medios`). El listado administrativo abre `/muestra/:handle` en otra pestaña con el acceso existente, sin crear otro enlace privado.
+
 Moderación de medios (29 de octubre): los POST existentes de `/api/admin/media/[mediaId]` y `/api/admin/profiles/[profileId]/media/aprobar-todos` aceptan el retorno seguro a los editores del anuncio, distinguen navegación nativa de respuesta JSON y mantienen revisión, autorización y auditoría. No se añaden rutas ni migraciones.
 
 | Ruta | Fuente |

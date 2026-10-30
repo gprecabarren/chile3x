@@ -1,6 +1,23 @@
 /* One media editor for accounts, assisted listings and private samples.
    Cards must fit their actions, rather than squeezing actions into the
    metadata column inherited from the older compact gallery. */
+.profile-media-manager .profile-primary-photo-block,
+.profile-media-manager .profile-public-gallery-manager { margin-block:28px 0; }
+.profile-media-manager .gallery-saved-tools-help { margin:0; color:#c1ccdc; font-size:13px; line-height:1.6; }
+.profile-media-manager .gallery-selection-heading { display:grid; gap:6px; min-width:0; }
+.profile-media-manager .gallery-selection-heading > .button { margin-top:8px; }
+.profile-media-manager .gallery-selection-save { justify-self:start; width:auto; max-width:100%; min-height:44px; white-space:normal; }
+.profile-media-manager .gallery-candidate-grid { display:grid; grid-template-columns:minmax(0,1fr); align-items:start; gap:14px; min-width:0; }
+/* At most two cards, only when each has at least 360px. This also works
+   inside narrow administrative columns without creating a containing block
+   that would trap the photo editor's dialogs. */
+.profile-media-manager [data-media-kind="image"] .gallery-candidate-grid { grid-template-columns:repeat(auto-fit,minmax(min(100%,max(360px,calc((100% - 14px) / 2))),1fr)); }
+.profile-media-manager [data-media-kind="image"] .gallery-candidate-grid > article { grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; align-content:start; }
+.profile-media-manager [data-media-kind="image"] .gallery-candidate-grid > article > :is(div:first-child,.gallery-upload-status,.face-privacy-editor,.gallery-candidate-remove) { grid-column:1 / -1; }
+.profile-media-manager .gallery-candidate-grid .gallery-face-blur-option { min-width:0; white-space:normal; align-items:start; line-height:1.5; }
+.profile-media-manager .gallery-candidate-grid .gallery-face-blur-option input { flex:0 0 auto; }
+.profile-media-manager .gallery-candidate-grid .photo-selection-actions .button { min-width:0; max-width:100%; min-height:44px; padding:10px 12px; white-space:normal; }
+.profile-media-manager .selected-photo-result-help { margin:10px 0; }
 .profile-media-manager .profile-public-gallery-manager > .media-owner-grid,
 .profile-media-manager .profile-photo-preview-list {
   display:grid;
@@ -75,23 +92,6 @@
 .profile-media-manager .profile-photo-delete-confirmation > div { display:flex; flex-wrap:wrap; gap:10px; }
 .profile-media-manager .profile-photo-delete-confirmation .button { min-width:0; max-width:100%; min-height:44px; white-space:normal; line-height:1.45; }
 .profile-media-manager .gallery-upload-candidates article > .video-trim-editor { grid-column:1 / -1; display:grid; grid-template-columns:minmax(0,380px) minmax(0,1fr); align-items:start; gap:16px; }
-.video-trim-original { display:grid; gap:6px; min-width:0; }
-.video-trim-original video { display:block; width:100%; max-height:300px; background:#05070c; border-radius:var(--corner-8); }
-.video-trim-editor fieldset { min-width:0; margin:0; padding:14px; border:1px solid #53647c; border-radius:var(--corner-10); }
-.video-trim-editor legend { padding:0 6px; color:#fff; font-weight:700; }
-.profile-media-manager .video-trim-editor p { margin:0 0 12px; font-size:13px; line-height:1.5; color:#c1ccdc; }
-.video-trim-points { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
-.video-trim-points > div { min-width:0; display:grid; gap:8px; }
-.video-trim-points label { color:#f1f4fa; font-size:14px; font-weight:600; }
-.video-trim-points label span { font-size:12px; font-weight:400; color:#c1ccdc; }
-.profile-media-manager .video-trim-points input[type="number"] { width:100%; min-width:0; min-height:44px; padding:9px 10px; font:inherit; font-size:16px; color:#fff; border:1px solid #64748b; border-radius:var(--corner-8); background:#0a0f18; }
-.profile-media-manager .video-trim-points input[type="range"] { position:static; width:100%; min-width:0; height:36px; padding:0; clip:auto; overflow:visible; accent-color:#ff8093; cursor:pointer; }
-.video-trim-editor input:focus-visible { outline:2px solid #ff9baa; outline-offset:3px; }
-.profile-media-manager .video-trim-editor .video-trim-duration { margin:10px 0; }
-.video-trim-actions { display:flex; flex-wrap:wrap; gap:8px; }
-.profile-media-manager .video-trim-actions .button { min-height:44px; max-width:100%; padding:9px 12px; font-size:13px; white-space:normal; }
-.profile-media-manager .video-trim-editor .video-trim-error { color:#ffbdc5; }
-.video-trim-editor fieldset:disabled { opacity:.65; }
 @media(max-width:1000px) {
   .profile-media-manager .gallery-upload-candidates article > .video-trim-editor { grid-template-columns:minmax(0,1fr); }
   .video-trim-original { max-width:380px; width:100%; }

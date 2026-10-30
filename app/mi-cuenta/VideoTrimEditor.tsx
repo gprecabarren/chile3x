@@ -1,4 +1,5 @@
 "use client";
+import "./video-trim-editor.css";
 import { useEffect, useId, useRef, useState } from "react";
 import { ActionButton } from "@/app/ActionButton";
 import { defaultVideoTrim, moveVideoTrim, videoTimeLabel, type VideoTrim } from "@/lib/video-trim-policy";

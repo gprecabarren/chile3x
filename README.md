@@ -28,6 +28,8 @@ Orden de galería del 29 de octubre: [controles compartidos de izquierda/derecha
 
 Moderación del 29 de octubre: [aprobación desde previsualización y editores](docs/qa-moderacion-medios-2026-10-29.md), con revisión explícita y visibilidad administrativa de pendientes incluso después de publicar.
 
+Carga múltiple del 30 de octubre: [arrastre de archivos, pasos, biblioteca privada y acciones de muestras](docs/qa-carga-multiple-2026-10-30.md). La selección es local hasta confirmar cada sección; fotos y videos privados también se gestionan por separado.
+
 <!-- TECHNICAL_HANDOFF_START -->
 ## Guía técnica de traspaso — 24 de octubre de 2026
 

@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { getDb } from "@/db";
 import {
@@ -72,6 +73,7 @@ export async function permanentlyDeleteAccount(userId: string, actor: AccountDel
       ...fileJobs,
       db.delete(emailDeliveryLogs).where(eq(emailDeliveryLogs.recipient, account.email.trim().toLowerCase())),
       db.insert(telegramOutboxJobs).values(telegramJob),
+      db.delete(profiles).where(and(eq(profiles.ownerId,userId),sql`${profiles.agencyCustodianId} is not null`)),
       db.delete(profiles).where(eq(profiles.ownerId, userId)),
       db.delete(users).where(eq(users.id, userId)),
       db.delete(messageConversations).where(and(isNull(messageConversations.visitorUserId), isNull(messageConversations.ownerUserId))),
@@ -82,6 +84,7 @@ export async function permanentlyDeleteAccount(userId: string, actor: AccountDel
       historyStatement,
       ...fileJobs,
       db.delete(emailDeliveryLogs).where(eq(emailDeliveryLogs.recipient, account.email.trim().toLowerCase())),
+      db.delete(profiles).where(and(eq(profiles.ownerId,userId),sql`${profiles.agencyCustodianId} is not null`)),
       db.delete(profiles).where(eq(profiles.ownerId, userId)),
       db.delete(users).where(eq(users.id, userId)),
       db.delete(messageConversations).where(and(isNull(messageConversations.visitorUserId), isNull(messageConversations.ownerUserId))),

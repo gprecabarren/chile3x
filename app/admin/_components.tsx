@@ -94,6 +94,7 @@ function AdminNavigation({
     <nav aria-label="Administración">
       <AdminSidebarLink href="/admin">Resumen</AdminSidebarLink>
       {adminHasCapability(user, "profiles.moderate") && <AdminSidebarLink className={pendingCount > 0 ? "admin-nav-alert" : undefined} href="/admin/anuncios-publicaciones">Anuncios<AdminPendingCount key={pendingCount} kind="pendingProfiles" initial={pendingCount} /></AdminSidebarLink>}
+      {adminHasCapability(user,"accounts.manage")&&adminHasCapability(user,"profiles.moderate")&&<AdminSidebarLink href="/admin/agencias">Agencias y vinculaciones</AdminSidebarLink>}
       {PRIVATE_SAMPLES_ENABLED&&adminHasCapability(user,"accounts.manage")&&adminHasCapability(user,"profiles.moderate")&&<AdminSidebarLink href="/admin/muestras">Muestras privadas</AdminSidebarLink>}
       {adminHasCapability(user, "media.moderate") && <AdminSidebarLink className={pendingMedia > 0 ? "admin-nav-alert" : undefined} href="/admin/medios">Medios<AdminPendingCount key={pendingMedia} kind="pendingMedia" initial={pendingMedia} /></AdminSidebarLink>}
       {adminHasCapability(user, "reviews.moderate") && <AdminSidebarLink href="/admin/resenas">Reseñas</AdminSidebarLink>}

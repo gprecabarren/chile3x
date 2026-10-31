@@ -14,7 +14,8 @@ if (!globalThis.caches) {
 
 async function render(path = "/", headers = {}) {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
+  // Use the canonical Worker URL: generated chunks can import its shared exports.
+  // A query-string copy would create a second RSC renderer in the same isolate.
   const { default: worker } = await import(workerUrl.href);
 
   return worker.fetch(

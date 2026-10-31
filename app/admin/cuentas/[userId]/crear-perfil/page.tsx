@@ -26,7 +26,7 @@ export default async function AdminCreateProfilePage({ params, searchParams }: {
     .from(users)
     .where(eq(users.id, userId))
     .limit(1),
-    db.select({ id: profiles.id }).from(profiles).where(and(eq(profiles.ownerId, userId), eq(profiles.type, "escort"), isNull(profiles.trashedAt))).limit(1),
+    db.select({ id: profiles.id }).from(profiles).where(and(eq(profiles.ownerId, userId), eq(profiles.type, "escort"), isNull(profiles.agencyCustodianId), isNull(profiles.trashedAt))).limit(1),
   ]);
   if (!owner || owner.role === "admin") redirect("/admin/cuentas?notice=account_missing");
   const unlimitedEscort = hasUnlimitedEscortListings(owner);

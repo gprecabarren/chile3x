@@ -1,3 +1,4 @@
+import { countAgencyNotices } from "@/lib/agency-management";
 import { ActionButton } from "@/app/ActionButton";
 import Link from "@/app/NavigationLink";
 import type { ReactNode } from "react";
@@ -17,6 +18,7 @@ function AccountNavigation({ user, helpEnabled }: { user: AccountUser; helpEnabl
   return <nav aria-label="Navegación de cuenta">
     <AccountNavigationLink className="account-navigation-home" href="/mi-cuenta">Mi cuenta</AccountNavigationLink>
     <AccountNavigationLink href="/mi-cuenta#mis-anuncios">Mis anuncios</AccountNavigationLink>
+    <AccountNavigationLink href="/mi-cuenta#agencias">Agencias y permisos</AccountNavigationLink>
     <AccountNavigationLink href="/mi-cuenta/historias">Historias</AccountNavigationLink>
     <AccountNavigationLink className="account-messages-link" href="/mi-cuenta/mensajes">Mensajes<UnreadMessagesBadge /></AccountNavigationLink>
     <AccountNavigationLink href="/mi-cuenta/contenido">Mi contenido</AccountNavigationLink>
@@ -39,13 +41,13 @@ function AccountNavigation({ user, helpEnabled }: { user: AccountUser; helpEnabl
 }
 
 export async function AccountShell({ user, children, showActivityNotices = true }: { user: AccountUser; children: ReactNode; showActivityNotices?: boolean }) {
-  const [unreadMessages, pendingReviews, settings] = await Promise.all([countUnreadMessages(user.id), countPendingReceivedReviews(user.id), getSiteSettings()]);
+  const [unreadMessages, pendingReviews, settings,agencyInvitations] = await Promise.all([countUnreadMessages(user.id), countPendingReceivedReviews(user.id), getSiteSettings(),countAgencyNotices(user.id)]);
   const helpEnabled = settings.account_help_enabled === "enabled";
   const brand = <div className="account-sidebar-brand"><Link href="/" className="sidebar-return-site"><span aria-hidden="true">←</span><span>Volver al sitio web</span></Link></div>;
   const toolbarBrand = <Link className="account-brand-home" href="/mi-cuenta">MI CUENTA</Link>;
   const identity = <><div className="account-sidebar-identity"><Link className="account-home-link" href="/mi-cuenta" title={user.email} aria-label={`Ir a mi cuenta: ${user.email}`}><strong>{user.displayName || "Mi cuenta"}</strong><small>{user.email}</small></Link></div><form action="/api/auth/session/logout" method="post"><ActionButton type="submit" title="Cerrar la sesión de esta cuenta">Cerrar sesión</ActionButton></form></>;
   return (
-    <PortalWhatsappScope showFloating={false}><MessageNotifications initialUnread={unreadMessages} initialPendingReviews={pendingReviews}><AccountWorkspace brand={brand} toolbarBrand={toolbarBrand} navigation={<AccountNavigation user={user} helpEnabled={helpEnabled} />} identity={identity}>
+    <PortalWhatsappScope showFloating={false}><MessageNotifications initialUnread={unreadMessages} initialPendingReviews={pendingReviews} initialAgencyInvitations={agencyInvitations}><AccountWorkspace brand={brand} toolbarBrand={toolbarBrand} navigation={<AccountNavigation user={user} helpEnabled={helpEnabled} />} identity={identity}>
       <PresenceHeartbeat />
       {emailVerificationState(user) === "grace" && <EmailVerificationNotice deadline={emailVerificationDeadline(user)} />}
       {showActivityNotices && <UnreadMessagesNotice />}

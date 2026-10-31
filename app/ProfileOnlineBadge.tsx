@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { subscribePublicPresence } from "./public-presence-client";
 
-export function ProfileOnlineBadge({ profileId, initialOnline, large = false }: { profileId: string; initialOnline: boolean; large?: boolean }) {
+export function ProfileOnlineBadge({ profileId, initialOnline, large = false,agencyManaged=false }: {agencyManaged?:boolean; profileId: string; initialOnline: boolean; large?: boolean }) {
   const [online, setOnline] = useState(initialOnline), marker = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     const element = marker.current;
@@ -19,5 +19,5 @@ export function ProfileOnlineBadge({ profileId, initialOnline, large = false }: 
     observer.observe(target);
     return () => { observer.disconnect(); unsubscribe?.(); };
   }, [profileId]);
-  return <span ref={marker} className={`profile-online-badge${large ? " profile-online-badge-large" : ""}`} style={online ? undefined : { display: "none" }} aria-hidden={!online || undefined} title="Actividad reciente en Chile3X; no indica disponibilidad de atención."><i aria-hidden="true" />En línea</span>;
+  return <span ref={marker} className={`profile-online-badge${large ? " profile-online-badge-large" : ""}`} style={online ? undefined : { display: "none" }} aria-hidden={!online || undefined} title={agencyManaged?"Actividad reciente de la cuenta que gestiona la agencia; no confirma que la persona anunciante esté conectada ni disponible.":"Actividad reciente en Chile3X; no indica disponibilidad de atención."}><i aria-hidden="true" />{agencyManaged?"Agencia en línea":"En línea"}</span>;
 }

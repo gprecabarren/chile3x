@@ -48,6 +48,7 @@ export function bulkMediaReturnTo(value: FormDataEntryValue | null, profileId: s
 
 export const bulkMediaMessages: Record<string, string> = {
   exclusive_approved: "Los archivos exclusivos revisados fueron aprobados. Siguen siendo privados y solo accesibles para cuentas autorizadas.",
+  capacity:"La galería superaría diez fotos más la principal. Retira los archivos sobrantes antes de aprobar. No se borró ninguna foto.",
   approved: "Los archivos revisados fueron aprobados. El anuncio mantiene su estado de publicación.",
   unchanged: "Estos archivos ya estaban aprobados. No se hicieron cambios.",
   changed: "Algún archivo cambió desde que abriste la página. Revisa los archivos actualizados y vuelve a intentarlo.",

@@ -10,20 +10,21 @@ import { ProfileForm } from "../ProfileForm";
 
 export const dynamic = "force-dynamic";
 
-export default async function NewProfilePage({ searchParams }: { searchParams: Promise<{ error?: string; message?: string }> }) {
+export default async function NewProfilePage({ searchParams }: { searchParams: Promise<{ error?: string; message?: string; agencia?: string }> }) {
   const user = await getCurrentUser();
   if (!user) {
     redirect("/ingresar?return_to=/mi-cuenta/nuevo-perfil");
   }
   const [params, db] = await Promise.all([searchParams, getDb()]);
-  const [escort] = await db.select({ id: profiles.id }).from(profiles).where(and(eq(profiles.ownerId, user.id), eq(profiles.type, "escort"), isNull(profiles.trashedAt))).limit(1);
+  const [escort] = await db.select({ id: profiles.id }).from(profiles).where(and(eq(profiles.ownerId, user.id), eq(profiles.type, "escort"), isNull(profiles.agencyCustodianId), isNull(profiles.trashedAt))).limit(1);
 
+  const agencies=await db.select({id:profiles.id,displayName:profiles.displayName}).from(profiles).where(and(eq(profiles.ownerId,user.id),eq(profiles.type,"agency"),isNull(profiles.trashedAt)));
   return (
     <AccountShell user={user}>
       <div className="account-content"><a className="page-back-link" href="/mi-cuenta">← Volver a mi cuenta</a>
         <AccountHeading eyebrow="NUEVA PUBLICACIÓN" title="Crea tu anuncio" description="Completa la información esencial. Los anuncios no aparecen públicamente hasta que el equipo los revise." />
         {params.error && <p className="form-alert" role="alert">{params.message ?? "Revisa la información del formulario. La región, ciudad y contacto deben ser válidos."}</p>}
-        <ProfileForm travelToday={chileanDay()} action="/api/perfiles/nuevo" submitLabel="Guardar y enviar a revisión" allowEscort={hasUnlimitedEscortListings(user) || !escort} />
+        <ProfileForm travelToday={chileanDay()} action="/api/perfiles/nuevo" submitLabel="Guardar y enviar a revisión" allowEscort={hasUnlimitedEscortListings(user) || !escort} agencies={agencies} defaultAgencyId={agencies.some(a=>a.id===params.agencia)?params.agencia:undefined} />
       </div>
     </AccountShell>
   );

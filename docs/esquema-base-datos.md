@@ -892,3 +892,21 @@ Los triggers pueden incrementar revisiones al insertar o eliminar relaciones. Un
 ## Muestras y autorización administrativa — 25 de octubre de 2026
 
 `0064_private_sample_workflow.sql` añade usuario privado estable, token cifrado y hash heredado, procedencia, papelera y seguimiento manual de contacto. El trigger de cambios de medios invalida revisiones antiguas. `profiles.admin_escort_limit_override` permite un Escort adicional confirmado por administración sin abrir el cupo normal de la cuenta; los triggers siguen bloqueando duplicados ordinarios y transferencias que arrastren la excepción. La aplicación valida la cuenta, revisión y cantidad de Escort en la misma transacción de conversión. No se guardan tokens en texto plano ni se indexan muestras.
+
+## Extensión de agencias — migraciones 0067 y 0068 (31 de octubre de 2026)
+
+Esta sección actualiza el inventario histórico anterior; verificar en D1 la migración efectiva.
+
+| Tabla | Extensión y reglas |
+| --- | --- |
+| `profiles` | `agency_custodian_id` FK a Agency con `RESTRICT`; `agency_origin_id` histórico sin FK. Solo Escort real de la misma cuenta puede quedar en custodia; custodia no consume cupo personal. `creation_source` admite `agency`. |
+| `escort_profile_limit_exemptions` | Par exacto de ID/correo de la excepción preexistente, extraído del trigger anterior durante migración. Tabla interna sin endpoint de edición; no concede excepciones nuevas. |
+| `agency_members` | `can_manage`, `documents_authorized` booleanos predeterminados a cero. Documentos implica gestión. Restricción de tipo y agencia de origen; cada cambio invalida revisión del Escort. |
+| `agency_membership_requests` | `management_requested`, `documents_requested`, `expires_at` en milisegundos; `cancelled` adicional. Los antiguos sin plazo derivan siete días desde creación. |
+| `agency_profile_claims` | FK agencia/Escort/cuenta de origen/destinataria/solicitante/verificador. Revisión propia; estados pending/accepted/declined/cancelled/completed. Aceptación y comprobación guardan revisión del perfil. Una sola propuesta pendiente/aceptada por Escort, incluso expirada hasta su cancelación al proponer de nuevo. Vigencia siete días. |
+| `agency_activity_logs` | Actor y perfiles por FK `SET NULL`, acción/resumen/fecha, sin documentos ni contactos en el resumen. Retención ordinaria 180 días. |
+| `agency_email_jobs` | Destinatario/perfiles con FK cascade, tipo, estado pending/accepted/failed, intentos/próxima tentativa/fecha. `failed` incluye avisos obsoletos cancelados y resultados por comprobar. Retención finalizados 90 días. |
+
+Los triggers de cuota cuentan únicamente Escorts personales no eliminados y conservan autorizaciones administrativas preexistentes. La custodia no se puede mover o quitar sin una propuesta aceptada y comprobada. Un padre con custodias activas no pasa a papelera; no se elimina definitivamente mientras existan hijos. Al restaurar un hijo, el padre debe estar disponible. El borrado de cuenta retira primero custodias, sin eliminar perfiles ya vinculados a otras cuentas.
+
+`0068` modifica únicamente cláusulas operativas conocidas de Términos/Privacidad, agrega gestión/titularidad y archiva el JSON anterior íntegro. Conserva personalizaciones, borradores y aceptaciones anteriores. Los cuerpos conocidos de reglas de publicación se actualizan puntualmente; no se reemplaza la configuración completa. Las versiones futuras no se sobrescriben.

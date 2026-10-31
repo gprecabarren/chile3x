@@ -1,3 +1,4 @@
+import { profileAccessCondition } from "@/lib/profile-access";
 import { and, eq, isNull } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { getDb } from "@/db";
@@ -16,7 +17,7 @@ export default async function ProfileStoriesPage({ params }: { params: Promise<{
   const user = await getCurrentUser();
   if (!user) redirect("/ingresar?return_to=/mi-cuenta");
   const { profileId } = await params;
-  const [profile] = await (await getDb()).select({ id: profiles.id, displayName: profiles.displayName, status: profiles.status, ownerHiddenAt: profiles.ownerHiddenAt }).from(profiles).where(and(eq(profiles.id, profileId), eq(profiles.ownerId, user.id), isNull(profiles.trashedAt))).limit(1);
+  const [profile] = await (await getDb()).select({ id: profiles.id, displayName: profiles.displayName, status: profiles.status, ownerHiddenAt: profiles.ownerHiddenAt }).from(profiles).where(and(eq(profiles.id, profileId), profileAccessCondition(user.id,"stories"), isNull(profiles.trashedAt))).limit(1);
   if (!profile) notFound();
   const canPublish = canPublishAccountStories(profile);
   const stories = await getOwnerStories(profileId);

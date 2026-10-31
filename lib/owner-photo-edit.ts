@@ -1,8 +1,10 @@
+import { getProfileAccess, authorizedProfileBatch } from "@/lib/profile-access";
+import { profileManagementActivity } from "@/lib/agency-management";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { dataDeletionJobs, profileMedia, profiles } from "@/db/schema";
 import { createAdminNotification } from "@/lib/admin-notifications";
-import { expectedVersion, guardedBatch } from "@/lib/collaboration";
+import { expectedVersion } from "@/lib/collaboration";
 import { findProfileMedia, getProfileMedia, getMediaUsage, getMediaQuotaState, detectImageType, MAX_IMAGE_BYTES, MAX_PROFILE_MEDIA_BYTES, MEDIA_HARD_LIMIT_BYTES, type ProfileMediaRecord } from "@/lib/media";
 import { parsePhotoEditOptions, type PhotoEditOptions } from "@/lib/photo-edit-policy";
 import { getSiteSettings } from "@/lib/site-settings";
@@ -62,8 +64,9 @@ export function editableMediaItem(row: ProfileMediaRecord) {
 }
 
 export async function ownedPhoto(profileId: string, mediaId: string, ownerId: string) {
+  const access=await getProfileAccess(profileId,ownerId,"media");
   const record = await findProfileMedia(mediaId);
-  if (!record || record.media.profileId !== profileId || record.profile.ownerId !== ownerId || !record.ownerIsActive || record.profile.trashedAt || record.media.visibility !== "public" || record.media.mediaType !== "image") throw new OwnerPhotoEditError("No tienes permiso para editar esta foto.", 404);
+  if (!access || !record || record.media.profileId !== profileId || !record.ownerIsActive || record.profile.trashedAt || record.media.visibility !== "public" || record.media.mediaType !== "image") throw new OwnerPhotoEditError("No tienes permiso para editar esta foto.", 404);
   return record;
 }
 
@@ -82,6 +85,7 @@ export async function ownerPhotoState(profileId: string, mediaId: string, ownerI
 }
 
 export async function saveOwnerPhoto(profileId: string, mediaId: string, ownerId: string, form: FormData) {
+  const access=await getProfileAccess(profileId,ownerId,"media");if(!access)throw new OwnerPhotoEditError("El permiso de edición ya no está vigente.",403);
   const record = await ownedPhoto(profileId, mediaId, ownerId), options = parsePhotoEditOptions(form.get("options")), file = form.get("file");
   if (!options) throw new OwnerPhotoEditError("Opciones de privacidad no válidas.");
   if (options.blur && (await getSiteSettings()).profile_gallery_face_blur_enabled !== "enabled") throw new OwnerPhotoEditError("El difuminado facial está desactivado temporalmente por el equipo.", 403);
@@ -108,7 +112,7 @@ export async function saveOwnerPhoto(profileId: string, mediaId: string, ownerId
   try {
     const fields = { r2Key: key, byteSize: file.size, contentType, moderationStatus: "pending" as const };
     const mutation = existing ? db.update(profileMedia).set(fields).where(eq(profileMedia.id, targetId)) : db.insert(profileMedia).values({ ...fields, id: targetId, profileId, mediaType: "image", visibility: "public", isProfilePhoto: record.media.isProfilePhoto, sortOrder: record.media.sortOrder });
-    const result = await guardedBatch(version, [mutation, ...(existing ? [db.insert(dataDeletionJobs).values({ id: crypto.randomUUID(), r2Key: existing.r2Key }).onConflictDoNothing()] : []), db.select({ revision: profiles.revision }).from(profiles).where(eq(profiles.id, profileId))]);
+    const result = await authorizedProfileBatch(access,"media",version, [profileManagementActivity(db,access,"media.edited","Preparó una edición de foto para revisión."),mutation, ...(existing ? [db.insert(dataDeletionJobs).values({ id: crypto.randomUUID(), r2Key: existing.r2Key }).onConflictDoNothing()] : []), db.select({ revision: profiles.revision }).from(profiles).where(eq(profiles.id, profileId))]);
     const last = result.at(-1); if (Array.isArray(last) && typeof last[0]?.revision === "number") revision = last[0].revision;
   } catch (error) { try { await bucket.delete(key); } catch { console.error("Uncommitted owner photo cleanup deferred", { mediaId: targetId }); } throw error; }
   if (existing) {

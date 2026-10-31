@@ -1,7 +1,5 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { getProfileAccess } from "@/lib/profile-access";
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/db";
-import { profiles } from "@/db/schema";
 import { assertSameOrigin, getCurrentUser, hasTesterAutoApproval } from "@/lib/auth";
 import { ProfileMediaUploadError, uploadProfileMedia } from "@/lib/profile-media-upload";
 import { MediaUploadRequestError, readMediaUploadForm } from "@/lib/media-upload-form";
@@ -20,12 +18,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const user = await getCurrentUser();
     if (!user) return error("Ingresa para ordenar tus archivos.", 401);
     const { profileId } = await params;
-    const [profile] = await (await getDb()).select({ ownerId: profiles.ownerId }).from(profiles).where(and(eq(profiles.id, profileId), isNull(profiles.trashedAt))).limit(1);
-    if (!profile || profile.ownerId !== user.id) return error("No tienes permiso para ordenar estos archivos.", 403);
+    const access = await getProfileAccess(profileId,user.id,"media");
+    if (!access) return error("No tienes permiso vigente para ordenar estos archivos.", 403);
     const form = await readMediaUploadForm(request, 16_000, 32_000);
     let order: unknown;
     try { order = JSON.parse(String(form.get("order") ?? "")); } catch { return error("El orden no es válido.", 400); }
-    const result = await reorderProfileMedia(profileId, form.get("kind"), order, expectedVersion(form, `profile:${profileId}`));
+    const result = await reorderProfileMedia(profileId, form.get("kind"), order, expectedVersion(form, `profile:${profileId}`),undefined,access);
     return NextResponse.json(result, { headers: { "cache-control": "private, no-store" } });
   } catch (cause) {
     if (cause instanceof CollaborationConflict) return conflictResponse();
@@ -40,8 +38,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const user = await getCurrentUser();
     if (!user) return error("Ingresa para subir archivos.", 401);
     const { profileId } = await params;
-    const [profile] = await (await getDb()).select({ ownerId: profiles.ownerId }).from(profiles).where(and(eq(profiles.id, profileId), isNull(profiles.trashedAt))).limit(1);
-    if (!profile || profile.ownerId !== user.id) return error("No tienes permiso para administrar este material.", 403);
+    const access = await getProfileAccess(profileId,user.id,"media");
+    if (!access) return error("No tienes permiso vigente para administrar este material.", 403);
     const formData = await readMediaUploadForm(request, Math.max(MAX_IMAGE_BYTES, MAX_VIDEO_BYTES));
     const file = formData.get("file");
     if (!(file instanceof File)) return error("Selecciona una foto o video para subir.", 400);
@@ -49,7 +47,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if(formData.has("original_file")||(formData.has("processing")&&!processing))return error("Envía solo el archivo final y opciones válidas.",400);
     try {
       const result = await uploadProfileMedia({
-        profileId, file, uploadKind: formData.get("upload_kind") === "profile_photo" ? "profile_photo" : "gallery",
+        access, profileId, file, uploadKind: formData.get("upload_kind") === "profile_photo" ? "profile_photo" : "gallery",
         uploadedBy: user.id, moderationStatus: hasTesterAutoApproval(user) ? "approved" : "pending",
         version:formData.has('review_revision')?expectedVersion(formData,`profile:${profileId}`):undefined,
         ...(processing?{processing}:{}),

@@ -1,19 +1,23 @@
+import { getProfileAccess } from "@/lib/profile-access";
 import { and, eq, gt, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { getDb } from "@/db";
 import { profileStatuses, profiles } from "@/db/schema";
 import { publicProfileCondition } from "@/lib/public-profile-visibility";
 import { mediaByteRange } from "@/lib/media-byte-range";
+import {getCurrentAdmin,getCurrentUser} from "@/lib/auth";
+import {adminHasCapability} from "@/lib/admin-permissions";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request, { params }: { params: Promise<{ storyId: string }> }) {
   const { storyId } = await params;
-  const [row] = await (await getDb()).select({ story: profileStatuses, profile: profiles }).from(profileStatuses)
+  const [row] = await (await getDb()).select({ story: profileStatuses, profile: profiles,isPublic:publicProfileCondition }).from(profileStatuses)
     .innerJoin(profiles, eq(profileStatuses.profileId, profiles.id))
-    .where(and(eq(profileStatuses.id, storyId), inArray(profileStatuses.storyType, ["image", "video"]), publicProfileCondition, gt(profileStatuses.expiresAt, new Date().toISOString())))
+    .where(and(eq(profileStatuses.id, storyId), inArray(profileStatuses.storyType, ["image", "video"]), gt(profileStatuses.expiresAt, new Date().toISOString())))
     .limit(1);
   if (!row?.story.r2Key) notFound();
+  if(!row.isPublic){const [user,admin]=await Promise.all([getCurrentUser(),getCurrentAdmin()]);if(!adminHasCapability(admin,"media.moderate")&&(!user||!await getProfileAccess(row.profile.id,user.id,"stories")))notFound();}
 
   const { env } = await import("cloudflare:workers");
   if (!env.MEDIA) return new Response("El almacenamiento no está disponible.", { status: 503 });

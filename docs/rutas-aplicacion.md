@@ -256,3 +256,17 @@ Presencia pública (26 de octubre): `GET /api/presencia?id=…` recibe hasta 60 
 Actualización de muestras (25 de octubre de 2026): el parámetro público `/muestra/[sampleId]` acepta también el usuario privado corto; conserva alias por ID, acceso por fragmento/cookie y archivos privados sin indexación. La API administrativa principal incluye recuperar/compartir/conservar/revocar enlace, extender, contacto, papelera, restauración y conversión confirmada. Los endpoints de medios exigen autorización y revisión de la misma muestra.
 
 Reordenación de galería (29 de octubre): los PATCH de medios de anuncios aceptan `kind=image|video`, la permutación completa `order` de esa galería y revisión vigente. Exigen propietario o capacidades administrativas de cuentas/medios, origen válido y anuncio activo fuera de papelera. Muestras admite el mismo contrato por tipo y conserva el contrato completo anterior para clientes ya abiertos. Los cambios administrativos registran `media.public_reorder` o `sample.reorder_media`. No hay rutas ni tablas nuevas.
+
+## Agencias y titularidad — actualización del 31 de octubre de 2026
+
+| Ruta | Método y función |
+| --- | --- |
+| `/admin/agencias` | GET privado/noindex: propuestas vigentes, comprobación manual e historial atribuible. Exige accounts.manage y profiles.moderate. |
+| `/api/agencias/:agencyId/invitaciones` | POST: invitar o cancelar una invitación pendiente; agencia propia, revisión, mismo origen. |
+| `/api/solicitudes-agencia/:requestId` | POST: titular acepta/rechaza; permisos expresos y documentos opcionales. |
+| `/api/asociaciones-agencia/:membershipId` | POST: titular elige/retira permisos o se desvincula; agencia puede retirar su asociación, sin dejar custodia huérfana. |
+| `/api/agencias/:agencyId/vincular/:profileId` | POST: propone traspaso a correo de cuenta existente activa/verificada sin Escort personal. |
+| `/api/agencias/traspasos/:claimId` | POST: destinatario acepta/rechaza; agencia de origen puede cancelar. Revisión propia de propuesta y de perfil. |
+| `/api/admin/agencias/traspasos/:claimId` | POST: comprobación manual; completa solo con aceptación vigente y cupo. Auditoría administrativa. |
+
+Las rutas normales `/api/perfiles/:id`, medios, documentos, visibilidad, revisión, historias, estadísticas y comentarios consultan la autorización actual por perfil. Las rutas de seguridad/mensajes/biblioteca personal no se delegan. Las mutaciones de perfil revalidan permisos dentro de la transacción; enviar un ID ajeno no concede acceso. Las vistas privadas de propuesta solo permiten leer el anuncio, no sus documentos ni mutaciones.

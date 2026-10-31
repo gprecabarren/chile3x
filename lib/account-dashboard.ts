@@ -1,4 +1,5 @@
-import { and, count, eq, gte, inArray, isNull, notExists } from "drizzle-orm";
+import { profileAccessCondition } from "@/lib/profile-access";
+import { and, count, eq, gte, inArray, notExists } from "drizzle-orm";
 import { getDb } from "@/db";
 import { blockedProfiles, favorites, profileContactEvents, profileLikes, profileMedia, profiles, profileViews, reviews } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
@@ -10,7 +11,7 @@ export async function getAccountDashboard(hasProfiles: boolean) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Authentication required");
   const db = await getDb();
-  const owned = and(eq(profiles.ownerId, user.id), isNull(profiles.trashedAt));
+  const owned = profileAccessCondition(user.id,"statistics");
   const cutoff = profileStatisticsCutoff(29);
   const [saved, sent, views, contacts, likes, receivedFavorites, pendingMedia] = await Promise.all([
     db.select({ total: count() }).from(favorites).innerJoin(profiles, eq(profiles.id, favorites.profileId)).where(and(eq(favorites.userId, user.id), publicProfileCondition,

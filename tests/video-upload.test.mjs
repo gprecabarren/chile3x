@@ -94,11 +94,11 @@ test("video policy is shared by upload preparation, server validation and visibl
 test("edit link on public listing uses server-verified ownership for every listing type", async()=>{
   const page=await source("app/perfil/[slug]/page.tsx");
   assert.match(page,/\[sample \? Promise.resolve\(null\) : getCurrentAdmin\(\), sample \? Promise.resolve\(null\) : getCurrentUser\(\), searchParams\]/);
-  assert.match(page,/ownerId === viewer.id/);
+  assert.match(page,/getProfileAccess\(profile.id,viewer.id,"edit"\)/);
   assert.match(page,/viewerOwnsProfile && <aside className="profile-owner-edit-bar"/);
   assert.match(page,/href=\{`\/mi-cuenta\/\$\{profile.id\}\/editar`\}/);
   assert.match(page,/prefetch=\{false\}>Editar anuncio/);
-  const edit=await source("app/mi-cuenta/[profileId]/editar/page.tsx"); assert.match(edit,/eq\(profiles.ownerId, user.id\)/);
+  const edit=await source("app/mi-cuenta/[profileId]/editar/page.tsx"); assert.match(edit,/getProfileAccess\(profileId,user.id,"edit"\)/);
   const css=await source("app/globals.css"); assert.match(css,/profile-owner-edit-bar \{ display: flex; flex-wrap: wrap/); assert.match(css,/profile-owner-edit-bar \.button \{ width: 100%/);
 });
 

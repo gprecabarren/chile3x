@@ -30,6 +30,7 @@ test('presence reads batch public profile booleans, respect disabled owners and 
       ['prf_paused', 'owner', 'paused', null, null, 0], ['prf_hidden', 'owner', 'approved', 'hidden', null, 0], ['prf_trash', 'owner', 'approved', null, 'trash', 0], ['prf_demo', 'owner', 'approved', null, null, 1],
       ['prf_disabled', 'disabled', 'approved', null, null, 0], ['prf_self_disabled', 'self-disabled', 'approved', null, null, 0], ['prf_admin_disabled', 'admin-disabled', 'approved', null, null, 0],
     ]) sqlite.prepare('INSERT INTO profiles VALUES(?,?,?,?,?,?)').run(id, owner, status, hidden, trashed, demo);
+    sqlite.exec("ALTER TABLE profiles ADD COLUMN agency_custodian_id TEXT; ALTER TABLE profiles ADD COLUMN type TEXT DEFAULT 'escort';");
     const { GET, POST } = await import('../app/api/presencia/route.ts');
     const { presenceProfileIds } = await import('../lib/public-presence.ts');
     const get = ids => GET(new Request('https://presence.invalid/api/presencia?' + new URLSearchParams(ids.map(id => ['id', id]))));

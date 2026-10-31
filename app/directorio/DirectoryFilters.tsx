@@ -25,13 +25,14 @@ type DirectoryFiltersProps = {
   filters: DirectoryFilters;
   pinnedCity?: string;
   pinnedRegion?: string;
+  showAgencyTiers?:boolean;
   showType?: boolean;
   showEscortFilters?: boolean;
   showServices?: boolean;
   contentDirectory?: boolean;
 };
 
-export function DirectoryFilters({ action, filters, pinnedCity, pinnedRegion, showType = false, showEscortFilters = true, showServices = true, contentDirectory = false }: DirectoryFiltersProps) {
+export function DirectoryFilters({ action, filters, pinnedCity, pinnedRegion, showAgencyTiers=false, showType = false, showEscortFilters = true, showServices = true, contentDirectory = false }: DirectoryFiltersProps) {
   const router = useRouter();
   const [region, setRegion] = useState(filters.region ?? pinnedRegion ?? "");
   const [city, setCity] = useState(filters.city ?? pinnedCity ?? "");
@@ -94,6 +95,7 @@ export function DirectoryFilters({ action, filters, pinnedCity, pinnedRegion, sh
       </div>
       <section className="directory-quick-filters" aria-label="Filtros rápidos">
         <label className="quick-filter-search"><span className="sr-only">Buscar por nombre</span><input name="nombre" type="search" minLength={2} maxLength={80} defaultValue={filters.name ?? ""} placeholder="Ej.: Valentina, Camila, Alejandra" /></label>
+        {showAgencyTiers&&<label className="quick-filter-category"><span className="sr-only">Categoría de agencia</span><select name="tier" value={category} onChange={event=>setCategory(event.target.value)}><option value="">Todas las categorías de agencia</option>{(["vip","premium","bronze"] as const).map(tier=><option key={tier} value={tier}>{tierLabels[tier]}</option>)}</select></label>}
         {showEscortFilters && <label className={`quick-filter-category${category ? ` is-${category}` : ""}`}><span className="sr-only">Categoría</span><select name="categoria" value={category} onChange={(event) => {
           const value = event.target.value;
           setCategory(value);

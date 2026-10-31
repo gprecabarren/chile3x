@@ -23,7 +23,7 @@ test("Bronze remains supported in persistence and UI while new escort forms defa
   assert.match(schema, /\.default\("bronze"\)/);
   assert.match(directory, /bronze: 2/);
   assert.match(directory, /tierLabels\[profile\.tier\]/);
-  assert.match(submission, /typeValue === "escort" \? tierValue : "bronze"/);
+  assert.match(submission, /typeValue === "rental" \? "bronze" : tierValue/);
   assert.match(components, /profile\.tier === "bronze"/);
   assert.match(form, /useState\(initial\?\.tier \?\? "vip"\)/);
   assert.match(form, /name="tier" value=\{selectedTier\}/);

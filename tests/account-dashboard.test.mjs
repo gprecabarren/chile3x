@@ -42,7 +42,7 @@ test('account identity links back to the dashboard and truncates long email addr
 test('dashboard data is owner-scoped, excludes trash and preserves daily rather than raw clicks', async () => {
   const summary = await source('lib/account-dashboard.ts');
   assert.match(summary, /getCurrentUser\(\)/); assert.match(summary, /Authentication required/);
-  assert.match(summary, /eq\(profiles.ownerId, user.id\), isNull\(profiles.trashedAt\)/);
+  assert.match(summary, /profileAccessCondition\(user.id/);
   assert.match(summary, /profileStatisticsCutoff\(29\)/);
   assert.doesNotMatch(summary, /\.clickCount|viewerKey|viewerUserId|select\(\)/);
   assert.match(summary, /eq\(profileMedia.visibility, "public"\)/);

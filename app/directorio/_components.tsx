@@ -8,7 +8,7 @@ import { cookies } from "next/headers";
 import type { ReactNode } from "react";
 import { getCurrentAdmin, getCurrentUser, getSessionCookieName, getUserSessionCookieName, type AccountUser } from "@/lib/auth";
 import { getCityPath, getProfileDisplayTags, type PublicProfile } from "@/lib/directory";
-import { profilePublicPath, readProfilePrices, type Tier } from "@/lib/profile";
+import { profilePublicPath, readProfilePrices, tierLabels, type Tier } from "@/lib/profile";
 import { getPortalContacts } from "@/lib/site-contacts";
 import { publicWhatsappContacts, WHATSAPP_TEXT_LIMITS, type WhatsappPlacement } from "@/lib/portal-whatsapp";
 import { FloatingWhatsappMenu } from "@/app/FloatingWhatsappMenu";
@@ -210,7 +210,7 @@ export function LaEstokadaBadge() {
 
 export function ProfileCard({ profile }: { profile: PublicProfile }) {
   const tags = getProfileDisplayTags(profile);
-  const tierTag = profile.type === "escort" && !isContentOnly(profile) ? tags[0] ?? "Bronze" : null;
+  const tierTag = profile.type === "agency" ? tierLabels[profile.tier] : profile.type === "escort" && !isContentOnly(profile) ? tags[0] ?? "Bronze" : null;
   const detailTags = profile.type === "escort" ? tierTag ? tags.slice(1) : tags : [];
   const age = publicProfileAge(profile.type,profile.details.metadata);
   const subtitle = profile.comuna ?? profile.details.referenceLocation;
@@ -229,7 +229,7 @@ export function ProfileCard({ profile }: { profile: PublicProfile }) {
         <div className="public-profile-title">
           <div>
             <h3><Link href={profileHref}>{profile.displayName}</Link>{profile.verificationStatus === "reviewed" && profile.type === "escort" && <span className="verified-sticker" title="Perfil comprobado" aria-label="Perfil comprobado">✓</span>}</h3>
-            {profile.isPublic && !profile.isDemo && <ProfileOnlineBadge profileId={profile.id} initialOnline={profile.isOnline} />}
+            {profile.isPublic && !profile.isDemo && <ProfileOnlineBadge agencyManaged={profile.agencyManaged} profileId={profile.id} initialOnline={profile.isOnline} />}
             {profile.handle && <small className="public-profile-handle">@{profile.handle}</small>}
             {profile.isDemo && <small className="profile-test-caption">Ficha de prueba · sin servicio real</small>}
             <p><Link href={getCityPath(profile.city)}>{profile.city}</Link>{age!==null&&<span className="public-card-age" aria-label={`${age} años`}>, {age}</span>}{subtitle && ` · ${subtitle}`}</p>

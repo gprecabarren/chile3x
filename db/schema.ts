@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import type {AnySQLiteColumn} from "drizzle-orm/sqlite-core";
 import {
   index,
   integer,
@@ -513,12 +514,15 @@ export const profiles = sqliteTable("profiles", {
   revision: integer("revision").notNull().default(0),
   id: text("id").primaryKey(),
   ownerId: text("owner_id").notNull().references(() => users.id),
-  creationSource: text("creation_source", { enum: ["self", "admin", "unknown"] }).notNull().default("unknown"),
+  creationSource: text("creation_source", { enum: ["self", "admin", "agency", "unknown"] }).notNull().default("unknown"),
   createdByAdminId: text("created_by_admin_id"),
   createdByAdminLogin: text("created_by_admin_login"),
   // Applies only to this explicitly confirmed administrative sample migration,
   // never as an account-wide allowance or a field accepted from public forms.
   adminEscortLimitOverride: integer("admin_escort_limit_override", { mode: "boolean" }).notNull().default(false),
+  // Custody is temporary: this is not the personal Escort slot of the account.
+  agencyCustodianId: text("agency_custodian_id").references(():AnySQLiteColumn=>profiles.id,{onDelete:"restrict"}),
+  agencyOriginId: text("agency_origin_id"),
   type: text("type", { enum: ["escort", "agency", "rental"] }).notNull(),
   status: text("status", { enum: ["draft", "pending", "approved", "paused", "rejected", "expired"] }).notNull().default("draft"),
   slug: text("slug").notNull().unique(),
@@ -553,6 +557,7 @@ export const profiles = sqliteTable("profiles", {
   index("profiles_public_directory_page_idx").on(table.type, table.tier, table.isFeatured, table.updatedAt, table.id)
     .where(sql`${table.status} = 'approved' and ${table.ownerHiddenAt} is null and ${table.trashedAt} is null`),
   index("profiles_owner_idx").on(table.ownerId),
+  index("profiles_agency_custodian_idx").on(table.agencyCustodianId),
   index("profiles_trash_date_idx").on(table.trashedAt),
   uniqueIndex("profiles_handle_unique").on(table.handle),
 ]);
@@ -588,10 +593,17 @@ export const profileServices = sqliteTable("profile_services", {
   index("profile_services_service_idx").on(table.service, table.kind),
 ]);
 
+// Internal carry-over of the historical exact-identity quota exception; not an editable account flag.
+export const escortProfileLimitExemptions=sqliteTable("escort_profile_limit_exemptions",{
+ userId:text("user_id").primaryKey(),emailKey:text("email_key").notNull(),
+});
+
 export const agencyMembers = sqliteTable("agency_members", {
   id: text("id").primaryKey(),
   agencyProfileId: text("agency_profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
   memberProfileId: text("member_profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  canManage: integer("can_manage", { mode: "boolean" }).notNull().default(false),
+  documentsAuthorized: integer("documents_authorized", { mode: "boolean" }).notNull().default(false),
   createdAt,
 }, (table) => [uniqueIndex("agency_member_unique").on(table.agencyProfileId, table.memberProfileId)]);
 
@@ -600,7 +612,10 @@ export const agencyMembershipRequests = sqliteTable("agency_membership_requests"
   agencyProfileId: text("agency_profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
   escortProfileId: text("escort_profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
   requestedBy: text("requested_by").notNull().references(() => users.id, { onDelete: "cascade" }),
-  status: text("status", { enum: ["pending", "accepted", "declined"] }).notNull().default("pending"),
+  status: text("status", { enum: ["pending", "accepted", "declined", "cancelled"] }).notNull().default("pending"),
+  managementRequested: integer("management_requested", { mode: "boolean" }).notNull().default(false),
+  documentsRequested: integer("documents_requested", { mode: "boolean" }).notNull().default(false),
+  expiresAt: integer("expires_at"),
   message: text("message"),
   respondedAt: text("responded_at"),
   createdAt,
@@ -608,6 +623,49 @@ export const agencyMembershipRequests = sqliteTable("agency_membership_requests"
   uniqueIndex("agency_membership_request_unique").on(table.agencyProfileId, table.escortProfileId),
   index("agency_membership_request_escort_status_idx").on(table.escortProfileId, table.status),
 ]);
+
+export const agencyProfileClaims = sqliteTable("agency_profile_claims", {
+  revision: integer("revision").notNull().default(0),
+  id: text("id").primaryKey(),
+  agencyProfileId: text("agency_profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  escortProfileId: text("escort_profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  sourceOwnerId: text("source_owner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  targetUserId: text("target_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  requestedBy: text("requested_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+  status: text("status", { enum: ["pending", "accepted", "declined", "cancelled", "completed"] }).notNull().default("pending"),
+  keepManagement: integer("keep_management", { mode: "boolean" }).notNull().default(false),
+  documentsAuthorized: integer("documents_authorized", { mode: "boolean" }).notNull().default(false),
+  acceptedAt: text("accepted_at"),
+  acceptedRevision: integer("accepted_revision"),
+  verifiedRevision: integer("verified_revision"),
+  verifiedBy: text("verified_by").references(() => users.id, { onDelete: "set null" }),
+  verifiedAt: text("verified_at"),
+  completedAt: text("completed_at"),
+  expiresAt: integer("expires_at").notNull(),
+  createdAt,
+}, table => [index("agency_claim_target_idx").on(table.targetUserId, table.status), uniqueIndex("agency_claim_pending_unique").on(table.escortProfileId).where(sql`${table.status} in ('pending','accepted')`)]);
+
+export const agencyActivityLogs = sqliteTable("agency_activity_logs", {
+  id: text("id").primaryKey(),
+  actorUserId: text("actor_user_id").references(() => users.id, { onDelete: "set null" }),
+  agencyProfileId: text("agency_profile_id").references(() => profiles.id, { onDelete: "set null" }),
+  escortProfileId: text("escort_profile_id").references(() => profiles.id, { onDelete: "set null" }),
+  action: text("action").notNull(),
+  summary: text("summary").notNull(),
+  createdAt,
+}, table => [index("agency_activity_escort_idx").on(table.escortProfileId, table.createdAt), index("agency_activity_agency_idx").on(table.agencyProfileId, table.createdAt)]);
+
+export const agencyEmailJobs = sqliteTable("agency_email_jobs", {
+  id: text("id").primaryKey(),
+  recipientId: text("recipient_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  agencyProfileId: text("agency_profile_id").references(() => profiles.id, { onDelete: "cascade" }),
+  escortProfileId: text("escort_profile_id").references(() => profiles.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull(),
+  status: text("status", { enum: ["pending", "accepted", "failed"] }).notNull().default("pending"),
+  attempts: integer("attempts").notNull().default(0),
+  nextAttemptAt: integer("next_attempt_at").notNull().default(0),
+  createdAt,
+}, table => [index("agency_email_due_idx").on(table.status, table.nextAttemptAt)]);
 
 export const profileMedia = sqliteTable("profile_media", {
   id: text("id").primaryKey(),

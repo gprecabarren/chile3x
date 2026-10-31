@@ -25,6 +25,7 @@ test('account story summary isolates owners, trash and expiration with two bound
  const story=sqlite.prepare('INSERT INTO profile_statuses VALUES(?,?,?,?,?)');
  for(const [id,profile,type,expiry] of [['t','visible','text','2999-01-01'],['i','visible','image','2999-01-01'],['v','visible','video','2999-01-01'],['p','pending','text','2999-01-01'],['old','visible','text','2000-01-01'],['trash','trash','text','2999-01-01'],['other','foreign','text','2999-01-01']])story.run(id,profile,type,'2026-10-19 01:02:00',expiry);
  const prepare=(sql,args=[])=>({bind:(...values)=>prepare(sql,values),async raw(){queries++;const statement=sqlite.prepare(sql);statement.setReturnArrays(true);return statement.all(...args)}});
+ sqlite.exec("ALTER TABLE profiles ADD COLUMN agency_custodian_id TEXT; CREATE TABLE users(id TEXT,is_active INTEGER); INSERT INTO users VALUES('a',1),('b',1); CREATE TABLE agency_members(agency_profile_id TEXT,member_profile_id TEXT,can_manage INTEGER);");
  globalThis.__storyOverviewDb=drizzle({prepare});globalThis.__storyOverviewUser={id:'a'};
  const hooks=registerHooks({resolve(specifier,context,next){
   if(specifier==='@/db')return {url:'data:text/javascript,export const getDb=async()=>globalThis.__storyOverviewDb',shortCircuit:true};
@@ -45,7 +46,7 @@ test('stories are discoverable in normal account headers, never anonymous/admin 
  assert.match(header,/hasUserSession && !hasAdminSession[^\n]*\/mi-cuenta\/historias/);assert.match(shell,/href="\/mi-cuenta\/historias"/);
  assert.ok(home.indexOf('<AccountStoriesOverview')<home.indexOf('Rendimiento de tus anuncios'));
  assert.match(selector,/privatePageMetadata/);assert.match(selector,/getCurrentUser/);assert.match(selector,/getAccountStoryOverview/);
- assert.match(manager,/eq\(profiles.ownerId, user.id\)/);assert.match(manager,/canPublish=\{canPublish\}/);
+ assert.match(manager,/profileAccessCondition\(user.id,"stories"\)/);assert.match(manager,/canPublish=\{canPublish\}/);
  assert.match(route,/status = 'approved' AND trashed_at IS NULL AND owner_hidden_at IS NULL/);
 });
 

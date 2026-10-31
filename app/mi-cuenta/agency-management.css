@@ -1,0 +1,278 @@
+.agency-workflow-panel {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+  scroll-margin-top: 110px;
+}
+.agency-workflow-panel > header p {
+  color: #bdc8da;
+  line-height: 1.65;
+}
+.agency-workflow-card,
+.listing-type-guide {
+  min-width: 0;
+  margin: 0;
+  padding: 22px;
+  border: 1px solid #48566e;
+  border-radius: var(--corner-14);
+  background: #101724;
+}
+.agency-workflow-card > summary,
+.listing-type-guide > summary,
+.agency-invite-details > summary {
+  cursor: pointer;
+  line-height: 1.6;
+  color: #f1f5fc;
+}
+.agency-workflow-card summary:focus-visible,
+.listing-type-guide summary:focus-visible {
+  outline: 2px solid #ff9baa;
+  outline-offset: 4px;
+}
+.agency-card-content,
+.listing-guide-content {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+  padding-top: 18px;
+}
+.agency-workflow-panel h3,
+.agency-workflow-panel h4 {
+  margin: 0 0 12px;
+  color: #f4f6fb;
+}
+.agency-workflow-panel article {
+  min-width: 0;
+  padding: 18px 0;
+  border-top: 1px solid #364157;
+}
+.agency-workflow-panel p {
+  margin: 8px 0 14px;
+  color: #bec9da;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.agency-workflow-panel :is(code, summary) {
+  overflow-wrap: anywhere;
+}
+.agency-workflow-panel form {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  margin: 12px 0;
+}
+.agency-workflow-panel form > .button {
+  justify-self: start;
+}
+.agency-workflow-panel label {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  color: #edf2fb;
+  font-size: 14px;
+}
+.agency-workflow-panel label.agency-permission {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.6;
+  font-weight: 400;
+}
+.agency-permission input[type="checkbox"] {
+  flex: 0 0 auto;
+  margin-top: 4px;
+  width: 20px;
+  height: 20px;
+}
+.agency-workflow-panel
+  :is(input[type="email"], input[type="text"], input:not([type]), select) {
+  min-width: 0;
+  width: 100%;
+  min-height: 44px;
+  padding: 11px 12px;
+  font: inherit;
+  font-size: 16px;
+  background: #090e18;
+  color: #fff;
+  border: 1px solid #596b86;
+  border-radius: var(--corner-8);
+}
+.agency-workflow-panel .button {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  white-space: normal;
+  line-height: 1.45;
+}
+.agency-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: start;
+  min-width: 0;
+}
+.agency-inline-actions form {
+  margin: 0;
+  max-width: 100%;
+}
+.agency-incoming {
+  border-left: 3px solid #e46683;
+}
+.agency-workflow-panel .agency-invitation-message {
+  padding: 12px 14px;
+  border-left: 2px solid #889bc0;
+  background: #192132;
+  overflow-wrap: anywhere;
+}
+.agency-history {
+  margin: 16px 0 0;
+  padding-left: 22px;
+}
+.agency-history li {
+  margin-top: 14px;
+}
+.agency-history li > span {
+  color: #aebbd0;
+  font-size: 12px;
+}
+.agency-invite-details {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #3c4a61;
+  border-radius: var(--corner-10);
+  background: #0c1320;
+}
+.listing-type-guide {
+  margin-top: 24px;
+}
+.listing-type-guide > summary > span {
+  display: inline-grid;
+  gap: 5px;
+  max-width: calc(100% - 24px);
+  vertical-align: top;
+}
+.listing-type-guide summary small,
+.listing-guide-version {
+  color: #acbad0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.listing-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  min-width: 0;
+}
+.listing-guide-grid > article {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #43526a;
+  border-radius: var(--corner-10);
+  background: #0b111c;
+}
+.listing-guide-grid h3,
+.listing-guide-common h3 {
+  margin: 0 0 14px;
+  font-size: 19px;
+}
+.listing-type-guide p,
+.listing-guide-common li {
+  color: #bcc8db;
+  font-size: 14px;
+  line-height: 1.65;
+}
+.listing-workflow {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+}
+.listing-workflow > li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #55647c;
+  border-radius: var(--corner-8);
+  color: #f1f5fb;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.listing-workflow-step {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #8d2945;
+  color: #fff;
+  font-weight: 700;
+}
+.listing-workflow .action-icon {
+  transform: rotate(90deg);
+  color: #d293a5;
+}
+.listing-guide-common {
+  border-top: 1px solid #43526a;
+  padding-top: 20px;
+}
+.listing-guide-common ul {
+  padding-left: 22px;
+}
+.listing-guide-common li {
+  margin-top: 12px;
+}
+.agency-creation-choice p {
+  color: #b9c6da;
+  font-size: 14px;
+  line-height: 1.6;
+}
+@media (max-width: 760px) {
+  .agency-workflow-card,
+  .listing-type-guide {
+    padding: 16px;
+  }
+  .listing-guide-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .agency-workflow-panel p {
+    font-size: 13px;
+  }
+  .agency-inline-actions {
+    gap: 8px;
+  }
+  .listing-guide-grid > article {
+    padding: 14px;
+  }
+}
+
+.profile-agency-management-note {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #b8c5da;
+  margin: 0 0 10px;
+}
+
+.agency-creation-choice label.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.agency-creation-choice label.checkbox-label input {
+  flex: 0 0 auto;
+  margin-top: 3px;
+  width: 20px;
+  height: 20px;
+}
+
+.agency-workflow-panel .agency-summary-title {
+  display: inline;
+  margin: 0;
+  font-size: inherit;
+}

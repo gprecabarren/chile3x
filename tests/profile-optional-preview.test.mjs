@@ -37,7 +37,7 @@ test('new escort listings default to VIP and display descending tiers without ch
   assert.match(form, /useState\(initial\?\.tier \?\? "vip"\)/);
   assert.match(form, /<select name="tier" value=\{selectedTier\}/);
   assert.equal((form.match(/visibilityTiers\.map\(\(tier\)/g) ?? []).length, 2, 'both dropdown and chips use descending tiers');
-  assert.match(form, /type !== "escort" && <input name="tier" type="hidden" value="bronze"/);
+  assert.match(form, /type === "rental" && <input name="tier" type="hidden" value="bronze"/);
   assert.match(form, /Ej\. Valentina Masajes/);
   assert.doesNotMatch(form, /Valentina Spa/);
   assert.match(form, /Dale más fuerza a tu anuncio[\s\S]*mayor confianza[\s\S]*filtros del directorio/);
@@ -78,7 +78,7 @@ test('private preview authorization is route-scoped and excluded from public ind
   const [directory, profile, account, edit, media, cache] = await Promise.all([
     source('lib/directory.ts'), source('app/perfil/[slug]/page.tsx'), source('app/mi-cuenta/page.tsx'), source('app/mi-cuenta/[profileId]/editar/page.tsx'), source('app/media/[mediaId]/route.ts'), source('worker/public-cache.ts'),
   ]);
-  assert.match(directory, /or\(publicProfileCondition, eq\(profiles.ownerId, options.previewOwnerId\)\)/);
+  assert.match(directory, /or\(publicProfileCondition, previewAccess\)/);
   assert.match(directory, /conditions.push\(isNull\(profiles.trashedAt\)\)/);
   assert.match(directory, /inArray\(profileMedia.moderationStatus, \["approved", "pending"\]\)/);
   assert.match(directory, /eq\(profileMedia.visibility, "public"\)/);
@@ -88,7 +88,7 @@ test('private preview authorization is route-scoped and excluded from public ind
   assert.match(profile, /profile.isPublic && !profile.isDemo && <script/);
   assert.match(profile, /if \(!profile\) notFound\(\)/);
   assert.match(account, /Previsualizar anuncio/); assert.match(edit, /Previsualizar anuncio/);
-  assert.match(media, /!record.profile.ownerHiddenAt/); assert.match(media, /user\?\.id !== record.profile.ownerId/);
+  assert.match(media, /!record.profile.ownerHiddenAt/); assert.match(media, /getProfileAccess\(record.profile.id,user.id,"preview"\)/);
   assert.match(cache, /private, no-store/);
   const calls = directory.match(/getPublicProfiles\(\{[^}]*previewOwnerId[^}]*\}\)/g) ?? [];
   assert.equal(calls.length, 3, 'only handle/legacy/slug detail route passes preview ownership');

@@ -4,12 +4,12 @@ import Link from "@/app/NavigationLink";
 import { usePathname } from "next/navigation";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
-const UnreadContext = createContext({ messages: 0, pendingReviews: 0 });
+const UnreadContext = createContext({ messages: 0, pendingReviews: 0, agencyInvitations:0 });
 const POLL_MS = 45_000;
 
 /** One aggregate poll per signed-in surface; no message bodies or identities. */
-export function MessageNotifications({ initialUnread, initialPendingReviews = 0, children }: { initialUnread: number; initialPendingReviews?: number; children: ReactNode }) {
-  const [unread, setUnread] = useState({ messages: initialUnread, pendingReviews: initialPendingReviews });
+export function MessageNotifications({ initialUnread, initialPendingReviews = 0, initialAgencyInvitations=0, children }: { initialUnread: number; initialPendingReviews?: number; initialAgencyInvitations?:number; children: ReactNode }) {
+  const [unread, setUnread] = useState({ messages: initialUnread, pendingReviews: initialPendingReviews,agencyInvitations:initialAgencyInvitations });
   const pathname = usePathname();
   useEffect(() => {
     const controller = new AbortController();
@@ -22,10 +22,10 @@ export function MessageNotifications({ initialUnread, initialPendingReviews = 0,
       try {
         const response = await fetch("/api/mi-cuenta/avisos", { cache: "no-store", signal: controller.signal });
         if (controller.signal.aborted) return;
-        if (response.status === 401 || response.status === 403) { setUnread({ messages: 0, pendingReviews: 0 }); return; }
+        if (response.status === 401 || response.status === 403) { setUnread({ messages: 0, pendingReviews: 0, agencyInvitations:0 }); return; }
         if (!response.ok) return;
-        const data = await response.json() as { count?: number; pendingReviews?: number };
-        if (!controller.signal.aborted && Number.isSafeInteger(data.count) && data.count! >= 0 && Number.isSafeInteger(data.pendingReviews) && data.pendingReviews! >= 0) setUnread({ messages: data.count!, pendingReviews: data.pendingReviews! });
+        const data = await response.json() as { count?: number; pendingReviews?: number;agencyInvitations?:number };
+        if (!controller.signal.aborted && Number.isSafeInteger(data.count) && data.count! >= 0 && Number.isSafeInteger(data.pendingReviews) && data.pendingReviews! >= 0) setUnread({ messages: data.count!, pendingReviews: data.pendingReviews!,agencyInvitations:Number.isSafeInteger(data.agencyInvitations)&&data.agencyInvitations!>=0?data.agencyInvitations!:0 });
       } catch { /* Keep the last confirmed count during a connection failure. */ }
       finally { inFlight = false; if (refreshAgain) { refreshAgain = false; void refresh(); } }
     }
@@ -56,6 +56,7 @@ export function UnreadMessagesBadge({ reviews = false }: { reviews?: boolean }) 
 export function AccountNotificationCards() {
   const counts = useContext(UnreadContext);
   return <>
+    <Link className="account-summary-card" href="/mi-cuenta#agencias" prefetch={false}><span>Invitaciones de agencias y vinculaciones</span><strong>{counts.agencyInvitations}</strong><small>{counts.agencyInvitations?"Revisar y responder en mi panel":"No tienes propuestas pendientes"}</small></Link>
     <Link className="account-summary-card" href="/mi-cuenta/mensajes" prefetch={false}><span>Mensajes sin leer</span><strong>{counts.messages}</strong><small>{counts.messages ? "Abrir bandeja privada →" : "Tu bandeja está al día →"}</small></Link>
     <Link className="account-summary-card" href="/mi-cuenta/comentarios" prefetch={false}><span>Comentarios por revisar</span><strong>{counts.pendingReviews}</strong><small>{counts.pendingReviews ? "Aprobar o rechazar →" : "Ver tus comentarios →"}</small></Link>
   </>;

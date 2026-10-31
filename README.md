@@ -30,6 +30,8 @@ Moderación del 29 de octubre: [aprobación desde previsualización y editores](
 
 Carga múltiple del 30 de octubre: [arrastre de archivos, pasos, biblioteca privada y acciones de muestras](docs/qa-carga-multiple-2026-10-30.md). La selección es local hasta confirmar cada sección; fotos y videos privados también se gestionan por separado.
 
+Agencias del 31 de octubre: [titularidad, gestión y vinculación a cuentas](docs/qa-agencias-2026-10-31.md). Se separan el Escort personal, perfiles en custodia de una agencia e invitaciones con permisos revocables; el panel incluye flujos y límites por tipo.
+
 <!-- TECHNICAL_HANDOFF_START -->
 ## Guía técnica de traspaso — 24 de octubre de 2026
 

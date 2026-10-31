@@ -8,7 +8,7 @@ import { recordAdminAudit } from "@/lib/admin-audit";
 import { adminHasCapability } from "@/lib/admin-permissions";
 import { CollaborationConflict, expectedVersion, guardedBatch, conflictResponse, mutationRedirect } from "@/lib/collaboration";
 import { bulkMediaReturnTo } from "@/lib/media-bulk-review";
-import { approvedPhotoBeingReplaced } from "@/lib/owner-photo-edit";
+import { getOwnerEditableProfileMedia, approvedPhotoBeingReplaced } from "@/lib/owner-photo-edit";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +43,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if(!version)return conflict();
   async function save(statements:Parameters<typeof guardedBatch>[1]){try{await guardedBatch(version!,statements,admin!.id);return null;}catch(error){if(error instanceof CollaborationConflict)return conflict();throw error;}}
   if (action === "approve") {
+    if(record.media.mediaType==="image"){const images=(await getOwnerEditableProfileMedia(record.profile.id)).filter(file=>file.visibility==="public"&&file.mediaType==="image");if(images.length>10+(images.some(file=>file.isProfilePhoto)?1:0))return mutationRedirect(request,destination(request,formData,"capacity"));}
     const replaced = await approvedPhotoBeingReplaced(record.media);
     const isCover = replaced ? replaced.isProfilePhoto : record.media.isProfilePhoto;
     const otherCovers=isCover?[db.update(profileMedia).set({ isProfilePhoto: false }).where(and(

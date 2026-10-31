@@ -1,3 +1,4 @@
+import {profileAccessCondition} from "@/lib/profile-access";
 import { and, count, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { publicProfileCondition } from "@/lib/public-profile-visibility";
@@ -47,7 +48,7 @@ export const PUBLIC_REVIEWS_PAGE_SIZE = 10;
 
 export async function countPendingReceivedReviews(ownerId: string) {
   const [row] = await (await getDb()).select({ total: count() }).from(reviews).innerJoin(profiles, eq(reviews.profileId, profiles.id))
-    .where(and(eq(profiles.ownerId, ownerId), eq(reviews.status, "pending")));
+    .where(and(profileAccessCondition(ownerId,"edit"), eq(reviews.status, "pending")));
   return Number(row?.total ?? 0);
 }
 

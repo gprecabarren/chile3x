@@ -39,3 +39,10 @@
 - Real listings and private samples share `app/perfil/[slug]/page.tsx` and its profile components, typography and layout. Update these shared components for future listing appearance changes; do not create a separately styled sample profile.
 - Samples retain authenticated/token access, noindex and private media. Use the shared components' preview mode for visible but disabled interactions, without analytics, message/review submissions or public engagement writes. Maps use the shared reference-city card with the restricted Google Maps frame policy.
 - Photo/video uploads and editing remain in `ProfileMediaManager`/`AdminPhotoTools` for both listings and samples. Preserve gallery, batch effects, crop, privacy and video options together.
+
+# Agency ownership and maintained account guidance
+
+- Preserve the distinction between personal Escort quota, ID-based agency custody, public association and revocable management. Use `profile-access` for both queries and transactional writes, recording the real actor rather than impersonating the listing owner.
+- A custody transfer requires the existing verified recipient account's acceptance and independent manual administrative verification of the same profile revision. Preserve listing IDs, URLs, files and history; never move account security, personal inboxes or account-wide private libraries.
+- Documents require a separate grant; creating a custody profile does not dispense with the represented person's specific authorization to provide private documents. Keep revocation effective for in-flight writes.
+- Update `lib/agency-policy.ts`, `ListingTypeGuide`, the guide version and corresponding documentation whenever listing capabilities, limits or agency flows change. Keep numerical media limits sourced from shared policy modules.

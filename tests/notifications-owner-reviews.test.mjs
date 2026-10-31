@@ -31,7 +31,7 @@ test('private message/review notices are authenticated, aggregate-only and not i
 test('only the listing owner approves/rejects; admin only removes; author can withdraw pending',async()=>{
   const [owner,admin,withdraw,publicApi,service,account,adminPage]=await Promise.all(['app/api/mi-cuenta/comentarios/[reviewId]/route.ts','app/api/admin/resenas/[reviewId]/route.ts','app/api/mi-cuenta/resenas/[reviewId]/route.ts','app/api/perfiles/[profileId]/resenas/route.ts','lib/profile-interactions.ts','app/mi-cuenta/comentarios/page.tsx','app/admin/resenas/page.tsx'].map(source));
   for(const route of [owner,admin,withdraw]) assert.match(route,/assertSameOrigin/);
-  assert.match(owner,/eq\(profiles.ownerId, user.id\)/);assert.match(owner,/eq\(reviews.status, row.status\)/);
+  assert.match(owner,/getProfileAccess\(row.profileId,user.id,"edit"\)/);assert.match(owner,/eq\(reviews.status, row.status\)/);
   assert.match(admin,/form.get\("action"\) !== "delete"/);assert.doesNotMatch(admin,/status: "approved"|nextStatus/);
   assert.match(withdraw,/eq\(reviews.authorId, user.id\)/);assert.match(withdraw,/eq\(reviews.status, "pending"\)/);
   assert.match(publicApi,/verifyTurnstile/);assert.match(service,/eq\(reviews.status, "approved"\)/);

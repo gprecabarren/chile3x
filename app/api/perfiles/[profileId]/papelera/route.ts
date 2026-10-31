@@ -12,5 +12,5 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   let result;
   try{result=await trashProfile(profileId,user,"self");}
   catch(error){if(error instanceof CollaborationConflict)return NextResponse.redirect(new URL('/mi-cuenta?notice=trash_conflict',request.url),303);throw error;}
-  return NextResponse.redirect(new URL(`/mi-cuenta?notice=${result === "ok" ? "trashed" : "error"}`, request.url), 303);
+  return NextResponse.redirect(new URL(`/mi-cuenta?notice=${result === "ok" ? "trashed" : result==="agency_dependents"?"agency_dependents":"error"}`, request.url), 303);
 }

@@ -1,3 +1,6 @@
+import { authorizedProfileBatch, type ProfileAccess } from "@/lib/profile-access";
+import { profileManagementActivity } from "@/lib/agency-management";
+import { profilePhotoCapacity } from "@/lib/profile-photo-capacity";
 import { and, eq, ne } from "drizzle-orm";
 import { getDb } from "@/db";
 import { createAdminNotification } from "@/lib/admin-notifications";
@@ -19,6 +22,7 @@ export class ProfileMediaUploadError extends Error {
 }
 
 export async function uploadProfileMedia(input: {
+  access?: ProfileAccess;
   profileId: string;
   file: File;
   uploadKind: "profile_photo" | "gallery";
@@ -54,6 +58,7 @@ export async function uploadProfileMedia(input: {
   const existing = await getProfileMedia(profileId);
   const activeMedia = existing.filter((item) => item.visibility === "public");
   const logicalMedia = await logicalProfileMedia(activeMedia);
+  if(imageType){const capacityError=profilePhotoCapacity(logicalMedia,uploadKind);if(capacityError)throw new ProfileMediaUploadError(capacityError);}
   const sameTypeCount = logicalMedia.filter((item) => item.mediaType === mediaType && !item.isProfilePhoto).length;
   if (uploadKind === "gallery" && sameTypeCount >= (imageType ? MAX_IMAGES_PER_PROFILE : MAX_VIDEOS_PER_PROFILE)) {
     throw new ProfileMediaUploadError(imageType ? "Este perfil ya alcanzó el máximo de 10 imágenes de galería." : "Este perfil ya alcanzó el máximo de 3 videos de galería.");
@@ -87,7 +92,9 @@ export async function uploadProfileMedia(input: {
         // The newly uploaded photo must remain the selected cover.
         ne(profileMedia.id, id),
       ))]:[];
-    const results=await guardedBatch({...input.version,key:`profile:${profileId}`,revision},[db.insert(profileMedia).values({id,profileId,mediaType,r2Key,byteSize:file.size,contentType,moderationStatus,visibility:"public",isProfilePhoto:uploadKind==="profile_photo",sortOrder}),...covers,db.select({revision:profiles.revision}).from(profiles).where(eq(profiles.id,profileId))],input.adminActorId);
+    const statements=[db.insert(profileMedia).values({id,profileId,mediaType,r2Key,byteSize:file.size,contentType,moderationStatus,visibility:"public" as const,isProfilePhoto:uploadKind==="profile_photo",sortOrder}),...covers,...(input.access?[profileManagementActivity(db,input.access,"media.uploaded",`Subió ${mediaType==="image"?"una foto":"un video"} para revisión del anuncio.`)]:[]),db.select({revision:profiles.revision}).from(profiles).where(eq(profiles.id,profileId))];
+    const version={...input.version,key:`profile:${profileId}` as const,revision};
+    const results=input.access?await authorizedProfileBatch(input.access,"media",version,statements):await guardedBatch(version,statements,input.adminActorId);
     const rows=results.at(-1);if(Array.isArray(rows)&&rows[0]&&typeof rows[0].revision==='number')savedRevision=rows[0].revision;
   } catch (cause) {
     const reference = `CARGA-${crypto.randomUUID().slice(0,8)}`;

@@ -47,10 +47,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!targets.length) return destination("unchanged");
   const targetIds = targets.map(file => file.id);
   const replacements = await pendingPhotoReplacements(files);
+  const replacedIds=new Set([...replacements.values()].map(base=>base.id));
+  const logicalImages=files.filter(file=>file.mediaType==="image"&&!replacedIds.has(file.id));
   const newest = (a: typeof files[number], b: typeof files[number]) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id);
   const coverTarget = targets.filter(file => file.mediaType === "image" && file.isProfilePhoto).sort(newest)[0]
     ?? files.filter(file => file.mediaType === "image" && file.isProfilePhoto && file.moderationStatus === "approved").sort(newest)[0];
   const cover = coverTarget ? replacements.get(coverTarget.id) ?? coverTarget : undefined;
+  if(logicalImages.length>10+(coverTarget?1:0))return destination("capacity");
   const targetPredicate = or(...targets.map(file => and(eq(profileMedia.id, file.id), eq(profileMedia.r2Key, file.r2Key))));
   // Only the reviewed IDs can become approved; a newly uploaded file remains pending.
   // D1 batch commits the cover normalization and approvals together.

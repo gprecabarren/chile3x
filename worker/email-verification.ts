@@ -45,7 +45,7 @@ export async function trashLongBlockedProfiles(db: D1Database, now = new Date().
   const { results } = await db.prepare(`UPDATE profiles SET trashed_at = ?, trashed_by_kind = 'email_verification',
       trashed_by_actor_id = NULL, trashed_by_admin_login = NULL, updated_at = ?
     WHERE trashed_at IS NULL AND id IN (SELECT p.id FROM profiles p JOIN users u ON u.id = p.owner_id
-      WHERE p.trashed_at IS NULL AND u.role <> 'admin' AND u.email_verified_at IS NULL AND u.email_verification_exempt_at IS NULL
+      WHERE p.trashed_at IS NULL AND (p.type!='agency' OR NOT EXISTS(SELECT 1 FROM profiles child WHERE child.agency_custodian_id=p.id AND child.trashed_at IS NULL)) AND u.role <> 'admin' AND u.email_verified_at IS NULL AND u.email_verification_exempt_at IS NULL
       AND julianday(coalesce(u.email_verification_deadline, datetime(u.created_at, '+7 days'))) <= julianday(?, '-31 days')
       ORDER BY u.email_verification_deadline, p.id LIMIT 50)
     RETURNING id, display_name`).bind(now, now, now).all<{ id: string; display_name: string }>();

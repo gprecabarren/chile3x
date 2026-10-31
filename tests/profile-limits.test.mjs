@@ -60,6 +60,6 @@ test("server-side creation, admin restoration and both forms respect the scoped 
   assert.match(trash, /if \(!owner \|\| !hasUnlimitedEscortListings\(owner\)\)/);
   assert.match(ownerForm, /allowEscort=\{hasUnlimitedEscortListings\(user\) \|\| !escort\}/);
   assert.match(adminForm, /allowEscort=\{unlimitedEscort \|\| !escort\}/);
-  assert.match(route, /createProfile\(user\.id, submission\)/);
+  assert.match(route, /createProfile\(user\.id, submission, \{agencyId:/);
   assert.match(creation, /submission.intent === "submit" \? "pending" : "draft"/);
 });

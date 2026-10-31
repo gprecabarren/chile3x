@@ -58,5 +58,6 @@ test("trash and permanent deletion are admin-authorized, audited and hidden from
   assert.match(adminPage, /Ver fotos y videos asociados/);
   assert.match(accountPage, /getAccountStoryOverview\(\)/);
   assert.match(await source("lib/account-stories.ts"), /isNull\(profiles\.trashedAt\)/);
-  for (const route of [cityAlert, agencyInvite, storyRoute]) assert.match(route, /isNull\(profiles\.trashedAt\)/);
+  for (const route of [cityAlert, storyRoute]) assert.match(route, /isNull\(profiles\.trashedAt\)/);
+  assert.match(agencyInvite,/respondAgencyInvitation/);assert.match(await source("lib/agency-management.ts"),/isNull\(profiles\.trashedAt\)/);
 });

@@ -35,6 +35,7 @@ test('the real contact endpoints exclude administrative traffic while retaining 
     for (const statement of enrichment.matchAll(/ALTER TABLE `profile_contact_events`[^;]+;/g)) sqlite.exec(statement[0]);
     sqlite.exec('ALTER TABLE profile_contact_events ADD COLUMN click_count INTEGER NOT NULL DEFAULT 1');
     sqlite.exec(await source('drizzle/0040_portal_whatsapp.sql'));
+    sqlite.exec("ALTER TABLE profiles ADD COLUMN agency_custodian_id TEXT; ALTER TABLE profiles ADD COLUMN type TEXT DEFAULT 'escort';");
     const { NextRequest } = await import('next/server.js');
     const profileRoute = await import('../app/api/perfiles/[profileId]/contacto/route.ts');
     const portalRoute = await import('../app/api/contacto/whatsapp/route.ts');

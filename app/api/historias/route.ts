@@ -1,3 +1,5 @@
+import { getProfileAccess } from "@/lib/profile-access";
+import { agencyActivity } from "@/lib/agency-management";
 import { and, eq, gt, isNull } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
@@ -46,8 +48,9 @@ async function publishStory(request: NextRequest) {
   const limit = storyLimitForType(storyType);
 
   const db = await getDb();
-  const [profile] = await db.select({ id: profiles.id }).from(profiles).where(and(eq(profiles.id, profileId), eq(profiles.ownerId, user.id), eq(profiles.status, "approved"), isNull(profiles.trashedAt), isNull(profiles.ownerHiddenAt))).limit(1);
-  if (!profile) return response(request, formData, "story_error", 403, "El anuncio debe ser tuyo, estar publicado, visible y fuera de la papelera.");
+  const access=await getProfileAccess(profileId,user.id,"stories");
+  const [profile] = await db.select({ id: profiles.id }).from(profiles).where(and(eq(profiles.id, profileId), eq(profiles.ownerId, access?.ownerId??""), eq(profiles.status, "approved"), isNull(profiles.trashedAt), isNull(profiles.ownerHiddenAt))).limit(1);
+  if (!profile||!access) return response(request, formData, "story_error", 403, "El anuncio debe ser tuyo, estar publicado, visible y fuera de la papelera.");
   if (imageData) await purgeExpiredImageStories();
 
   const activeStories = await db.select({ id: profileStatuses.id }).from(profileStatuses).where(and(eq(profileStatuses.profileId, profile.id), eq(profileStatuses.storyType, storyType), gt(profileStatuses.expiresAt, new Date().toISOString()))).limit(5);
@@ -71,8 +74,8 @@ async function publishStory(request: NextRequest) {
     const inserted = await env.DB!.prepare(`INSERT INTO profile_statuses (id, profile_id, body, story_type, r2_key, content_type, byte_size, created_at, expires_at)
       SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE
       (SELECT count(*) FROM profile_statuses WHERE profile_id = ? AND story_type = ? AND expires_at > ?) < ?
-      AND EXISTS (SELECT 1 FROM profiles WHERE id = ? AND owner_id = ? AND status = 'approved' AND trashed_at IS NULL AND owner_hidden_at IS NULL)`)
-      .bind(id, profile.id, body, storyType, r2Key, imageType, imageData?.byteLength ?? 0, now, storyExpiresAt(), profile.id, storyType, now, limit, profile.id, user.id).run();
+      AND EXISTS (SELECT 1 FROM profiles WHERE id = ? AND owner_id = ? AND revision = ? AND status = 'approved' AND trashed_at IS NULL AND owner_hidden_at IS NULL)`)
+      .bind(id, profile.id, body, storyType, r2Key, imageType, imageData?.byteLength ?? 0, now, storyExpiresAt(), profile.id, storyType, now, limit, profile.id, access.ownerId, access.profile.revision).run();
     if (!inserted.meta.changes) {
       if (r2Key) await env.MEDIA?.delete(r2Key);
       return response(request, formData, "story_limit", 409, `No se publicó: cambió el estado del anuncio o se completó el límite de ${limit}. Actualiza las historias antes de reintentar.`);
@@ -84,6 +87,7 @@ async function publishStory(request: NextRequest) {
     }
     throw error;
   }
+  await agencyActivity(db,user.id,access.agencyId,profile.id,"story.published","Publicó una historia del anuncio.");
   return response(request, formData, "story_published", 201);
 }
 

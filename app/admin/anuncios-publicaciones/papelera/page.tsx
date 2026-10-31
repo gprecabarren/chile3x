@@ -17,6 +17,8 @@ const profileTypeLabels = { escort: "Escort", agency: "Agencia", rental: "Arrien
 const notices: Record<string, string> = {
   trashed: "El anuncio fue enviado a la papelera.", restored: "El anuncio fue restaurado.",
   deleted: "El anuncio y sus archivos asociados fueron eliminados definitivamente. El historial mínimo de la acción permanece en la bitácora.",
+  agency_unavailable:"Primero restaura la agencia de origen. Este perfil todavía no puede quedar separado de ella.",
+  agency_dependents:"Esta agencia aún tiene perfiles bajo su gestión sin titular personal. Resuelve esos perfiles antes de eliminar o trasladar la agencia.",
   escort_conflict: "No se puede restaurar: esta cuenta ya tiene otro anuncio Escort activo. Mueve el otro a la papelera antes de continuar.",
   storage_cleanup_failed: "El anuncio se borró de D1, pero falló la limpieza de algunos archivos R2. Revisa la alerta de almacenamiento en el panel operativo y la auditoría de archivos huérfanos.",
   not_found: "El anuncio ya no existe.", not_trashed: "El anuncio ya no está en la papelera.", already_trashed: "El anuncio ya estaba en la papelera.",

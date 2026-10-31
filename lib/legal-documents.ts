@@ -2,19 +2,21 @@ import { cache } from 'react';
 import { eq,desc,sql } from 'drizzle-orm';
 import { getDb } from '@/db';
 import { legalDocuments,legalDocumentVersions } from '@/db/schema';
-import { DEFAULT_LEGAL_DOCUMENTS } from '@/lib/legal-defaults';
-import { validateLegalDocument,INITIAL_LEGAL_DATE,INITIAL_LEGAL_VERSION,type LegalKey,type LegalDocument } from '@/lib/legal-document';
+import { DEFAULT_LEGAL_DOCUMENTS as HISTORICAL_DEFAULTS } from '@/lib/legal-defaults';
+import {agencyLegalFallback,AGENCY_LEGAL_VERSION} from '@/lib/agency-legal-revision';
+const DEFAULT_LEGAL_DOCUMENTS={terms:agencyLegalFallback(HISTORICAL_DEFAULTS.terms,'terms'),privacy:agencyLegalFallback(HISTORICAL_DEFAULTS.privacy,'privacy')};
+import { validateLegalDocument,type LegalKey,type LegalDocument } from '@/lib/legal-document';
 import { guardedBatch,type ReviewVersion } from '@/lib/collaboration';
 import { chileanDay,storedChileanDay } from '@/lib/chile-day';
 
 function documentJson(value:string|null,key:LegalKey){return value?validateLegalDocument(JSON.parse(value),true):DEFAULT_LEGAL_DOCUMENTS[key];}
 export const getPublishedLegalDocument=cache(async(key:LegalKey)=>{
  try{const [row]=await (await getDb()).select({json:legalDocuments.publishedJson,version:legalDocuments.version,publishedAt:legalDocuments.publishedAt}).from(legalDocuments).where(eq(legalDocuments.id,key)).limit(1);
-  return {document:documentJson(row?.json??null,key),version:row?.version??INITIAL_LEGAL_VERSION,updatedAt:storedChileanDay(row?.publishedAt??INITIAL_LEGAL_DATE)};
- }catch(error){if(error instanceof Error&&error.message.includes('cloudflare:'))return {document:DEFAULT_LEGAL_DOCUMENTS[key],version:INITIAL_LEGAL_VERSION,updatedAt:INITIAL_LEGAL_DATE};throw error;}
+  return {document:documentJson(row?.json??null,key),version:row?.version??AGENCY_LEGAL_VERSION,updatedAt:storedChileanDay(row?.publishedAt??"2026-10-31")};
+ }catch(error){if(error instanceof Error&&error.message.includes('cloudflare:'))return {document:DEFAULT_LEGAL_DOCUMENTS[key],version:AGENCY_LEGAL_VERSION,updatedAt:"2026-10-31"};throw error;}
 });
 export const getLegalVersionSummary=cache(async()=>{
- const result={terms:{version:INITIAL_LEGAL_VERSION,updatedAt:INITIAL_LEGAL_DATE},privacy:{version:INITIAL_LEGAL_VERSION,updatedAt:INITIAL_LEGAL_DATE}};
+ const result={terms:{version:AGENCY_LEGAL_VERSION,updatedAt:"2026-10-31"},privacy:{version:AGENCY_LEGAL_VERSION,updatedAt:"2026-10-31"}};
  try{for(const row of await (await getDb()).select({id:legalDocuments.id,version:legalDocuments.version,updatedAt:legalDocuments.publishedAt}).from(legalDocuments)){result[row.id]={version:row.version,updatedAt:storedChileanDay(row.updatedAt)};}}
  catch(error){if(!(error instanceof Error&&error.message.includes('cloudflare:')))throw error;}
  return result;

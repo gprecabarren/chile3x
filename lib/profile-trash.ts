@@ -7,7 +7,7 @@ import { hasUnlimitedEscortListings } from "@/lib/profile-limits";
 import { guardedBatch, type ReviewVersion } from "@/lib/collaboration";
 import { adminHasCapability } from "@/lib/admin-permissions";
 
-export type ProfileTrashResult = "ok" | "not_found" | "already_trashed" | "not_trashed" | "escort_conflict" | "storage_cleanup_failed";
+export type ProfileTrashResult = "agency_unavailable" | "agency_dependents" | "ok" | "not_found" | "already_trashed" | "not_trashed" | "escort_conflict" | "storage_cleanup_failed";
 
 export async function trashProfile(profileId: string, actor: AccountUser | AdminUser, kind: "self" | "admin", version?:ReviewVersion): Promise<ProfileTrashResult> {
   const db = await getDb();
@@ -15,10 +15,11 @@ export async function trashProfile(profileId: string, actor: AccountUser | Admin
     .from(profiles).where(eq(profiles.id, profileId)).limit(1);
   if (!profile || (kind === "self" && profile.ownerId !== actor.id)) return "not_found";
   if (profile.trashedAt) return "already_trashed";
+  if(profile.type==="agency"&&(await db.select({id:profiles.id}).from(profiles).where(and(eq(profiles.agencyCustodianId,profile.id),isNull(profiles.trashedAt))).limit(1)).length)return "agency_dependents";
 
   const now = new Date().toISOString();
   const adminLogin = kind === "admin" ? (actor as AdminUser).githubLogin : null;
-  await guardedBatch(version??{key:`profile:${profileId}`,revision:profile.revision},[
+  try{await guardedBatch(version??{key:`profile:${profileId}`,revision:profile.revision},[
     db.update(profiles).set({ trashedAt: now, trashedByKind: kind, trashedByActorId: actor.id, trashedByAdminLogin: adminLogin, updatedAt: now })
       .where(and(eq(profiles.id, profileId), isNull(profiles.trashedAt))),
     db.insert(adminAuditLogs).values({
@@ -33,25 +34,26 @@ export async function trashProfile(profileId: string, actor: AccountUser | Admin
       beforeData: JSON.stringify({ trashedAt: null, status: profile.status }),
       afterData: JSON.stringify({ trashedAt: now, status: profile.status, origin: kind }),
     }),
-  ],kind==="admin"?actor.id:undefined);
+  ],kind==="admin"?actor.id:undefined);}catch(cause){if(String(cause).includes("agency_has_dependents"))return "agency_dependents";throw cause;}
   return "ok";
 }
 
 export async function restoreProfile(profileId: string, admin: AdminUser, version?:ReviewVersion): Promise<ProfileTrashResult> {
   if (!adminHasCapability(admin, "profiles.recycle")) return "not_found";
   const db = await getDb();
-  const [profile] = await db.select({ revision:profiles.revision, id: profiles.id, ownerId: profiles.ownerId, displayName: profiles.displayName, type: profiles.type, status: profiles.status, trashedAt: profiles.trashedAt, trashedByKind: profiles.trashedByKind, trashedByAdminLogin: profiles.trashedByAdminLogin, adminEscortLimitOverride: profiles.adminEscortLimitOverride, creationSource: profiles.creationSource, createdByAdminId: profiles.createdByAdminId })
+  const [profile] = await db.select({ revision:profiles.revision, id: profiles.id, ownerId: profiles.ownerId, displayName: profiles.displayName, type: profiles.type, status: profiles.status, trashedAt: profiles.trashedAt, trashedByKind: profiles.trashedByKind, trashedByAdminLogin: profiles.trashedByAdminLogin, agencyCustodianId:profiles.agencyCustodianId, adminEscortLimitOverride: profiles.adminEscortLimitOverride, creationSource: profiles.creationSource, createdByAdminId: profiles.createdByAdminId })
     .from(profiles).where(eq(profiles.id, profileId)).limit(1);
   if (!profile) return "not_found";
   if (!profile.trashedAt) return "not_trashed";
   // Match the database's per-listing exception. Restoration preserves an
   // authorization already granted by administration; it never creates one.
+  if(profile.agencyCustodianId && !(await db.select({id:profiles.id}).from(profiles).where(and(eq(profiles.id,profile.agencyCustodianId),isNull(profiles.trashedAt))).limit(1)).length)return "agency_unavailable";
   const existingEscortAuthorization = profile.adminEscortLimitOverride && profile.creationSource === "admin" && Boolean(profile.createdByAdminId);
-  if (profile.type === "escort" && !existingEscortAuthorization) {
+  if (profile.type === "escort" && !profile.agencyCustodianId && !existingEscortAuthorization) {
     const [owner] = await db.select({ id: users.id, email: users.email }).from(users).where(eq(users.id, profile.ownerId)).limit(1);
     if (!owner || !hasUnlimitedEscortListings(owner)) {
       const [other] = await db.select({ id: profiles.id }).from(profiles).where(and(
-        eq(profiles.ownerId, profile.ownerId), eq(profiles.type, "escort"), isNull(profiles.trashedAt),
+        eq(profiles.ownerId, profile.ownerId), eq(profiles.type, "escort"), isNull(profiles.agencyCustodianId), isNull(profiles.trashedAt),
       )).limit(1);
       if (other) return "escort_conflict";
     }
@@ -72,6 +74,7 @@ export async function restoreProfile(profileId: string, admin: AdminUser, versio
     ],admin.id);
   } catch (error) {
     if (String(error).includes("escort_profile_owner_conflict")) return "escort_conflict";
+    if(String(error).includes("agency_custody_conflict"))return "agency_unavailable";
     throw error;
   }
   return "ok";
@@ -83,6 +86,7 @@ export async function permanentlyDeleteTrashedProfile(profileId: string, admin: 
     .from(profiles).where(eq(profiles.id, profileId)).limit(1);
   if (!profile) return "not_found";
   if (!profile.trashedAt) return "not_trashed";
+  if(profile.type==="agency"&&(await db.select({id:profiles.id}).from(profiles).where(eq(profiles.agencyCustodianId,profileId)).limit(1)).length)return "agency_dependents";
   // The account-owned premium library is deliberately retained. Its optional
   // listing link is detached by the FK when this specific listing is deleted.
   const [media, stories, documents, evidence] = await Promise.all([

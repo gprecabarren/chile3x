@@ -27,7 +27,9 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const submission = readProfileSubmission(formData);
-    const profileId = await createProfile(user.id, submission);
+    const agencyId=String(formData.get("agency_custodian_id")??"").trim();
+    if(agencyId && formData.get("agency_permission")!=="on")throw new ProfileValidationError("Confirma tu autorización para representar y publicar a esta persona desde la agencia.");
+    const profileId = await createProfile(user.id, submission, {agencyId:agencyId||undefined});
     return NextResponse.redirect(new URL(`/mi-cuenta/${profileId}/editar?notice=${submission.intent === "submit" ? "submitted" : "saved"}`, request.url), 303);
   } catch (error) {
     if (error instanceof ProfileValidationError) {

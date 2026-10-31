@@ -5,42 +5,122 @@ import { useRef, useState } from "react";
 import { readUploadResponse } from "@/lib/upload-response";
 
 type DocumentKind = "identity" | "medical";
-type DocumentRecord = { kind: DocumentKind; byteSize: number; contentType: string };
+type DocumentRecord = {
+  kind: DocumentKind;
+  byteSize: number;
+  contentType: string;
+};
 
 const labels: Record<DocumentKind, { title: string; description: string }> = {
-  identity: { title: "Carnet o documento de identidad", description: "Opcional y privado. Solo tú y administradores autorizados pueden revisarlo." },
-  medical: { title: "Examen o certificado médico", description: "Opcional y privado. Nunca aparece en tu perfil público." },
+  identity: {
+    title: "Carnet o documento de identidad",
+    description:
+      "Opcional y privado. Solo tu cuenta, la agencia que autorices expresamente y administradores autorizados pueden revisarlo.",
+  },
+  medical: {
+    title: "Examen o certificado médico",
+    description: "Opcional y privado. Nunca aparece en tu perfil público.",
+  },
 };
 
 function fileSize(bytes: number) {
   return `${(bytes / 1_000_000).toLocaleString("es-CL", { maximumFractionDigits: 1 })} MB`;
 }
 
-export function ProfileVerificationDocuments({ profileId, initialDocuments }: { profileId: string; initialDocuments: DocumentRecord[] }) {
+export function ProfileVerificationDocuments({
+  profileId,
+  initialDocuments,
+  initialRevision,
+  agencyCustodian = false,
+}: {
+  agencyCustodian?: boolean;
+  profileId: string;
+  initialDocuments: DocumentRecord[];
+  initialRevision?: number;
+}) {
+  const revision = useRef(initialRevision);
+  const [authorized, setAuthorized] = useState(false);
+  const currentRevision = () =>
+    Number(
+      inputs.identity.current?.closest<HTMLElement>("[data-review-resource]")
+        ?.dataset.reviewRevision ?? revision.current,
+    );
+  const commit = (next: number | undefined) => {
+    if (Number.isSafeInteger(next)) {
+      window.dispatchEvent(
+        new CustomEvent("chile3x:own-review-commit", {
+          detail: {
+            key: `profile:${profileId}`,
+            previousRevision: Number(
+              inputs.identity.current?.closest<HTMLElement>(
+                "[data-review-resource]",
+              )?.dataset.reviewRevision ?? revision.current,
+            ),
+            revision: next,
+          },
+        }),
+      );
+      revision.current = next;
+    }
+  };
   const [documents, setDocuments] = useState(initialDocuments);
-  const [selected, setSelected] = useState<Partial<Record<DocumentKind, File>>>({});
+  const [selected, setSelected] = useState<Partial<Record<DocumentKind, File>>>(
+    {},
+  );
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState<DocumentKind | null>(null);
-  const inputs = { identity: useRef<HTMLInputElement>(null), medical: useRef<HTMLInputElement>(null) };
+  const inputs = {
+    identity: useRef<HTMLInputElement>(null),
+    medical: useRef<HTMLInputElement>(null),
+  };
 
   async function upload(kind: DocumentKind) {
     const file = selected[kind];
     if (!file) return setMessage("Selecciona un archivo antes de subirlo.");
-    if (file.size > 15_000_000) return setMessage("Cada documento puede pesar como máximo 15 MB.");
+    if (file.size > 15_000_000)
+      return setMessage("Cada documento puede pesar como máximo 15 MB.");
+    if (agencyCustodian && !authorized)
+      return setMessage(
+        "Confirma la autorización específica para utilizar documentos privados de esta persona.",
+      );
     setBusy(kind);
     setMessage("");
     const body = new FormData();
+    body.set("document_authorization", authorized ? "on" : "");
+    if (Number.isSafeInteger(currentRevision())) {
+      body.set("review_key", `profile:${profileId}`);
+      body.set("review_revision", String(currentRevision()));
+    }
     body.set("file", file);
     try {
-      const response = await fetch(`/api/perfiles/${profileId}/documentos/${kind}`, { method: "POST", body });
-      const payload = await readUploadResponse<{ error?: string; document?: DocumentRecord }>(response, "Cada documento admite hasta 15 MB. Envía un archivo por vez.");
-      if (!response.ok || !payload.document) throw new Error(payload.error ?? "No se pudo subir el documento.");
-      setDocuments((current) => [...current.filter((item) => item.kind !== kind), payload.document!]);
+      const response = await fetch(
+        `/api/perfiles/${profileId}/documentos/${kind}`,
+        { method: "POST", body },
+      );
+      const payload = await readUploadResponse<{
+        error?: string;
+        revision?: number;
+        document?: DocumentRecord;
+      }>(
+        response,
+        "Cada documento admite hasta 15 MB. Envía un archivo por vez.",
+      );
+      if (!response.ok || !payload.document)
+        throw new Error(payload.error ?? "No se pudo subir el documento.");
+      commit(payload.revision);
+      setDocuments((current) => [
+        ...current.filter((item) => item.kind !== kind),
+        payload.document!,
+      ]);
       setSelected((current) => ({ ...current, [kind]: undefined }));
       if (inputs[kind].current) inputs[kind].current.value = "";
       setMessage(`${labels[kind].title} guardado de forma privada.`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "No se pudo subir el documento.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "No se pudo subir el documento.",
+      );
     } finally {
       setBusy(null);
     }
@@ -50,33 +130,136 @@ export function ProfileVerificationDocuments({ profileId, initialDocuments }: { 
     setBusy(kind);
     setMessage("");
     try {
-      const response = await fetch(`/api/perfiles/${profileId}/documentos/${kind}`, { method: "DELETE" });
-      if (!response.ok) throw new Error("No se pudo eliminar el documento.");
+      const response = await fetch(
+        `/api/perfiles/${profileId}/documentos/${kind}`,
+        {
+          method: "DELETE",
+          headers: Number.isSafeInteger(currentRevision())
+            ? { "x-profile-revision": String(currentRevision()) }
+            : {},
+        },
+      );
+      const payload = (await response.json()) as {
+        error?: string;
+        revision?: number;
+      };
+      if (!response.ok)
+        throw new Error(payload.error ?? "No se pudo eliminar el documento.");
+      commit(payload.revision);
       setDocuments((current) => current.filter((item) => item.kind !== kind));
       setMessage(`${labels[kind].title} eliminado.`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "No se pudo eliminar el documento.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "No se pudo eliminar el documento.",
+      );
     } finally {
       setBusy(null);
     }
   }
 
-  return <section id="documentos-privados" className="private-documents-status" aria-labelledby="private-documents-title">
-    <p className="eyebrow">VERIFICACIÓN OPCIONAL</p>
-    <h2 id="private-documents-title">Documentos privados</h2>
-    <p>Sube cada documento por separado para que un archivo opcional no interfiera con tu aviso. Se aceptan JPG, PNG, WebP y PDF de hasta 15 MB.</p>
-    {message && <p className="form-alert" role="status">{message}</p>}
-    <div className="form-grid form-grid-two">
-      {(["identity", "medical"] as const).map((kind) => {
-        const document = documents.find((item) => item.kind === kind);
-        const file = selected[kind];
-        return <div className="private-document-card" key={kind}><strong>{labels[kind].title}</strong><small>{labels[kind].description}</small>
-          {document && <p><a href={`/api/perfiles/${profileId}/documentos/${kind}`}>Descargar archivo privado</a> · {fileSize(document.byteSize)}</p>}
-          <input ref={inputs[kind]} type="file" accept="image/jpeg,image/png,image/webp,application/pdf" capture="environment" onChange={(event) => { const next = event.currentTarget.files?.[0]; setSelected((current) => ({ ...current, [kind]: next })); setMessage(""); }} />
-          {file && <div className="private-document-actions"><small>Seleccionado: {file.name} · {fileSize(file.size)}</small><ActionButton className="button button-outline" type="button" onClick={() => { setSelected((current) => ({ ...current, [kind]: undefined })); if (inputs[kind].current) inputs[kind].current.value = ""; }}>Quitar seleccionado</ActionButton><ActionButton className="button button-primary" type="button" disabled={busy === kind} onClick={() => void upload(kind)}>{busy === kind ? "Subiendo…" : document ? "Reemplazar archivo" : "Subir archivo"}</ActionButton></div>}
-          {document && <ActionButton className="button button-outline" type="button" disabled={busy === kind} onClick={() => void removeSaved(kind)}>Eliminar archivo guardado</ActionButton>}
-        </div>;
-      })}
-    </div>
-  </section>;
+  return (
+    <section
+      id="documentos-privados"
+      className="private-documents-status"
+      aria-labelledby="private-documents-title"
+    >
+      <p className="eyebrow">VERIFICACIÓN OPCIONAL</p>
+      <h2 id="private-documents-title">Documentos privados</h2>
+      <p>
+        Sube cada documento por separado para que un archivo opcional no
+        interfiera con tu aviso. Se aceptan JPG, PNG, WebP y PDF de hasta 15 MB.
+      </p>
+      {agencyCustodian && (
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={authorized}
+            onChange={(event) => setAuthorized(event.target.checked)}
+          />
+          Tengo autorización específica de esta persona adulta para aportar
+          estos documentos privados de identidad o médicos a Chile3X.
+        </label>
+      )}
+      {message && (
+        <p className="form-alert" role="status">
+          {message}
+        </p>
+      )}
+      <div className="form-grid form-grid-two">
+        {(["identity", "medical"] as const).map((kind) => {
+          const document = documents.find((item) => item.kind === kind);
+          const file = selected[kind];
+          return (
+            <div className="private-document-card" key={kind}>
+              <strong>{labels[kind].title}</strong>
+              <small>{labels[kind].description}</small>
+              {document && (
+                <p>
+                  <a href={`/api/perfiles/${profileId}/documentos/${kind}`}>
+                    Descargar archivo privado
+                  </a>{" "}
+                  · {fileSize(document.byteSize)}
+                </p>
+              )}
+              <input
+                ref={inputs[kind]}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,application/pdf"
+                capture="environment"
+                onChange={(event) => {
+                  const next = event.currentTarget.files?.[0];
+                  setSelected((current) => ({ ...current, [kind]: next }));
+                  setMessage("");
+                }}
+              />
+              {file && (
+                <div className="private-document-actions">
+                  <small>
+                    Seleccionado: {file.name} · {fileSize(file.size)}
+                  </small>
+                  <ActionButton
+                    className="button button-outline"
+                    type="button"
+                    onClick={() => {
+                      setSelected((current) => ({
+                        ...current,
+                        [kind]: undefined,
+                      }));
+                      if (inputs[kind].current) inputs[kind].current.value = "";
+                    }}
+                  >
+                    Quitar seleccionado
+                  </ActionButton>
+                  <ActionButton
+                    className="button button-primary"
+                    type="button"
+                    disabled={busy === kind}
+                    onClick={() => void upload(kind)}
+                  >
+                    {busy === kind
+                      ? "Subiendo…"
+                      : document
+                        ? "Reemplazar archivo"
+                        : "Subir archivo"}
+                  </ActionButton>
+                </div>
+              )}
+              {document && (
+                <ActionButton
+                  className="button button-outline"
+                  type="button"
+                  disabled={busy === kind}
+                  onClick={() => void removeSaved(kind)}
+                >
+                  Eliminar archivo guardado
+                </ActionButton>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
 }

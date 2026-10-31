@@ -1,3 +1,4 @@
+import { getProfileAccess } from "@/lib/profile-access";
 import { NextRequest, NextResponse } from "next/server";
 import { assertSameOrigin, getCurrentUser } from "@/lib/auth";
 import { ProfileValidationError, readProfileSubmission, updateProfile } from "@/lib/profile-submission";
@@ -16,13 +17,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   try {
+    const access=await getProfileAccess(profileId,user.id,"edit");
+    if(!access)return Response.json({error:"No tienes permiso vigente para editar este anuncio."},{status:403});
     const formData = await request.formData();
     const submission = readProfileSubmission(formData, {travelDateValidation: "stored"});
-    const result = await updateProfile(profileId, user.id, submission, {version:expectedVersion(formData,`profile:${profileId}`)});
+    const result = await updateProfile(profileId, access.ownerId, submission, {access,version:expectedVersion(formData,`profile:${profileId}`)});
     const notice = result.contactOnly ? "contacts_saved" : submission.intent === "submit" ? "submitted" : "saved";
     return mutationRedirect(request,new URL(result.updated ? `/mi-cuenta/${profileId}/editar?notice=${notice}` : "/mi-cuenta?notice=error", request.url));
   } catch (error) {
-    if (error instanceof CollaborationConflict) return conflictResponse();
+    if (error instanceof CollaborationConflict) {
+      if(request.headers.get("accept")?.includes("application/json"))return conflictResponse();
+      const destination=new URL(`/mi-cuenta/${profileId}/editar`,request.url);destination.searchParams.set("error","conflict");destination.searchParams.set("message",error.message);return NextResponse.redirect(destination,303);
+    }
+    if(request.headers.get("accept")?.includes("application/json"))return Response.json({error:error instanceof Error?error.message:"No se pudieron guardar los cambios."},{status:error instanceof ProfileValidationError?400:500});
     if (error instanceof ProfileValidationError) {
       const destination = new URL(`/mi-cuenta/${profileId}/editar`, request.url);
       destination.searchParams.set("error", "validation");

@@ -27,7 +27,7 @@ test("admin uploads require both account and media authority; owner uploads stay
   assert.match(admin, /"media\.moderate"/);
   assert.match(admin, /moderationStatus: "approved"/);
   assert.match(admin, /!row\.ownerActive/);
-  assert.match(owner, /profile\.ownerId !== user\.id/);
+  assert.match(owner, /getProfileAccess\(profileId,user.id,"media"\)/);
   assert.match(owner, /hasTesterAutoApproval\(user\) \? "approved" : "pending"/);
   assert.match(shared, /detectImageType\(signature\)/);
   assert.match(shared, /detectVideoType\(signature\)/);

@@ -1,3 +1,5 @@
+import {getProfileAccess,authorizedProfileBatch} from "@/lib/profile-access";
+import {profileManagementActivity} from "@/lib/agency-management";
 import { and, eq, isNull, or } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
@@ -18,21 +20,23 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
   const autoApprove = hasTesterAutoApproval(user);
   const { profileId } = await params;
+  const access=await getProfileAccess(profileId,user.id,"submit");if(!access)return new Response("No tienes permiso vigente para enviar este anuncio.",{status:403});
   const db = await getDb();
-  const [record] = await db.select({ type: profiles.type, metadata: profileDetails.metadata }).from(profiles).leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id)).where(and(eq(profiles.id, profileId), eq(profiles.ownerId, user.id), isNull(profiles.trashedAt))).limit(1);
+  const [record] = await db.select({ type: profiles.type, metadata: profileDetails.metadata }).from(profiles).leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id)).where(and(eq(profiles.id, profileId), eq(profiles.ownerId, access.ownerId), isNull(profiles.trashedAt))).limit(1);
   if (!record) return new Response("Anuncio no encontrado o no pertenece a tu cuenta.", { status: 404 });
   let metadata: Record<string,string> = {}; try { metadata = JSON.parse(record.metadata || "{}"); } catch { /* Missing age fails closed. */ }
   if (record.type === "escort" && publicProfileAge(record.type, metadata) === null) return new Response("Indica una edad válida entre 18 y 99 años en Editar anuncio antes de enviarlo a revisión.", { status: 400 });
-  const result = await db.update(profiles).set({
+  const saved=await authorizedProfileBatch(access,"submit",{key:`profile:${profileId}`,revision:access.profile.revision},[db.update(profiles).set({
     status: autoApprove ? "approved" : "pending",
     verificationStatus: autoApprove ? "unreviewed" : "in_review",
     updatedAt: new Date().toISOString(),
   }).where(and(
     eq(profiles.id, profileId),
-    eq(profiles.ownerId, user.id),
+    eq(profiles.ownerId, access.ownerId),
     isNull(profiles.trashedAt),
     or(eq(profiles.status, "draft"), eq(profiles.status, "rejected")),
-  )).returning({ id: profiles.id });
+  )).returning({ id: profiles.id }),profileManagementActivity(db,access,"profile.submitted","Envió el anuncio a revisión.")]);
+  const result=saved[0] as {id:string}[];
   if (result.length && !autoApprove) await createAdminNotification({ kind: "profile_updated", actorUserId: user.id, profileId, summary: "Se envió el anuncio a revisión desde Mis anuncios." });
 
   return NextResponse.redirect(new URL(`/mi-cuenta?notice=${result.length ? autoApprove ? "approved" : "submitted" : "error"}`, request.url), 303);

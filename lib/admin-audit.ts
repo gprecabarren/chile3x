@@ -21,6 +21,7 @@ export const ADMIN_AUDIT_CATEGORIES = {
 } as const;
 
 export const ADMIN_AUDIT_ACTIONS = {
+  "agency.claim_verify":"Comprobó una vinculación de perfil de agencia",
   "admin.grant_login_correct": "Corrigió el usuario de una invitación administrativa",
   "sample.create":"Creó una muestra privada",
   "sample.share":"Guardó el enlace privado de una muestra",
@@ -136,6 +137,7 @@ export const ADMIN_AUDIT_ACTIONS = {
 } as const;
 
 export const ADMIN_AUDIT_ENTITY_TYPES = {
+  agency_claim:"Vinculación de agencia",
   sample:"Muestra privada",
   legal_document: "Documento legal",
   forum_section: "Sección del foro",

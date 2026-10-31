@@ -1,3 +1,5 @@
+import { getProfileAccess } from "@/lib/profile-access";
+import { ProfileEditScope } from "../../ProfileEditScope";
 import { chileanDay } from "@/lib/chile-day";
 import { ActionAnchor, ActionButton } from "@/app/ActionButton";
 import { ActionIcon } from "@/app/ActionIcon";
@@ -39,10 +41,12 @@ export default async function EditProfilePage({ params, searchParams }: { params
     redirect("/ingresar?return_to=/mi-cuenta");
   }
   const { profileId } = await params;
+  const access=await getProfileAccess(profileId,user.id,"edit");if(!access)notFound();
+  const documentAccess=await getProfileAccess(profileId,user.id,"documents");
   const db = await getDb();
   const [row] = await db.select({ profile: profiles, details: profileDetails }).from(profiles)
     .leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id))
-    .where(and(eq(profiles.id, profileId), eq(profiles.ownerId, user.id), isNull(profiles.trashedAt))).limit(1);
+    .where(and(eq(profiles.id, profileId), eq(profiles.ownerId, access.ownerId), isNull(profiles.trashedAt))).limit(1);
   if (!row) {
     notFound();
   }
@@ -51,7 +55,7 @@ export default async function EditProfilePage({ params, searchParams }: { params
     db.select({ service: profileServices.service, kind: profileServices.kind }).from(profileServices).where(eq(profileServices.profileId, profileId)),
     getOwnerEditableProfileMedia(profileId),
     getMediaUsage(),
-    getVerificationDocuments(profileId),
+    documentAccess?getVerificationDocuments(profileId):Promise.resolve([]),
     getSiteSettings(),
   ]);
   const query = await searchParams;
@@ -65,11 +69,15 @@ export default async function EditProfilePage({ params, searchParams }: { params
         {query.notice === "shown" && <p className="account-success" role="status">El anuncio volvió a mostrarse según su estado de moderación.</p>}
         {query.notice === "contacts_saved" && <p className="account-success" role="status">WhatsApp, teléfono, correo y redes fueron actualizados inmediatamente. El anuncio conserva su aprobación.</p>}
         {query.notice === "submitted" && <ProfileSubmissionConfirmation profileId={profileId} profileType={row.profile.type} />}
+        <ProfileEditScope key={profileId} profileId={profileId} revision={row.profile.revision}>
+        {(access.agencyId||row.profile.agencyCustodianId)&&<p className="account-profile-rule-note">{row.profile.agencyCustodianId?`Perfil gestionado por agencia · ID: ${profileId}. Todavía no está vinculado a una cuenta personal.`:"Estás gestionando un anuncio ajeno con autorización revocable. No tienes acceso a la seguridad de su cuenta."}</p>}
         <ProfileMediaManager initialRevision={row.profile.revision} profileId={profileId} initialMedia={media.map((item) => ({ id: item.id, url: `/media/${item.id}`, mediaType: item.mediaType, contentType: item.contentType, moderationStatus: item.moderationStatus, visibility: item.visibility, isProfilePhoto: item.isProfilePhoto, byteSize: item.byteSize, replacementOf: item.replacementOf }))} initialQuota={{ bytes: usage.bytes, ...getMediaQuotaState(usage.bytes) }} mediaSettings={{ watermarkEnabled: settings.profile_gallery_watermark_enabled === "enabled", faceBlurEnabled: settings.profile_gallery_face_blur_enabled === "enabled" }} />
-        {row.profile.type === "escort" && <ProfileVerificationDocuments profileId={profileId} initialDocuments={documents} />}
-        <section className="profile-visibility-panel"><div><p className="eyebrow">VISIBILIDAD</p><h2>{row.profile.ownerHiddenAt ? "Tu anuncio está oculto" : "Ocultar este anuncio"}</h2><p>Ocultarlo lo retira del directorio sin borrar sus datos, medios ni estado de revisión. Puedes volver a mostrarlo cuando quieras.</p></div><form action={`/api/perfiles/${profileId}/visibilidad`} method="post"><input name="return_to" type="hidden" value={`/mi-cuenta/${profileId}/editar`} /><input name="action" type="hidden" value={row.profile.ownerHiddenAt ? "show" : "hide"} /><ActionButton className="button button-outline" type="submit">{row.profile.ownerHiddenAt ? "Volver a mostrar" : "Ocultar anuncio"}</ActionButton></form></section>
-        <details className="profile-trash-control is-destructive"><summary><ActionIcon name="trash"/>Eliminar este anuncio</summary><form action={`/api/perfiles/${profileId}/papelera`} method="post"><p>El aviso dejará de verse públicamente y saldrá de tu panel. Solo administración podrá restaurarlo.</p><label>Escribe ELIMINAR<input name="confirmation" required autoComplete="off" /></label><ActionButton className="button button-danger" type="submit">Confirmar eliminación</ActionButton></form></details>
+        {row.profile.type === "escort" && documentAccess && <ProfileVerificationDocuments agencyCustodian={access.isCustodian} profileId={profileId} initialRevision={row.profile.revision} initialDocuments={documents} />}
+        {row.profile.type === "escort"&&!documentAccess&&<p className="account-profile-rule-note">La titular no ha autorizado acceso de tu agencia a sus documentos privados.</p>}
+        <section className="profile-visibility-panel"><div><p className="eyebrow">VISIBILIDAD</p><h2>{row.profile.ownerHiddenAt ? "Tu anuncio está oculto" : "Ocultar este anuncio"}</h2><p>Ocultarlo lo retira del directorio sin borrar sus datos, medios ni estado de revisión. Puedes volver a mostrarlo cuando quieras.</p></div><form action={`/api/perfiles/${profileId}/visibilidad`} method="post"><input name="review_key" type="hidden" value={`profile:${profileId}`}/><input name="review_revision" type="hidden" value={row.profile.revision}/><input name="return_to" type="hidden" value={`/mi-cuenta/${profileId}/editar`} /><input name="action" type="hidden" value={row.profile.ownerHiddenAt ? "show" : "hide"} /><ActionButton className="button button-outline" type="submit">{row.profile.ownerHiddenAt ? "Volver a mostrar" : "Ocultar anuncio"}</ActionButton></form></section>
+        {(access.isOwner||access.isCustodian)&&<details className="profile-trash-control is-destructive"><summary><ActionIcon name="trash"/>Eliminar este anuncio</summary><form action={`/api/perfiles/${profileId}/papelera`} method="post"><p>El aviso dejará de verse públicamente y saldrá de tu panel. Solo administración podrá restaurarlo.</p><label>Escribe ELIMINAR<input name="confirmation" required autoComplete="off" /></label><ActionButton className="button button-danger" type="submit">Confirmar eliminación</ActionButton></form></details>}
         <ProfileForm travelToday={chileanDay()}
+          managedAgencyId={row.profile.agencyCustodianId}
           review={{key:`profile:${profileId}`,revision:row.profile.revision}}
           action={`/api/perfiles/${profileId}`}
           submitLabel="Guardar cambios del anuncio"
@@ -99,6 +107,7 @@ export default async function EditProfilePage({ params, searchParams }: { params
             servicesAdditional: services.filter((item) => item.kind === "additional").map((item) => item.service),
           }}
         />
+        </ProfileEditScope>
       </div>
     </AccountShell>
   );

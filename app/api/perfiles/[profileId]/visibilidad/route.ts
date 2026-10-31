@@ -1,4 +1,7 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { getProfileAccess,authorizedProfileBatch } from "@/lib/profile-access";
+import {profileManagementActivity} from "@/lib/agency-management";
+import {CollaborationConflict,expectedVersion} from "@/lib/collaboration";
+import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { profiles } from "@/db/schema";
@@ -18,9 +21,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const returnTo = safeAccountReturnTo(requestedReturnTo);
   if (action !== "hide" && action !== "show") return NextResponse.redirect(new URL(`${returnTo}?notice=error`, request.url), 303);
   const db = await getDb();
-  const [profile] = await db.select({ id: profiles.id }).from(profiles).where(and(eq(profiles.id, profileId), eq(profiles.ownerId, user.id), isNull(profiles.trashedAt))).limit(1);
-  if (!profile) return NextResponse.redirect(new URL("/mi-cuenta?notice=error", request.url), 303);
-  await db.update(profiles).set({ ownerHiddenAt: action === "hide" ? new Date().toISOString() : null, updatedAt: new Date().toISOString() }).where(eq(profiles.id, profileId));
+  const access=await getProfileAccess(profileId,user.id,"visibility");if(!access)return new Response("El permiso de gestión ya no está vigente.",{status:403});
+  try{await authorizedProfileBatch(access,"visibility",formData.has("review_revision")?expectedVersion(formData,`profile:${profileId}`):{key:`profile:${profileId}`,revision:access.profile.revision},[
+    db.update(profiles).set({ ownerHiddenAt: action === "hide" ? new Date().toISOString() : null, updatedAt: new Date().toISOString() }).where(eq(profiles.id,profileId)),
+    profileManagementActivity(db,access,"profile.visibility",action==="hide"?"Ocultó el anuncio sin borrar sus datos ni medios.":"Solicitó volver a mostrar el anuncio según su estado de moderación."),
+  ]);}catch(cause){if(cause instanceof CollaborationConflict)return NextResponse.redirect(new URL("/mi-cuenta?notice=trash_conflict",request.url),303);throw cause;}
   const destination = new URL(returnTo, request.url);
   destination.searchParams.set("notice", action === "hide" ? "hidden" : "shown");
   return NextResponse.redirect(destination, 303);

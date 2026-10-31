@@ -1,3 +1,4 @@
+import {handleAgencyMailScheduled} from "./agency-mail";
 /** Cloudflare Worker entry point for the vinext-starter template. */
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import type { ForwardableEmailMessage } from "@cloudflare/workers-types";
@@ -174,6 +175,7 @@ const worker = {
     await handleTelegramQueue(batch, env);
   },
   async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
+    await handleAgencyMailScheduled(env).catch(()=>console.error("Agency mail processing failed; pending jobs retained."));
     await handleModerationMailScheduled(env).catch(() => console.error("Moderation mail processing failed; next cycle will inspect pending jobs."));
     await Promise.all([handleTelegramScheduled(env), handleEmailVerificationScheduled(env), handleDataRetentionScheduled(env), purgeMediaDeletionJobs(env).catch(()=>console.error("La limpieza de archivos se reintentará en el siguiente ciclo.")), purgeExpiredStoryRecords(env).then(result => {
       if (result.retryNeeded) console.warn("Story cleanup needs retry", { removed: result.removed });

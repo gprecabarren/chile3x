@@ -1,3 +1,5 @@
+import {profileAccessCondition,getProfileAccess,authorizedProfileBatch} from "@/lib/profile-access";
+import {profileManagementActivity} from "@/lib/agency-management";
 import { and, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
@@ -15,12 +17,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!["approve", "reject", "delete"].includes(String(action))) return error("Acción no válida.", 400);
   const { reviewId } = await params;
   const db = await getDb();
-  const [row] = await db.select({ status: reviews.status }).from(reviews).innerJoin(profiles, eq(profiles.id, reviews.profileId))
-    .where(and(eq(reviews.id, reviewId), eq(profiles.ownerId, user.id))).limit(1);
+  const [row] = await db.select({ status: reviews.status,profileId:reviews.profileId }).from(reviews).innerJoin(profiles, eq(profiles.id, reviews.profileId))
+    .where(and(eq(reviews.id, reviewId), profileAccessCondition(user.id,"edit"))).limit(1);
   if (!row) return error("Comentario no encontrado.", 404);
   if ((action !== "delete" && row.status !== "pending") || !["pending", "approved"].includes(row.status)) return error("El comentario ya cambió de estado. Actualiza la página.", 409);
   const status = action === "approve" ? "approved" : action === "reject" ? "rejected" : "removed";
-  const changed = await db.update(reviews).set({ status }).where(and(eq(reviews.id, reviewId), eq(reviews.status, row.status))).returning({ id: reviews.id });
+  const access=await getProfileAccess(row.profileId,user.id,"edit");if(!access)return error("El permiso ya no está vigente.",403);
+  const saved=await authorizedProfileBatch(access,"edit",{key:`profile:${row.profileId}`,revision:access.profile.revision},[db.update(reviews).set({ status }).where(and(eq(reviews.id, reviewId), eq(reviews.status, row.status))).returning({ id: reviews.id }),profileManagementActivity(db,access,"review.moderated","Moderó un comentario recibido en el anuncio.")]);
+  const changed=saved[0] as {id:string}[];
   if (!changed.length) return error("El comentario ya cambió de estado. Actualiza la página.", 409);
   return NextResponse.redirect(new URL(`/mi-cuenta/comentarios?notice=${status}`, request.url), 303);
 }

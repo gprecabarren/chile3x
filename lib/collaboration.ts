@@ -42,7 +42,7 @@ export function expectedVersion(form: FormData, key: ResourceKey): ReviewVersion
   return { key, revision: Number(revision), ...(typeof mutationId === "string" ? { mutationId } : {}) };
 }
 type Database = Awaited<ReturnType<typeof getDb>>;
-type Statements = Parameters<Database["batch"]>[0];
+type Statements = ReadonlyArray<Parameters<Database["batch"]>[0][number]>;
 /** The check and ALL dependent DB changes commit together. A failed check
  * aborts the entire D1 batch, even when another actor writes at the same instant.
  * The database triggers make owner/background changes invalidate old reviews. */

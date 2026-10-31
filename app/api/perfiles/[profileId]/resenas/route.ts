@@ -1,3 +1,4 @@
+import {getProfileAccess} from "@/lib/profile-access";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const db = await getDb();
   const [profile] = await db.select({ ownerId: profiles.ownerId }).from(profiles).where(eq(profiles.id, profileId)).limit(1);
-  if (profile?.ownerId === user.id) return error("No puedes dejar una reseña en tu propio anuncio.", 403);
+  if (profile?.ownerId === user.id || await getProfileAccess(profileId,user.id,"edit")) return error("No puedes dejar una reseña en tu propio anuncio.", 403);
 
   if (!await verifyTurnstile(request, token, TURNSTILE_PROFILE_REVIEW_ACTION)) {
     return error("La verificación antispam no fue válida. Vuelve a intentarlo.", 403);

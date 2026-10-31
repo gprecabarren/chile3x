@@ -91,6 +91,7 @@ export type PublicProfile = {
   servicesIncluded: string[];
   servicesAdditional: string[];
   media: Array<{ id: string; url: string; altText: string | null; mediaType: "image" | "video"; contentType: string; isProfilePhoto: boolean }>;
+  agencyManaged?: boolean;
   agencyIds: string[];
   memberIds: string[];
 };
@@ -198,14 +199,15 @@ type PublicProfileOptions = {
 export async function getPublicProfiles(options: PublicProfileOptions = {}) {
   const db = await getDb();
   const visibility = options.includeUnapproved || options.previewOwnerId ? publicProfileCondition : sql<boolean>`1`;
-  const baseQuery = db.select({ profile: profiles, details: profileDetails, isPublic: visibility }).from(profiles)
+  const previewAccess=options.previewOwnerId?(await import("@/lib/profile-access")).profileAccessCondition(options.previewOwnerId,"preview"):sql<boolean>`0`;
+  const baseQuery = db.select({ profile: profiles, details: profileDetails, isPublic: visibility, canPreview:previewAccess }).from(profiles)
     .leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id));
   if (options.profileIds && options.profileIds.length === 0) return [] as PublicProfile[];
 
   const conditions = [];
   conditions.push(isNull(profiles.trashedAt));
   if (!options.includeUnapproved) conditions.push(options.previewOwnerId
-    ? or(publicProfileCondition, eq(profiles.ownerId, options.previewOwnerId))
+    ? or(publicProfileCondition, previewAccess)
     : publicProfileCondition);
   if (options.type) conditions.push(eq(profiles.type, options.type));
   if (options.city) conditions.push(eq(profiles.city, options.city));
@@ -224,7 +226,7 @@ export async function getPublicProfiles(options: PublicProfileOptions = {}) {
 
   const ownerIds = [...new Set(visibleRows.map((row) => row.profile.ownerId))];
   const previewMediaIds = visibleRows.filter(row => options.includeUnapproved && options.includePendingMedia
-    || !row.isPublic && row.profile.ownerId === options.previewOwnerId).map(row => row.profile.id);
+    || !row.isPublic && Boolean(row.canPreview)).map(row => row.profile.id);
   const onlineCutoff = new Date(Date.now() - 3 * 60_000).toISOString();
   const [[tags, services, memberships, presenceRows], mediaByProfile, previewMedia] = await Promise.all([
     db.batch([
@@ -300,6 +302,7 @@ export async function getPublicProfiles(options: PublicProfileOptions = {}) {
     servicesIncluded: profile.type === "rental" ? [] : includedMap.get(profile.id) ?? [],
     servicesAdditional: profile.type === "rental" ? [] : additionalMap.get(profile.id) ?? [],
     media: (mediaByProfile.get(profile.id) ?? []).map((media) => ({ id: media.id, url: `/media/${media.id}`, altText: media.altText, mediaType: media.mediaType, contentType: media.contentType, isProfilePhoto: media.isProfilePhoto })),
+    agencyManaged:Boolean(profile.agencyCustodianId),
     agencyIds: agencyMap.get(profile.id) ?? [],
     memberIds: memberMap.get(profile.id) ?? [],
   }));
@@ -646,7 +649,7 @@ export function getCityPath(city: string) {
 }
 
 export function getProfileDisplayTags(profile: PublicProfile) {
-  const tags = profile.type === "escort" ? [...(!isContentOnly(profile) ? [tierLabels[profile.tier]] : []), ...(sellsContent(profile) ? [tagLabels["venta-contenido"]] : []), ...profile.tags.filter(tag => tag !== "venta-contenido" && (!isContentOnly(profile) || tag !== "masajes")).map((tag) => tagLabels[tag as keyof typeof tagLabels] ?? tag)] : [];
+  const tags = profile.type === "escort" ? [...(!isContentOnly(profile) ? [tierLabels[profile.tier]] : []), ...(sellsContent(profile) ? [tagLabels["venta-contenido"]] : []), ...profile.tags.filter(tag => tag !== "venta-contenido" && (!isContentOnly(profile) || tag !== "masajes")).map((tag) => tagLabels[tag as keyof typeof tagLabels] ?? tag)] : profile.type==="agency"?[tierLabels[profile.tier]]:[];
   // Tier is the primary tag unless this is a content-only listing. A tag can have the same
   // label (for example, tier "vip" plus tag "vip"), so normalize before
   // rendering to guarantee visitors never see a duplicate badge.

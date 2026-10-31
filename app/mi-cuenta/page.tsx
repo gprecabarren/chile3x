@@ -1,3 +1,4 @@
+import { ListingTypeGuide } from "./ListingTypeGuide";
 import { ActionButton } from "@/app/ActionButton";
 import { ActionIcon } from "@/app/ActionIcon";
 import Link from "@/app/NavigationLink";
@@ -39,6 +40,7 @@ const messages: Record<string, string> = {
   invite_declined: "La invitación fue rechazada.",
   membership_removed: "La asociación fue retirada.",
   invite_error: "No se pudo procesar la invitación o asociación.",
+  agency_dependents:"La agencia todavía tiene perfiles gestionados sin cuenta personal. Vincúlalos a sus titulares o envíalos a papelera antes de retirar la agencia.",
   error: "No fue posible completar esa acción. Revisa el estado del anuncio.",
   username_saved: "Tu nombre de usuario fue actualizado. El @ de tus anuncios no cambió.",
   username_taken: "Ese usuario ya pertenece a una cuenta o a un anuncio. Elige otro.",
@@ -46,7 +48,7 @@ const messages: Record<string, string> = {
   username_error: "No pudimos actualizar tu usuario. Inténtalo de nuevo.",
 };
 
-export default async function AccountHome({ searchParams }: { searchParams: Promise<{ notice?: string; session_notice?: string; created?: string; estado?: string }> }) {
+export default async function AccountHome({ searchParams }: { searchParams: Promise<{ notice?: string; session_notice?: string; created?: string; estado?: string; agency_message?:string;agency_error?:string }> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/ingresar?return_to=/mi-cuenta");
   const [rows, sessions, params] = await Promise.all([
@@ -57,7 +59,7 @@ export default async function AccountHome({ searchParams }: { searchParams: Prom
   const dashboard = await getAccountDashboard(rows.length > 0);
   const storyCounts = new Map(rows.map(profile => [profile.id, profile.stories.total]));
   const mediaCounts = new Map(dashboard.pendingMedia.map(row => [row.profileId, row.total]));
-  const visible = rows.filter(row => row.status === "approved" && !row.ownerHiddenAt).length;
+  const visible = rows.filter(row => row.isPublic).length;
   const filters = [
     { value: "all", label: "Todos", total: rows.length },
     { value: "approved", label: "Publicados", total: visible },
@@ -69,7 +71,7 @@ export default async function AccountHome({ searchParams }: { searchParams: Prom
     { value: "expired", label: "Vencidos", total: rows.filter(row => row.status === "expired").length },
   ];
   const selected = filters.some(filter => filter.value === params.estado) ? params.estado! : "all";
-  const shown = rows.filter(row => selected === "all" || (selected === "hidden" ? Boolean(row.ownerHiddenAt) : selected === "approved" ? row.status === "approved" && !row.ownerHiddenAt : row.status === selected));
+  const shown = rows.filter(row => selected === "all" || (selected === "hidden" ? Boolean(row.ownerHiddenAt) : selected === "approved" ? row.isPublic : row.status === selected));
   const usernameError = params.notice==='trash_conflict'||(params.notice?.startsWith("username_") && params.notice !== "username_saved");
 
   return <AccountShell user={user} showActivityNotices={false}><div className="account-content account-dashboard-content">
@@ -78,6 +80,7 @@ export default async function AccountHome({ searchParams }: { searchParams: Prom
       <Link className="button button-primary" href="/mi-cuenta/nuevo-perfil">Crear anuncio</Link>
     </AccountHeading>
     {params.notice && <p className={usernameError ? "form-alert" : "account-success"} role={usernameError ? "alert" : "status"}>{messages[params.notice] ?? messages.error}</p>}
+    {params.agency_message&&<p id="agency-feedback" className={params.agency_error?"form-alert":"account-success"} role={params.agency_error?"alert":"status"}>{params.agency_message.slice(0,800)}</p>}
     <AccountIdentityCard user={user} />
     <section className="account-overview" aria-labelledby="account-activity-title">
       <header><h2 id="account-activity-title">Tu actividad</h2><p>Un resumen privado de lo que puedes revisar hoy.</p></header>
@@ -99,12 +102,12 @@ export default async function AccountHome({ searchParams }: { searchParams: Prom
     </section>}
     <section id="mis-anuncios" className="account-listings-section" aria-labelledby="account-listings-title">
     <header className="account-section-heading"><div><h2 id="account-listings-title">Mis anuncios</h2><p>Crea, edita y administra tus publicaciones.</p></div><Link className="button button-primary" href="/mi-cuenta/nuevo-perfil">Crear anuncio</Link></header>
-    <p className="account-profile-rule-note">{hasUnlimitedEscortListings(user) ? <>Tu cuenta tiene autorización para crear <strong>anuncios Escort sin límite de cantidad</strong> y varios de Agencia o Arriendo. Cada anuncio mantiene su revisión y validaciones.</> : <>Puedes publicar <strong>un anuncio Escort activo</strong> y varios de Agencia o Arriendo. Un Escort eliminado deja libre el cupo para crear otro.</>} Si eliminas un anuncio, pasa a la papelera del equipo: ya no podrás verlo ni restaurarlo tú.</p>
+    <p className="account-profile-rule-note">{hasUnlimitedEscortListings(user) ? <>Tu cuenta tiene autorización para crear <strong>anuncios Escort sin límite de cantidad</strong> y varios de Agencia o Arriendo. Cada anuncio mantiene su revisión y validaciones.</> : <>Puedes publicar <strong>un Escort personal fuera de la papelera</strong>, varios anuncios de Agencia o Arriendo y varios Escorts gestionados por cada agencia. Un Escort personal eliminado deja libre ese cupo. Los gestionados por agencia siguen ligados a ella hasta su vinculación verificada a una cuenta.</>} Si eliminas un anuncio, pasa a la papelera del equipo: ya no podrás verlo ni restaurarlo tú.</p>
     {rows.length > 0 && <nav className="account-listing-filters" aria-label="Estado de mis anuncios">{filters.filter(filter => filter.value === "all" || filter.total > 0 || filter.value === selected).map(filter => <Link key={filter.value} href={`/mi-cuenta${filter.value === "all" ? "" : `?estado=${filter.value}`}#mis-anuncios`} aria-current={filter.value === selected ? "page" : undefined}>{filter.label} <b>{filter.total}</b></Link>)}</nav>}
     {rows.length === 0 ? <section className="account-empty"><h2>Aún no tienes anuncios</h2><p>Puedes crear un anuncio de tipo escort, agencia o arriendo. Guarda un borrador o envíalo a revisión; después puedes añadir sus fotos sin esperar la aprobación.</p></section> : shown.length === 0 ? <section className="account-empty"><h3>No hay anuncios en este estado</h3><Link href="/mi-cuenta#mis-anuncios">Ver todos mis anuncios</Link></section> : <div className="owner-profile-list">{shown.map(profile => <article className="owner-profile-card" key={profile.id}>
-      <div><div className="owner-profile-statuses"><span className={`account-status account-status-${profile.status}`}>{statusLabel[profile.status]}</span>{profile.ownerHiddenAt && <span className="account-status account-status-rejected">Oculto por ti</span>}{mediaCounts.has(profile.id) && <Link className="account-status account-status-pending" href={`/mi-cuenta/${profile.id}/editar#fotos-y-videos`}>{mediaCounts.get(profile.id)} {mediaCounts.get(profile.id) === 1 ? "medio" : "medios"} en revisión</Link>}</div><h2>{profile.displayName}</h2><p>{profile.handle && <>@{profile.handle} · </>}{({ escort: "Escort", agency: "Agencia", rental: "Arriendo" })[profile.type]} · {profile.city}, {formatRegionName(profile.region)}</p></div>
+      <div>{profile.agencyCustodianId&&profile.status==="approved"&&!profile.isPublic&&<p className="account-profile-rule-note">Aprobado, pero todavía no visible: la agencia de origen también debe estar publicada y visible. Sus historias tampoco aparecerán mientras esté oculta.</p>}{profile.agencyCustodianId&&<p className="account-profile-rule-note">Gestionado por agencia · sin cuenta personal vinculada · ID: {profile.id}</p>}{profile.ownerId!==user.id&&<p className="account-profile-rule-note">Gestión autorizada de otra cuenta · permiso revocable</p>}<div className="owner-profile-statuses"><span className={`account-status account-status-${profile.status}`}>{statusLabel[profile.status]}</span>{profile.ownerHiddenAt && <span className="account-status account-status-rejected">Oculto por ti</span>}{mediaCounts.has(profile.id) && <Link className="account-status account-status-pending" href={`/mi-cuenta/${profile.id}/editar#fotos-y-videos`}>{mediaCounts.get(profile.id)} {mediaCounts.get(profile.id) === 1 ? "medio" : "medios"} en revisión</Link>}</div><h2>{profile.displayName}</h2><p>{profile.handle && <>@{profile.handle} · </>}{({ escort: "Escort", agency: "Agencia", rental: "Arriendo" })[profile.type]} · {profile.city}, {formatRegionName(profile.region)}</p></div>
       <div className="owner-profile-actions">
-        <Link className="button button-public-preview" href={profilePublicPath(profile)} target="_blank" prefetch={false}>{profile.status === "approved" && !profile.ownerHiddenAt ? "Ver anuncio público" : "Previsualizar anuncio"}</Link>
+        <Link className="button button-public-preview" href={profilePublicPath(profile)} target="_blank" prefetch={false}>{profile.isPublic ? "Ver anuncio público" : "Previsualizar anuncio"}</Link>
         <Link className="button button-outline" href={`/mi-cuenta/${profile.id}/estadisticas`}>Estadísticas</Link>
         <Link className="button button-outline" href={`/mi-cuenta/${profile.id}/editar`}>Editar anuncio</Link>
         <Link className="button button-outline" href={`/mi-cuenta/${profile.id}/editar#fotos-y-videos`}>Fotos y videos</Link>
@@ -113,9 +116,10 @@ export default async function AccountHome({ searchParams }: { searchParams: Prom
         {(profile.status === "draft" || profile.status === "rejected") && <form action={`/api/perfiles/${profile.id}/enviar-revision`} method="post"><ActionButton className="button button-primary" type="submit">Enviar a revisión</ActionButton></form>}
         <form action={`/api/perfiles/${profile.id}/visibilidad`} method="post"><input type="hidden" name="return_to" value="/mi-cuenta" /><input type="hidden" name="action" value={profile.ownerHiddenAt ? "show" : "hide"} /><ActionButton className="button button-outline" type="submit">{profile.ownerHiddenAt ? "Volver a mostrar" : "Ocultar anuncio"}</ActionButton></form>
       </div>
-      <details className="profile-trash-control is-destructive"><summary><ActionIcon name="trash"/>Eliminar este anuncio</summary><form action={`/api/perfiles/${profile.id}/papelera`} method="post"><p>Se quitará de tu panel y del sitio público. Solo un administrador podrá restaurarlo; sus datos no se borrarán de inmediato.</p><label>Escribe ELIMINAR<input name="confirmation" required autoComplete="off" /></label><ActionButton className="button button-danger" type="submit">Confirmar eliminación</ActionButton></form></details>
+      {profile.ownerId===user.id&&<details className="profile-trash-control is-destructive"><summary><ActionIcon name="trash"/>Eliminar este anuncio</summary><form action={`/api/perfiles/${profile.id}/papelera`} method="post"><p>Se quitará de tu panel y del sitio público. Solo un administrador podrá restaurarlo; sus datos no se borrarán de inmediato.</p><label>Escribe ELIMINAR<input name="confirmation" required autoComplete="off" /></label><ActionButton className="button button-danger" type="submit">Confirmar eliminación</ActionButton></form></details>}
     </article>)}</div>}
     <p className="account-feature-note">La pausa por período de publicación está preparada para los futuros planes pagados, pero sus controles permanecerán deshabilitados hasta activar la facturación. Ocultar un anuncio sí está disponible y no consume pausas.</p>
+    <ListingTypeGuide />
     </section>
     <section className="account-telegram-entry" aria-labelledby="account-telegram-entry-title">
       <div><p className="eyebrow">COMUNIDAD CHILE3X</p><h2 id="account-telegram-entry-title">Telegram</h2><p>Entra a la comunidad pública, vincula tu identidad y solicita acceso al espacio privado de Miembros.</p></div>

@@ -1,3 +1,6 @@
+import { ownedAgency, agencyActivity, profileManagementActivity } from "@/lib/agency-management";
+import { authorizedProfileBatch, type ProfileAccess } from "@/lib/profile-access";
+import { agencyMembers } from "@/db/schema";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { guardedBatch, type ReviewVersion } from "@/lib/collaboration";
@@ -319,7 +322,7 @@ export function readProfileSubmission(formData: FormData, options: { travelDateV
 
   return {
     type: typeValue,
-    tier: typeValue === "escort" ? tierValue : "bronze",
+    tier: typeValue === "rental" ? "bronze" : tierValue,
     handle,
     displayName,
     region,
@@ -429,14 +432,19 @@ export function validateProfileTravelDates(submission: ProfileSubmission, existi
   if (error) throw new ProfileValidationError(error);
 }
 
-export async function createProfile(ownerId: string, submission: ProfileSubmission, options: { adminCreator?: { id: string; githubLogin: string } } = {}) {
+export async function createProfile(ownerId: string, submission: ProfileSubmission, options: { adminCreator?: { id: string; githubLogin: string }; agencyId?: string } = {}) {
   const db = await getDb();
-  if (submission.type === "escort") {
+  if (options.agencyId) {
+    await ownedAgency(ownerId, options.agencyId);
+    if (submission.type !== "escort" || JSON.parse(submission.details.metadata ?? "{}").content_only === "1") throw new ProfileValidationError("La agencia solo puede crear Escorts vinculados, no perfiles de venta solo de contenido.");
+  }
+  if (submission.type === "escort" && !options.agencyId) {
     const [owner] = await db.select({ id: users.id, email: users.email }).from(users).where(eq(users.id, ownerId)).limit(1);
     if (!owner || !hasUnlimitedEscortListings(owner)) {
       const [existingEscort] = await db.select({ id: profiles.id }).from(profiles).where(and(
         eq(profiles.ownerId, ownerId),
         eq(profiles.type, "escort"),
+        isNull(profiles.agencyCustodianId),
         isNull(profiles.trashedAt),
       )).limit(1);
       if (existingEscort) {
@@ -457,7 +465,8 @@ export async function createProfile(ownerId: string, submission: ProfileSubmissi
   try {
     await db.insert(profiles).values({
       id, ownerId, type: submission.type, status, slug, handle,
-      creationSource: options.adminCreator ? "admin" : "self",
+      agencyCustodianId: options.agencyId ?? null, agencyOriginId: options.agencyId ?? null,
+      creationSource: options.adminCreator ? "admin" : options.agencyId ? "agency" : "self",
       createdByAdminId: options.adminCreator?.id ?? null,
       createdByAdminLogin: options.adminCreator?.githubLogin ?? null,
       displayName: submission.displayName, shortDescription: submission.shortDescription,
@@ -480,6 +489,10 @@ export async function createProfile(ownerId: string, submission: ProfileSubmissi
       id: `per_${crypto.randomUUID()}`, profileId: id, planName: "Cortesía inicial",
       startsAt: updatedAt, endsAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(), status: "active",
     });
+    if (options.agencyId) {
+      await db.insert(agencyMembers).values({id:`agm_${crypto.randomUUID()}`,agencyProfileId:options.agencyId,memberProfileId:id,canManage:true,documentsAuthorized:true});
+      await agencyActivity(db,ownerId,options.agencyId,id,"profile.created","Creó un Escort gestionado por la agencia, con ID propio y sin cuenta personal vinculada. Requiere la revisión normal del anuncio.");
+    }
     await db.update(users).set({ role: "advertiser" }).where(and(eq(users.id, ownerId), eq(users.role, "visitor")));
   } catch (error) {
     // A failed second write must not strand a half-filled listing in the account.
@@ -501,7 +514,7 @@ export async function createProfile(ownerId: string, submission: ProfileSubmissi
   return id;
 }
 
-export async function updateProfile(profileId: string, ownerId: string, submission: ProfileSubmission, options: { adminEditor?: boolean; version?: ReviewVersion; actorId?: string } = {}) {
+export async function updateProfile(profileId: string, ownerId: string, submission: ProfileSubmission, options: { adminEditor?: boolean; version?: ReviewVersion; actorId?: string; access?: ProfileAccess } = {}) {
   const db = await getDb();
   const [existing] = await db.select({ profile: profiles, details: profileDetails }).from(profiles)
     .leftJoin(profileDetails, eq(profileDetails.profileId, profiles.id))
@@ -515,6 +528,10 @@ export async function updateProfile(profileId: string, ownerId: string, submissi
     throw new ProfileValidationError("El tipo de anuncio queda definido al crearlo. Para publicar como escort, agencia o arriendo crea un anuncio nuevo.");
   }
 
+  if(submission.type==="escort"&&JSON.parse(submission.details.metadata??"{}").content_only==="1") {
+    const [membership]=await db.select({id:agencyMembers.id}).from(agencyMembers).where(eq(agencyMembers.memberProfileId,profileId)).limit(1);
+    if(existing.profile.agencyCustodianId||membership)throw new ProfileValidationError("Retira las asociaciones de agencia antes de cambiar a venta solo de contenido. Un perfil gestionado sin cuenta personal debe vincularse primero a su titular.");
+  }
   const updatedAt = new Date().toISOString();
   const handle = submission.handle ?? existing.profile.handle ?? await resolveProfileHandle(null, submission.displayName, profileId);
   if (submission.handle && submission.handle !== existing.profile.handle && !await isProfileHandleAvailable(submission.handle, profileId)) {
@@ -610,10 +627,12 @@ export async function updateProfile(profileId: string, ownerId: string, submissi
     ...serviceWrites,
   ] : contactTagUpdates;
   validateProfileTravelDates(submission, existing.details?.metadata);
-  await guardedBatch(options.version ?? {key:`profile:${profileId}`,revision:existing.profile.revision}, [profileUpdate,detailsUpdate,...collectionUpdates],options.actorId);
+  const version = options.version ?? {key:`profile:${profileId}` as const,revision:existing.profile.revision};
+  if(options.access) await authorizedProfileBatch(options.access,"edit",version,[profileUpdate,detailsUpdate,...collectionUpdates,profileManagementActivity(db,options.access,"profile.edited","Actualizó los datos del anuncio. Se conservaron las reglas normales de moderación.")]);
+  else await guardedBatch(version, [profileUpdate,detailsUpdate,...collectionUpdates],options.actorId);
   if (!options.adminEditor) await createAdminNotification({
     kind: "profile_updated",
-    actorUserId: ownerId,
+    actorUserId: options.access?.actorId ?? ownerId,
     profileId,
     summary: contactOnly ? "Se actualizaron los datos de contacto de un anuncio." : "Se modificó un anuncio y sus cambios requieren seguimiento.",
   });

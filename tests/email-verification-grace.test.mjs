@@ -20,7 +20,7 @@ function localDb() {
   const sqlite = new DatabaseSync(":memory:");
   sqlite.exec(`CREATE TABLE users(id TEXT PRIMARY KEY, email TEXT, display_name TEXT, password_hash TEXT, creation_source TEXT DEFAULT 'self', role TEXT DEFAULT 'advertiser', is_active INTEGER DEFAULT 1, email_verified_at TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE account_apple_identities(user_id TEXT); CREATE TABLE account_google_identities(user_id TEXT);
-    CREATE TABLE profiles(id TEXT PRIMARY KEY, owner_id TEXT, display_name TEXT, type TEXT, status TEXT, trashed_at TEXT, trashed_by_kind TEXT, trashed_by_actor_id TEXT, trashed_by_admin_login TEXT, updated_at TEXT);
+    CREATE TABLE profiles(id TEXT PRIMARY KEY, owner_id TEXT, display_name TEXT, type TEXT, status TEXT, agency_custodian_id TEXT, trashed_at TEXT, trashed_by_kind TEXT, trashed_by_actor_id TEXT, trashed_by_admin_login TEXT, updated_at TEXT);
     CREATE TABLE auth_sessions(id TEXT PRIMARY KEY, user_id TEXT, token_hash TEXT, expires_at TEXT, auth_method TEXT DEFAULT 'unknown');
     CREATE TABLE admin_audit_logs(id TEXT PRIMARY KEY, actor_email TEXT, actor_name TEXT, category TEXT, action TEXT, outcome TEXT, entity_type TEXT, entity_id TEXT, entity_label TEXT, summary TEXT, after_data TEXT);`);
   const wrap = (statement, params = []) => ({ bind: (...values) => wrap(statement, values), all: async () => ({results: statement.all(...params)}), first: async () => statement.get(...params) ?? null, run: async () => ({success:true,meta:statement.run(...params)}) });

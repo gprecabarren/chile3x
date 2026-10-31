@@ -1,3 +1,4 @@
+import {profileAccessCondition} from "@/lib/profile-access";
 import { ActionButton } from "@/app/ActionButton";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import Link from "@/app/NavigationLink";
@@ -19,7 +20,7 @@ export default async function AccountCommentsPage({ searchParams }: { searchPara
   const [db, params] = await Promise.all([getDb(), searchParams]);
   const receivedPage = pageNumber(params.pagina), sentPage = pageNumber(params.enviadas);
   const pageHref = (pagina: number, enviadas: number) => `/mi-cuenta/comentarios?${new URLSearchParams({ pagina: String(pagina), enviadas: String(enviadas), ...(params.perfil ? { perfil: params.perfil } : {}) })}`;
-  const receivedConditions = [eq(profiles.ownerId, user.id), inArray(reviews.status, ["pending", "approved"])];
+  const receivedConditions = [profileAccessCondition(user.id,"edit"), inArray(reviews.status, ["pending", "approved"])];
   if (params.perfil) receivedConditions.push(eq(profiles.id, params.perfil));
   const [received, sent] = await Promise.all([
     db.select({ id: reviews.id, body: reviews.body, status: reviews.status, createdAt: reviews.createdAt, profileName: profiles.displayName, profileId: profiles.id, authorName: users.displayName, authorUsername: users.username }).from(reviews)

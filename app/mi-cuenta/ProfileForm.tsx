@@ -63,6 +63,9 @@ type ProfileFormInitial = {
 };
 
 type ProfileFormProps = {
+  agencies?: {id:string;displayName:string}[];
+  defaultAgencyId?:string;
+  managedAgencyId?:string|null;
   travelToday: string;
   review?: {key:string;revision:number};
   action: string;
@@ -92,7 +95,9 @@ function metadataValue(initial: ProfileFormInitial | undefined, key: string) {
   return initial?.details.metadata?.[key] ?? "";
 }
 
-export function ProfileForm({ action, submitLabel, initial, travelToday, allowEscort = true, adminAssisted = false, adminEdit = false, privateSample = false, sampleProvenance = "otros", review }: ProfileFormProps) {
+const NO_AGENCIES:NonNullable<ProfileFormProps["agencies"]>=[];
+
+export function ProfileForm({ action, submitLabel, initial, travelToday, allowEscort = true, adminAssisted = false, adminEdit = false, privateSample = false, sampleProvenance = "otros", review, agencies = NO_AGENCIES, defaultAgencyId, managedAgencyId }: ProfileFormProps) {
   const [sampleBusy,setSampleBusy]=useState(false),[sampleError,setSampleError]=useState("");
   const formRef = useRef<HTMLFormElement>(null);
   const optionalRef = useRef<HTMLDetailsElement>(null);
@@ -105,8 +110,8 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
   const storedTravelOutsideRange = storedTravelUnchanged && travelDates.start && (travelDates.start < travelBounds.min || travelDates.end > travelBounds.max);
   const travelEndMin = /^\d{4}-\d{2}-\d{2}$/.test(travelDates.start) && travelDates.start > travelBounds.min ? travelDates.start : travelBounds.min;
   const storageKey = `chile3x-profile-draft:${action}`;
-  const availableProfileTypes = useMemo(() => profileTypes.filter((item) => initial || allowEscort || item !== "escort"), [allowEscort, initial]);
-  const [type, setType] = useState<ProfileType>(initial?.type ?? (allowEscort ? "escort" : "agency"));
+  const availableProfileTypes = useMemo(() => profileTypes.filter((item) => initial || allowEscort || agencies.length > 0 || item !== "escort"), [allowEscort, initial, agencies.length]);
+  const [type, setType] = useState<ProfileType>(initial?.type ?? (allowEscort || defaultAgencyId ? "escort" : "agency"));
   const [region, setRegion] = useState(initial?.region ?? regions[0].title);
   const availableCities = useMemo(
     () => regions.find((item) => item.title === region)?.cities ?? [],
@@ -122,6 +127,7 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
   const [selectedProfileTags, setSelectedProfileTags] = useState<string[]>((initial?.tags ?? []).filter(tag => tag !== "hombres"));
   const effectiveProfileTags = profileTagsForGender(selectedProfileTags, gender);
   const [contentOnly, setContentOnly] = useState(metadataValue(initial, "content_only") === "1");
+  const [custodianAgencyId,setCustodianAgencyId]=useState(defaultAgencyId ?? (!allowEscort?agencies[0]?.id??"":""));
   const [selectedTier, setSelectedTier] = useState(initial?.tier ?? "vip");
   const [underageNotice, setUnderageNotice] = useState(false);
   const typeLocked = Boolean(initial)||privateSample;
@@ -168,6 +174,7 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
       if (savedRegion && regions.some((item) => item.title === savedRegion)) setRegion(savedRegion);
       if (savedCity) setCity(savedCity);
       setGender(saved.gender?.[0] ?? "");
+      if(saved.agency_custodian_id?.[0]&&agencies.some(agency=>agency.id===saved.agency_custodian_id[0]))setCustodianAgencyId(saved.agency_custodian_id[0]);
       setSelectedProfileTags((saved.tags ?? []).filter((tag) => tag !== "hombres" && profileTags.some((allowedTag) => allowedTag === tag)));
       setContentOnly(saved.content_only?.includes("on") ?? false);
       if (visibilityTiers.some(tier => tier === saved.tier?.[0])) setSelectedTier(saved.tier[0]);
@@ -198,7 +205,7 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
       });
     });
     return () => { window.cancelAnimationFrame(restore); window.cancelAnimationFrame(restoreFields); };
-  }, [availableProfileTypes, storageKey, typeLocked, privateSample]);
+  }, [availableProfileTypes, storageKey, typeLocked, privateSample, agencies]);
 
   function saveFormBeforeSubmit(form: HTMLFormElement) {
     const saved: Record<string, string[]> = {};
@@ -254,14 +261,14 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
           return;
         }
       }
-      if(privateSample){
+      if(privateSample || Boolean(review)&&!adminEdit&&!adminAssisted){
         event.preventDefault();if(sampleBusy)return;
-        const body=new FormData(event.currentTarget);body.set("intent","submit");
+        const body=new FormData(event.currentTarget);const submitter=(event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement|null;body.set("intent",privateSample?"submit":submitter?.value||"submit");
         const scope=event.currentTarget.closest<HTMLElement>("[data-review-resource]");if(scope)body.set("review_revision",scope.dataset.reviewRevision??"");
         setSampleBusy(true);setSampleError("");
         void fetch(action,{method:"POST",body,headers:{accept:"application/json"}}).then(async response=>{
           let result;try{result=await response.json();}catch{throw new Error("No se pudo confirmar el guardado. Revisa la versión actual antes de repetirlo.");}
-          if(!response.ok)throw new Error(result?.error||"No se pudo guardar la muestra.");
+          if(!response.ok)throw new Error(result?.error||"No se pudo guardar el anuncio. Tus cambios siguen en el formulario.");
           if(typeof result?.redirectTo!=="string")throw new Error("No se pudo confirmar el guardado. Revisa la versión actual antes de repetirlo.");
           window.location.assign(result.redirectTo);
         }).catch(error=>setSampleError(error instanceof Error?error.message:"No se pudo confirmar el guardado. Revisa la versión actual antes de repetirlo.")).finally(()=>setSampleBusy(false));
@@ -298,7 +305,7 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
             <input name="display_name" required minLength={2} maxLength={80} defaultValue={initial?.displayName} placeholder={type === "agency" ? "Ej. Agencia Luna" : type === "rental" ? "Ej. Habitación en Providencia" : "Ej. Valentina Masajes"} />
           </label>
           {type === "escort" && contentOnly && <input name="tier" type="hidden" value={selectedTier} />}
-          {type === "escort" && !contentOnly && <div className="tier-form-field">
+          {((type === "escort" && !contentOnly) || type === "agency") && <div className="tier-form-field">
             <label>
               Categoría de visibilidad
               <select name="tier" value={selectedTier} onChange={event => setSelectedTier(event.target.value)}>
@@ -315,9 +322,10 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
             <span className="profile-handle-input"><b>@</b><input name="handle" minLength={3} maxLength={41} defaultValue={initial?.handle ?? ""} placeholder={type === "agency" ? "agenciaejemplo" : type === "rental" ? "arriendo-centro" : "tu-nombre"} autoCapitalize="none" autoCorrect="off" /></span>
             <small>{privateSample ? "Se usará al convertirla en anuncio real. El enlace privado de esta muestra conserva su usuario aunque cambies este campo." : "Será parte de tu enlace. Si lo dejas vacío, Chile3X crea uno único basado en el nombre del anuncio."}</small>
           </label>
-          {type !== "escort" && <input name="tier" type="hidden" value="bronze" />}
+          {type === "rental" && <input name="tier" type="hidden" value="bronze" />}
         </div>
-        {type === "escort" && !privateSample && <fieldset className="profile-content-mode">
+        {!initial && !privateSample && !adminAssisted && type==="escort" && agencies.length>0 && <fieldset className="profile-form-section agency-creation-choice"><legend>¿A quién pertenece este anuncio?</legend><label>Modalidad<select name="agency_custodian_id" value={custodianAgencyId} onChange={event=>{setCustodianAgencyId(event.target.value);if(event.target.value)setContentOnly(false);}}><option value="" disabled={!allowEscort}>{allowEscort?"Mi Escort personal · puede ser independiente o asociarse después":"Tu cupo de Escort personal ya está ocupado"}</option>{agencies.map(agency=><option key={agency.id} value={agency.id}>Gestionado por {agency.displayName} · sin cuenta personal vinculada</option>)}</select></label><p>Los perfiles gestionados reciben un ID propio y quedan ligados a la agencia elegida. Más adelante podrás proponer vincularlos a una cuenta existente; requiere aceptación y comprobación administrativa. No consumen tu cupo personal.</p>{custodianAgencyId&&<label className="checkbox-label"><input name="agency_permission" type="checkbox" required/>Confirmo que tengo autorización de esta persona adulta para representarla y publicar sus datos y archivos. Administración podrá comprobarla antes de publicar.</label>}</fieldset>}
+        {type === "escort" && !privateSample && !managedAgencyId && !custodianAgencyId && <fieldset className="profile-content-mode">
           <legend>Modalidad del anuncio</legend>
           <label className="profile-content-only-toggle"><input type="checkbox" name="content_only" checked={contentOnly} onChange={event => {
             const only = event.target.checked;

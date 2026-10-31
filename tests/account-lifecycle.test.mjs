@@ -34,7 +34,7 @@ test("owner hiding is separate from the reserved paid-period pause", async () =>
   const [visibility, publicCondition, accountPage, pauseRoute] = await Promise.all([
     source("app/api/perfiles/[profileId]/visibilidad/route.ts"), source("lib/public-profile-visibility.ts"), source("app/mi-cuenta/page.tsx"), source("app/api/perfiles/[profileId]/pausa/route.ts"),
   ]);
-  assert.match(visibility, /eq\(profiles\.ownerId, user\.id\)/);
+  assert.match(visibility, /getProfileAccess\(profileId,user.id,"visibility"\)/);
   assert.match(publicCondition, /profiles\.ownerHiddenAt/);
   assert.match(publicCondition, /users\.isActive/);
   assert.doesNotMatch(accountPage, /\/pausa/);

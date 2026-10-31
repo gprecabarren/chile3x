@@ -13,7 +13,7 @@ import Link from "@/app/NavigationLink"; import { ReviewScope } from "@/app/admi
 import { notFound, redirect } from "next/navigation";
 import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db";
-import { profileMedia, profiles } from "@/db/schema";
+import { profileMedia } from "@/db/schema";
 import { DirectoryShell, PortalContactIcon, ProfileCard } from "@/app/directorio/_components";
 import { ProfileStoryTrigger, StoryRail } from "@/app/historias/StoryRail";
 import { ProfileViewTracker } from "../ProfileViewTracker";
@@ -150,7 +150,7 @@ export default async function PublicProfilePage({ params, searchParams, sample }
   const allDayEveryDay = isAvailableEveryDay24Hours(availability);
   const availabilityStatus = getAvailabilityStatus(availability, new Date(), profile.type === "escort" ? "atiende" : "abre");
   const showCityAlerts = (Boolean(sample) || profile.isPublic) && profile.type === "escort" && !isContentOnly(profile) && !profile.isDemo;
-  const [relatedProfiles, stories, approvedReviewsPage, verificationDocuments, exclusiveContent, cityAlertCities, activeCityAlerts, viewerOwnsProfile, engagement, ownPendingReviews, adminWhatsappStatistics] = await Promise.all([
+  const [relatedProfiles, stories, approvedReviewsPage, verificationDocuments, exclusiveContent, cityAlertCities, activeCityAlerts, viewerProfileAccess, engagement, ownPendingReviews, adminWhatsappStatistics] = await Promise.all([
     relatedProfileIds.length ? getPublicProfiles({ includeUnapproved: Boolean(admin), viewerId: viewer?.id, profileIds: relatedProfileIds, coverOnly: true }) : Promise.resolve([]),
     sample ? Promise.resolve([]) : getActiveStories({ profileId: profile.id }),
     sample ? Promise.resolve({reviews:[],total:0,hasMore:false}) : getApprovedReviewsPage(profile.id),
@@ -158,11 +158,12 @@ export default async function PublicProfilePage({ params, searchParams, sample }
     sample ? Promise.resolve({collection:null,media:[],hasAccess:false}) : getExclusiveContentForProfile(profile.id, { viewerId: viewer?.id, isAdmin: Boolean(admin) }),
     sample ? Promise.resolve(cityDirectory.map(item => item.city)) : showCityAlerts ? getProfileAlertCities() : Promise.resolve([]),
     !sample && showCityAlerts ? getActiveProfileCityAlerts(profile.id, viewer?.id) : Promise.resolve([]),
-    viewer ? (async () => (await (await getDb()).select({ ownerId: profiles.ownerId }).from(profiles).where(eq(profiles.id, profile.id)).limit(1))[0]?.ownerId === viewer.id)() : Promise.resolve(false),
+    viewer ? (await import("@/lib/profile-access")).getProfileAccess(profile.id,viewer.id,"edit") : Promise.resolve(null),
     sample ? Promise.resolve({favoritesCount:0,likesCount:0,viewerHasFavorite:false,viewerHasLike:false}) : profile.isPublic ? getProfileEngagement(profile.id, viewer?.id) : Promise.resolve(null),
     viewer ? getOwnPendingReviews(profile.id, viewer.id) : Promise.resolve([]),
     admin ? getAdminWhatsappStatistics(profile.id) : Promise.resolve(null),
   ]);
+  const viewerOwnsProfile=Boolean(viewerProfileAccess);
   const agencyProfiles = profile.type === "escort" ? relatedProfiles : [];
   const agencyMembers = profile.type === "agency" ? relatedProfiles : [];
   const coverImage = profile.media.find((media) => media.mediaType === "image" && media.isProfilePhoto) ?? profile.media.find((media) => media.mediaType === "image");
@@ -182,13 +183,13 @@ export default async function PublicProfilePage({ params, searchParams, sample }
       {adminHasCapability(admin, "media.moderate") && <section className="profile-bulk-media-review">{query.media_notice && bulkMediaMessages[query.media_notice] && <p className="admin-notice" role="status">{bulkMediaMessages[query.media_notice]}</p>}<ApproveAllProfileMedia revision={profile.revision ?? 0} profileId={profile.id} files={reviewableMedia} returnTo={previewPath} /></section>}
       {adminHasCapability(admin, "media.moderate") && profile.isPublic && reviewableMedia.some(file => file.moderationStatus !== "approved") && <aside className="profile-private-preview-notice" role="status"><strong>Revisión administrativa de archivos</strong><p>Esta vista incluye archivos pendientes. El público solo ve los archivos aprobados; publicar el anuncio no aprueba sus fotos ni videos.</p></aside>}
       {admin && verificationDocuments.length > 0 && <section className="admin-private-documents"><strong>Documentos privados de verificación</strong>{verificationDocuments.map((document) => <a key={document.kind} href={`/api/perfiles/${profile.id}/documentos/${document.kind}`}>{document.kind === "identity" ? "Descargar carnet" : "Descargar examen médico"}</a>)}</section>}
-      {viewerOwnsProfile && <aside className="profile-owner-edit-bar" aria-label="Administrar mi anuncio"><div><strong>Este es tu anuncio</strong><span>Edita sus datos, fotos y videos desde tu cuenta.</span></div><Link className="button button-outline" href={`/mi-cuenta/${profile.id}/editar`} prefetch={false}>Editar anuncio</Link></aside>}
-      {!profile.isPublic && <aside className="profile-private-preview-notice" role="status"><strong>Vista previa privada</strong><p>{sample ? "Así podría verse tu anuncio. Esta muestra no está publicada ni tiene cuenta: cualquiera que reciba el enlace completo puede verla hasta que venza o sea revocado. Los botones de contacto son demostrativos." : "Así se verá tu anuncio al publicarse. Solo tú y administración pueden acceder a esta vista; no aparece en el directorio ni en Google. Las fotos y videos pendientes todavía necesitan aprobación."}</p></aside>}
+      {viewerOwnsProfile && <aside className="profile-owner-edit-bar" aria-label="Administrar mi anuncio"><div><strong>{viewerProfileAccess?.isOwner?"Este es tu anuncio":"Gestionas este anuncio"}</strong><span>Edita sus datos, fotos y videos desde tu cuenta.</span></div><Link className="button button-outline" href={`/mi-cuenta/${profile.id}/editar`} prefetch={false}>Editar anuncio</Link></aside>}
+      {!profile.isPublic && <aside className="profile-private-preview-notice" role="status"><strong>Vista previa privada</strong><p>{sample ? "Así podría verse tu anuncio. Esta muestra no está publicada ni tiene cuenta: cualquiera que reciba el enlace completo puede verla hasta que venza o sea revocado. Los botones de contacto son demostrativos." : "Así se verá tu anuncio al publicarse. Tu cuenta titular, administración, gestores autorizados y destinatarios de una vinculación vigente pueden acceder a esta vista; no aparece en el directorio ni en Google. Las fotos y videos pendientes todavía necesitan aprobación."}</p></aside>}
       <section className="profile-page-shell">
         <div className={`profile-page-visual${coverImage ? " has-image" : ""}`}>{coverImage ? <><ProfilePhotoLink className="profile-cover-photo-trigger" mediaId={coverImage.id} href={coverImage.url} aria-label={`Ampliar foto principal de ${profile.displayName}`}><Image className="profile-page-cover" src={coverImage.url} alt={coverImage.altText ?? `Foto de ${profile.displayName}`} fill priority unoptimized sizes="(max-width: 900px) 100vw, 45vw" style={{ objectFit: "scale-down" }} /></ProfilePhotoLink><ProfilePhotoLink className="profile-full-photo-link" mediaId={coverImage.id} href={coverImage.url}>Ver foto completa ⤢</ProfilePhotoLink></> : <span>{profile.displayName.slice(0, 1)}</span>}{stories.length > 0 && <span className="profile-story-photo-marker" aria-hidden="true" />}</div>
         <div className="profile-page-summary">
           <p className="eyebrow">{publicProfileTypeLabel(profile).toUpperCase()} · {profile.city.toUpperCase()}</p>
-          <div className="profile-page-title"><h1>{profile.displayName}{age!==null&&<small className="profile-heading-age" aria-label={`${age} años`}>, {age}</small>}</h1>{profile.verificationStatus === "reviewed" && profile.type === "escort" && <ProfileVerificationBadge displayName={profile.displayName} imageUrl={coverImage?.url ?? null} verifiedAt={profile.verifiedAt} />}{!sample && profile.isPublic && !profile.isDemo && <ProfileOnlineBadge profileId={profile.id} initialOnline={profile.isOnline} large />}</div>
+          <div className="profile-page-title">{profile.agencyManaged&&<p className="profile-agency-management-note">Perfil gestionado por una agencia con autorización de la persona anunciante.</p>}<h1>{profile.displayName}{age!==null&&<small className="profile-heading-age" aria-label={`${age} años`}>, {age}</small>}</h1>{profile.verificationStatus === "reviewed" && profile.type === "escort" && <ProfileVerificationBadge displayName={profile.displayName} imageUrl={coverImage?.url ?? null} verifiedAt={profile.verifiedAt} />}{!sample && profile.isPublic && !profile.isDemo && <ProfileOnlineBadge agencyManaged={profile.agencyManaged} profileId={profile.id} initialOnline={profile.isOnline} large />}</div>
           {profile.handle && <p className="profile-public-handle">@{profile.handle}</p>}
           <p className="profile-page-location">{sample ? <a role="link" aria-disabled="true">{location}</a> : <Link href={getCityPath(profile.city)}>{location}</Link>}</p>
           <div className="public-tag-row">{tags.map((tag) => <span key={tag} className={`public-tag ${tag.toLowerCase().replaceAll(" ", "-")}`}>{tag}</span>)}</div>

@@ -19,14 +19,14 @@ test('admin editor and save endpoint require moderation; owner controls remain s
   assert.match(update, /status: options.adminEditor \? sql`\$\{profiles.status\}`/);
   assert.match(list, /href=\{editHref\}>Editar anuncio/);
   for (const anchor of ['fotos-y-videos', 'documentos-privados', 'historias']) { assert.ok(page.includes(anchor)); assert.ok(list.includes(anchor)); }
-  assert.match(owner, /Documentos privados/); assert.match(editor, /eq\(profiles.ownerId, user.id\)/);
+  assert.match(owner, /Documentos privados/); assert.match(editor, /getProfileAccess\(profileId,user.id,"edit"\)/);
 });
 
 test('private document reads and mutations require ownership or the private-view capability', async () => {
   const [route, page] = await Promise.all([source('app/api/perfiles/[profileId]/documentos/[kind]/route.ts'), source('app/admin/anuncios-publicaciones/[profileId]/editar/page.tsx')]);
   assert.equal((route.match(/adminHasCapability\(sessionAdmin, "private.view"\)/g) ?? []).length, 2);
-  assert.match(route, /user\?\.id !== record.profile.ownerId/);
-  assert.match(route, /profile\?\.ownerId === user.id/);
+  assert.match(route, /getProfileAccess\(profileId,user.id,"documents"\)/);
+  assert.match(route, /allowed:Boolean\(access\)/);
   assert.match(route, /private, no-store/);
   assert.match(page, /canReadDocuments && row.profile.type === "escort" \? getVerificationDocuments/);
 });

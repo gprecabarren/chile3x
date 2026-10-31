@@ -1,3 +1,8 @@
+import { getProfileAccess } from "@/lib/profile-access";
+import { publicProfileCondition } from "@/lib/public-profile-visibility";
+import { getDb } from "@/db";
+import { profiles } from "@/db/schema";
+import { and,eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { getCurrentAdmin, getCurrentUser } from "@/lib/auth";
 import { findProfileMedia } from "@/lib/media";
@@ -13,12 +18,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ medi
 
   const [user, admin] = await Promise.all([getCurrentUser(), getCurrentAdmin()]);
   const canModerateMedia = adminHasCapability(admin, "media.moderate");
-  const isPublic = record.ownerIsActive && !record.profile.trashedAt && !record.profile.ownerHiddenAt && record.media.visibility === "public" && record.media.moderationStatus === "approved" && record.profile.status === "approved";
+  const agencyVisible=!record.profile.agencyCustodianId || Boolean((await(await getDb()).select({id:profiles.id}).from(profiles).where(and(eq(profiles.id,record.profile.id),publicProfileCondition)).limit(1))[0]);
+  const isPublic = agencyVisible && record.ownerIsActive && !record.profile.trashedAt && !record.profile.ownerHiddenAt && record.media.visibility === "public" && record.media.moderationStatus === "approved" && record.profile.status === "approved";
   if (!isPublic) {
     // Legacy private media is only retained as a migration source. Access for
     // buyers is served exclusively by /contenido/:id, whose authorization is
     // based on the account-owned collection rather than a listing status.
-    if ((user?.id !== record.profile.ownerId || Boolean(record.profile.trashedAt)) && !canModerateMedia) notFound();
+    if (!canModerateMedia && (!user || (record.media.visibility!=="public"?user.id!==record.profile.ownerId:!await getProfileAccess(record.profile.id,user.id,"preview")))) notFound();
   }
 
   const { env } = await import("cloudflare:workers");

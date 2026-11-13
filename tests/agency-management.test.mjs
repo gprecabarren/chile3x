@@ -14,6 +14,8 @@ test('agency custody, delegation and personal ownership are enforced by real mig
  const root=new URL('../',import.meta.url),data=code=>'data:text/javascript,'+encodeURIComponent(code);
  const hooks=registerHooks({resolve(specifier,context,next){
   if(specifier==='@/db')return{url:data('export const getDb=async()=>globalThis.__agencyDb'),shortCircuit:true};
+  if(specifier==='@/lib/auth')return{url:data('export const getCurrentAdmin=async()=>globalThis.__agencyAdmin;export const assertSameOrigin=request=>{if(request.headers.get("origin")!==new URL(request.url).origin)throw Error("origin");};'),shortCircuit:true};
+  if(specifier==='next/server')return next('next/server.js',context);
   if(specifier==='@/lib/admin-notifications')return{url:data('export async function createAdminNotification(value){globalThis.__agencyNotifications.push(value)}'),shortCircuit:true};
   if(specifier==='@/lib/site-settings')return{url:data('export async function getSiteSettings(){return {profile_gallery_face_blur_enabled:"enabled",site_url:"https://chile3x.invalid"}};export const siteBaseUrl="https://chile3x.invalid";'),shortCircuit:true};
   if(specifier==='@/lib/operations')return{url:data('export async function recordOperationalEvent(){}'),shortCircuit:true};
@@ -22,12 +24,14 @@ test('agency custody, delegation and personal ownership are enforced by real mig
  }});
  try{
  const {readProfileSubmission,createProfile,updateProfile}=await import('../lib/profile-submission.ts');
+ const {POST:createAssistedProfile}=await import('../app/api/admin/cuentas/[userId]/perfiles/route.ts');
  const {getProfileAccess,authorizedProfileBatch}=await import('../lib/profile-access.ts');
  const {inviteEscort,respondAgencyInvitation,changeAgencyMembership,requestAgencyClaim,respondAgencyClaim,verifyAgencyClaim,cancelAgencyProposal,countAgencyNotices,cancelAgencyInvitation}=await import('../lib/agency-management.ts');
  const {publicProfileCondition}=await import('../lib/public-profile-visibility.ts');
  const {profiles}=await import('../db/schema.ts');const{eq,and}=await import('drizzle-orm');
  const addUser=id=>{sqlite.prepare("INSERT INTO users(id,email,username,role,is_active,email_verified_at)VALUES(?,?,?,'advertiser',1,?)").run(id,id+'@example.invalid',id,new Date().toISOString());return{id,email:id+'@example.invalid',role:'advertiser',displayName:id,username:id};};
  const operator=addUser('agency_operator'),person=addUser('agency_person'),other=addUser('agency_other'),outsider=addUser('agency_outsider'),admin={...addUser('agency_admin'),role:'admin',accessLevel:'owner',githubLogin:'local_qa',isProtectedOwner:true};
+ sqlite.prepare("UPDATE users SET role='admin' WHERE id=?").run(admin.id);
  const form=(type='escort',name='Perfil de prueba')=>{const f=new FormData();for(const[k,v]of Object.entries({type,tier:'vip',intent:'draft',display_name:name,region:'Región del Biobío',city:'Concepción',contact_whatsapp:'56911112222',gender:'Femenino',age:'25',short_description:'Descripción de prueba local',description:'Anuncio exclusivamente local para probar autorizaciones.'}))f.set(k,v);return f;};
  const revision=id=>sqlite.prepare('SELECT revision FROM profiles WHERE id=?').get(id).revision;
  const version=id=>{const f=new FormData();f.set('review_key','profile:'+id);f.set('review_revision',String(revision(id)));return f;};
@@ -56,6 +60,57 @@ test('agency custody, delegation and personal ownership are enforced by real mig
   sqlite.prepare('UPDATE profiles SET owner_hidden_at=CURRENT_TIMESTAMP WHERE id=?').run(agency);
   assert.equal((await globalThis.__agencyDb.select({id:profiles.id}).from(profiles).where(and(eq(profiles.id,custodian1),publicProfileCondition))).length,0);
   sqlite.prepare('UPDATE profiles SET owner_hidden_at=NULL WHERE id=?').run(agency);
+ });
+ await t.test('assisted custody requires authorization and a same-account active agency, and records the real creator', async () => {
+  const assistedAgency = await create(operator.id, 'agency', 'Agencia para asistencia');
+  const foreignAgency = await create(outsider.id, 'agency', 'Agencia de otra cuenta');
+  const before = sqlite.prepare('SELECT count(*) n FROM profiles').get().n;
+  const post = (agencyId, { consent = true, origin = 'https://chile3x.invalid', contentOnly = false } = {}) => {
+   const body = form('escort', 'Perfil asistido de prueba');
+   body.set('intent', 'submit');
+   if (agencyId) body.set('agency_custodian_id', agencyId);
+   if (consent) body.set('agency_permission', 'on');
+   if (contentOnly) body.set('content_only', 'on');
+   return createAssistedProfile(new Request(`${origin.replace('other.invalid','chile3x.invalid')}/api/admin/cuentas/${operator.id}/perfiles`, {
+    method: 'POST', body, headers: { origin },
+   }), { params: Promise.resolve({ userId: operator.id }) });
+  };
+  const message = response => new URL(response.headers.get('location')).searchParams.get('message');
+  assert.equal((await post(assistedAgency)).status, 401);
+  globalThis.__agencyAdmin = { ...admin, accessLevel: 'moderator' };
+  assert.equal((await post(assistedAgency)).status, 403);
+  globalThis.__agencyAdmin = admin;
+  assert.equal((await post(assistedAgency, { origin: 'https://other.invalid' })).status, 403);
+  assert.match(message(await post(assistedAgency, { consent: false })), /Confirma la autorización/);
+  assert.match(message(await post(assistedAgency, { contentOnly: true })), /venta solo de contenido/);
+  assert.match(message(await post(foreignAgency)), /no está disponible o no pertenece/);
+  sqlite.prepare('UPDATE profiles SET trashed_at=CURRENT_TIMESTAMP WHERE id=?').run(assistedAgency);
+  assert.match(message(await post(assistedAgency)), /no está disponible o no pertenece/);
+  sqlite.prepare('UPDATE profiles SET trashed_at=NULL WHERE id=?').run(assistedAgency);
+  sqlite.prepare('UPDATE users SET is_active=0 WHERE id=?').run(operator.id);
+  assert.equal(new URL((await post(assistedAgency)).headers.get('location')).searchParams.get('notice'), 'account_error');
+  sqlite.prepare('UPDATE users SET is_active=1 WHERE id=?').run(operator.id);
+  assert.match(message(await post('')), /ya tiene un anuncio Escort/);
+  assert.equal(sqlite.prepare('SELECT count(*) n FROM profiles').get().n, before);
+  const response = await post(assistedAgency);
+  assert.equal(response.status, 303);
+  const location = new URL(response.headers.get('location'));
+  assert.equal(location.searchParams.get('notice'), 'profile_submitted');
+  const profileId = location.pathname.split('/').at(-2);
+  const profile = read(profileId);
+  assert.equal(profile.owner_id, operator.id);
+  assert.equal(profile.agency_custodian_id, assistedAgency);
+  assert.equal(profile.agency_origin_id, assistedAgency);
+  assert.equal(profile.creation_source, 'admin');
+  assert.equal(profile.created_by_admin_id, admin.id);
+  assert.equal(profile.status, 'pending');
+  const membership = sqlite.prepare('SELECT can_manage,documents_authorized FROM agency_members WHERE member_profile_id=?').get(profileId);
+  assert.equal(membership.can_manage, 1);
+  assert.equal(membership.documents_authorized, 0);
+  assert.equal(sqlite.prepare('SELECT actor_user_id FROM agency_activity_logs WHERE escort_profile_id=?').get(profileId).actor_user_id, admin.id);
+  const audit = sqlite.prepare('SELECT actor_user_id,metadata FROM admin_audit_logs WHERE entity_id=? AND action=?').get(profileId, 'profile.create');
+  assert.equal(audit.actor_user_id, admin.id);
+  assert.deepEqual(JSON.parse(audit.metadata), { agencyId: assistedAgency, authorizationConfirmed: true });
  });
  await t.test('invitations reject hidden/inactive/content-only profiles, duplicates and reinvites of existing links',async()=>{
   personProfile=await create(person.id,'escort','Titular personal');publish(personProfile);
@@ -121,5 +176,5 @@ test('agency custody, delegation and personal ownership are enforced by real mig
  await t.test('all migrations keep referential integrity and permission changes have an attributable audit trail',async()=>{
   assert.deepEqual(sqlite.prepare('PRAGMA foreign_key_check').all(),[]);assert.ok(sqlite.prepare('SELECT count(*) n FROM agency_activity_logs WHERE actor_user_id=?').get(operator.id).n>0);assert.ok(sqlite.prepare('SELECT count(*) n FROM agency_activity_logs WHERE actor_user_id=?').get(person.id).n>0);
  });
- }finally{hooks.deregister();sqlite.close();delete globalThis.__agencyDb;delete globalThis.__agencyNotifications;}
+ }finally{hooks.deregister();sqlite.close();delete globalThis.__agencyDb;delete globalThis.__agencyNotifications;delete globalThis.__agencyAdmin;}
 });

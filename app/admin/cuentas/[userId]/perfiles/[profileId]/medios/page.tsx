@@ -29,12 +29,14 @@ export default async function AdminProfileMediaPage({ params, searchParams }: {
   const db = await getDb();
   const [profile] = await db.select({
     revision: profiles.revision,
+    agencyCustodianId: profiles.agencyCustodianId,
     id: profiles.id, type: profiles.type, displayName: profiles.displayName, status: profiles.status, ownerId: profiles.ownerId,
     ownerEmail: users.email, ownerActive: users.isActive,
   }).from(profiles).innerJoin(users, eq(profiles.ownerId, users.id))
     .where(and(eq(profiles.id, profileId), eq(profiles.ownerId, userId))).limit(1);
   if (!profile) notFound();
-  const [media, usage, settings, query, documents] = await Promise.all([getOwnerEditableProfileMedia(profileId), getMediaUsage(), getSiteSettings(), searchParams, getVerificationDocuments(profileId)]);
+  const canReadDocuments = adminHasCapability(admin, "private.view") && profile.type === "escort";
+  const [media, usage, settings, query, documents] = await Promise.all([getOwnerEditableProfileMedia(profileId), getMediaUsage(), getSiteSettings(), searchParams, canReadDocuments ? getVerificationDocuments(profileId) : Promise.resolve([])]);
   const accountHref = `/admin/cuentas/${encodeURIComponent(userId)}`;
   const moderationHref = `/admin/anuncios-publicaciones?q=${encodeURIComponent(profile.ownerEmail)}&return_to=${encodeURIComponent(accountHref)}`;
   return <AdminShell user={admin}><div className="admin-content"><ReviewScope resource={`profile:${profileId}`} revision={profile.revision}>
@@ -44,7 +46,7 @@ export default async function AdminProfileMediaPage({ params, searchParams }: {
     {query.notice === "profile_submitted" && <p className="admin-success" role="status">Anuncio guardado y enviado a revisión. Debe aprobarse desde moderación antes de aparecer en el directorio. Mientras tanto puedes adjuntar sus fotos, videos y documentos privados opcionales.</p>}
     {!profile.ownerActive && <p className="form-alert" role="alert">La cuenta está deshabilitada. Reactívala antes de subir archivos o publicar el anuncio.</p>}
     {profile.ownerActive && <ProfileMediaManager {...profileModerationControls(profileId, profile.revision, media, `/admin/cuentas/${userId}/perfiles/${profileId}/medios`)} profileId={profileId} initialMedia={media.map((item) => ({ id: item.id, url: `/media/${item.id}`, mediaType: item.mediaType, contentType: item.contentType, moderationStatus: item.moderationStatus, visibility: item.visibility, isProfilePhoto: item.isProfilePhoto, byteSize: item.byteSize, replacementOf: item.replacementOf }))} initialQuota={{ bytes: usage.bytes, ...getMediaQuotaState(usage.bytes) }} mediaSettings={{ watermarkEnabled: settings.profile_gallery_watermark_enabled === "enabled", faceBlurEnabled: settings.profile_gallery_face_blur_enabled === "enabled" }} adminMode />}
-    {profile.ownerActive && profile.type === "escort" && <ProfileVerificationDocuments profileId={profileId} initialDocuments={documents} />}
+    {profile.ownerActive && canReadDocuments && <ProfileVerificationDocuments profileId={profileId} initialDocuments={documents} agencyCustodian={Boolean(profile.agencyCustodianId)} />}
     <div className="profile-form-actions"><Link prefetch={false} className="button button-primary" href={moderationHref}>Abrir moderación y publicar</Link><Link prefetch={false} className="button button-outline" href={accountHref}>Volver a la cuenta</Link></div>
     <p className="admin-create-profile-note">Estado actual del anuncio: {profile.status === "approved" ? "Publicado" : profile.status === "pending" ? "En revisión" : profile.status === "draft" ? "Borrador" : profile.status}. Las fotos y videos que suba después la persona propietaria seguirán el flujo normal de revisión.</p>
   </ReviewScope></div></AdminShell>;

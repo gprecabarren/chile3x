@@ -488,6 +488,9 @@ export async function createProfile(ownerId: string, submission: ProfileSubmissi
     if (String(error).includes("escort_profile_owner_conflict")) {
       throw new ProfileValidationError("Esta cuenta ya tiene un anuncio Escort activo. Puede tener varios anuncios de Agencia o Arriendo, pero solo un Escort fuera de la papelera.");
     }
+    if (options.agencyId && String(error).includes("agency_custody_conflict")) {
+      throw new ProfileValidationError("La agencia o su cuenta ya no están disponibles. Revisa la cuenta antes de guardar.");
+    }
     throw error;
   }
 
@@ -499,8 +502,16 @@ export async function createProfile(ownerId: string, submission: ProfileSubmissi
       startsAt: updatedAt, endsAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(), status: "active",
     });
     if (options.agencyId) {
-      await db.insert(agencyMembers).values({id:`agm_${crypto.randomUUID()}`,agencyProfileId:options.agencyId,memberProfileId:id,canManage:true,documentsAuthorized:true});
-      await agencyActivity(db,ownerId,options.agencyId,id,"profile.created","Creó un Escort gestionado por la agencia, con ID propio y sin cuenta personal vinculada. Requiere la revisión normal del anuncio.");
+      await db.insert(agencyMembers).values({
+        id: `agm_${crypto.randomUUID()}`, agencyProfileId: options.agencyId, memberProfileId: id,
+        canManage: true, documentsAuthorized: !options.adminCreator,
+      });
+      await agencyActivity(
+        db, options.adminCreator?.id ?? ownerId, options.agencyId, id, "profile.created",
+        options.adminCreator
+          ? "Creó desde administración un perfil gestionado por esta agencia y confirmó la autorización de la persona representada."
+          : "Creó un Escort gestionado por la agencia, con ID propio y sin cuenta personal vinculada. Requiere la revisión normal del anuncio.",
+      );
     }
     await db.update(users).set({ role: "advertiser" }).where(and(eq(users.id, ownerId), eq(users.role, "visitor")));
   } catch (error) {

@@ -7,6 +7,7 @@ import { getOrCreateExclusiveContentCollection } from "@/lib/exclusive-content";
 import { validatePreparedVideo } from "@/lib/video-validation";
 import { MediaUploadRequestError, readMediaUploadForm } from "@/lib/media-upload-form";
 import { createAdminNotification } from "@/lib/admin-notifications";
+import { MAX_EXCLUSIVE_IMAGES, MAX_EXCLUSIVE_VIDEOS } from "@/lib/media-count-limits";
 import {
   detectImageType,
   detectVideoType,
@@ -18,9 +19,6 @@ import {
   MAX_VIDEO_BYTES,
   MEDIA_HARD_LIMIT_BYTES,
 } from "@/lib/media";
-
-const MAX_EXCLUSIVE_IMAGES = 20;
-const MAX_EXCLUSIVE_VIDEOS = 4;
 
 function error(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status });

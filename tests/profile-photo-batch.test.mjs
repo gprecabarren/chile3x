@@ -21,7 +21,8 @@ test('delete-all includes a pending original once while preserving videos and ex
 test('shared media editor keeps batch actions discoverable and excludes videos and exclusive files from delete-all',async()=>{
   const source=await readFile(new URL('../app/mi-cuenta/ProfileMediaManager.tsx',import.meta.url),'utf8');
   const tools=await readFile(new URL('../app/admin/medios/AdminPhotoTools.tsx',import.meta.url),'utf8');
-  assert.match(source,/const storedPhotos = media\.filter\(item => item\.mediaType === "image" && item\.visibility === "public"\)/);
+  assert.match(source,/const publicMedia = media\.filter\(item => item\.visibility === "public"\)/);
+  assert.match(source,/const storedPhotos = publicMedia\.filter\(item => item\.mediaType === "image"\)/);
   assert.match(source,/photoDeletionPlan\(media\)/);
   assert.match(source,/deleteConfirmation !== "ELIMINAR"/);assert.match(source,/AdminPhotoTools showBulkActions/);
   assert.ok(tools.indexOf('{showBulkActions&&')<tools.indexOf('<details ref={root}'));

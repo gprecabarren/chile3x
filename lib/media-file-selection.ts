@@ -3,16 +3,23 @@ import { assertVideoSource, isVideoSource } from "./video-policy";
 
 /** Source validation only. Picker and drop use this same bounded selection;
  * preparation and server-side byte/signature checks still run before storage. */
-export function selectGalleryFiles<T extends { name: string; type: string; size: number }>(files: readonly T[], options: {
+type GallerySource = { name: string; type: string; size: number; lastModified?: number };
+
+export function selectGalleryFiles<T extends GallerySource>(files: readonly T[], options: {
   kind?: "image" | "video";
   imageCount: number;
   videoCount: number;
   imageLimit: number;
   videoLimit: number;
+  queuedFiles?: readonly GallerySource[];
 }) {
   const selected: { file: T; image: boolean }[] = [], errors: string[] = [];
-  let images = options.imageCount, videos = options.videoCount;
+  const fileKey = (file: GallerySource) => JSON.stringify([file.name, file.size, file.lastModified]);
+  const queued = new Set(options.queuedFiles?.map(fileKey));
+  let images = options.imageCount, videos = options.videoCount, duplicates = 0;
   for (const file of files) {
+    const key = fileKey(file);
+    if (queued.has(key)) { duplicates += 1; continue; }
     try {
       const image = isImageSource(file), video = !image && isVideoSource(file);
       if (!image && !video) throw new Error("Formato no admitido. Elige fotos JPEG, PNG, WebP o HEIC compatible, o videos MP4/WebM/MOV.");
@@ -27,7 +34,8 @@ export function selectGalleryFiles<T extends { name: string; type: string; size:
         videos += 1;
       }
       selected.push({ file, image });
+      queued.add(key);
     } catch (cause) { errors.push(`${file.name}: ${cause instanceof Error ? cause.message : "No se pudo seleccionar el archivo."}`); }
   }
-  return { selected, errors };
+  return { selected, errors, duplicates };
 }

@@ -114,7 +114,3 @@ button > .action-icon, a > .action-icon { max-width:1.15em; max-height:1.15em; }
   font-size: 12px;
 }
 .profile-contact-actions .contact-whatsapp-alternate svg { flex: 0 0 16px; width: 16px; height: 16px; }
-
-
-.public-footer-partner-badges .diversion-conce-badge { display: inline-flex; max-width: 100%; }
-.public-footer-partner-badges .diversion-conce-badge img { display: block; width: 112px; max-width: 100%; height: auto; }

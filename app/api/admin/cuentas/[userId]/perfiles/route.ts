@@ -6,6 +6,7 @@ import { assertSameOrigin, getCurrentAdmin } from "@/lib/auth";
 import { createProfile, ProfileValidationError, readProfileSubmission } from "@/lib/profile-submission";
 import { recordAdminAudit } from "@/lib/admin-audit";
 import { adminHasCapability } from "@/lib/admin-permissions";
+import { AgencyError } from "@/lib/agency-management";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
   try {
@@ -32,16 +33,33 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   try {
+    const requestedAgency = formData.get("agency_custodian_id");
+    const agencyId = typeof requestedAgency === "string" ? requestedAgency.trim() : "";
+    if (requestedAgency !== null && typeof requestedAgency !== "string") {
+      throw new ProfileValidationError("Selecciona una agencia válida de esta cuenta.");
+    }
+    if (agencyId && !adminHasCapability(admin, "profiles.moderate")) {
+      return new Response("No tienes permiso para crear perfiles gestionados por una agencia.", { status: 403 });
+    }
+    if (agencyId && formData.get("agency_permission") !== "on") {
+      throw new ProfileValidationError("Confirma la autorización de la persona adulta para que la agencia la represente y publique su anuncio.");
+    }
     const submission = readProfileSubmission(formData);
-    const profileId = await createProfile(owner.id, submission, { adminCreator: { id: admin.id, githubLogin: admin.githubLogin } });
-    await recordAdminAudit(admin, { category: "profiles", action: "profile.create", summary: `Creó el anuncio ${submission.displayName} para ${owner.email}.`, entityType: "profile", entityId: profileId, entityLabel: submission.displayName, after: { ownerId: owner.id, type: submission.type, status: submission.intent === "submit" ? "pending" : "draft", region: submission.region, city: submission.city, handle: submission.handle } });
+    const profileId = await createProfile(owner.id, submission, { adminCreator: { id: admin.id, githubLogin: admin.githubLogin }, agencyId: agencyId || undefined });
+    await recordAdminAudit(admin, {
+      category: "profiles", action: "profile.create", summary: `Creó el anuncio ${submission.displayName} para ${owner.email}.`,
+      entityType: "profile", entityId: profileId, entityLabel: submission.displayName,
+      after: { ownerId: owner.id, type: submission.type, status: submission.intent === "submit" ? "pending" : "draft", region: submission.region, city: submission.city, handle: submission.handle },
+      ...(agencyId ? { metadata: { agencyId, authorizationConfirmed: true } } : {}),
+    });
     const url = new URL(`/admin/cuentas/${encodeURIComponent(owner.id)}/perfiles/${encodeURIComponent(profileId)}/medios`, request.url);
     url.searchParams.set("notice", submission.intent === "submit" ? "profile_submitted" : "profile_created");
     return NextResponse.redirect(url, 303);
   } catch (error) {
     const url = new URL(`/admin/cuentas/${encodeURIComponent(userId)}/crear-perfil`, request.url);
-    url.searchParams.set("error", error instanceof ProfileValidationError ? "validation" : "server");
-    url.searchParams.set("message", error instanceof ProfileValidationError ? error.message : "No se pudo guardar el aviso. Revisa los campos e inténtalo nuevamente.");
+    const validation = error instanceof ProfileValidationError || error instanceof AgencyError;
+    url.searchParams.set("error", validation ? "validation" : "server");
+    url.searchParams.set("message", validation ? error.message : "No se pudo guardar el aviso. Revisa los campos e inténtalo nuevamente.");
     return NextResponse.redirect(url, 303);
   }
 }

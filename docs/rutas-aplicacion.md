@@ -118,7 +118,7 @@ Moderación de medios (29 de octubre): los POST existentes de `/api/admin/media/
 | `/api/admin/contenido/[mediaId]` | POST | [handler](../app/api/admin/contenido/[mediaId]/route.ts) |
 | `/api/admin/contenido/colecciones/[collectionId]/aprobar-todos` | POST | [handler](../app/api/admin/contenido/colecciones/[collectionId]/aprobar-todos/route.ts) |
 | `/api/admin/contenido/seo/[pageId]` | GET, POST | [handler](../app/api/admin/contenido/seo/[pageId]/route.ts) |
-| `/api/admin/cuentas/[userId]/perfiles` | POST | [handler](../app/api/admin/cuentas/[userId]/perfiles/route.ts) |
+| `/api/admin/cuentas/[userId]/perfiles` | POST | [handler](../app/api/admin/cuentas/[userId]/perfiles/route.ts). Para un Escort gestionado requiere autorización expresa, agencia de la cuenta activa y permiso de moderación de anuncios además de gestión de cuentas. |
 | `/api/admin/documentos-legales/[document]` | GET, POST | [handler](../app/api/admin/documentos-legales/[document]/route.ts) |
 | `/api/admin/email-settings` | POST | [handler](../app/api/admin/email-settings/route.ts) |
 | `/api/admin/foro/adjuntos/[postId]` | POST | [handler](../app/api/admin/foro/adjuntos/[postId]/route.ts) |

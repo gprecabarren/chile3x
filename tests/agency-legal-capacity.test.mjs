@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import{DatabaseSync}from'node:sqlite';import{readFileSync,readdirSync}from'node:fs';
-import{AGENCY_LEGAL_SECTION,AGENCY_LEGAL_VERSION,agencyLegalFallback}from'../lib/agency-legal-revision.ts';import{validateLegalDocument}from'../lib/legal-document.ts';import{profilePhotoCapacity}from'../lib/profile-photo-capacity.ts';
+import{AGENCY_LEGAL_SECTION,AGENCY_LEGAL_VERSION,agencyLegalFallback}from'../lib/agency-legal-revision.ts';import{validateLegalDocument}from'../lib/legal-document.ts';import{profileGallerySlotsUsed,profilePhotoCapacity}from'../lib/profile-photo-capacity.ts';
 test('agency legal migration preserves custom text, drafts, exact prior history and acceptance records',()=>{
  const db=new DatabaseSync(':memory:');try{
  for(const n of readdirSync('drizzle').filter(x=>x.endsWith('.sql')&&!x.startsWith('0068')).sort())db.exec(readFileSync('drizzle/'+n,'utf8'));
@@ -20,5 +20,7 @@ test('photo capacity reserves the previous cover slot and counts pending replace
  assert.equal(profilePhotoCapacity([...nine,cover],'profile_photo'),null);assert.match(profilePhotoCapacity([...ten,cover],'profile_photo'),/galería está completa/);
  assert.equal(profilePhotoCapacity(ten,'profile_photo'),null);assert.equal(profilePhotoCapacity([...nine,cover],'gallery'),null);
  assert.match(profilePhotoCapacity([...nine,cover,pending],'gallery'),/espacio reservado/);assert.match(profilePhotoCapacity([pending],'profile_photo'),/principal pendiente/);
+ assert.equal(profileGallerySlotsUsed([...nine,cover,pending]),10);
+ assert.equal(profileGallerySlotsUsed([...nine,cover,{...pending,replacementOf:'approved-cover'}]),9);
  assert.equal(profilePhotoCapacity([...nine,cover,{mediaType:'video',isProfilePhoto:false,moderationStatus:'approved'}],'profile_photo'),null);
 });

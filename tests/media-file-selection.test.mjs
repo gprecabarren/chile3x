@@ -32,7 +32,7 @@ test('the combined stored and pending count caps public galleries, including a l
   assert.equal(result.errors.length,12);assert.match(result.errors[0],/máximo de 10 fotos/);assert.match(result.errors.at(-1),/máximo de 3 videos/);
 });
 test('the private library uses its own 20 photo / 4 video limits through the same validator',()=>{
-  const result=selectGalleryFiles([image(),image(),video(),video()],{imageCount:19,videoCount:3,imageLimit:20,videoLimit:4});
+  const result=selectGalleryFiles([image('a.png'),image('b.png'),video('a.mp4'),video('b.mp4')],{imageCount:19,videoCount:3,imageLimit:20,videoLimit:4});
   assert.equal(result.selected.length,2);assert.equal(result.errors.length,2);
   assert.match(result.errors[0],/20 fotos/);assert.match(result.errors[1],/4 videos/);
 });
@@ -45,5 +45,14 @@ test('empty, non-finite, oversized and unsupported sources never consume a valid
 test('mobile file names without MIME types and an empty drop retain existing source format rules',()=>{
   const result=selectGalleryFiles([{name:'IMG_001.HEIC',type:'',size:123},{name:'CLIP.MOV',type:'',size:123}],options);
   assert.deepEqual(result.selected.map(x=>x.image),[true,false]);assert.deepEqual(result.errors,[]);
-  assert.deepEqual(selectGalleryFiles([],options),{selected:[],errors:[]});
+  assert.deepEqual(selectGalleryFiles([],options),{selected:[],errors:[],duplicates:0});
+});
+test('the shared selection skips repeated files from the queue and within the new batch without consuming slots',()=>{
+  const queued={...image('same.png'),lastModified:1};
+  const newer={...queued,lastModified:2};
+  const clip=video('clip.mp4');
+  const result=selectGalleryFiles([queued,newer,newer,clip,clip],{...options,imageCount:9,videoCount:2,queuedFiles:[queued]});
+  assert.deepEqual(result.selected.map(item=>item.file),[newer,clip]);
+  assert.equal(result.duplicates,3);
+  assert.deepEqual(result.errors,[]);
 });

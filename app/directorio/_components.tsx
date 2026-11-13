@@ -160,7 +160,7 @@ export async function PublicFooter() {
         <div><strong>SÍGUENOS</strong><PortalContactLinks placement="footer" /></div>
         <div className="public-footer-partners"><strong>DIRECTORIOS ASOCIADOS</strong><div className="public-footer-partner-badges">
           <OadBadge /><AngelisNetBadge /><LaEstokadaBadge />
-          {diversionConce && <a className="diversion-conce-badge" href={diversionConce.href} target="_blank" rel={diversionConce.sponsored ? "nofollow sponsored noreferrer" : "noreferrer"}>
+          {diversionConce && <a className="footer-partner-badge diversion-conce-badge" href={diversionConce.href} target="_blank" rel={diversionConce.sponsored ? "nofollow sponsored noreferrer" : "noreferrer"}>
             <Image src={`/patrocinadores/media/${diversionConce.id}/background`} alt={diversionConce.name} width={112} height={50} unoptimized />
           </a>}
         </div></div>
@@ -192,7 +192,7 @@ export async function PortalWhatsappScope({ children, advertiser, showFloating =
 }
 
 export function OadBadge() {
-  return <a className="oad-badge" href="https://openadultdirectory.com/escorts/" target="_blank" rel="noreferrer" aria-label="Ver Chile3X en Open Adult Directory">
+  return <a className="footer-partner-badge oad-badge" href="https://openadultdirectory.com/escorts/" target="_blank" rel="noreferrer" aria-label="Ver Chile3X en Open Adult Directory">
     {/* La insignia se mantiene sin optimización para no generar transformaciones ni cobros de imágenes. */}
     {/* eslint-disable-next-line @next/next/no-img-element */}
     <img src={oadBadgeImage} alt="Listed on Open Adult Directory" width="98" height="43" />
@@ -200,7 +200,7 @@ export function OadBadge() {
 }
 
 export function AngelisNetBadge() {
-  return <a className="angelisnet-badge" href="https://www.angelisnet.com/es/" target="_blank" rel="nofollow sponsored noreferrer" aria-label="Visitar AngelisNET">
+  return <a className="footer-partner-badge angelisnet-badge" href="https://www.angelisnet.com/es/" target="_blank" rel="nofollow sponsored noreferrer" aria-label="Visitar AngelisNET">
     {/* Copia local optimizada de la insignia oficial para evitar una descarga externa en cada visita. */}
     {/* eslint-disable-next-line @next/next/no-img-element */}
     <img src={angelisNetBadgeImage} alt="Adult Live Sex Cams - AngelisNET" width="236" height="42" loading="lazy" />
@@ -208,7 +208,7 @@ export function AngelisNetBadge() {
 }
 
 export function LaEstokadaBadge() {
-  return <a className="laestokada-badge" href="https://www.laestokada.cl/foro/" target="_blank" rel="noreferrer" aria-label="Visitar el foro La EstoKada">
+  return <a className="footer-partner-badge laestokada-badge" href="https://www.laestokada.cl/foro/" target="_blank" rel="noreferrer" aria-label="Visitar el foro La EstoKada">
     {/* El logo oficial se sirve desde La EstoKada para conservar la insignia vigente. */}
     {/* eslint-disable-next-line @next/next/no-img-element */}
     <img src={laEstokadaBadgeImage} alt="Foro La EstoKada" width="128" height="31" loading="lazy" />

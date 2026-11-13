@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { ActionButton } from "@/app/ActionButton";
 import { defaultVideoTrim, moveVideoTrim, videoTimeLabel, type VideoTrim } from "@/lib/video-trim-policy";
 
-export function VideoTrimEditor({ file, value, disabled, onChange }: { file: File; value?: VideoTrim; disabled: boolean; onChange: (trim: VideoTrim) => void }) {
+export function VideoTrimEditor({ file, value, disabled, onChange, showWatermarkHelp = false }: { file: File; value?: VideoTrim; disabled: boolean; onChange: (trim: VideoTrim) => void; showWatermarkHelp?: boolean }) {
   const id = useId(), video = useRef<HTMLVideoElement>(null), callback = useRef(onChange), selection = useRef(value);
   const [duration, setDuration] = useState(0), [error, setError] = useState("");
   const [draft, setDraft] = useState<{ point: keyof VideoTrim; text: string } | null>(null);
@@ -36,10 +36,11 @@ export function VideoTrimEditor({ file, value, disabled, onChange }: { file: Fil
       const player = video.current, range = selection.current;
       if (player && range && (player.currentTime < range.start || player.currentTime >= range.end - 0.01)) player.currentTime = range.start;
     }} onTimeUpdate={() => { const player = video.current, range = selection.current; if (player && range && !player.paused && player.currentTime >= range.end) { player.pause(); player.currentTime = range.end; } }} />
-    <small>{duration ? `Original: ${videoTimeLabel(duration)}` : "Leyendo duración del original…"}</small></div>
+    {(duration > 0 || !error) && <small>{duration ? `Original: ${videoTimeLabel(duration)}` : "Leyendo duración del original…"}</small>}
+    {error && !duration && <p className="video-trim-error" role="alert">{error}</p>}</div>
     <fieldset disabled={disabled || !trim} aria-describedby={`${id}-help`}><legend>Recortar duración del video</legend>
-      <p id={`${id}-help`}>Elige el inicio y el final. Se guardará solo este fragmento, de hasta 15 segundos; el sonido y la marca de agua se aplican al resultado.</p>
-      {error && <p className="video-trim-error" role="alert">{error}</p>}
+      <p id={`${id}-help`}>Elige el inicio y el final. Se guardará solo este fragmento, de hasta 15 segundos, con el sonido original.{showWatermarkHelp && " Si activas la marca de agua, se aplicará al resultado."}</p>
+      {error && duration > 0 && <p className="video-trim-error" role="alert">{error}</p>}
       {trim && <><div className="video-trim-points">{(["start", "end"] as const).map(point => <div key={point}>
         <label htmlFor={`${id}-${point}`}>{point === "start" ? "Inicio" : "Final"} <span>(segundos)</span></label>
         <input id={`${id}-${point}`} type="number" min={0} max={duration} step="0.01" value={draft?.point === point ? draft.text : Number(trim[point].toFixed(2))} onChange={event => setDraft({ point, text: event.currentTarget.value })} onBlur={event => { move(point, event.currentTarget.valueAsNumber); setDraft(null); }} onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); event.currentTarget.blur(); } }} />

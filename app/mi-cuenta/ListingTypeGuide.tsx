@@ -78,9 +78,9 @@ export function ListingTypeGuide() {
               su directorio propio.
             </li>
             <li>
-              Los documentos son privados. Solo la titular, su agencia
-              expresamente autorizada para documentos y administración
-              autorizada pueden consultarlos.
+              Los documentos son privados. La autorización para publicar un
+              perfil gestionado y la autorización para aportar sus documentos
+              son confirmaciones separadas.
             </li>
             <li>
               Ocultar un anuncio conserva sus datos. Al eliminarlo pasa a la

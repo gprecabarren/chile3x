@@ -58,7 +58,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
   if (!manager.allowed) return Response.json({ error: "No autorizado." }, { status: 401 });
   try {
     const formData = await request.formData();
-    if(manager.access?.isCustodian&&formData.get("document_authorization")!=="on")return Response.json({error:"Confirma la autorización específica para aportar documentos privados de esta persona."},{status:400});
+    if (formData.get("document_authorization") !== "on") {
+      const adminCustody = manager.admin
+        ? (await (await getDb()).select({ id: profiles.agencyCustodianId }).from(profiles).where(eq(profiles.id, profileId)).limit(1))[0]?.id
+        : null;
+      if (manager.access?.isCustodian || adminCustody) {
+        return Response.json({ error: "Confirma la autorización específica para aportar documentos privados de esta persona." }, { status: 400 });
+      }
+    }
     if(manager.access&&formData.has("review_revision"))manager.access.profile.revision=expectedVersion(formData,`profile:${profileId}`).revision;
     const file = formData.get("file");
     if (!(file instanceof File) || file.size === 0) return Response.json({ error: "Selecciona un archivo antes de subirlo." }, { status: 400 });

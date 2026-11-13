@@ -1,38 +1,33 @@
+import { MAX_IMAGES_PER_PROFILE } from "./media-count-limits.ts";
+
 type Photo = {
   mediaType: string;
   isProfilePhoto: boolean;
   moderationStatus: string;
   replacementOf?: string;
 };
+
+export function profileGallerySlotsUsed(files: readonly Photo[]) {
+  const images = files.filter(file => file.mediaType === "image");
+  const hasPendingCover = images.some(file => file.isProfilePhoto && file.moderationStatus === "pending" && !file.replacementOf);
+  return images.filter(file => !file.isProfilePhoto || (hasPendingCover && file.moderationStatus === "approved")).length;
+}
+
 /** The previous principal needs a gallery slot when a new principal is approved.
  * A pending edit replacing its approved base is a single logical photo. */
 export function profilePhotoCapacity(
   files: readonly Photo[],
   kind: "gallery" | "profile_photo",
-  limit = 10,
+  limit = MAX_IMAGES_PER_PROFILE,
 ) {
-  const images = files.filter((file) => file.mediaType === "image"),
-    gallery = images.filter((file) => !file.isProfilePhoto);
-  const pending = images.filter(
-    (file) =>
-      file.isProfilePhoto &&
-      file.moderationStatus === "pending" &&
-      !file.replacementOf,
-  );
-  const approved = images.filter(
-    (file) => file.isProfilePhoto && file.moderationStatus === "approved",
-  );
   if (kind === "profile_photo") {
-    if (pending.length)
+    const images = files.filter(file => file.mediaType === "image");
+    if (images.some(file => file.isProfilePhoto && file.moderationStatus === "pending" && !file.replacementOf))
       return "Ya existe una foto principal pendiente. Revísala, edítala o retírala antes de seleccionar otra principal.";
     if (images.length > limit)
       return "La galería está completa. Retira una foto antes de subir otra principal: la anterior se conservará en la galería.";
-  } else if (
-    gallery.length +
-      (pending.length && approved.length ? approved.length : 0) >=
-    limit
-  ) {
-    return "La galería alcanzó su máximo de 10 fotos, incluido el espacio reservado para la foto principal anterior cuando se apruebe su reemplazo.";
+  } else if (profileGallerySlotsUsed(files) >= limit) {
+    return `La galería alcanzó su máximo de ${limit} fotos, incluido el espacio reservado para la foto principal anterior cuando se apruebe su reemplazo.`;
   }
   return null;
 }

@@ -1,6 +1,6 @@
 export const AGENCY_INVITATION_DAYS = 7;
 export const AGENCY_PERSONAL_ESCORT_LIMIT = 1;
-export const AGENCY_WORKFLOW_VERSION = "2026.10.31.1";
+export const AGENCY_WORKFLOW_VERSION = "2026.11.13.1";
 export const AGENCY_CONSENT_VERSION = "agency-management-2026.10.31";
 export const AGENCY_PROFILE_GUIDE = [
   {
@@ -23,7 +23,7 @@ export const AGENCY_PROFILE_GUIDE = [
       "Envía cada anuncio a revisión",
       "Propón vincular un perfil a una cuenta personal",
     ],
-    text: "Puedes tener varias agencias. Cada una puede preparar varios Escorts con ID propio, sin inventar cuentas ni correos. Esos perfiles quedan ligados a esa agencia; no consumen tu cupo personal. La vinculación a otra cuenta exige aceptación de esa persona y comprobación administrativa. Después la persona conserva el anuncio y decide los permisos de la agencia.",
+    text: "Cada agencia puede preparar varios Escorts autorizados con ID propio, también con ayuda de administración. Los perfiles gestionados quedan ligados a su agencia y disponen de un cupo separado. La vinculación a una cuenta personal exige que su titular acepte y que administración compruebe la titularidad. Después la persona conserva el anuncio y decide los permisos de la agencia.",
   },
   {
     type: "rental",

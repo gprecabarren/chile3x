@@ -5,9 +5,8 @@ import { MAX_PREPARED_VIDEO_BYTES } from "@/lib/video-policy";
 import { PRIVATE_SAMPLES_ENABLED } from "@/lib/private-sample-policy";
 import { exclusiveContentMedia, forumAttachments, newsMedia, profileMedia, privateSampleMedia, profileReportEvidence, profileStatuses, profileVerificationFiles, profiles, sponsors, users } from "@/db/schema";
 
-export const MAX_IMAGES_PER_PROFILE = 10;
+export { MAX_IMAGES_PER_PROFILE, MAX_VIDEOS_PER_PROFILE } from "@/lib/media-count-limits";
 export const MAX_IMAGE_BYTES = MAX_IMAGE_UPLOAD_BYTES;
-export const MAX_VIDEOS_PER_PROFILE = 3;
 export const MAX_VIDEO_BYTES = MAX_PREPARED_VIDEO_BYTES;
 export const MAX_PROFILE_MEDIA_BYTES = 45_000_000;
 // Keep a safety margin below Cloudflare's 10 GB monthly free allowance.

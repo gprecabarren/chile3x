@@ -1,6 +1,9 @@
 /* Mobile corrections only: navigation is not an action button. Keep the
    larger action labels without letting them inflate the header's controls. */
 @media (max-width:860px) {
+  .sample-intake-page .profile-form .form-grid-three {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .sample-intake-page .profile-form .availability-editor-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -295,6 +298,12 @@
   }
   .sample-public-header span {
     font-size:11px;
+  }
+}
+
+@media (max-width:620px) {
+  .sample-intake-page .profile-form :is(.form-grid-two, .form-grid-three, .service-columns) {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

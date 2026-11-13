@@ -1,0 +1,46 @@
+.intake-admin .intake-copy-link {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.intake-admin .intake-copy-link small {
+  max-width: 32ch;
+  color: #c6d2e5;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.intake-admin .sample-filters :is(input, select):focus-visible,
+.intake-admin .sample-intake-email summary:focus-visible {
+  outline: 2px solid #ff8995;
+  outline-offset: 3px;
+}
+
+.intake-admin .intake-date-filters {
+  width: min(100%, 520px);
+}
+
+.intake-admin .intake-date-filters input { color-scheme: dark; }
+
+.intake-admin .sample-filters .admin-notice,
+.intake-admin .sample-row-actions p {
+  margin: 0;
+}
+
+.intake-admin .sample-intake-email {
+  color: #dbe5f5;
+}
+
+.intake-admin .sample-intake-email p { overflow-wrap: anywhere; }
+
+.intake-admin .sample-intake-email summary {
+  width: fit-content;
+  min-height: 36px;
+  cursor: pointer;
+}
+
+.intake-admin .sample-intake-pagination {
+  margin-top: 18px;
+}

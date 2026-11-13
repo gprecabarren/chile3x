@@ -41,7 +41,8 @@ Moderación de medios (29 de octubre): los POST existentes de `/api/admin/media/
 | `/admin/documentos-legales` | [página](../app/admin/documentos-legales/page.tsx) |
 | `/admin/medios` | [página](../app/admin/medios/page.tsx) |
 | `/admin/muestras/[sampleId]` | [página](../app/admin/muestras/[sampleId]/page.tsx) |
-| `/admin/muestras/fichas` | [página](../app/admin/muestras/fichas/page.tsx) |
+| `/admin/muestras/fichas-formulario` | [página](../app/admin/muestras/fichas-formulario/page.tsx) |
+| `/admin/muestras/fichas` | [redirección permanente](../app/admin/muestras/fichas/route.ts) |
 | `/admin/muestras/nueva` | [página](../app/admin/muestras/nueva/page.tsx) |
 | `/admin/muestras` | [página](../app/admin/muestras/page.tsx) |
 | `/admin/noticias` | [página](../app/admin/noticias/page.tsx) |
@@ -274,4 +275,4 @@ Reordenación de galería (29 de octubre): los PATCH de medios de anuncios acept
 Las rutas normales `/api/perfiles/:id`, medios, documentos, visibilidad, revisión, historias, estadísticas y comentarios consultan la autorización actual por perfil. Las rutas de seguridad/mensajes/biblioteca personal no se delegan. Las mutaciones de perfil revalidan permisos dentro de la transacción; enviar un ID ajeno no concede acceso. Las vistas privadas de propuesta solo permiten leer el anuncio, no sus documentos ni mutaciones.
 
 
-`GET /ficha-escort` abre el formulario público noindex. `POST /api/ficha-escort` valida origen, datos, tamaño y Turnstile. `GET /admin/muestras/fichas` es el historial privado. `/admin/muestras/nueva?ficha=<id>` prepara una muestra con los datos de la ficha recibida. Los enlaces privados de muestra permanecen activos hasta que se revoquen, se retire la muestra a papelera o se convierta en anuncio.
+`GET /ficha-escort` abre el formulario público noindex. `POST /api/ficha-escort` valida origen, datos, tamaño y Turnstile. `GET /admin/muestras/fichas-formulario` es el historial privado. `/admin/muestras/nueva?ficha=<id>` prepara una muestra con los datos de la ficha recibida. Los enlaces privados de muestra permanecen activos hasta que se revoquen, se retire la muestra a papelera o se convierta en anuncio.

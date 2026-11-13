@@ -1,0 +1,167 @@
+.sample-intake-page {
+  width: min(100% - 32px, 920px);
+  margin: clamp(24px, 4vw, 48px) auto 64px;
+}
+
+.sample-intake-heading {
+  margin-bottom: clamp(22px, 3vw, 34px);
+  padding-bottom: clamp(20px, 3vw, 28px);
+  border-bottom: 1px solid var(--glass-border, #384358);
+}
+
+.sample-intake-heading h1 {
+  margin: 0 0 12px;
+  max-width: 26ch;
+  font-size: clamp(28px, 4vw, 46px);
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+.sample-intake-heading p,
+.sample-intake-consent p {
+  max-width: 62ch;
+  margin: 0;
+  color: var(--glass-muted, #bac5d7);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.sample-intake-page .profile-form {
+  display: grid;
+  gap: clamp(16px, 2.6vw, 24px);
+}
+
+.sample-intake-page .profile-form-section {
+  min-width: 0;
+  padding: clamp(16px, 3.4vw, 30px);
+  border: 1px solid var(--glass-border, #384358);
+  border-radius: var(--corner-14);
+  background: var(--glass-surface, #111521);
+}
+
+.sample-intake-page .profile-form-section-heading p {
+  color: #ff949e;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.sample-intake-page .profile-form-section-heading h2 {
+  margin: 0;
+  font-size: clamp(21px, 3vw, 30px);
+}
+
+.sample-intake-page .form-grid-two,
+.sample-intake-page .service-columns {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 255px), 1fr));
+}
+
+.sample-intake-page .form-grid-three {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 195px), 1fr));
+}
+
+.sample-intake-page .service-columns {
+  display: grid;
+  gap: 16px;
+}
+
+.sample-intake-page .profile-form label {
+  min-width: 0;
+  gap: 8px;
+}
+
+.sample-intake-page .profile-form :is(input:not([type="checkbox"], [type="hidden"]), select, textarea) {
+  min-width: 0;
+  min-height: 46px;
+  font-size: 16px;
+}
+
+.sample-intake-page .profile-form label > small {
+  color: #b7c1d4;
+  font-size: .875rem;
+}
+
+.sample-intake-page .profile-form label > .field-warning { color: #ffb6be; }
+
+.sample-intake-page .profile-form :is(input, select, textarea, .button):focus-visible {
+  outline: 2px solid #ff949e;
+  outline-offset: 2px;
+}
+
+.sample-intake-page .profile-form fieldset {
+  min-width: 0;
+  margin: 20px 0 0;
+  padding: clamp(10px, 2vw, 16px);
+  border: 1px solid var(--glass-border, #445069);
+  border-radius: var(--corner-10);
+}
+
+.sample-intake-page .profile-form legend { padding-inline: 5px; }
+
+.sample-intake-page .check-grid,
+.sample-intake-page .availability-bulk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.sample-intake-page .availability-editor { margin-top: 20px; }
+
+.sample-intake-page .availability-editor-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.sample-intake-page .availability-editor-row {
+  display: grid;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--glass-border, #414d63);
+}
+
+.sample-intake-verification {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 22px;
+  align-items: start;
+}
+
+.sample-intake-consent {
+  display: grid;
+  gap: 16px;
+}
+
+.sample-intake-consent a {
+  color: #ffacb5;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.sample-intake-page .profile-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 22px;
+}
+
+.sample-intake-page .button {
+  min-height: 44px;
+  max-width: 100%;
+  white-space: normal;
+}
+
+.sample-intake-submit .admin-notice,
+.sample-intake-confirmation {
+  margin: 18px 0 0;
+  padding: 16px;
+  border: 1px solid #8e4c5b;
+  border-radius: var(--corner-10);
+  color: #ffd7df;
+  background: #2f1d2b;
+  line-height: 1.6;
+}
+
+.sample-intake-confirmation {
+  border-color: #438b6b;
+  color: #c4f2d8;
+  background: #17382b;
+}

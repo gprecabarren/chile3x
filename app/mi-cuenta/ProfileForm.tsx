@@ -5,7 +5,7 @@ import { PortalContactIcon } from "@/app/PortalContactIcon";
 import { incompatibleProfileTags,profileTagsForGender,PROFILE_TAG_COMBINATION_MESSAGE } from "@/lib/profile-tag-policy";
 import { SAMPLE_PROVENANCES, SAMPLE_PROVENANCE_LABELS, SAMPLE_INTAKE_ACTION } from "@/lib/private-sample-policy";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { DateField } from "@/app/DateField";
 import { travelDateBounds, travelDateError } from "@/lib/travel-date-policy";
 import { regions } from "@/app/locations";
@@ -251,8 +251,14 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
     setAvailabilityHours(current => Object.fromEntries(availabilityDays.map(day => [day.key, !enabledAvailabilityDays.has(day.key) ? current[day.key] : allSelectedHours ? previousAvailabilityHours.current[day.key] ?? { opens: "", closes: "" } : { opens: "00:00", closes: "24:00" }])));
   }
 
+  const formReady = useSyncExternalStore(() => () => {}, () => true, () => false);
+  const submitActions = <div className="profile-form-actions">
+    {!adminEdit && !sampleIntake && <ActionButton className="button button-outline" name="intent" type="submit" value="draft" formNoValidate>Guardar borrador</ActionButton>}
+    <ActionButton className="button button-primary" name="intent" type="submit" value="submit" disabled={sampleBusy || (sampleIntake && !formReady)}>{sampleBusy ? (sampleIntake ? "Enviando…" : "Guardando…") : submitLabel}</ActionButton>
+  </div>;
+
   return (
-    intakeReceived ? <div className="admin-success" role="status" tabIndex={-1} ref={node => node?.focus()}><strong>Recibimos tu ficha.</strong> El equipo de Chile3X podrá contactarte para continuar.</div> : <form ref={formRef} action={action} method="post" className="profile-form" onInvalidCapture={(event) => {
+    intakeReceived ? <div className="sample-intake-confirmation" role="status" tabIndex={-1} ref={node => node?.focus()}><strong>Recibimos tu ficha.</strong> El equipo de Chile3X podrá contactarte para continuar.</div> : <form ref={formRef} action={action} method="post" className="profile-form" onInvalidCapture={(event) => {
       // Native validation must be able to focus a field in the collapsed group.
       const field = event.target;
       if (field instanceof HTMLElement) {
@@ -343,17 +349,17 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
       </div>}
       <section className="profile-form-section">
         <div className="profile-form-section-heading">
-          <p>01 · TIPO DE PUBLICACIÓN</p>
-          <h2>Define tu anuncio</h2>
+          <p>{sampleIntake ? "01 · PERFIL ESCORT" : "01 · TIPO DE PUBLICACIÓN"}</p>
+          <h2>{sampleIntake ? "Elige tu nombre visible" : "Define tu anuncio"}</h2>
         </div>
         <div className="form-grid form-grid-two">
-          <label>
+          {sampleIntake ? <input name="type" type="hidden" value={type} /> : <label>
             Tipo de anuncio
-            {typeLocked ? <><input name="type" type="hidden" value={type} /><span className="profile-type-locked"><strong>{profileTypeLabel(type)}</strong>{!sampleIntake && <small>El tipo queda definido al crear el anuncio. Para otro tipo, crea una publicación nueva.</small>}</span></> : <select name="type" value={type} onChange={(event) => { setType(event.target.value as ProfileType); setContentOnly(false); }}>
+            {typeLocked ? <><input name="type" type="hidden" value={type} /><span className="profile-type-locked"><strong>{profileTypeLabel(type)}</strong><small>El tipo queda definido al crear el anuncio. Para otro tipo, crea una publicación nueva.</small></span></> : <select name="type" value={type} onChange={(event) => { setType(event.target.value as ProfileType); setContentOnly(false); }}>
               {availableProfileTypes.map((item) => <option key={item} value={item}>{profileTypeLabel(item)}</option>)}
             </select>}
             {!typeLocked && !allowEscort && <small>{adminAssisted ? "Esta cuenta ya tiene un Escort personal." : "Ya tienes un Escort personal."} {agencies.length ? "Los perfiles de agencia usan un cupo separado." : "La cuenta admite varias agencias y arriendos."}</small>}
-          </label>
+          </label>}
           <label>
             Nombre visible
             <input name="display_name" required minLength={2} maxLength={80} defaultValue={initial?.displayName} placeholder={type === "agency" ? "Ej. Agencia Luna" : type === "rental" ? "Ej. Habitación en Providencia" : "Ej. Valentina Masajes"} />
@@ -408,7 +414,7 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
       <section className="profile-form-section">
         <div className="profile-form-section-heading">
           <p>02 · UBICACIÓN</p>
-          <h2>Indica dónde se publica</h2>
+          <h2>{sampleIntake ? "Indica en qué ciudad atiendes" : "Indica dónde se publica"}</h2>
         </div>
         <div className="form-grid form-grid-two">
           <label>
@@ -437,7 +443,7 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
 
       <section className="profile-form-section">
         <div className="profile-form-section-heading">
-          <p>03 · INFORMACIÓN PÚBLICA</p>
+          <p>{sampleIntake ? "03 · DESCRIPCIÓN" : "03 · INFORMACIÓN PÚBLICA"}</p>
           <h2>Cuenta lo esencial</h2>
         </div>
         <div className="form-grid form-grid-two">
@@ -471,7 +477,7 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
       <section className="profile-form-section">
         <div className="profile-form-section-heading"><p>04 · CONTACTO PRINCIPAL</p><h2>Cómo te pueden contactar</h2></div>
         <div className="form-grid form-grid-two">
-          <label><span className="profile-contact-label"><PortalContactIcon kind="whatsapp" /><span>WhatsApp público</span></span><input name="contact_whatsapp" required inputMode="numeric" pattern="[0-9]{8,15}" defaultValue={initial?.contactWhatsapp} placeholder="56912345678" aria-describedby="profile-whatsapp-help" /><small id="profile-whatsapp-help">Ingresa el código de país y el número, sin + ni espacios.</small></label>
+          <label><span className="profile-contact-label"><PortalContactIcon kind="whatsapp" /><span>{sampleIntake ? "WhatsApp principal" : "WhatsApp público"}</span></span><input name="contact_whatsapp" required inputMode="numeric" pattern="[0-9]{8,15}" defaultValue={initial?.contactWhatsapp} placeholder="56912345678" aria-describedby="profile-whatsapp-help" /><small id="profile-whatsapp-help">Ingresa el código de país y el número, sin + ni espacios.</small></label>
           <label>
             <span className="profile-contact-label"><PortalContactIcon kind="whatsapp" /><span>WhatsApp alternativo (opcional)</span></span>
             <input name="contact_whatsapp_alt" type="tel" inputMode="numeric" maxLength={15} pattern="[0-9]{8,15}" defaultValue={metadataValue(initial, "contact_whatsapp_alt")} placeholder="56987654321" />
@@ -482,7 +488,7 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
       </section>
 
       <details ref={optionalRef} className="profile-optional-fields">
-        <summary><span><strong>Características opcionales</strong><small>Dale más fuerza a tu anuncio: completar sus características puede generar mayor confianza y ayudar a que te encuentren en los filtros del directorio.</small></span></summary>
+        <summary><span><strong>Características opcionales</strong><small>{sampleIntake ? "Puedes agregar tarifas, horarios, servicios y otros datos del perfil." : "Dale más fuerza a tu anuncio: completar sus características puede generar mayor confianza y ayudar a que te encuentren en los filtros del directorio."}</small></span></summary>
         <div className="profile-optional-fields-content">
           <section className="profile-form-section">
             <div className="profile-form-section-heading"><p>VALORES Y DISPONIBILIDAD</p><h2>Tarifas y horarios</h2></div>
@@ -617,7 +623,7 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
               <p>CONTACTO Y SERVICIOS</p>
               <h2>{type === "rental" ? "Más formas de contacto" : "Más formas de contacto y servicios"}</h2>
             </div>
-            <p className="profile-form-help">{type === "rental" ? "Agrega otros contactos o redes si lo deseas." : "Agrega otros contactos, redes o servicios si lo deseas."} Actualizar únicamente tus contactos o redes no retira un anuncio aprobado.</p>
+            <p className="profile-form-help">{type === "rental" ? "Agrega otros contactos o redes si lo deseas." : "Agrega otros contactos, redes o servicios si lo deseas."}{!sampleIntake && " Actualizar únicamente tus contactos o redes no retira un anuncio aprobado."}</p>
             <fieldset className="profile-contact-fieldset">
               <legend>Contacto directo</legend>
             <div className="form-grid form-grid-three">
@@ -666,21 +672,22 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
         {privateSample&&<p>Guarda la muestra para cargar sus fotos y videos. Quedarán privados, separados de los anuncios reales. Compartir el enlace no publica la ficha.</p>}
         {!privateSample && <p>{adminEdit ? "Este formulario guarda los datos del anuncio sin cambiar su estado de publicación o verificación. Los medios y documentos se gestionan por separado desde los accesos de esta página." : initial ? "Las fotos y videos se envían desde su sección al inicio y no necesitan este guardado. Este formulario guarda únicamente los datos del anuncio; cambiar información relevante vuelve a revisión." : adminAssisted ? "Al crear el anuncio pasarás directamente a la carga de la foto principal, hasta 10 fotos y hasta 3 videos. El material que subas como administrador se aprobará al instante; el anuncio se publica desde moderación." : <>Guarda y envía el anuncio a revisión. Luego encontrarás al inicio la carga de fotos y videos; puedes adjuntarlos sin esperar la aprobación del anuncio. Cada imagen puede pesar hasta 10 MB y los archivos se revisan por separado.{type === "escort" && " También podrás adjuntar tu carnet o examen médico privado (JPG, PNG, WebP o PDF de hasta 15 MB)."}</>}</p>}
       </section>}
-      {sampleIntake && <section className="profile-form-section">
-        <h2>Enviar ficha</h2>
-        <label>Correo para tu futura cuenta (opcional)
-          <input name="account_email" type="email" autoComplete="email" maxLength={160} />
-          <small>El equipo usará este correo para contactarte sobre tu cuenta. Quedará guardado en la ficha privada.</small>
-        </label>
-        <p>Al enviar, autorizas al equipo a revisar estos datos para preparar tu perfil y ponerse en contacto contigo. <a href="/privacidad" target="_blank" rel="noopener noreferrer">Política de privacidad</a></p>
-        <AuthTurnstile action={SAMPLE_INTAKE_ACTION} resetKey={captchaReset} />
+      {sampleIntake && <section className="profile-form-section sample-intake-submit">
+        <div className="profile-form-section-heading"><p>05 · ENVÍO PRIVADO</p><h2>Revisa y envía tu ficha</h2></div>
+        <div className="sample-intake-verification">
+          <div className="sample-intake-consent">
+            <label>Correo para tu futura cuenta (opcional)
+              <input name="account_email" type="email" autoComplete="email" maxLength={160} placeholder="Ej. nombre@correo.cl" />
+              <small>El equipo usará este correo para contactarte sobre tu cuenta. Quedará guardado en la ficha privada.</small>
+            </label>
+            <p>Al enviar, autorizas al equipo a revisar estos datos para preparar tu perfil y ponerse en contacto contigo. <a href="/privacidad" target="_blank" rel="noopener noreferrer">Política de privacidad</a></p>
+          </div>
+          <AuthTurnstile action={SAMPLE_INTAKE_ACTION} resetKey={captchaReset} size="compact" />
+        </div>
         {sampleError && <p ref={sampleErrorRef} tabIndex={-1} className="admin-notice" role="alert">{sampleError}</p>}
+        {submitActions}
       </section>}
-
-      <div className="profile-form-actions">
-        {!adminEdit && !sampleIntake && <ActionButton className="button button-outline" name="intent" type="submit" value="draft" formNoValidate>Guardar borrador</ActionButton>}
-        <ActionButton className="button button-primary" name="intent" type="submit" value="submit" disabled={sampleBusy}>{sampleBusy?"Guardando…":submitLabel}</ActionButton>
-      </div>
+      {!sampleIntake && submitActions}
     </form>
   );
 }

@@ -6,10 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { trackAnalyticsEvent } from "@/app/AnalyticsEvent";
 import type { OwnPendingReview, PublicReview } from "@/lib/profile-interactions";
 import { TURNSTILE_PROFILE_REVIEW_ACTION, TURNSTILE_PROFILE_REVIEW_SITEKEY } from "@/lib/turnstile";
-
-type TurnstileApi = { render: (element: HTMLElement, options: { sitekey: string; action: string; callback: (token: string) => void; "expired-callback": () => void; "error-callback": () => void }) => string; reset: (widgetId?: string) => void };
-
-declare global { interface Window { turnstile?: TurnstileApi } }
+import type { TurnstileApi } from "./TurnstileWidget";
 
 function ensureTurnstile() {
   return new Promise<TurnstileApi>((resolve, reject) => {

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentAdmin } from "@/lib/auth";
 import { canManageSamples, listPrivateSamples, listPrivateSampleCreators } from "@/lib/private-samples";
 import { boundedSampleFilter, sampleCreatorLabel } from "@/lib/private-sample-filters";
-import { SAMPLE_PROVENANCES, SAMPLE_PROVENANCE_LABELS, SAMPLE_STATUSES, SAMPLE_STATUS_LABELS, sampleListStatus } from "@/lib/private-sample-policy";
+import { SAMPLE_INTAKES_ADMIN_PATH, SAMPLE_PROVENANCES, SAMPLE_PROVENANCE_LABELS, SAMPLE_STATUSES, SAMPLE_STATUS_LABELS, sampleListStatus } from "@/lib/private-sample-policy";
 import { adminAuditDate, adminAuditInstant } from "@/lib/admin-audit-date";
 import { privatePageMetadata } from "@/lib/seo";
 import { ActionAnchor, ActionButton } from "@/app/ActionButton";
@@ -87,7 +87,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
 
   return <AdminShell user={admin}><div className="admin-content samples-admin-content">
     <AdminPageHeading eyebrow="PRESENTACIONES PARA ANUNCIANTES" title={view === "trash" ? "Papelera de muestras" : "Muestras privadas"} description={view === "trash" ? "Puedes restaurar las muestras retiradas o eliminarlas definitivamente." : "Prepara y administra presentaciones privadas, sin crear cuentas ni anuncios en el directorio."} backHref={view === "trash" ? viewHref("active") : "/admin"}>
-      <div className="sample-heading-actions"><ActionAnchor className="button button-primary" href="/admin/muestras/nueva">Crear muestra privada</ActionAnchor><ActionAnchor className="button button-outline" href="/admin/muestras/fichas">Fichas recibidas</ActionAnchor>{view !== "trash" && <ActionAnchor className="button button-outline" href={viewHref("trash")}><ActionIcon name="trash" />Ver papelera</ActionAnchor>}</div>
+      <div className="sample-heading-actions"><ActionAnchor className="button button-primary" href="/admin/muestras/nueva">Crear muestra privada</ActionAnchor><ActionAnchor className="button button-outline" href={SAMPLE_INTAKES_ADMIN_PATH}>Fichas formulario</ActionAnchor>{view !== "trash" && <ActionAnchor className="button button-outline" href={viewHref("trash")}><ActionIcon name="trash" />Ver papelera</ActionAnchor>}</div>
     </AdminPageHeading>
     <p className="samples-help">Las muestras se guardan hasta que las envíes a la papelera. Desde allí puedes restaurarlas o eliminarlas definitivamente. Compartir una presentación no publica un anuncio.</p>
     {query.notice && notices[query.notice] && <p className="admin-success" role="status">{notices[query.notice]}</p>}

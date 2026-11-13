@@ -6,7 +6,7 @@ import { ActionIcon } from "@/app/ActionIcon";
 
 export function CopyIntakeLink() {
   const [status, setStatus] = useState("");
-  return <>
+  return <div className="intake-copy-link">
     <ActionButton className="button button-primary" type="button" onClick={async () => {
       try {
         await navigator.clipboard.writeText(new URL("/ficha-escort", window.location.origin).href);
@@ -16,5 +16,5 @@ export function CopyIntakeLink() {
       }
     }}><ActionIcon name="copy" />Copiar enlace del formulario</ActionButton>
     {status && <small role="status">{status}</small>}
-  </>;
+  </div>;
 }

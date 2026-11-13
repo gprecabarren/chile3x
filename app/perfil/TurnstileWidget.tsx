@@ -2,7 +2,18 @@
 
 import { useEffect, useRef } from "react";
 
-type TurnstileApi = { render: (element: HTMLElement, options: { sitekey: string; action: string; callback: (token: string) => void; "expired-callback": () => void; "error-callback": () => void }) => string; reset: (widgetId?: string) => void };
+type TurnstileSize = "normal" | "compact";
+export type TurnstileApi = {
+  render: (element: HTMLElement, options: {
+    sitekey: string;
+    action: string;
+    size?: TurnstileSize;
+    callback: (token: string) => void;
+    "expired-callback": () => void;
+    "error-callback": () => void;
+  }) => string;
+  reset: (widgetId?: string) => void;
+};
 declare global { interface Window { turnstile?: TurnstileApi } }
 
 function loadTurnstile() {
@@ -22,7 +33,7 @@ function loadTurnstile() {
   });
 }
 
-export function TurnstileWidget({ action, sitekey, resetKey, onToken, onError }: { action: string; sitekey: string; resetKey: number; onToken: (token: string) => void; onError: (message: string) => void }) {
+export function TurnstileWidget({ action, sitekey, resetKey, size = "normal", onToken, onError }: { action: string; sitekey: string; resetKey: number; size?: TurnstileSize; onToken: (token: string) => void; onError: (message: string) => void }) {
   const element = useRef<HTMLDivElement>(null);
   const widgetId = useRef<string | undefined>(undefined);
   useEffect(() => {
@@ -30,9 +41,9 @@ export function TurnstileWidget({ action, sitekey, resetKey, onToken, onError }:
     loadTurnstile().then((api) => {
       if (!active || !element.current) return;
       if (widgetId.current) api.reset(widgetId.current);
-      else widgetId.current = api.render(element.current, { sitekey, action, callback: onToken, "expired-callback": () => onToken(""), "error-callback": () => onToken("") });
+      else widgetId.current = api.render(element.current, { sitekey, action, size, callback: onToken, "expired-callback": () => onToken(""), "error-callback": () => onToken("") });
     }).catch((cause) => active && onError(cause instanceof Error ? cause.message : "No se pudo cargar Turnstile."));
     return () => { active = false; };
-  }, [action, sitekey, resetKey, onError, onToken]);
+  }, [action, sitekey, resetKey, size, onError, onToken]);
   return <div className="turnstile-widget" ref={element} />;
 }

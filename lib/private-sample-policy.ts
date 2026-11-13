@@ -4,6 +4,7 @@ export const SAMPLE_COOKIE = "chile3x_sample_access";
 // Preserve compatibility with the legacy NOT NULL column.
 export const SAMPLE_NO_EXPIRY_AT = 253402300799000;
 export const SAMPLE_INTAKE_ACTION = "sample_intake";
+export const SAMPLE_INTAKES_ADMIN_PATH = "/admin/muestras/fichas-formulario";
 export const SAMPLE_INTAKE_ID = /^int_[a-f0-9-]{36}$/;
 export const SAMPLE_ID = /^sam_[a-f0-9-]{36}$/;
 export const SAMPLE_HANDLE = /^[a-z0-9](?:[a-z0-9_-]{1,38}[a-z0-9])$/;

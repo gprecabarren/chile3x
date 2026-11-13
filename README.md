@@ -30,7 +30,7 @@ Moderación del 29 de octubre: [aprobación desde previsualización y editores](
 
 Carga múltiple del 30 de octubre: [arrastre de archivos, pasos, biblioteca privada y acciones de muestras](docs/qa-carga-multiple-2026-10-30.md). La selección es local hasta confirmar cada sección; fotos y videos privados también se gestionan por separado.
 
-Muestras vigentes sin vencimiento automático. Comparte `/ficha-escort` para recibir los datos de un perfil con Turnstile y revisarlos en `/admin/muestras/fichas`. Los formularios y perfiles compartidos admiten un segundo WhatsApp opcional. Consulta el [mapa técnico de muestras](docs/mapa-desarrollo.md#contenido-exclusivo-y-muestras).
+Muestras vigentes sin vencimiento automático. Comparte `/ficha-escort` para recibir los datos de un perfil con Turnstile y revisarlos en `/admin/muestras/fichas-formulario`. Los formularios y perfiles compartidos admiten un segundo WhatsApp opcional. Consulta el [mapa técnico de muestras](docs/mapa-desarrollo.md#contenido-exclusivo-y-muestras).
 
 Agencias del 31 de octubre: [titularidad, gestión y vinculación a cuentas](docs/qa-agencias-2026-10-31.md). Se separan el Escort personal, perfiles en custodia de una agencia e invitaciones con permisos revocables; el panel incluye flujos y límites por tipo.
 

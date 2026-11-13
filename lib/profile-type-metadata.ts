@@ -1,5 +1,5 @@
 const rentalFields = new Set([
-  "instagram_url", "availability", "room_type", "furnished", "private_bathroom", "exterior_window", "room_size",
+  "instagram_url", "contact_whatsapp_alt", "availability", "room_type", "furnished", "private_bathroom", "exterior_window", "room_size",
   "common_expenses", "deposit", "minimum_rental", "immediate_available", "wifi", "utilities_included", "kitchen", "laundry",
 ]);
 

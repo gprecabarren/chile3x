@@ -691,6 +691,18 @@ export const privateProfileSamples = sqliteTable("private_profile_samples", {
   createdBy:text("created_by").notNull().references(()=>users.id),migratedProfileId:text("migrated_profile_id").references(()=>profiles.id,{onDelete:"set null"}),
   migratedAt:text("migrated_at"),createdAt,updatedAt:text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 },table=>[index("private_profile_samples_updated").on(table.updatedAt),index("private_profile_samples_expiry").on(table.expiresAt),index("private_profile_samples_trash").on(table.trashedAt),index("private_profile_samples_provenance").on(table.provenance,table.updatedAt),index("private_profile_samples_contacted").on(table.contactedAt,table.updatedAt)]);
+export const privateSampleIntakes = sqliteTable("private_sample_intakes", {
+  id: text("id").primaryKey(),
+  displayName: text("display_name").notNull(),
+  city: text("city").notNull(),
+  formJson: text("form_json").notNull(),
+  accountEmail: text("account_email"),
+  createdAt,
+  processedAt: text("processed_at"),
+  processedBy: text("processed_by").references(() => users.id, { onDelete: "set null" }),
+  sampleId: text("sample_id").unique().references(() => privateProfileSamples.id, { onDelete: "set null" }),
+}, table => [index("private_sample_intakes_created").on(table.createdAt, table.id)]);
+
 export const privateSampleMedia = sqliteTable("private_sample_media", {
   id:text("id").primaryKey(),sampleId:text("sample_id").notNull().references(()=>privateProfileSamples.id,{onDelete:"cascade"}),
   r2Key:text("r2_key").notNull(),byteSize:integer("byte_size").notNull(),contentType:text("content_type").notNull(),

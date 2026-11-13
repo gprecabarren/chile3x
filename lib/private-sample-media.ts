@@ -40,7 +40,7 @@ async function sampleWrite(sampleId: string, version: ReviewVersion, actorId: st
   // Expiry can pass while the device prepares/uploads a file, without changing
   // a revision. Check both lifecycle and the revision in the same D1 batch.
   const result = await guardedBatch(version, [
-    db.insert(collaborationGuards).values({ id: guard, allowed: sql`case when exists(select 1 from private_profile_samples where id=${sampleId} and migrated_at is null and trashed_at is null and expires_at>${Date.now()}) then 1 else 0 end` }),
+    db.insert(collaborationGuards).values({ id: guard, allowed: sql`case when exists(select 1 from private_profile_samples where id=${sampleId} and migrated_at is null and trashed_at is null) then 1 else 0 end` }),
     ...statements,
     db.delete(collaborationGuards).where(eq(collaborationGuards.id, guard)),
     db.select({ revision: privateProfileSamples.revision }).from(privateProfileSamples).where(eq(privateProfileSamples.id, sampleId)),

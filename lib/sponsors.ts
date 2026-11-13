@@ -49,6 +49,20 @@ export const listPublicSponsorGroups = cache(async () => (
   (await loadSponsorGroups(false)).filter((group) => group.sponsors.length > 0)
 ));
 
+export const getDiversionConceFooterBadge = cache(async () => {
+  try {
+    const [badge] = await (await getDb()).select({
+      id: sponsors.id, name: sponsors.name, href: sponsors.destinationUrl, sponsored: sponsors.isSponsored,
+    }).from(sponsors).innerJoin(sponsorGroups, eq(sponsors.groupId, sponsorGroups.id))
+      .where(and(eq(sponsors.isActive, true), eq(sponsorGroups.isActive, true), inArray(sponsors.destinationUrl, [
+        "https://diversionconce.cl/", "https://www.diversionconce.cl/",
+      ]))).orderBy(asc(sponsors.sortOrder), asc(sponsors.id)).limit(1);
+    return badge ?? null;
+  } catch {
+    return null;
+  }
+});
+
 export async function listAdminSponsorGroups() {
   return loadSponsorGroups(true);
 }

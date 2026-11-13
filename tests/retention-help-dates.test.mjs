@@ -15,8 +15,7 @@ async function moduleUrl(path,resolve) {
  source=source.replace(/from "([^"\n]+)"/g,(_match,name)=>'from '+JSON.stringify(resolve(name)));
  return 'data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(source)).toString('base64');
 }
-const samplesUrl=await moduleUrl('worker/private-sample-cleanup.ts',()=>url('lib/private-sample-policy.ts'));
-const retention=await import(await moduleUrl('worker/data-retention.ts',name=>name.endsWith('private-sample-cleanup')?samplesUrl:url('lib/data-retention-policy.ts')));
+const retention=await import(await moduleUrl('worker/data-retention.ts',()=>url('lib/data-retention-policy.ts')));
 const policyUrl=await moduleUrl('lib/help-guide-policy.ts',()=>url('lib/admin-permissions.ts'));
 const policy=await import(policyUrl);
 const help=await import(await moduleUrl('lib/help-guides.ts',name=>name==='drizzle-orm'?import.meta.resolve(name):name==='@/db/schema'?url('db/schema.ts'):name==='@/lib/help-guide-policy'?policyUrl:stub));

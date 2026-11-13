@@ -47,8 +47,6 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
   const contact = query.contact === "pending" || query.contact === "contacted" ? query.contact : "all";
   const creator = boundedSampleFilter(query.creator, 120);
   const [rows, creators] = await Promise.all([listPrivateSamples({ q, phone, region, city, gender, provenance, status, view, contact, creator }), listPrivateSampleCreators()]);
-  // eslint-disable-next-line react-hooks/purity -- Request-time expiry in a dynamic server page.
-  const now = Date.now();
   const filterQuery = new URLSearchParams();
   if (q) filterQuery.set("q", q);
   if (phone) filterQuery.set("phone", phone);
@@ -88,27 +86,27 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
   const filtered = applied.length > 0;
 
   return <AdminShell user={admin}><div className="admin-content samples-admin-content">
-    <AdminPageHeading eyebrow="PRESENTACIONES PARA ANUNCIANTES" title={view === "trash" ? "Papelera de muestras" : "Muestras privadas"} description={view === "trash" ? "Muestras retiradas o vencidas. Puedes restaurarlas durante 30 días o eliminarlas definitivamente." : "Prepara y administra presentaciones privadas, sin crear cuentas ni anuncios en el directorio."} backHref={view === "trash" ? viewHref("active") : "/admin"}>
-      <div className="sample-heading-actions"><ActionAnchor className="button button-primary" href="/admin/muestras/nueva">Crear muestra privada</ActionAnchor>{view !== "trash" && <ActionAnchor className="button button-outline" href={viewHref("trash")}><ActionIcon name="trash" />Ver papelera</ActionAnchor>}</div>
+    <AdminPageHeading eyebrow="PRESENTACIONES PARA ANUNCIANTES" title={view === "trash" ? "Papelera de muestras" : "Muestras privadas"} description={view === "trash" ? "Puedes restaurar las muestras retiradas o eliminarlas definitivamente." : "Prepara y administra presentaciones privadas, sin crear cuentas ni anuncios en el directorio."} backHref={view === "trash" ? viewHref("active") : "/admin"}>
+      <div className="sample-heading-actions"><ActionAnchor className="button button-primary" href="/admin/muestras/nueva">Crear muestra privada</ActionAnchor><ActionAnchor className="button button-outline" href="/admin/muestras/fichas">Fichas recibidas</ActionAnchor>{view !== "trash" && <ActionAnchor className="button button-outline" href={viewHref("trash")}><ActionIcon name="trash" />Ver papelera</ActionAnchor>}</div>
     </AdminPageHeading>
-    <p className="samples-help">Cada muestra tiene un plazo de 7 días. Al vencer pasa a la papelera; desde allí puedes restaurarla o eliminarla definitivamente. Compartir una presentación no publica un anuncio.</p>
+    <p className="samples-help">Las muestras se guardan hasta que las envíes a la papelera. Desde allí puedes restaurarlas o eliminarlas definitivamente. Compartir una presentación no publica un anuncio.</p>
     {query.notice && notices[query.notice] && <p className="admin-success" role="status">{notices[query.notice]}</p>}
     <SampleFilters initial={{ q, phone, region, city, gender, provenance, status, contact, view, creator }} creators={creators} applied={applied} clearHref={view === "trash" ? "/admin/muestras?view=trash" : "/admin/muestras"} />
     <p className="sample-results-count" role="status">{rows.length} muestra{rows.length === 1 ? "" : "s"}{view === "trash" ? " en papelera" : ""}{filtered ? " con estos filtros" : ""}. Los contactos pendientes aparecen primero.{rows.length === 100 && " Se muestran hasta 100 resultados."}</p>
     <section className="samples-list" aria-label={view === "trash" ? "Muestras en papelera" : "Muestras privadas"}>
       {rows.map(row => {
-        const rowStatus = sampleListStatus(row, now);
+        const rowStatus = sampleListStatus(row);
         const trashed = rowStatus === "trashed";
         const editorHref = row.migratedProfileId ? `/admin/anuncios-publicaciones/${encodeURIComponent(row.migratedProfileId)}/editar` : `/admin/muestras/${encodeURIComponent(row.id)}`;
-        const deadline = adminAuditDate(new Date(row.trashedAt ?? row.expiresAt).toISOString());
         const whatsappHref = adminWhatsappHref(row.contactWhatsapp, row.displayName);
+        const alternateWhatsappHref = adminWhatsappHref(row.alternateWhatsapp, row.displayName);
         return <ReviewScope key={row.id} as="article" className={`sample-list-card${row.contactedAt ? " is-contacted" : ""}`} resource={`sample:${row.id}`} revision={row.revision}>
           <header className="sample-row-heading"><div><h2>{row.displayName}</h2><p className="sample-row-location">{[row.age ? `${row.age} años` : "Edad sin definir", row.gender, row.city || "Ciudad sin definir"].filter(Boolean).join(" · ")}</p><p className="sample-row-handle">{row.handle ? `@${row.handle}` : "Sin usuario asignado"}</p><p className="sample-row-creator">Creada por <strong>{sampleCreatorLabel(row.creatorLogin)}</strong></p></div><SampleLinkStatus id={row.id} status={rowStatus} label={SAMPLE_STATUS_LABELS[rowStatus]} /></header>
           <dl className="sample-row-metadata">
             <div><dt>Procedencia</dt><dd>{SAMPLE_PROVENANCE_LABELS[row.provenance]}</dd></div>
             <div><dt>Creación</dt><dd><time dateTime={adminAuditInstant(row.createdAt)}>{adminAuditDate(row.createdAt)}</time></dd></div>
             <div><dt>Última actualización</dt><dd><time dateTime={adminAuditInstant(row.updatedAt)}>{adminAuditDate(row.updatedAt)}</time></dd></div>
-            <div><dt>{trashed ? "En papelera desde" : row.migratedAt ? "Conversión" : "Vence"}</dt><dd>{!trashed && row.migratedAt ? adminAuditDate(row.migratedAt) : deadline}</dd></div>
+            <div><dt>{trashed ? "En papelera desde" : row.migratedAt ? "Conversión" : "Creación"}</dt><dd>{adminAuditDate(row.trashedAt === null ? row.migratedAt ?? row.createdAt : new Date(row.trashedAt).toISOString())}</dd></div>
           </dl>
           <div className={`sample-contact-status${row.contactedAt ? " is-contacted" : ""}`}>
             <span><ActionIcon name={row.contactedAt ? "check" : "chat"} /><strong>{row.contactedAt ? "Contactado" : "Pendiente de contactar"}</strong></span>
@@ -116,7 +114,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
           </div>
           <div className="sample-row-actions">
             {!trashed && <ActionAnchor className="button button-primary" href={editorHref}>{row.migratedAt ? "Revisar anuncio real" : "Administrar muestra"}</ActionAnchor>}
-            {!trashed && (!row.migratedAt || whatsappHref) && <div className="sample-share-actions">{!row.migratedAt && <><CopySampleLink id={row.id} revision={row.revision} shared={Boolean(row.shared)} legacyLink={row.legacyLink} /><ActionAnchor className="button button-outline" href={`/muestra/${encodeURIComponent(row.handle??row.id)}`} target="_blank" rel="noopener noreferrer"><ActionIcon name="eye" />Ver muestra</ActionAnchor></>}{whatsappHref && <ActionAnchor className="button contact-whatsapp" href={whatsappHref} target="_blank" rel="noreferrer">WhatsApp</ActionAnchor>}</div>}
+            {!trashed && (!row.migratedAt || whatsappHref || alternateWhatsappHref) && <div className="sample-share-actions">{!row.migratedAt && <><CopySampleLink id={row.id} revision={row.revision} shared={Boolean(row.shared)} legacyLink={row.legacyLink} /><ActionAnchor className="button button-outline" href={`/muestra/${encodeURIComponent(row.handle??row.id)}`} target="_blank" rel="noopener noreferrer"><ActionIcon name="eye" />Ver muestra</ActionAnchor></>}{whatsappHref && <ActionAnchor className="button contact-whatsapp" href={whatsappHref} target="_blank" rel="noreferrer">WhatsApp</ActionAnchor>}{alternateWhatsappHref && <ActionAnchor className="button contact-whatsapp" href={alternateWhatsappHref} target="_blank" rel="noreferrer">WhatsApp alternativo</ActionAnchor>}</div>}
             {!trashed && !row.migratedAt && <form action={`/api/admin/muestras/${encodeURIComponent(row.id)}`} method="post">
               <input type="hidden" name="sample_action" value={row.contactedAt ? "contact_clear" : "contact_mark"} />
               <input type="hidden" name="review_key" value={`sample:${row.id}`} /><input type="hidden" name="review_revision" value={row.revision} />

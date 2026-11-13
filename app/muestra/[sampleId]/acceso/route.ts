@@ -8,5 +8,5 @@ export async function POST(request:Request,{params}:{params:Promise<{sampleId:st
   const {sampleId}=await params,row=typeof token==="string"?await canOpenSample(sampleId,token):null;
   if(!row)return new Response(null,{status:401,headers:{"cache-control":"private, no-store"}});
   const secure=new URL(request.url).protocol==="https:"?"; Secure":"";
-  return Response.json({opened:true},{headers:{"cache-control":"private, no-store","set-cookie":`${SAMPLE_COOKIE}=${token}; Path=${sampleCookiePath(sampleId)}; HttpOnly; SameSite=Lax; Max-Age=${Math.max(0,Math.floor((row.expiresAt-Date.now())/1000))}${secure}`}});
+  return Response.json({opened:true},{headers:{"cache-control":"private, no-store","set-cookie":`${SAMPLE_COOKIE}=${token}; Path=${sampleCookiePath(sampleId)}; HttpOnly; SameSite=Lax${secure}`}});
 }

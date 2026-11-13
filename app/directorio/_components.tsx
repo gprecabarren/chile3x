@@ -1,3 +1,4 @@
+import { getDiversionConceFooterBadge } from "@/lib/sponsors";
 import { PortalContactIcon } from "@/app/PortalContactIcon";
 import { ActionButton } from "@/app/ActionButton";
 import Link from "@/app/NavigationLink";
@@ -147,6 +148,7 @@ export function DirectoryShell({ children, selectedCity, kind = "escort", advert
 export async function PublicFooter() {
   const settings = await getSiteSettings();
   const showSponsors = settings.sponsors_enabled === "enabled";
+  const diversionConce = showSponsors ? await getDiversionConceFooterBadge() : null;
   return (
     <footer className="public-footer">
       <div className="public-footer-brand"><Link className="public-footer-logo" href="/" aria-label="Chile3X, inicio"><Image src="/assets/chile3x-logo-primary-320-20260923.webp" alt="Chile3X" width={320} height={112} unoptimized /></Link><p>Directorio de escorts y damas de compañía para adultos. Los acuerdos ocurren directamente entre visitantes y anunciantes.</p></div>
@@ -156,7 +158,12 @@ export async function PublicFooter() {
       </div>
       <div className="public-footer-extras">
         <div><strong>SÍGUENOS</strong><PortalContactLinks placement="footer" /></div>
-        <div className="public-footer-partners"><strong>DIRECTORIOS ASOCIADOS</strong><div className="public-footer-partner-badges"><OadBadge /><AngelisNetBadge /><LaEstokadaBadge /></div></div>
+        <div className="public-footer-partners"><strong>DIRECTORIOS ASOCIADOS</strong><div className="public-footer-partner-badges">
+          <OadBadge /><AngelisNetBadge /><LaEstokadaBadge />
+          {diversionConce && <a className="diversion-conce-badge" href={diversionConce.href} target="_blank" rel={diversionConce.sponsored ? "nofollow sponsored noreferrer" : "noreferrer"}>
+            <Image src={`/patrocinadores/media/${diversionConce.id}/background`} alt={diversionConce.name} width={112} height={50} unoptimized />
+          </a>}
+        </div></div>
       </div>
       <div className="public-footer-bottom"><span>© {new Date().getFullYear()} Chile3X · Solo mayores de 18 años</span><span className="public-footer-meta"><span>Chile · Directorio para adultos</span><a className="footer-admin-access" href="/admin" rel="nofollow">Acceso administrador</a></span></div>
     </footer>

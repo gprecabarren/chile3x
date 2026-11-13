@@ -41,6 +41,7 @@ Moderación de medios (29 de octubre): los POST existentes de `/api/admin/media/
 | `/admin/documentos-legales` | [página](../app/admin/documentos-legales/page.tsx) |
 | `/admin/medios` | [página](../app/admin/medios/page.tsx) |
 | `/admin/muestras/[sampleId]` | [página](../app/admin/muestras/[sampleId]/page.tsx) |
+| `/admin/muestras/fichas` | [página](../app/admin/muestras/fichas/page.tsx) |
 | `/admin/muestras/nueva` | [página](../app/admin/muestras/nueva/page.tsx) |
 | `/admin/muestras` | [página](../app/admin/muestras/page.tsx) |
 | `/admin/noticias` | [página](../app/admin/noticias/page.tsx) |
@@ -129,6 +130,7 @@ Moderación de medios (29 de octubre): los POST existentes de `/api/admin/media/
 | `/api/admin/muestras/[sampleId]/media` | POST / PATCH | [handler](../app/api/admin/muestras/[sampleId]/media/route.ts) |
 | `/api/admin/muestras/[sampleId]/media/[mediaId]` | PATCH / DELETE | [handler](../app/api/admin/muestras/[sampleId]/media/[mediaId]/route.ts) |
 | `/api/admin/muestras/[sampleId]/media/[mediaId]/procesar` | GET / POST | [handler](../app/api/admin/muestras/[sampleId]/media/[mediaId]/procesar/route.ts) |
+| `/api/ficha-escort` | POST | [handler](../app/api/ficha-escort/route.ts) |
 | `/api/admin/muestras` | POST | [handler](../app/api/admin/muestras/route.ts) |
 | `/api/admin/noticias/[postId]` | POST | [handler](../app/api/admin/noticias/[postId]/route.ts) |
 | `/api/admin/noticias/media` | POST | [handler](../app/api/admin/noticias/media/route.ts) |
@@ -270,3 +272,6 @@ Reordenación de galería (29 de octubre): los PATCH de medios de anuncios acept
 | `/api/admin/agencias/traspasos/:claimId` | POST: comprobación manual; completa solo con aceptación vigente y cupo. Auditoría administrativa. |
 
 Las rutas normales `/api/perfiles/:id`, medios, documentos, visibilidad, revisión, historias, estadísticas y comentarios consultan la autorización actual por perfil. Las rutas de seguridad/mensajes/biblioteca personal no se delegan. Las mutaciones de perfil revalidan permisos dentro de la transacción; enviar un ID ajeno no concede acceso. Las vistas privadas de propuesta solo permiten leer el anuncio, no sus documentos ni mutaciones.
+
+
+`GET /ficha-escort` abre el formulario público noindex. `POST /api/ficha-escort` valida origen, datos, tamaño y Turnstile. `GET /admin/muestras/fichas` es el historial privado. `/admin/muestras/nueva?ficha=<id>` prepara una muestra con los datos de la ficha recibida. Los enlaces privados de muestra permanecen activos hasta que se revoquen, se retire la muestra a papelera o se convierta en anuncio.

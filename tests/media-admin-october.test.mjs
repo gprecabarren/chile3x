@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { assertImageSource, imageHeaderType, isImageSource, MAX_IMAGE_UPLOAD_BYTES, IMAGE_UPLOAD_RULES } from '../lib/image-upload-policy.ts';
 import { defaultPhotoCrop, photoCropBounds, movePhotoCrop, resizePhotoCrop } from '../lib/photo-crop.ts';
 import { mediaReviewSnapshot, parseMediaReviewSnapshot, MAX_EXCLUSIVE_BULK_MEDIA } from '../lib/media-bulk-review.ts';
-import { readUploadResponse, uploadMediaRequest } from '../lib/upload-response.ts';
+import { readUploadResponse, uploadMediaRequest, UploadConfirmationError } from '../lib/upload-response.ts';
 import { adminAuditInstant, adminAuditDate } from '../lib/admin-audit-date.ts';
 import { readMediaUploadForm } from '../lib/media-upload-form.ts';
 import { mediaByteRange } from '../lib/media-byte-range.ts';
@@ -60,7 +60,7 @@ test('upload errors distinguish authentication, permission, server, malformed re
   await assert.rejects(readUploadResponse(new Response('gateway',{status:502})),/HTTP 502/);
   const original=globalThis.fetch;
   globalThis.fetch=async()=>{throw new TypeError('Failed to fetch')};
-  try { await assert.rejects(uploadMediaRequest('/api/perfiles/qa/media',new FormData()),/conexión.*confirmar.*duplicarlo/); } finally {globalThis.fetch=original;}
+  try { await assert.rejects(uploadMediaRequest('/api/perfiles/qa/media',new FormData()),error => error instanceof UploadConfirmationError && /Recarga la galería/.test(error.message)); } finally {globalThis.fetch=original;}
 });
 
 test('multipart parser accepts a 9.2 MB photo and rejects oversized, damaged or interrupted requests', async () => {

@@ -98,6 +98,20 @@ test('legacy derived tags reconcile atomically while contact edits preserve exis
       assert.deepEqual(after.services, before.services, 'Contact saves must preserve services and their identities');
     });
 
+    await t.test('an alternate WhatsApp validates for every listing type and preserves approval on contact-only changes', async () => {
+      for (const type of ['escort', 'agency', 'rental']) {
+        const read = value => readProfileSubmission(form('Femenino', {type, contact_whatsapp_alt: value}));
+        assert.equal(JSON.parse(read('56922223333').details.metadata).contact_whatsapp_alt, '56922223333');
+        assert.throws(() => read('56911111111'), /número distinto/);
+        assert.throws(() => read('1'.repeat(16)), /8 y 15/);
+      }
+      const id = await fixture('Femenino', ['masajes']);
+      assert.equal((await edit(id, form('Femenino', {contact_whatsapp_alt: '56922223333'}))).contactOnly, true);
+      assert.equal(JSON.parse(state(id).details.metadata).contact_whatsapp_alt, '56922223333');
+      assert.equal((await edit(id, form('Femenino'))).contactOnly, true);
+      assert.equal(JSON.parse(state(id).details.metadata).contact_whatsapp_alt, undefined);
+    });
+
     await t.test('gender, service and manual tag changes still require review; pending listings never publish', async () => {
       for (const overrides of [{gender: 'Femenino'}, {tags: ['masajes', 'trans']}, {services_included: ['Domicilio']}]) {
         const id = await fixture('Masculino', ['masajes']);

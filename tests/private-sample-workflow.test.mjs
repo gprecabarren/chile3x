@@ -5,7 +5,7 @@ import { registerHooks } from 'node:module';
 import { DatabaseSync } from 'node:sqlite';
 import { drizzle } from 'drizzle-orm/d1';
 import { getTableConfig } from 'drizzle-orm/sqlite-core';
-import { sampleFormJson, sampleCanEdit, sampleListStatus, sampleIsAvailable, sampleTrashDeadline, SAMPLE_RETENTION_MS, SAMPLE_LIFETIME_MS } from '../lib/private-sample-policy.ts';
+import { sampleFormJson, sampleCanEdit, sampleListStatus, sampleIsAvailable, SAMPLE_NO_EXPIRY_AT } from '../lib/private-sample-policy.ts';
 import { boundedSampleFilter, samplePhoneSearchTerms } from '../lib/private-sample-filters.ts';
 const source = path => readFile(new URL('../' + path, import.meta.url), 'utf8');
 
@@ -44,14 +44,12 @@ test('sample lifecycle distinguishes trash, conversion and contact-independent a
   const row = { expiresAt: 1001, migratedAt: null, tokenHash: 'hash', trashedAt: null };
   assert.equal(sampleListStatus(row, 1000), 'active');
   assert.equal(sampleListStatus({ ...row, tokenHash: null }, 1000), 'unshared');
-  assert.equal(sampleListStatus(row, 1001), 'trashed');
+  assert.equal(sampleListStatus(row), 'active');
   assert.equal(sampleListStatus({ ...row, migratedAt: 'done' }, 1001), 'migrated');
   assert.equal(sampleListStatus({ ...row, trashedAt: 900 }, 1000), 'trashed');
   assert.equal(sampleIsAvailable({ ...row, tokenHash: null, legacyTokenHash: 'legacy' }, 1000), true);
   assert.equal(sampleIsAvailable({ ...row, trashedAt: 900 }, 1000), false);
   assert.equal(sampleCanEdit({ ...row, migratedAt: 'done' }, 1000), false);
-  assert.equal(sampleTrashDeadline({ ...row, trashedAt: 900 }), 900 + SAMPLE_RETENTION_MS);
-  assert.equal(sampleTrashDeadline(row), row.expiresAt + SAMPLE_RETENTION_MS);
 });
 
 test('private sample workflow runs against migration triggers, D1 batches and concurrent snapshots', async t => {
@@ -73,7 +71,7 @@ test('private sample workflow runs against migration triggers, D1 batches and co
     const schema = await import('../db/schema.ts');
     for (const table of Object.values(schema)) {
       let config; try { config = getTableConfig(table); } catch { continue; }
-      if (['collaboration_guards', 'review_reservations', 'settings_revision', 'private_profile_samples', 'private_sample_media'].includes(config.name)) continue;
+      if (['collaboration_guards', 'review_reservations', 'settings_revision', 'private_profile_samples', 'private_sample_media', 'private_sample_intakes'].includes(config.name)) continue;
       sqlite.exec(`CREATE TABLE IF NOT EXISTS "${config.name}" (${config.columns.filter(column => !['revision', 'admin_escort_limit_override'].includes(column.name)).map(column => `"${column.name}" ${column.getSQLType()}${column.primary ? ' PRIMARY KEY' : ''}`).join(',')})`);
     }
     sqlite.exec(await source('drizzle/0056_admin_collaboration.sql'));
@@ -82,6 +80,7 @@ test('private sample workflow runs against migration triggers, D1 batches and co
     const legacyId = 'sam_00000000-0000-4000-8000-000000000000';
     sqlite.prepare('INSERT INTO private_profile_samples(id,display_name,form_json,expires_at,created_by) VALUES(?,?,?,?,?)').run(legacyId, 'Legacy sample', '[]', Date.now() + 10000, 'admin');
     sqlite.exec(await source('drizzle/0064_private_sample_workflow.sql'));
+    sqlite.exec(await source('drizzle/0069_private_sample_intakes.sql'));
     assert.match(sqlite.prepare('SELECT handle FROM private_profile_samples WHERE id=?').get(legacyId).handle, /^m-[a-f0-9]{8}-[a-f0-9]+$/);
     const service = await import('../lib/private-samples.ts');
     const { CollaborationConflict } = await import('../lib/collaboration.ts');
@@ -109,7 +108,7 @@ test('private sample workflow runs against migration triggers, D1 batches and co
       assert.equal(await service.resolvePrivateSample('../invalid'), null);
     });
 
-    await t.test('both old and newly persisted invitations resolve aliases but trash, expiry and revocation win', async () => {
+    await t.test('both old and newly persisted invitations resolve aliases while trash and revocation disable access', async () => {
       const row = await create({ handle: 'sample-invitation' }), oldToken = newSampleToken(), newToken = newSampleToken();
       sqlite.prepare('UPDATE private_profile_samples SET token_hash=?,legacy_token_hash=? WHERE id=?').run(await sampleTokenHash(newToken), await sampleTokenHash(oldToken), row.id);
       assert.equal((await service.canOpenSample(row.id, oldToken)).id, row.id);
@@ -118,7 +117,7 @@ test('private sample workflow runs against migration triggers, D1 batches and co
       sqlite.prepare('UPDATE private_profile_samples SET trashed_at=? WHERE id=?').run(Date.now(), row.id);
       assert.equal(await service.canOpenSample(row.handle, newToken), null);
       sqlite.prepare('UPDATE private_profile_samples SET trashed_at=NULL,expires_at=? WHERE id=?').run(Date.now() - 1, row.id);
-      assert.equal(await service.canOpenSample(row.handle, newToken), null);
+      assert.equal((await service.canOpenSample(row.handle, newToken)).id, row.id);
       sqlite.prepare('UPDATE private_profile_samples SET expires_at=?,token_hash=NULL,legacy_token_hash=NULL WHERE id=?').run(Date.now() + 10000, row.id);
       assert.equal(await service.canOpenSample(row.id, oldToken), null);
     });
@@ -134,7 +133,7 @@ test('private sample workflow runs against migration triggers, D1 batches and co
       assert.deepEqual((await service.listPrivateSamples({ q: 'Filtro único', contact: 'pending' })).map(row => row.id), [pending.id]);
       assert.deepEqual((await service.listPrivateSamples({ q: 'Filtro único', contact: 'contacted' })).map(row => row.id), [contacted.id]);
       assert.deepEqual(await service.listPrivateSamples({ q: '%' }), []);
-      sqlite.prepare('UPDATE private_profile_samples SET expires_at=? WHERE id=?').run(Date.now() - 1, pending.id);
+      sqlite.prepare("UPDATE private_profile_samples SET trashed_at=?,trash_reason='manual' WHERE id=?").run(Date.now() - 1, pending.id);
       assert.equal((await service.listPrivateSamples({ q: 'Filtro único', contact: 'pending', view: 'trash' }))[0].id, pending.id);
       assert.equal((await service.listPrivateSamples({ q: 'Filtro único' })).length, 1);
     });
@@ -305,27 +304,39 @@ test('private sample workflow runs against migration triggers, D1 batches and co
       assert.equal(sqlite.prepare("SELECT count(*) n FROM admin_audit_logs WHERE action='sample.migrate' AND entity_id=?").get(row.id).n, 0);
     });
 
-    await t.test('retention moves expired samples to trash and purges only after 30 days, preserving converted objects and concurrent restores', async () => {
-      const { purgeExpiredSamples } = await import('../worker/private-sample-cleanup.ts');
-      const now = Date.now(), expired = await create({ handle: 'retention-expired' }), restored = await create({ handle: 'retention-restored' }), manual = await create({ handle: 'retention-manual' });
-      for (const row of [expired, restored, manual]) addPhoto(row);
-      sqlite.prepare('UPDATE private_profile_samples SET expires_at=? WHERE id IN (?,?)').run(now - SAMPLE_RETENTION_MS - 1, expired.id, restored.id);
-      sqlite.prepare('UPDATE private_profile_samples SET trashed_at=?,trash_reason=? WHERE id=?').run(now - SAMPLE_RETENTION_MS + 1000, 'manual', manual.id);
-      const converted = sqlite.prepare('SELECT id FROM private_profile_samples WHERE migrated_at IS NOT NULL LIMIT 1').get();
-      sqlite.prepare('UPDATE private_profile_samples SET migrated_at=? WHERE id=?').run(new Date(now - SAMPLE_RETENTION_MS - 1000).toISOString(), converted.id);
-      let once = false;
-      const racing = { prepare: binding.prepare, async batch(statements) {
-        if (!once) { once = true; sqlite.prepare('UPDATE private_profile_samples SET trashed_at=NULL,trash_reason=NULL,expires_at=? WHERE id=?').run(now + SAMPLE_LIFETIME_MS, restored.id); }
-        return binding.batch(statements);
-      } };
-      await purgeExpiredSamples(racing, now);
-      assert.equal(await service.getPrivateSample(expired.id), null);
-      assert.equal((await service.getPrivateSample(restored.id)).trashedAt, null);
-      assert.ok(await service.getPrivateSample(manual.id));
-      assert.equal(await service.getPrivateSample(converted.id), null);
-      const keys = sqlite.prepare('SELECT r2_key FROM data_deletion_jobs').all().map(row => row.r2_key);
-      assert.deepEqual(keys, ['private-samples/' + expired.id + '/file.webp']);
-      assert.ok(sqlite.prepare('SELECT count(*) n FROM profile_media').get().n >= 2);
+    await t.test('restore migration keeps original links and media and preserves manual trash', async () => {
+      const expired = await create({ handle: 'retention-expired' }), manual = await create({ handle: 'retention-manual' });
+      const mark = sqlite.prepare('UPDATE private_profile_samples SET expires_at=1,trashed_at=1,trash_reason=?,token_hash=? WHERE id=?');
+      const token = newSampleToken();
+      mark.run('expired', await sampleTokenHash(token), expired.id);
+      mark.run('manual', null, manual.id);
+      addPhoto(expired); addPhoto(manual);
+      const migration = await source('drizzle/0070_samples_without_expiry.sql');
+      sqlite.exec(migration); sqlite.exec(migration);
+      assert.equal((await service.canOpenSample(expired.handle, token)).id, expired.id);
+      assert.equal((await service.getPrivateSample(expired.id)).expiresAt, SAMPLE_NO_EXPIRY_AT);
+      assert.equal((await service.getPrivateSample(manual.id)).trashReason, 'manual');
+      assert.equal((await service.sampleMedia(expired.id)).length, 1);
+      assert.equal(sqlite.prepare("SELECT count(*) n FROM admin_audit_logs WHERE action='sample.restore' AND entity_id=?").get(expired.id).n, 1);
+      assert.equal(sqlite.prepare('SELECT count(*) n FROM data_deletion_jobs').get().n, 0);
+    });
+
+    await t.test('each received intake creates at most one sample without copying the private account email', async () => {
+      const intakeId = 'int_' + crypto.randomUUID();
+      const fields = form({ contact_whatsapp_alt: '56922223333' });
+      const formJson = sampleFormJson(fields);
+      sqlite.prepare('INSERT INTO private_sample_intakes(id,display_name,city,form_json,account_email) VALUES(?,?,?,?,?)')
+        .run(intakeId, 'Prueba', 'Concepción', formJson, 'private@example.invalid');
+      fields.set('intake_id', intakeId);
+      const results = await Promise.allSettled([service.createPrivateSample(fields, admin), service.createPrivateSample(fields, admin)]);
+      assert.equal(results.filter(result => result.status === 'fulfilled').length, 1);
+      const row = sqlite.prepare('SELECT * FROM private_sample_intakes WHERE id=?').get(intakeId);
+      assert.ok(row.processed_at);
+      assert.equal(row.processed_by, admin.id);
+      const sample = await service.getPrivateSample(row.sample_id);
+      assert.ok(!sample.formJson.includes(row.account_email));
+      assert.equal(service.sampleInitial(sample).details.metadata.contact_whatsapp_alt, '56922223333');
+      assert.equal((await service.listPrivateSamples({ phone: '22223333' }))[0].id, sample.id);
     });
   } finally { hooks.deregister(); sqlite.close(); delete globalThis.__sampleWorkflowDb; }
 });

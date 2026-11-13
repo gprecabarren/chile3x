@@ -102,3 +102,35 @@
   .profile-media-manager :is(.media-owner-grid,.profile-photo-preview-list) > article > div:last-child { padding:10px; }
   .profile-media-manager .gallery-video-bulk-actions .button { width:100%; }
 }
+
+
+.profile-media-manager .media-manager-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: 8px;
+  margin: 16px 0;
+  padding: 0;
+  list-style: none;
+}
+.profile-media-manager .media-manager-steps li {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--glass-border, #394559);
+  border-radius: var(--corner-8);
+  background: var(--glass-surface, #111722);
+}
+.profile-media-manager .media-manager-steps li span,
+.profile-media-manager .media-upload-requirements small {
+  color: var(--glass-muted, #b8c4d6);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.profile-media-manager .media-upload-requirements summary {
+  width: fit-content;
+  padding-block: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.profile-media-manager .media-upload-requirements small { display: block; margin-top: 5px; }
+.profile-media-manager .media-reload-notice { margin-top: 8px; }

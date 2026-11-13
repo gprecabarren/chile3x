@@ -16,6 +16,8 @@ export async function readUploadResponse<T>(response: Response, sizeHelp = "Cada
   return payload;
 }
 
+export class UploadConfirmationError extends Error {}
+
 /** A network failure cannot prove whether the server received the upload. */
 export async function uploadMediaRequest<T>(url: string, body: FormData): Promise<T> {
   async function savedReceipt() {
@@ -31,14 +33,15 @@ export async function uploadMediaRequest<T>(url: string, body: FormData): Promis
   let response: Response;
   try { response = await fetch(url, { method: "POST", body }); }
   catch {
-    if(await savedReceipt())throw new Error(committedMessage);
-    throw new Error(typeof navigator !== "undefined" && navigator.onLine === false
-      ? "El dispositivo está sin conexión. Conéctate a internet y reintenta este archivo."
-      : "La conexión se interrumpió durante el envío. No pudimos confirmar la carga: revisa si el archivo aparece en tu galería antes de reintentar para no duplicarlo.");
+    if(await savedReceipt())throw new UploadConfirmationError(committedMessage);
+    throw new UploadConfirmationError("La conexión se interrumpió durante el envío. Recarga la galería para confirmar qué archivos llegaron antes de volver a subirlos.");
   }
   try {return await readUploadResponse<T>(response);}
   catch(cause) {
-    if((response.status>=500||response.ok)&&await savedReceipt())throw new Error(committedMessage);
+    if (response.status >= 500 || response.ok) {
+      if (await savedReceipt()) throw new UploadConfirmationError(committedMessage);
+      throw new UploadConfirmationError("El servidor no confirmó la carga. Recarga la galería antes de volver a subir archivos.");
+    }
     throw cause;
   }
 }

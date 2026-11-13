@@ -79,7 +79,7 @@ export function CopySampleLink({ id, revision, shared, legacyLink = false }: { i
   }
 
   return <div className="sample-copy-link" ref={root} aria-busy={busy}>
-    <ActionButton className="button button-outline" type="button" disabled={busy} onClick={() => void copy()} title="Copia el enlace privado sin cambiar su vencimiento."><ActionIcon name="copy" />{busy ? "Preparando enlace…" : enabled ? "Copiar enlace" : "Crear y copiar enlace"}</ActionButton>
+    <ActionButton className="button button-outline" type="button" disabled={busy} onClick={() => void copy()} title="Copia el enlace privado vigente."><ActionIcon name="copy" />{busy ? "Preparando enlace…" : enabled ? "Copiar enlace" : "Crear y copiar enlace"}</ActionButton>
     {message && <p className="sample-copy-status" role="status">{message}</p>}
     {manualLink && <div className="sample-copy-fallback"><label htmlFor={inputId}>Enlace privado</label><input ref={input} id={inputId} type="text" readOnly value={manualLink} autoComplete="off" spellCheck={false} onFocus={event => event.currentTarget.select()} /><ActionButton className="button button-outline" type="button" onClick={() => { input.current?.focus(); input.current?.select(); }}>Seleccionar enlace</ActionButton></div>}
   </div>;

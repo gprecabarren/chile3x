@@ -1,5 +1,6 @@
 const MB = 1_000_000;
 export function multipartBodyLimit(path: string) {
+  if (path === "/api/ficha-escort") return 64_000;
   if (/^\/api\/admin\/muestras\/[^/]+$/.test(path)) return 12 * MB + 256_000;
   if (/^\/api\/admin\/muestras\/[^/]+\/media$/.test(path)) return 12 * MB + 256_000;
   if (/^\/api\/admin\/muestras\/[^/]+\/media\/[^/]+\/procesar$/.test(path)) return 10 * MB + 256_000;

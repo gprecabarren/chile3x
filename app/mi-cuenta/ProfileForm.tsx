@@ -1,8 +1,9 @@
 "use client";
+import { AuthTurnstile } from "@/app/AuthTurnstile";
 import { ActionButton } from "@/app/ActionButton";
 import { PortalContactIcon } from "@/app/PortalContactIcon";
 import { incompatibleProfileTags,profileTagsForGender,PROFILE_TAG_COMBINATION_MESSAGE } from "@/lib/profile-tag-policy";
-import { SAMPLE_PROVENANCES, SAMPLE_PROVENANCE_LABELS } from "@/lib/private-sample-policy";
+import { SAMPLE_PROVENANCES, SAMPLE_PROVENANCE_LABELS, SAMPLE_INTAKE_ACTION } from "@/lib/private-sample-policy";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DateField } from "@/app/DateField";
@@ -75,6 +76,8 @@ type ProfileFormProps = {
   adminAssisted?: boolean;
   adminEdit?: boolean;
   privateSample?: boolean;
+  sampleIntake?: boolean;
+  intakeId?: string;
   sampleProvenance?: string;
 };
 
@@ -97,7 +100,9 @@ function metadataValue(initial: ProfileFormInitial | undefined, key: string) {
 
 const NO_AGENCIES:NonNullable<ProfileFormProps["agencies"]>=[];
 
-export function ProfileForm({ action, submitLabel, initial, travelToday, allowEscort = true, adminAssisted = false, adminEdit = false, privateSample = false, sampleProvenance = "otros", review, agencies = NO_AGENCIES, defaultAgencyId, managedAgencyId }: ProfileFormProps) {
+export function ProfileForm({ action, submitLabel, initial, travelToday, allowEscort = true, adminAssisted = false, adminEdit = false, privateSample = false, sampleIntake = false, intakeId, sampleProvenance = "otros", review, agencies = NO_AGENCIES, defaultAgencyId, managedAgencyId }: ProfileFormProps) {
+  const [intakeReceived, setIntakeReceived] = useState(false);
+  const [captchaReset, setCaptchaReset] = useState(0);
   const [sampleBusy,setSampleBusy]=useState(false),[sampleError,setSampleError]=useState("");
   const formRef = useRef<HTMLFormElement>(null);
   const optionalRef = useRef<HTMLDetailsElement>(null);
@@ -130,7 +135,7 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
   const [custodianAgencyId,setCustodianAgencyId]=useState(defaultAgencyId ?? (!allowEscort?agencies[0]?.id??"":""));
   const [selectedTier, setSelectedTier] = useState(initial?.tier ?? "vip");
   const [underageNotice, setUnderageNotice] = useState(false);
-  const typeLocked = Boolean(initial)||privateSample;
+  const typeLocked = Boolean(initial) || privateSample || sampleIntake;
 
   useEffect(() => {
     // Refresh after hydration, on returning to the tab and across Chile midnight.
@@ -147,7 +152,7 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
   }, []);
 
   useEffect(() => {
-    if(privateSample)return;
+    if (privateSample || sampleIntake) return;
     const query = new URLSearchParams(window.location.search);
     if (!query.get("error")) {
       window.sessionStorage.removeItem(storageKey);
@@ -205,7 +210,7 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
       });
     });
     return () => { window.cancelAnimationFrame(restore); window.cancelAnimationFrame(restoreFields); };
-  }, [availableProfileTypes, storageKey, typeLocked, privateSample, agencies]);
+  }, [availableProfileTypes, storageKey, typeLocked, privateSample, sampleIntake, agencies]);
 
   function saveFormBeforeSubmit(form: HTMLFormElement) {
     const saved: Record<string, string[]> = {};
@@ -236,7 +241,7 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
   }
 
   return (
-    <form ref={formRef} action={action} method="post" className="profile-form" onInvalidCapture={(event) => {
+    intakeReceived ? <div className="admin-success" role="status" tabIndex={-1} ref={node => node?.focus()}><strong>Recibimos tu ficha.</strong> El equipo de Chile3X podrá contactarte para continuar.</div> : <form ref={formRef} action={action} method="post" className="profile-form" onInvalidCapture={(event) => {
       // Native validation must be able to focus a field in the collapsed group.
       const field = event.target;
       if (field instanceof HTMLElement) {
@@ -261,17 +266,18 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
           return;
         }
       }
-      if(privateSample || Boolean(review)&&!adminEdit&&!adminAssisted){
+      if(privateSample || sampleIntake || Boolean(review)&&!adminEdit&&!adminAssisted){
         event.preventDefault();if(sampleBusy)return;
-        const body=new FormData(event.currentTarget);const submitter=(event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement|null;body.set("intent",privateSample?"submit":submitter?.value||"submit");
+        const body=new FormData(event.currentTarget);const submitter=(event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement|null;body.set("intent",privateSample||sampleIntake?"submit":submitter?.value||"submit");
         const scope=event.currentTarget.closest<HTMLElement>("[data-review-resource]");if(scope)body.set("review_revision",scope.dataset.reviewRevision??"");
         setSampleBusy(true);setSampleError("");
         void fetch(action,{method:"POST",body,headers:{accept:"application/json"}}).then(async response=>{
           let result;try{result=await response.json();}catch{throw new Error("No se pudo confirmar el guardado. Revisa la versión actual antes de repetirlo.");}
           if(!response.ok)throw new Error(result?.error||"No se pudo guardar el anuncio. Tus cambios siguen en el formulario.");
+          if (sampleIntake && result?.received === true) { setIntakeReceived(true); return; }
           if(typeof result?.redirectTo!=="string")throw new Error("No se pudo confirmar el guardado. Revisa la versión actual antes de repetirlo.");
           window.location.assign(result.redirectTo);
-        }).catch(error=>setSampleError(error instanceof Error?error.message:"No se pudo confirmar el guardado. Revisa la versión actual antes de repetirlo.")).finally(()=>setSampleBusy(false));
+        }).catch(error=>setSampleError(error instanceof Error?error.message:"No se pudo confirmar el guardado. Revisa la versión actual antes de repetirlo.")).finally(() => { setSampleBusy(false); if (sampleIntake) setCaptchaReset(value => value + 1); });
       }else saveFormBeforeSubmit(event.currentTarget);
       const form = event.currentTarget;
       const age = Number(new FormData(form).get("age") || 0);
@@ -280,13 +286,14 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
         setUnderageNotice(true);
       }
     }}>
+      {intakeId && <input type="hidden" name="intake_id" value={intakeId} />}
       {review && <><input type="hidden" name="review_key" value={review.key} /><input type="hidden" name="review_revision" value={review.revision} /></>}
-      {sampleError&&<p className="admin-notice" role="alert">{sampleError}</p>}
+      {!sampleIntake&&sampleError&&<p className="admin-notice" role="alert">{sampleError}</p>}
       {privateSample&&<label className="sample-permission"><input type="checkbox" name="sample_permission" required />Tengo autorización para preparar esta muestra privada y utilizar sus datos y fotos. No se publica un anuncio ni se crea una cuenta.</label>}
-      <div className="profile-form-actions profile-form-actions-top">
-        {!adminEdit && <ActionButton className="button button-outline" name="intent" type="submit" value="draft" formNoValidate>Guardar borrador</ActionButton>}
+      {!sampleIntake && <div className="profile-form-actions profile-form-actions-top">
+        {!adminEdit && !sampleIntake && <ActionButton className="button button-outline" name="intent" type="submit" value="draft" formNoValidate>Guardar borrador</ActionButton>}
         <ActionButton className="button button-primary" name="intent" type="submit" value="submit" disabled={sampleBusy}>{sampleBusy?"Guardando…":submitLabel}</ActionButton>
-      </div>
+      </div>}
       <section className="profile-form-section">
         <div className="profile-form-section-heading">
           <p>01 · TIPO DE PUBLICACIÓN</p>
@@ -295,7 +302,7 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
         <div className="form-grid form-grid-two">
           <label>
             Tipo de anuncio
-            {typeLocked ? <><input name="type" type="hidden" value={type} /><span className="profile-type-locked"><strong>{profileTypeLabel(type)}</strong><small>El tipo queda definido al crear el anuncio. Para otro tipo, crea una publicación nueva.</small></span></> : <select name="type" value={type} onChange={(event) => { setType(event.target.value as ProfileType); setContentOnly(false); }}>
+            {typeLocked ? <><input name="type" type="hidden" value={type} /><span className="profile-type-locked"><strong>{profileTypeLabel(type)}</strong>{!sampleIntake && <small>El tipo queda definido al crear el anuncio. Para otro tipo, crea una publicación nueva.</small>}</span></> : <select name="type" value={type} onChange={(event) => { setType(event.target.value as ProfileType); setContentOnly(false); }}>
               {availableProfileTypes.map((item) => <option key={item} value={item}>{profileTypeLabel(item)}</option>)}
             </select>}
             {!typeLocked && !allowEscort && <small>Ya tienes un Escort activo. Puedes crear varias agencias o arriendos.</small>}
@@ -304,8 +311,8 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
             Nombre visible
             <input name="display_name" required minLength={2} maxLength={80} defaultValue={initial?.displayName} placeholder={type === "agency" ? "Ej. Agencia Luna" : type === "rental" ? "Ej. Habitación en Providencia" : "Ej. Valentina Masajes"} />
           </label>
-          {type === "escort" && contentOnly && <input name="tier" type="hidden" value={selectedTier} />}
-          {((type === "escort" && !contentOnly) || type === "agency") && <div className="tier-form-field">
+          {type === "escort" && (contentOnly || sampleIntake) && <input name="tier" type="hidden" value={selectedTier} />}
+          {!sampleIntake && ((type === "escort" && !contentOnly) || type === "agency") && <div className="tier-form-field">
             <label>
               Categoría de visibilidad
               <select name="tier" value={selectedTier} onChange={event => setSelectedTier(event.target.value)}>
@@ -317,15 +324,15 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
               {visibilityTiers.map((tier) => <span key={tier} className={`tier-form-chip tier-${tier}`}>{tierLabels[tier]}</span>)}
             </div>
           </div>}
-          <label>
+          {!sampleIntake && <label>
             {privateSample ? "Usuario del futuro anuncio (opcional)" : "Usuario del anuncio (opcional)"}
             <span className="profile-handle-input"><b>@</b><input name="handle" minLength={3} maxLength={41} defaultValue={initial?.handle ?? ""} placeholder={type === "agency" ? "agenciaejemplo" : type === "rental" ? "arriendo-centro" : "tu-nombre"} autoCapitalize="none" autoCorrect="off" /></span>
             <small>{privateSample ? "Se usará al convertirla en anuncio real. El enlace privado de esta muestra conserva su usuario aunque cambies este campo." : "Será parte de tu enlace. Si lo dejas vacío, Chile3X crea uno único basado en el nombre del anuncio."}</small>
-          </label>
+          </label>}
           {type === "rental" && <input name="tier" type="hidden" value="bronze" />}
         </div>
         {!initial && !privateSample && !adminAssisted && type==="escort" && agencies.length>0 && <fieldset className="profile-form-section agency-creation-choice"><legend>¿A quién pertenece este anuncio?</legend><label>Modalidad<select name="agency_custodian_id" value={custodianAgencyId} onChange={event=>{setCustodianAgencyId(event.target.value);if(event.target.value)setContentOnly(false);}}><option value="" disabled={!allowEscort}>{allowEscort?"Mi Escort personal · puede ser independiente o asociarse después":"Tu cupo de Escort personal ya está ocupado"}</option>{agencies.map(agency=><option key={agency.id} value={agency.id}>Gestionado por {agency.displayName} · sin cuenta personal vinculada</option>)}</select></label><p>Los perfiles gestionados reciben un ID propio y quedan ligados a la agencia elegida. Más adelante podrás proponer vincularlos a una cuenta existente; requiere aceptación y comprobación administrativa. No consumen tu cupo personal.</p>{custodianAgencyId&&<label className="checkbox-label"><input name="agency_permission" type="checkbox" required/>Confirmo que tengo autorización de esta persona adulta para representarla y publicar sus datos y archivos. Administración podrá comprobarla antes de publicar.</label>}</fieldset>}
-        {type === "escort" && !privateSample && !managedAgencyId && !custodianAgencyId && <fieldset className="profile-content-mode">
+        {type === "escort" && !privateSample && !sampleIntake && !managedAgencyId && !custodianAgencyId && <fieldset className="profile-content-mode">
           <legend>Modalidad del anuncio</legend>
           <label className="profile-content-only-toggle"><input type="checkbox" name="content_only" checked={contentOnly} onChange={event => {
             const only = event.target.checked;
@@ -373,7 +380,7 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
         </div>
         <div className="form-grid form-grid-two">
           {type === "escort" && <>
-            <label>Género (obligatorio)<select name="gender" required value={gender} onChange={event => setGender(event.target.value)}><option value="">Seleccionar</option>{escortGenders.map((item) => <option key={item}>{item}</option>)}</select><small>Al elegir Masculino, la etiqueta Hombres se agrega automáticamente.</small></label>
+            <label>Género (obligatorio)<select name="gender" required value={gender} onChange={event => setGender(event.target.value)}><option value="">Seleccionar</option>{metadataValue(initial, "gender") === "Trans" && gender === "Trans" && <option value="Trans">Conservar género registrado</option>}{escortGenders.map((item) => <option key={item}>{item}</option>)}</select><small>Al elegir Masculino, la etiqueta Hombres se agrega automáticamente.</small></label>
             <label>Edad (obligatoria)<input name="age" type="number" required min="18" max="99" step="1" inputMode="numeric" defaultValue={metadataValue(initial, "age")} placeholder="Ej. 28" onChange={(event) => setUnderageNotice(Boolean(event.target.value && Number(event.target.value) < 18))} /><small className={underageNotice ? "field-warning" : undefined} role={underageNotice ? "alert" : undefined}>{underageNotice ? "Solo se admiten publicaciones de personas mayores de 18 años." : "Debes tener al menos 18 años. Género y edad son obligatorios para enviar a revisión."}</small></label>
           </>}
           <label className="form-grid-full">
@@ -403,6 +410,11 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
         <div className="profile-form-section-heading"><p>04 · CONTACTO PRINCIPAL</p><h2>Cómo te pueden contactar</h2></div>
         <div className="form-grid form-grid-two">
           <label><span className="profile-contact-label"><PortalContactIcon kind="whatsapp" /><span>WhatsApp público</span></span><input name="contact_whatsapp" required inputMode="numeric" pattern="[0-9]{8,15}" defaultValue={initial?.contactWhatsapp} placeholder="56912345678" aria-describedby="profile-whatsapp-help" /><small id="profile-whatsapp-help">Ingresa el código de país y el número, sin + ni espacios.</small></label>
+          <label>
+            <span className="profile-contact-label"><PortalContactIcon kind="whatsapp" /><span>WhatsApp alternativo (opcional)</span></span>
+            <input name="contact_whatsapp_alt" type="tel" inputMode="numeric" maxLength={15} pattern="[0-9]{8,15}" defaultValue={metadataValue(initial, "contact_whatsapp_alt")} placeholder="56987654321" />
+            <small>Si lo agregas, se mostrará junto al WhatsApp principal.</small>
+          </label>
         </div>
         <p className="profile-form-help">Los demás contactos y redes están en Características opcionales.</p>
       </section>
@@ -587,14 +599,24 @@ export function ProfileForm({ action, submitLabel, initial, travelToday, allowEs
       </details>
 
       {privateSample && <section className="profile-form-section sample-provenance-field"><h2>Procedencia de la muestra</h2><label>Procedencia<select name="sample_provenance" defaultValue={sampleProvenance}>{SAMPLE_PROVENANCES.map(value => <option key={value} value={value}>{SAMPLE_PROVENANCE_LABELS[value]}</option>)}</select></label></section>}
-      <section className="profile-media-notice" aria-label="Estado de carga de fotos y videos">
+      {!sampleIntake && <section className="profile-media-notice" aria-label="Estado de carga de fotos y videos">
         <strong>Galería y videos</strong>
         {privateSample&&<p>Guarda la muestra para cargar sus fotos y videos. Quedarán privados, separados de los anuncios reales. Compartir el enlace no publica la ficha.</p>}
         {!privateSample && <p>{adminEdit ? "Este formulario guarda los datos del anuncio sin cambiar su estado de publicación o verificación. Los medios y documentos se gestionan por separado desde los accesos de esta página." : initial ? "Las fotos y videos se envían desde su sección al inicio y no necesitan este guardado. Este formulario guarda únicamente los datos del anuncio; cambiar información relevante vuelve a revisión." : adminAssisted ? "Al crear el anuncio pasarás directamente a la carga de la foto principal, hasta 10 fotos y hasta 3 videos. El material que subas como administrador se aprobará al instante; el anuncio se publica desde moderación." : <>Guarda y envía el anuncio a revisión. Luego encontrarás al inicio la carga de fotos y videos; puedes adjuntarlos sin esperar la aprobación del anuncio. Cada imagen puede pesar hasta 10 MB y los archivos se revisan por separado.{type === "escort" && " También podrás adjuntar tu carnet o examen médico privado (JPG, PNG, WebP o PDF de hasta 15 MB)."}</>}</p>}
-      </section>
+      </section>}
+      {sampleIntake && <section className="profile-form-section">
+        <h2>Enviar ficha</h2>
+        <label>Correo para tu futura cuenta (opcional)
+          <input name="account_email" type="email" autoComplete="email" maxLength={160} />
+          <small>El equipo usará este correo para contactarte sobre tu cuenta. Quedará guardado en la ficha privada.</small>
+        </label>
+        <p>Al enviar, autorizas al equipo a revisar estos datos para preparar tu perfil y ponerse en contacto contigo. <a href="/privacidad" target="_blank" rel="noopener noreferrer">Política de privacidad</a></p>
+        <AuthTurnstile action={SAMPLE_INTAKE_ACTION} resetKey={captchaReset} />
+        {sampleError && <p className="admin-notice" role="alert">{sampleError}</p>}
+      </section>}
 
       <div className="profile-form-actions">
-        {!adminEdit && <ActionButton className="button button-outline" name="intent" type="submit" value="draft" formNoValidate>Guardar borrador</ActionButton>}
+        {!adminEdit && !sampleIntake && <ActionButton className="button button-outline" name="intent" type="submit" value="draft" formNoValidate>Guardar borrador</ActionButton>}
         <ActionButton className="button button-primary" name="intent" type="submit" value="submit" disabled={sampleBusy}>{sampleBusy?"Guardando…":submitLabel}</ActionButton>
       </div>
     </form>

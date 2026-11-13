@@ -71,11 +71,11 @@ test('sample action API preserves invitation state and coordinates private admin
     };
     const audits = (id, action) => sqlite.prepare('SELECT * FROM admin_audit_logs WHERE entity_id=? AND action=?').all(id, action);
 
-    await t.test('sharing, reopening and copying keep the identical encrypted invitation and original deadline', async () => {
+    await t.test('sharing, reopening and copying keep the identical encrypted invitation without a deadline', async () => {
       const original = await create({ handle: 'stable-actions' });
       const share = await call(original, 'share'); assert.equal(share.status, 200);
       const first = await share.json(), saved = await service.getPrivateSample(original.id);
-      assert.equal(first.expiresAt, original.expiresAt); assert.equal(saved.expiresAt, original.expiresAt);
+      assert.equal(first.expiresAt, undefined); assert.equal(saved.expiresAt, original.expiresAt);
       assert.equal(first.revision, saved.revision); assert.equal(audits(original.id, 'sample.share').length, 1);
       assert.ok(saved.tokenEncrypted.startsWith('v1.')); assert.ok(!saved.tokenEncrypted.includes(new URL(first.url).hash.slice(1)));
       assert.equal(await links.decryptPrivateSampleToken(saved.tokenEncrypted, saved.id), new URL(first.url).hash.slice(1));
@@ -83,7 +83,7 @@ test('sample action API preserves invitation state and coordinates private admin
       await assert.rejects(links.decryptPrivateSampleToken(saved.tokenEncrypted, saved.id, 'L'.repeat(43)));
       for (const action of ['get_link', 'share', 'get_link']) {
         const response = await call(saved, action), result = await response.json();
-        assert.equal(response.status, 200); assert.equal(result.url, first.url); assert.equal(result.expiresAt, first.expiresAt); assert.equal(result.revision, saved.revision);
+        assert.equal(response.status, 200); assert.equal(result.url, first.url); assert.equal(result.revision, saved.revision);
       }
       assert.equal((await service.getPrivateSample(saved.id)).revision, saved.revision);
       assert.equal(audits(original.id, 'sample.share').length, 1);
@@ -178,7 +178,7 @@ test('sample action API preserves invitation state and coordinates private admin
       globalThis.__sampleActionsAdmin = admin;
       assert.equal((await call(row, 'share', {}, { origin: 'https://external.invalid' })).status, 403);
       assert.equal((await call(row, 'invalid_action')).status, 400);
-      sqlite.prepare('UPDATE private_profile_samples SET expires_at=? WHERE id=?').run(Date.now() - 1, row.id);
+      sqlite.prepare('UPDATE private_profile_samples SET trashed_at=? WHERE id=?').run(Date.now() - 1, row.id);
       const expired = await service.getPrivateSample(row.id);
       assert.equal((await call(expired, 'share')).status, 400);
       assert.equal((await call(expired, 'contact_mark')).status, 400);

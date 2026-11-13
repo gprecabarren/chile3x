@@ -13,9 +13,11 @@ test('escort submissions always require an integer adult age, including drafts',
     assert.match(profileDemographicsError('escort', 'Femenino', age, true), /18 y 99/);
     assert.match(profileDemographicsError('escort', 'Femenino', age, false), /18 y 99/);
   }
-  for (const gender of ['Femenino', 'Masculino', 'No binario', 'Trans']) {
+  for (const gender of ['Femenino', 'Masculino', 'No binario']) {
     for (const age of ['18', '28', '99']) assert.equal(profileDemographicsError('escort', gender, age, true), null);
   }
+  assert.match(profileDemographicsError('escort', 'Trans', '28', true), /género válido/);
+  assert.equal(profileDemographicsError('escort', 'Trans', '28', true, true), null);
   assert.match(profileDemographicsError('escort', 'Inventado', '28', false), /género válido/);
   assert.match(profileDemographicsError('escort', '', '', false), /edad es obligatoria/);
   for (const type of ['agency', 'rental']) assert.equal(profileDemographicsError(type, '', '', true), null);
@@ -59,7 +61,7 @@ test('search titles and descriptions retain intent with no optional fields, any 
 
 test('shared forms and public routes preserve server validation, privacy and field-help spacing', async () => {
   const [submission, form, page, css] = await Promise.all(['lib/profile-submission.ts', 'app/mi-cuenta/ProfileForm.tsx', 'app/perfil/[slug]/page.tsx', 'app/globals.css'].map(source));
-  assert.match(submission, /profileDemographicsError\(typeValue, gender, age, intent === "submit"\)/);
+  assert.match(submission, /profileDemographicsError\(typeValue, gender, age, intent === "submit", options\.allowLegacyGender\)/);
   assert.equal((form.match(/value="draft" formNoValidate/g) ?? []).length, 2);
   assert.match(page, /profilePublicFacts\(profile.type, profile.details.metadata\)/);
   assert.match(page, /facts.length > 0 && <section/);

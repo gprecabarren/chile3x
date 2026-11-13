@@ -15,7 +15,8 @@ import { SelectedVideoPreview } from "./SelectedVideoPreview";
 import { VideoTrimEditor } from "./VideoTrimEditor";
 import type { VideoTrim } from "@/lib/video-trim-policy";
 import { isVideoSource, MAX_PREPARED_VIDEO_BYTES, VIDEO_INPUT_ACCEPT, VIDEO_UPLOAD_RULES } from "@/lib/video-policy";
-import { uploadMediaRequest } from "@/lib/upload-response";
+import { uploadMediaRequest, UploadConfirmationError } from "@/lib/upload-response";
+import { profilePhotoCapacity } from "@/lib/profile-photo-capacity";
 import { MAX_IMAGE_UPLOAD_BYTES, assertImageSource, IMAGE_INPUT_ACCEPT, IMAGE_UPLOAD_RULES, isImageSource } from "@/lib/image-upload-policy";
 import { applyMediaOptionToSelection, type GalleryMediaOption } from "@/lib/gallery-media-options";
 import { selectGalleryFiles } from "@/lib/media-file-selection";
@@ -46,6 +47,7 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
     return () => window.removeEventListener("chile3x:own-review-commit", committed);
   }, [profileId, initialRevision, reviewKey]);
   const [notice, setNotice] = useState(""); const [isBusy, setIsBusy] = useState(false); const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [uploadUnconfirmed, setUploadUnconfirmed] = useState(false);
   const [confirmDeletePhotos, setConfirmDeletePhotos] = useState(false), [deleteConfirmation, setDeleteConfirmation] = useState("");
   const deletePhotosTrigger = useRef<HTMLButtonElement>(null), deletePhotosInput = useRef<HTMLInputElement>(null);
   useEffect(() => { if (confirmDeletePhotos) deletePhotosInput.current?.focus({ preventScroll: true }); }, [confirmDeletePhotos]);
@@ -114,7 +116,7 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
     if(adminMode)data.set("mutation_id",crypto.randomUUID());
     const previousRevision=Number(data.get("review_revision"));
     const payload = await uploadMediaRequest<{ error?: string; media?: MediaItem; quota?: Quota;revision?:number }>(mediaApi, data);
-    if (!payload.media || !payload.quota) throw new Error("El servidor no confirmó el archivo guardado. Revisa la galería antes de reintentar para evitar duplicados.");
+    if (!payload.media || !payload.quota) throw new UploadConfirmationError("El servidor no confirmó el archivo guardado. Recarga la galería antes de reintentar.");
     if(typeof payload.revision==='number')savedRevision.current={id:profileId,revision:payload.revision};
     if(typeof payload.revision==='number')window.dispatchEvent(new CustomEvent('chile3x:own-review-commit',{detail:{key:reviewKey,previousRevision,revision:payload.revision}}));
     setMedia((current) => [...(uploadKind === "profile_photo" && payload.media!.moderationStatus === "approved" ? current.map((item) => item.isProfilePhoto && item.moderationStatus === "approved" ? { ...item, isProfilePhoto: false } : item) : current), payload.media!]); setQuota(payload.quota);
@@ -125,6 +127,8 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
     const file = files?.[0]; if (!file || isBusy) return;
     if (quota.level === "blocked") { setNotice(quota.message); return; }
     if (files.length !== 1) { setNotice("Elige una sola foto de perfil. Agrega las demás en Fotos de la galería."); return; }
+    const capacityError = profilePhotoCapacity(media, "profile_photo");
+    if (capacityError) { setNotice(capacityError); return; }
     try { if (!isImageSource(file)) throw new Error("Elige una foto JPEG, PNG, WebP o HEIC compatible."); assertImageSource(file.size); }
     catch (cause) { setNotice(cause instanceof Error ? cause.message : "No se pudo seleccionar la foto."); if (profilePhotoInputRef.current) profilePhotoInputRef.current.value = ""; return; }
     setStagedPhoto(file); setOriginalPhoto(file); setPreparedPhoto(undefined); setPhotoRegions([]); setQualityWarning("");
@@ -133,36 +137,59 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
   }
 
   async function uploadStagedPhoto() {
-    if (!stagedPhoto || isBusy) return;
+    if (!stagedPhoto || isBusy || uploadUnconfirmed) return;
+    const capacityError = profilePhotoCapacity(media, "profile_photo");
+    if (capacityError) { setNotice(capacityError); return; }
     setIsBusy(true); setNotice("");
     try { await uploadOne(stagedPhoto, "profile_photo"); setStagedPhoto(null); setOriginalPhoto(null); setPreparedPhoto(undefined); setPhotoRegions([]); setNotice(sampleMode ? "Foto principal guardada en la muestra privada." : adminMode ? "Foto principal procesada y aprobada." : "Foto principal enviada a revisión. La foto vigente se conserva hasta aprobar el reemplazo."); }
-    catch (cause) { setNotice(cause instanceof Error ? cause.message : "No se pudo procesar la foto."); }
+    catch (cause) { if (cause instanceof UploadConfirmationError) setUploadUnconfirmed(true); setNotice(cause instanceof Error ? cause.message : "No se pudo procesar la foto."); }
     finally { setIsBusy(false); }
   }
 
   async function chooseGallery(files: FileList | readonly File[] | null, kind?: "image" | "video") {
     if (!files?.length || isBusy) return; setNotice("");
     if (quota.level === "blocked") { setNotice(quota.message); return; }
-    const selection = selectGalleryFiles(Array.from(files), {
+    const fileKey = (file: File) => JSON.stringify([file.name, file.size, file.lastModified]);
+    const existing = new Set(candidates.filter(candidate => candidate.status !== "completed").map(candidate => fileKey(candidate.originalFile)));
+    const newFiles = Array.from(files).filter(file => {
+      const key = fileKey(file);
+      if (existing.has(key)) return false;
+      existing.add(key);
+      return true;
+    });
+    const reservedCover = media.some(item => item.isProfilePhoto && item.moderationStatus === "approved")
+      && media.some(item => item.isProfilePhoto && item.moderationStatus === "pending" && !item.replacementOf);
+    const selection = selectGalleryFiles(newFiles, {
       kind, imageLimit: 10, videoLimit: 3,
-      imageCount: images.length + candidates.filter(candidate => candidate.status !== "completed" && candidate.image).length,
+      imageCount: images.length + Number(reservedCover) + candidates.filter(candidate => candidate.status !== "completed" && candidate.image).length,
       videoCount: videos.length + candidates.filter(candidate => candidate.status !== "completed" && !candidate.image).length,
     });
     const selected: Candidate[] = selection.selected.map(({file, image}, index) => ({ id: candidateId(file, index), file, originalFile: file, image, blurFaces: false, watermark: !adminMode && mediaSettings.watermarkEnabled, faceRegions: [], status: "ready", detail: image ? "Lista para optimizar. El original aún no se subió." : "Pendiente de preparar. El original aún no se subió." }));
     setCandidates((current) => [...current.filter((candidate) => candidate.status !== "completed"), ...selected]);
     if (selection.errors.length) setNotice(`No se seleccionaron estos archivos:\n${selection.errors.join("\n")}`);
+    else if (newFiles.length < files.length) setNotice("Los archivos que ya estaban seleccionados siguen en la lista.");
     if (photoGalleryInputRef.current) photoGalleryInputRef.current.value = "";
     if (videoGalleryInputRef.current) videoGalleryInputRef.current.value = "";
   }
 
   async function uploadCandidates(kind: "image" | "video") {
-    const pending = candidates.filter((candidate) => candidate.image === (kind === "image") && (candidate.status === "ready" || candidate.status === "failed")); if (!pending.length || isBusy) return;
+    const pending = candidates.filter(candidate => candidate.image === (kind === "image") && (candidate.image || candidate.trim) && (candidate.status === "ready" || candidate.status === "failed"));
+    if (!pending.length || isBusy || uploadUnconfirmed) return;
     setIsBusy(true); setNotice("");
     try {
       let failed = 0;
       for (const candidate of pending) {
         try { await uploadOne(candidate.file, "gallery", candidate); }
-        catch (cause) { failed += 1; updateCandidate(candidate.id, { status: "failed", detail: cause instanceof Error ? cause.message : "No se pudo subir el archivo." }); }
+        catch (cause) {
+          const detail = cause instanceof Error ? cause.message : "No se pudo subir el archivo.";
+          updateCandidate(candidate.id, { status: "failed", detail });
+          if (cause instanceof UploadConfirmationError) {
+            setUploadUnconfirmed(true);
+            setNotice(detail);
+            return;
+          }
+          failed += 1;
+        }
       }
       setNotice(failed ? `${pending.length - failed} de ${pending.length} archivos enviados. Cada archivo restante muestra su causa. Si falló la respuesta, comprueba la galería antes de repetir.` : sampleMode ? "Los archivos quedaron guardados en la muestra privada. No requieren moderación ni se publican en el directorio." : adminMode ? "Los archivos quedaron aprobados. El anuncio debe estar publicado para mostrarlos." : "El material se envió a revisión. Solo se guardó la versión final de cada foto y video.");
     } finally { setIsBusy(false); }
@@ -259,7 +286,14 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
   return <section ref={managerRoot} className={`profile-media-manager media-file-drop-surface${fileDrop.draggingFiles ? " is-file-dragging" : ""}`} id="fotos-y-videos" tabIndex={-1} {...fileDrop.handlers}>
     <div className="profile-media-manager-heading"><div><p className="eyebrow">{sampleMode ? "MEDIOS DE LA MUESTRA PRIVADA" : "MEDIOS DEL ANUNCIO"}</p><h2>{sampleMode ? "Fotos y videos de la muestra" : "Fotos y videos"}</h2><span>{sampleMode ? "Usa la misma edición de fotos y videos del anuncio: foto principal, recorte, marca de agua y privacidad. Solo administradores gestionan estos archivos; se mantienen privados y no requieren aprobación." : adminMode ? "Puedes subir foto principal y galería para esta cuenta. Los archivos que cargues como administrador se aprueban inmediatamente; los que suba la persona usuaria mantienen su revisión habitual." : "Separa tu foto principal de la galería pública. Todo material llega primero a revisión. El contenido exclusivo se administra desde la sección Contenido de tu cuenta."}</span></div><strong>{images.length}/10 fotos<br />{videos.length}/3 videos</strong></div>
     <p className={`media-quota media-quota-${quota.level}`}><b>Uso de R2: {formatBytes(quota.bytes)}</b>{quota.message}</p>{notice && <p className="media-manager-notice" role="status">{notice}</p>}
-    <p className="media-drop-intro">Arrastra fotos o videos desde tu equipo hasta su sección, o usa los botones para elegir archivos. Quedarán seleccionados para revisar antes de subir.</p>
+    {uploadUnconfirmed && <div className="media-reload-notice"><ActionButton className="button button-outline" type="button" onClick={() => {
+      if (window.confirm("¿Recargar la galería? Se perderán las selecciones locales que todavía no enviaste.")) window.location.reload();
+    }}>Recargar galería</ActionButton></div>}
+    <ol className="media-manager-steps" aria-label="Pasos para guardar archivos">
+      <li><strong>Elige</strong><span>Arrastra archivos a cada sección o selecciónalos desde tu equipo.</span></li>
+      <li><strong>Revisa</strong><span>Ajusta el recorte, la marca de agua y el difuminado que corresponda.</span></li>
+      <li><strong>Guarda</strong><span>Confirma la carga de cada sección cuando el resultado esté listo.</span></li>
+    </ol>
     <p className="media-manager-independent-notice">{sampleMode ? "Los medios se guardan por separado de los datos de la muestra. Elegir archivos o generar vistas previas no los sube: confirma cada carga cuando estés conforme. Solo se conserva el archivo final." : "Las fotos y videos se guardan por separado. Subir, reemplazar o eliminar un archivo no retira un anuncio publicado; solo el material nuevo espera aprobación. No necesitas guardar nuevamente los datos del anuncio."}</p>
     {selectedMediaCount > 0 && <fieldset className="gallery-global-photo-options"><legend>Opciones para los archivos seleccionados</legend><p>La marca de agua se aplica a todas las fotos y videos seleccionados, incluida la principal. El difuminado se aplica solo a fotos. Los archivos guardados se gestionan por separado.</p><div><ActionButton className="button button-outline" type="button" disabled={isBusy} aria-pressed={watermarkCount === selectedMediaCount} onClick={() => applyToSelection("watermark", watermarkCount !== selectedMediaCount)}>{watermarkCount === selectedMediaCount ? "Quitar marca de agua de todos" : "Marca de agua en todos"}<small>{watermarkCount} de {selectedMediaCount} archivos activados</small></ActionButton>{selectedPhotoCount > 0 && (adminMode || mediaSettings.faceBlurEnabled) && <ActionButton className="button button-outline" type="button" disabled={isBusy} aria-pressed={blurCount === selectedPhotoCount} onClick={() => applyToSelection("blurFaces", blurCount !== selectedPhotoCount)}>{blurCount === selectedPhotoCount ? "Quitar difuminado de todas las fotos" : "Difuminar rostros en todas las fotos"}<small>{blurCount} de {selectedPhotoCount} fotos activadas</small></ActionButton>}</div></fieldset>}
     {adminMode && !sampleMode && moderationBulk && <div className="media-moderation-bulk">{moderationBulk}<p>La aprobación de archivos y la publicación del anuncio son independientes. Los archivos pendientes solo se muestran en vistas privadas autorizadas.</p></div>}
@@ -270,7 +304,7 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
     {stagedPhoto && <section className="staged-profile-photo"><strong className="selected-photo-filename">{originalPhoto?.name ?? stagedPhoto.name}</strong>
       <SelectedPhotoPreview file={stagedPhoto} watermark={photoWatermark} blurFaces={photoBlurFaces} regions={photoRegions} disabled={isBusy} prepared={preparedPhoto} onBusyChange={setIsBusy} edited={stagedPhoto !== originalPhoto} onPrepared={result => { setPreparedPhoto(result.file); setQualityWarning(result.qualityWarning); }} onEdit={file => { setStagedPhoto(file); setPreparedPhoto(undefined); setPhotoRegions([]); }} onRestore={() => { setStagedPhoto(originalPhoto); setPreparedPhoto(undefined); setPhotoRegions([]); }} />
       {photoBlurFaces && <FacePrivacyEditor file={stagedPhoto} regions={photoRegions} onChange={regions => { setPhotoRegions(regions); setPreparedPhoto(undefined); }} disabled={isBusy} />}
-      <div className="face-privacy-actions"><ActionButton type="button" className="button button-primary" disabled={isBusy} onClick={uploadStagedPhoto}>{isBusy ? "Procesando…" : sampleMode ? "Guardar foto principal" : adminMode ? "Procesar y aprobar foto principal" : "Enviar foto principal a revisión"}</ActionButton><ActionButton type="button" className="button button-outline" disabled={isBusy} onClick={() => { setStagedPhoto(null); setOriginalPhoto(null); setPreparedPhoto(undefined); setPhotoRegions([]); }}>Cancelar foto seleccionada</ActionButton></div></section>}
+      <div className="face-privacy-actions"><ActionButton type="button" className="button button-primary" disabled={isBusy || uploadUnconfirmed} onClick={uploadStagedPhoto}>{isBusy ? "Procesando…" : sampleMode ? "Guardar foto principal" : adminMode ? "Procesar y aprobar foto principal" : "Enviar foto principal a revisión"}</ActionButton><ActionButton type="button" className="button button-outline" disabled={isBusy} onClick={() => { setStagedPhoto(null); setOriginalPhoto(null); setPreparedPhoto(undefined); setPhotoRegions([]); }}>Cancelar foto seleccionada</ActionButton></div></section>}
     {profilePhotos.length > 0 && <div className="profile-photo-preview-list">{profilePhotos.map(item => <article key={item.id}><div className="media-owner-preview"><a href={item.url} target="_blank" rel="noopener noreferrer" aria-label="Abrir foto principal completa"><Image src={item.url} alt="Vista previa completa de foto de perfil" fill unoptimized sizes="210px" /></a></div><div><span className={`media-status media-status-${item.moderationStatus}`}>{sampleMode ? "Muestra" : statusLabel[item.moderationStatus]}</span>{adminMode && !sampleMode && moderationActions?.[item.id]}<small>Foto principal · {formatBytes(item.byteSize)}</small><a className="media-owner-open" href={item.url} target="_blank" rel="noopener noreferrer">Ver foto completa</a>{<ActionButton className="button button-outline" type="button" disabled={isBusy} onClick={()=>editSavedPhoto(item.id)}>Editar marca y rostros</ActionButton>}<ActionButton className="button button-outline media-owner-remove" type="button" onClick={() => remove(item.id)} disabled={isBusy}>{item.replacementOf ? "Cancelar edición pendiente" : "Eliminar"}</ActionButton></div></article>)}</div>}
     </section>
     {(["image", "video"] as const).map(kind => {
@@ -278,20 +312,14 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
       const selection = photos ? selectedPhotos : selectedVideos;
       const canChoose = !isBusy && quota.level !== "blocked" && sectionMedia.length + selection.length < (photos ? 10 : 3);
       const uploadLabel = sampleMode ? `Guardar ${photos ? "fotos" : "videos"} de la muestra` : adminMode ? `Procesar y aprobar ${photos ? "fotos" : "videos"}` : `Enviar ${photos ? "fotos" : "videos"} a revisión`;
-      const uploadSelectionButton = <ActionButton className="button button-primary gallery-selection-save" type="button" disabled={isBusy || selection.some(candidate => !candidate.image && !candidate.trim)} onClick={() => uploadCandidates(kind)}>{isBusy ? "Procesando archivos…" : uploadLabel}</ActionButton>;
+      const uploadSelectionButton = <ActionButton className="button button-primary gallery-selection-save" type="button" disabled={isBusy || uploadUnconfirmed || !selection.some(candidate => candidate.image || candidate.trim)} onClick={() => uploadCandidates(kind)}>{isBusy ? "Procesando archivos…" : uploadLabel}</ActionButton>;
       return <section key={kind} className="profile-public-gallery-manager" aria-label={photos ? "Fotos de galería" : "Videos de galería"} data-media-kind={kind}>
       <div><p className="eyebrow">PASO {photos ? "2" : "3"} · {sampleMode ? "GALERÍA PÚBLICA DE MUESTRA" : "GALERÍA PÚBLICA"}</p><h3>{photos ? "Fotos de la galería" : "Videos de la galería"}</h3><p>{photos ? `Recorta y aplica marca de agua a tus fotos. ${adminMode || mediaSettings.faceBlurEnabled ? "También puedes difuminar rostros." : "El difuminado facial está desactivado temporalmente por el equipo."}` : "Elige el inicio y el final de cada video. Puedes aplicar o quitar la marca de agua en todos los videos seleccionados antes de subirlos."}</p></div>
       <label className={`button button-primary${!canChoose ? " is-disabled" : ""}`} aria-disabled={!canChoose}>{isBusy ? "Procesando…" : photos ? "Elegir fotos" : "Elegir videos"}<input ref={photos ? photoGalleryInputRef : videoGalleryInputRef} aria-label={photos ? "Elegir fotos de galería" : "Elegir videos de galería"} type="file" accept={photos ? IMAGE_INPUT_ACCEPT : VIDEO_INPUT_ACCEPT} multiple disabled={!canChoose} onChange={(event) => chooseGallery(event.target.files, kind)} /></label>
       <p className="media-drop-hint">Arrastra aquí {photos ? "fotos" : "videos"} o usa «{photos ? "Elegir fotos" : "Elegir videos"}». Se revisan y guardan por separado.</p>
-      <small>{photos ? IMAGE_UPLOAD_RULES : VIDEO_UPLOAD_RULES} Máximo {photos ? "10 fotos de galería" : "3 videos"} por {sampleMode ? "muestra" : "anuncio"}. Solo se guarda el archivo final; conserva tu original para volver a editarlo después.</small>
+      <details className="media-upload-requirements"><summary>Formatos y límites</summary><small>{photos ? IMAGE_UPLOAD_RULES : VIDEO_UPLOAD_RULES} Máximo {photos ? "10 fotos de galería" : "3 videos"} por {sampleMode ? "muestra" : "anuncio"}. Solo se guarda el archivo final; conserva tu original para volver a editarlo después.</small></details>
       {!photos && selectedVideos.length > 0 && <div className="gallery-video-bulk-actions"><ActionButton className="button button-outline" type="button" disabled={isBusy} aria-pressed={videoWatermarkCount === selectedVideos.length} onClick={() => applyToSelection("watermark", videoWatermarkCount !== selectedVideos.length, "video")}><ActionIcon name="video" />{videoWatermarkCount === selectedVideos.length ? "Quitar marca de todos los videos" : "Marca de agua en todos los videos"}</ActionButton><span>{videoWatermarkCount} de {selectedVideos.length} videos seleccionados con marca de agua</span></div>}
-      {photos && <div className="profile-gallery-photo-tools">
-        <p className="gallery-saved-tools-help">Estas herramientas editan o eliminan fotos ya guardadas, incluida la de perfil. {storedPhotos.length === 0 ? `Primero selecciona y ${sampleMode ? "guarda las fotos de la muestra" : adminMode ? "procesa y aprueba las fotos" : "envía las fotos a revisión"} con el botón de la sección Fotos seleccionadas; después se habilitarán estas opciones.` : "Las fotos seleccionadas sin subir se ajustan desde Opciones para los archivos seleccionados."}</p>
-        {<AdminPhotoTools showBulkActions ownerProfileId={adminMode ? undefined : profileId} allowFaceBlur={adminMode || mediaSettings.faceBlurEnabled} sampleId={sampleMode ? profileId : undefined} profileName={sampleMode ? "esta muestra privada" : undefined} images={storedPhotos} disabled={isBusy} onBusyChange={setIsBusy} onSaved={result=>{savedRevision.current={id:profileId,revision:result.revision};setQuota(result.quota);setMedia(current=>current.map(item=>item.id===result.mediaId?result.replacement??{...item,url:sampleMode ? `/muestra/${profileId}/archivo/${item.id}?v=${result.revision}` : `/media/${item.id}?v=${result.revision}`}:item));}} />}
-        <div className="profile-photo-delete-actions"><ActionButton ref={deletePhotosTrigger} className="button button-outline" type="button" disabled={isBusy||!storedPhotos.length} aria-expanded={confirmDeletePhotos} onClick={()=>{setDeleteConfirmation("");setConfirmDeletePhotos(true);}}><ActionIcon name="trash" />Eliminar todas las fotos</ActionButton></div>
-        {confirmDeletePhotos&&<fieldset className="profile-photo-delete-confirmation"><legend>Confirmar eliminación de fotos</legend><p>Se eliminarán {storedPhotos.length} fotos guardadas, incluida la foto de perfil si existe. Esta acción no se puede deshacer. Los videos y los archivos seleccionados sin subir se conservan.</p><label>Escribe ELIMINAR para confirmar<input ref={deletePhotosInput} value={deleteConfirmation} onChange={event=>setDeleteConfirmation(event.target.value)} maxLength={8} autoComplete="off" spellCheck={false} disabled={isBusy} /></label><div><ActionButton className="button button-danger" type="button" disabled={isBusy||deleteConfirmation!=="ELIMINAR"} onClick={()=>void removeAllPhotos()}>{isBusy ? "Eliminando fotos…" : "Confirmar eliminación de fotos"}</ActionButton><ActionButton className="button button-outline" type="button" disabled={isBusy} onClick={()=>{setConfirmDeletePhotos(false);setDeleteConfirmation("");deletePhotosTrigger.current?.focus({preventScroll:true});}}>Cancelar</ActionButton></div></fieldset>}
-      </div>}
-      {selection.length > 0 && <div className="gallery-upload-candidates"><div className="gallery-selection-heading"><strong>{photos ? "Fotos seleccionadas" : "Videos seleccionados"}</strong><span>Revisa el resultado antes de confirmar la carga de esta sección.</span>{uploadSelectionButton}</div><div className="gallery-candidate-grid">{selection.map(candidate => <article key={candidate.id}>
+      {selection.length > 0 && <div className="gallery-upload-candidates"><div className="gallery-selection-heading"><strong>{photos ? "Fotos seleccionadas" : "Videos seleccionados"}</strong><span>Revisa el resultado antes de confirmar la carga de esta sección.</span>{!photos && selection.some(candidate => !candidate.trim) && <small>Los videos que aún necesitan un recorte seguirán seleccionados.</small>}{uploadSelectionButton}</div><div className="gallery-candidate-grid">{selection.map(candidate => <article key={candidate.id}>
         <div><strong title={candidate.originalFile.name}>{candidate.originalFile.name}</strong><small>{candidate.image ? "Foto" : "Video"} original · {formatBytes(candidate.originalFile.size)}</small>{candidate.prepared && <small>Versión final para subir: {formatBytes(candidate.prepared.size)} · máximo {(candidate.image ? MAX_IMAGE_UPLOAD_BYTES : MAX_PREPARED_VIDEO_BYTES) / 1_000_000} MB</small>}</div>
         <label className="gallery-face-blur-option"><input type="checkbox" checked={candidate.watermark} disabled={isBusy} onChange={event => updateCandidate(candidate.id, { watermark: event.target.checked, file: candidate.image ? candidate.file : candidate.originalFile, prepared: undefined, status: "ready", detail: candidate.image ? "Lista para procesar." : "Opción actualizada. Prepara y revisa el video nuevamente; aún no se subió." })} />Marca de agua centrada</label>
         {candidate.image && (adminMode || mediaSettings.faceBlurEnabled) && <label className="gallery-face-blur-option"><input type="checkbox" checked={candidate.blurFaces} disabled={isBusy} onChange={event => updateCandidate(candidate.id, { blurFaces: event.target.checked, prepared: undefined, detail: "Lista para procesar." })} />Difuminar rostros</label>}
@@ -301,6 +329,12 @@ export function ProfileMediaManager({ profileId, initialMedia, initialQuota, med
         {candidate.image && candidate.blurFaces && <FacePrivacyEditor file={candidate.file} regions={candidate.faceRegions} disabled={isBusy} onChange={regions => updateCandidate(candidate.id, { faceRegions: regions, prepared: undefined, status: "ready", detail: regions.length ? "Zonas manuales listas para procesar." : "Se usará detección automática." })} />}
         <ActionButton type="button" className="gallery-candidate-remove" disabled={isBusy} onClick={() => setCandidates(current => current.filter(item => item.id !== candidate.id))}>Quitar</ActionButton>
       </article>)}</div>{uploadSelectionButton}</div>}
+      {photos && <div className="profile-gallery-photo-tools">
+        <p className="gallery-saved-tools-help">Estas herramientas editan o eliminan fotos ya guardadas, incluida la de perfil. {storedPhotos.length === 0 ? `Primero selecciona y ${sampleMode ? "guarda las fotos de la muestra" : adminMode ? "procesa y aprueba las fotos" : "envía las fotos a revisión"} con el botón de la sección Fotos seleccionadas; después se habilitarán estas opciones.` : "Las fotos seleccionadas sin subir se ajustan desde Opciones para los archivos seleccionados."}</p>
+        {<AdminPhotoTools showBulkActions ownerProfileId={adminMode ? undefined : profileId} allowFaceBlur={adminMode || mediaSettings.faceBlurEnabled} sampleId={sampleMode ? profileId : undefined} profileName={sampleMode ? "esta muestra privada" : undefined} images={storedPhotos} disabled={isBusy} onBusyChange={setIsBusy} onSaved={result=>{savedRevision.current={id:profileId,revision:result.revision};setQuota(result.quota);setMedia(current=>current.map(item=>item.id===result.mediaId?result.replacement??{...item,url:sampleMode ? `/muestra/${profileId}/archivo/${item.id}?v=${result.revision}` : `/media/${item.id}?v=${result.revision}`}:item));}} />}
+        <div className="profile-photo-delete-actions"><ActionButton ref={deletePhotosTrigger} className="button button-outline" type="button" disabled={isBusy||!storedPhotos.length} aria-expanded={confirmDeletePhotos} onClick={()=>{setDeleteConfirmation("");setConfirmDeletePhotos(true);}}><ActionIcon name="trash" />Eliminar todas las fotos</ActionButton></div>
+        {confirmDeletePhotos&&<fieldset className="profile-photo-delete-confirmation"><legend>Confirmar eliminación de fotos</legend><p>Se eliminarán {storedPhotos.length} fotos guardadas, incluida la foto de perfil si existe. Esta acción no se puede deshacer. Los videos y los archivos seleccionados sin subir se conservan.</p><label>Escribe ELIMINAR para confirmar<input ref={deletePhotosInput} value={deleteConfirmation} onChange={event=>setDeleteConfirmation(event.target.value)} maxLength={8} autoComplete="off" spellCheck={false} disabled={isBusy} /></label><div><ActionButton className="button button-danger" type="button" disabled={isBusy||deleteConfirmation!=="ELIMINAR"} onClick={()=>void removeAllPhotos()}>{isBusy ? "Eliminando fotos…" : "Confirmar eliminación de fotos"}</ActionButton><ActionButton className="button button-outline" type="button" disabled={isBusy} onClick={()=>{setConfirmDeletePhotos(false);setDeleteConfirmation("");deletePhotosTrigger.current?.focus({preventScroll:true});}}>Cancelar</ActionButton></div></fieldset>}
+      </div>}
       {sectionMedia.length > 1 && <p className="gallery-order-help">Usa Izquierda y Derecha para elegir el orden de la galería. Cada movimiento se guarda automáticamente.</p>}
       {sectionMedia.length > 0 ? <div className="media-owner-grid">{sectionMedia.map((item, index) => <article key={item.id} data-media-id={item.id}><div className="media-owner-preview">{item.mediaType === "image" ? <a href={item.url} target="_blank" rel="noopener noreferrer" aria-label={`Abrir foto ${index + 1} completa`}><Image src={item.url} alt={`Vista previa completa de foto ${index + 1}`} fill unoptimized sizes="(max-width: 620px) 80vw, 240px" /></a> : <MediaVideo src={item.url} contentType={item.contentType} label={sampleMode ? "Video de la muestra" : "Video del anuncio"} />}</div><div><span className={`media-status media-status-${item.moderationStatus}`}>{sampleMode ? "Muestra" : statusLabel[item.moderationStatus]}</span>{adminMode && !sampleMode && moderationActions?.[item.id]}<small>{item.mediaType === "video" ? "Video · " : "Foto · "}{formatBytes(item.byteSize)}</small>{item.mediaType === "image" && <><a className="media-owner-open" href={item.url} target="_blank" rel="noopener noreferrer">Ver foto completa</a>{<ActionButton className="button button-outline" type="button" disabled={isBusy} onClick={()=>editSavedPhoto(item.id)}>Editar marca y rostros</ActionButton>}</>}{<div className="sample-media-order-actions">{sampleMode && item.mediaType === "image" && <ActionButton type="button" className="button button-outline" disabled={isBusy} onClick={() => updateSampleMedia(item.id)}>Usar como foto principal</ActionButton>}<div><ActionButton type="button" className="button button-outline" disabled={isBusy || index === 0} aria-label={`Mover ${photos ? "foto" : "video"} ${index + 1} a la izquierda`} onClick={() => void moveMedia(item.id, -1)}><ActionIcon name="back" />Izquierda</ActionButton><ActionButton type="button" className="button button-outline" disabled={isBusy || index === sectionMedia.length - 1} aria-label={`Mover ${photos ? "foto" : "video"} ${index + 1} a la derecha`} onClick={() => void moveMedia(item.id, 1)}>Derecha<ActionIcon name="next" /></ActionButton></div></div>}<ActionButton className="button button-outline media-owner-remove" type="button" onClick={() => remove(item.id)} disabled={isBusy}>{item.replacementOf ? "Cancelar edición pendiente" : "Eliminar"}</ActionButton></div></article>)}</div> : <p className="profile-media-empty">{`Aún no has agregado ${photos ? "fotos" : "videos"} a ${sampleMode ? "la galería pública de muestra" : "la galería pública"}.`}</p>}
     </section>;

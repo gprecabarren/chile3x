@@ -1,9 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {registerHooks} from 'node:module';
 import {DatabaseSync} from 'node:sqlite';
-import {PRIVATE_SAMPLES_ENABLED,newSampleToken,sampleTokenHash,sampleFormJson,sampleForm,sampleLink,sampleCookiePath,sampleIsAvailable,SAMPLE_TOKEN,SAMPLE_LIFETIME_MS,SAMPLE_RETENTION_MS} from '../lib/private-sample-policy.ts';
+import {PRIVATE_SAMPLES_ENABLED,newSampleToken,sampleTokenHash,sampleFormJson,sampleForm,sampleLink,sampleCookiePath,sampleIsAvailable,SAMPLE_TOKEN,SAMPLE_NO_EXPIRY_AT} from '../lib/private-sample-policy.ts';
 const source=p=>readFile(new URL('../'+p,import.meta.url),'utf8');
 
 test('private invitations use random 256-bit fragments, hashes and an isolated cookie path',async()=>{
@@ -14,7 +13,7 @@ test('private invitations use random 256-bit fragments, hashes and an isolated c
  assert.equal(new URL(sampleLink(id,token),'https://chile3x.cl').search,'');
  assert.equal(sampleCookiePath(id),'/muestra/'+id);
  assert.equal((await sampleTokenHash(token)).length,64);assert.notEqual(await sampleTokenHash(token),token);
- assert.equal(await sampleTokenHash('bad'),null);assert.equal(SAMPLE_LIFETIME_MS,7*86400000);
+ assert.equal(await sampleTokenHash('bad'),null);assert.ok(SAMPLE_NO_EXPIRY_AT > Date.now());
 });
 
 test('sample persistence excludes credentials, arbitrary keys and review data, preserving bounded profile fields',()=>{
@@ -25,9 +24,9 @@ test('sample persistence excludes credentials, arbitrary keys and review data, p
  for(const json of ['null','{}','[["password","secret"]]','[["age",18]]'])assert.throws(()=>sampleForm(json));
 });
 
-test('expiration, revocation and completed conversion disable invitation access',()=>{
+test('trash, revocation and completed conversion disable invitation access',()=>{
  const sample={expiresAt:1001,tokenHash:'hash',migratedAt:null};
- assert.equal(sampleIsAvailable(sample,1000),true);assert.equal(sampleIsAvailable(sample,1001),false);
+ assert.equal(sampleIsAvailable(sample),true);assert.equal(sampleIsAvailable({...sample,trashedAt:1001}),false);
  assert.equal(sampleIsAvailable({...sample,tokenHash:null},1000),false);assert.equal(sampleIsAvailable({...sample,migratedAt:'done'},1000),false);
 });
 
@@ -42,28 +41,6 @@ test('sample and media edits invalidate old review snapshots in actual SQLite',a
   assert.equal(db.prepare('SELECT revision FROM private_profile_samples').get().revision,2);
   db.exec("DELETE FROM private_sample_media;");assert.equal(db.prepare('SELECT revision FROM private_profile_samples').get().revision,3);
  }finally{db.close();}
-});
-
-test('expired sample cleanup atomically queues only privately owned files and respects concurrent renewal',async()=>{
- const hooks=registerHooks({resolve(specifier,context,next){if(specifier==='../lib/private-sample-policy')return {url:new URL('../lib/private-sample-policy.ts',import.meta.url).href,shortCircuit:true};return next(specifier,context);}});
- try{
-  const {purgeExpiredSamples}=await import('../worker/private-sample-cleanup.ts');
-  const sqlite=new DatabaseSync(':memory:');
-  try{
-   sqlite.exec("PRAGMA foreign_keys=ON;CREATE TABLE users(id TEXT PRIMARY KEY);CREATE TABLE profiles(id TEXT PRIMARY KEY,owner_id TEXT,type TEXT,trashed_at TEXT,creation_source TEXT,created_by_admin_id TEXT);CREATE TABLE profile_media(r2_key TEXT);INSERT INTO users VALUES('admin');CREATE TABLE data_deletion_jobs(id TEXT PRIMARY KEY,r2_key TEXT UNIQUE,created_at TEXT);");
-   sqlite.exec(await source('drizzle/0062_private_profile_samples.sql'));
-   sqlite.exec(await source('drizzle/0064_private_sample_workflow.sql'));
-   const now=Date.now(),old=now-SAMPLE_RETENTION_MS-1;
-   for(const [id,expires] of [['expired',old],['renewed',old],['active',now+1000]])sqlite.prepare('INSERT INTO private_profile_samples(id,display_name,form_json,expires_at,created_by) VALUES(?,?,?,?,?)').run(id,id,'[]',expires,'admin');
-   for(const id of ['expired','renewed','active'])sqlite.prepare('INSERT INTO private_sample_media VALUES(?,?,?,?,?,?,?,?)').run(id+'-file',id,id+'-key',10,'image/png','image',1,0);
-   let renewed=false;
-   const prepare=(sql,args=[])=>({bind:(...values)=>prepare(sql,values),async all(){return {results:sqlite.prepare(sql).all(...args)};},run(){const result=sqlite.prepare(sql).run(...args);return {meta:{changes:Number(result.changes)}};}});
-   const binding={prepare,async batch(statements){if(!renewed){sqlite.prepare('UPDATE private_profile_samples SET expires_at=?,trashed_at=NULL,trash_reason=NULL WHERE id=?').run(now+1000,'renewed');renewed=true;}sqlite.exec('BEGIN');try{const result=statements.map(s=>s.run());sqlite.exec('COMMIT');return result;}catch(error){sqlite.exec('ROLLBACK');throw error;}}};
-   await purgeExpiredSamples(binding,now);
-   assert.deepEqual(sqlite.prepare('SELECT id FROM private_profile_samples ORDER BY id').all().map(r=>r.id),['active','renewed']);
-   assert.deepEqual(sqlite.prepare('SELECT r2_key FROM data_deletion_jobs').all().map(r=>r.r2_key),['expired-key']);
-  }finally{sqlite.close();}
- }finally{hooks.deregister();}
 });
 
 test('private presentation omits analytics, public structured data and shared cache entries',async()=>{

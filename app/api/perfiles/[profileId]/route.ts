@@ -20,7 +20,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const access=await getProfileAccess(profileId,user.id,"edit");
     if(!access)return Response.json({error:"No tienes permiso vigente para editar este anuncio."},{status:403});
     const formData = await request.formData();
-    const submission = readProfileSubmission(formData, {travelDateValidation: "stored"});
+    const submission = readProfileSubmission(formData, {travelDateValidation: "stored", allowLegacyGender: true});
     const result = await updateProfile(profileId, access.ownerId, submission, {access,version:expectedVersion(formData,`profile:${profileId}`)});
     const notice = result.contactOnly ? "contacts_saved" : submission.intent === "submit" ? "submitted" : "saved";
     return mutationRedirect(request,new URL(result.updated ? `/mi-cuenta/${profileId}/editar?notice=${notice}` : "/mi-cuenta?notice=error", request.url));

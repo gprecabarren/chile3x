@@ -910,3 +910,8 @@ Esta sección actualiza el inventario histórico anterior; verificar en D1 la mi
 Los triggers de cuota cuentan únicamente Escorts personales no eliminados y conservan autorizaciones administrativas preexistentes. La custodia no se puede mover o quitar sin una propuesta aceptada y comprobada. Un padre con custodias activas no pasa a papelera; no se elimina definitivamente mientras existan hijos. Al restaurar un hijo, el padre debe estar disponible. El borrado de cuenta retira primero custodias, sin eliminar perfiles ya vinculados a otras cuentas.
 
 `0068` modifica únicamente cláusulas operativas conocidas de Términos/Privacidad, agrega gestión/titularidad y archiva el JSON anterior íntegro. Conserva personalizaciones, borradores y aceptaciones anteriores. Los cuerpos conocidos de reglas de publicación se actualizan puntualmente; no se reemplaza la configuración completa. Las versiones futuras no se sobrescriben.
+
+
+`0069_private_sample_intakes.sql` registra fichas públicas en `private_sample_intakes`. El correo privado se guarda separado de `form_json`. `processed_at`, `processed_by` y `sample_id` conservan el historial de preparación y evitan generar dos muestras desde una misma ficha. Borrar la muestra pone `sample_id` en NULL. `0070_samples_without_expiry.sql` restaura las muestras con `trash_reason = 'expired'` y audita cada recuperación. `expires_at` se conserva por compatibilidad del esquema y no gobierna la disponibilidad. El WhatsApp alternativo se persiste en `profile_details.metadata.contact_whatsapp_alt` o en el formulario saneado de la muestra.
+
+`0071_sample_privacy_revision.sql` actualiza la cláusula publicada sobre conservación de muestras y fichas, con su versión anterior en el historial y los borradores intactos.

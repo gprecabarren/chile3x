@@ -25,11 +25,11 @@ export default async function Page({params}:{params:Promise<{sampleId:string}>})
       <div><dt>Usuario de la muestra</dt><dd>{row.handle?`@${row.handle}`:"Sin usuario asignado"}</dd></div>
       <div><dt>Procedencia</dt><dd>{SAMPLE_PROVENANCE_LABELS[row.provenance]}</dd></div>
       <div><dt>Creación</dt><dd><time dateTime={adminAuditInstant(row.createdAt)}>{adminAuditDate(row.createdAt)}</time></dd></div>
-      <div><dt>{trashed?"En papelera desde":"Vence"}</dt><dd>{adminAuditDate(new Date(trashed?(row.trashedAt??row.expiresAt):row.expiresAt).toISOString())}</dd></div>
+      {row.trashedAt !== null && <div><dt>En papelera desde</dt><dd>{adminAuditDate(new Date(row.trashedAt).toISOString())}</dd></div>}
     </dl></section>
-    <SampleActions id={sampleId} revision={row.revision} handle={row.handle} shared={Boolean(row.tokenHash)} expiresAt={row.expiresAt} trashed={trashed} legacyLink={Boolean(row.tokenHash&&!row.tokenEncrypted)} provenance={row.provenance}/>
+    <SampleActions id={sampleId} revision={row.revision} handle={row.handle} shared={Boolean(row.tokenHash)} trashed={trashed} legacyLink={Boolean(row.tokenHash&&!row.tokenEncrypted)} provenance={row.provenance}/>
     {!trashed&&<><SampleMediaManager id={sampleId} revision={row.revision} files={files.map(({id,byteSize,contentType,mediaType,isProfilePhoto})=>({id,byteSize,contentType,mediaType,isProfilePhoto}))} initialQuota={{bytes:usage.bytes,...getMediaQuotaState(usage.bytes)}}/>
     <details className="sample-admin-card sample-editor-card"><summary><span><strong>Editar datos de la muestra</strong><small>Nombre, usuario, procedencia, ciudad y características del anuncio.</small></span></summary><div className="sample-editor-content"><ProfileForm travelToday={chileanDay()} action={`/api/admin/muestras/${sampleId}`} submitLabel="Guardar cambios de la muestra" initial={sampleInitial(row)} sampleProvenance={row.provenance} privateSample adminEdit review={{key:`sample:${sampleId}`,revision:row.revision}}/></div></details>
-    <SampleActions mode="conversion" id={sampleId} revision={row.revision} handle={row.handle} shared={Boolean(row.tokenHash)} expiresAt={row.expiresAt}/></>}
+    <SampleActions mode="conversion" id={sampleId} revision={row.revision} handle={row.handle} shared={Boolean(row.tokenHash)}/></>}
   </ReviewScope></div></AdminShell>;
 }

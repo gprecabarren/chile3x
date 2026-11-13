@@ -1,11 +1,11 @@
 import { and, asc, desc, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/db";
-import { adminAuditLogs, adminGithubAccess, adminGithubIdentities, collaborationGuards, listingPeriods, privateProfileSamples, privateSampleMedia, profileDetails, profileMedia, profileServices, profileTags, profiles, users } from "@/db/schema";
+import { adminAuditLogs, adminGithubAccess, adminGithubIdentities, collaborationGuards, listingPeriods, privateProfileSamples, privateSampleIntakes, privateSampleMedia, profileDetails, profileMedia, profileServices, profileTags, profiles, users } from "@/db/schema";
 import { ADMIN_ACCESS_LEVELS, adminHasCapability } from "./admin-permissions";
 import type { AdminUser } from "./auth";
 import { guardedBatch, type ReviewVersion, CollaborationConflict } from "./collaboration";
 import { readProfileSubmission, resolveProfileHandle, ProfileValidationError, validateProfileTravelDates } from "./profile-submission";
-import { sampleCanEdit, sampleForm, sampleFormJson, sampleIsAvailable, sampleTokenHash, readSampleProvenance, SAMPLE_ID, SAMPLE_HANDLE, SAMPLE_LIFETIME_MS, PRIVATE_SAMPLES_ENABLED } from "./private-sample-policy";
+import { sampleCanEdit, sampleForm, sampleFormJson, sampleIsAvailable, sampleTokenHash, readSampleProvenance, SAMPLE_ID, SAMPLE_HANDLE, SAMPLE_INTAKE_ID, SAMPLE_NO_EXPIRY_AT, PRIVATE_SAMPLES_ENABLED } from "./private-sample-policy";
 import { hasUnlimitedEscortListings } from "./profile-limits";
 import { citiesByRegion, escortGenders, slugify } from "./profile";
 import { boundedSampleFilter, samplePhoneSearchTerms } from "./private-sample-filters";
@@ -24,7 +24,7 @@ function sampleEntryMatches(fields: readonly string[], predicate: (value: SQL) =
   return sql`exists(select 1 from json_each(${document}) as sample_field where json_array_length(${pair})=2 and json_type(${pair},'$[0]')='text' and json_type(${pair},'$[1]')='text' and ${key} in (${sql.join(fields.map(field => sql`${field}`), sql`,`)}) and ${predicate(value)})`;
 }
 function samplePhoneMatches(terms: string[]) {
-  return sampleEntryMatches(["contact_whatsapp", "contact_phone"], value => {
+  return sampleEntryMatches(["contact_whatsapp", "contact_whatsapp_alt", "contact_phone"], value => {
     let digits = value;
     for (const separator of ["+", " ", "(", ")", "-", ".", "\t", "\r", "\n", "\u00a0", "\u202f"]) digits = sql`replace(${digits},${separator},'')`;
     return sql`(${sql.join(terms.map(term => sql`instr(${digits},${term})>0`), sql` or `)})`;
@@ -60,8 +60,7 @@ export async function resolvePrivateSample(identifier: string) {
   return (await (await getDb()).select().from(privateProfileSamples).where(eq(privateProfileSamples.handle, identifier)).limit(1))[0] ?? null;
 }
 export async function listPrivateSamples(filters: SampleFilters = {}) {
-  const now = Date.now();
-  const status = sql<string>`case when ${privateProfileSamples.trashedAt} is not null then 'trashed' when ${privateProfileSamples.migratedAt} is not null then 'migrated' when ${privateProfileSamples.expiresAt}<=${now} then 'trashed' when ${privateProfileSamples.tokenHash} is not null or ${privateProfileSamples.legacyTokenHash} is not null then 'active' else 'unshared' end`;
+  const status = sql<string>`case when ${privateProfileSamples.trashedAt} is not null then 'trashed' when ${privateProfileSamples.migratedAt} is not null then 'migrated' when ${privateProfileSamples.tokenHash} is not null or ${privateProfileSamples.legacyTokenHash} is not null then 'active' else 'unshared' end`;
   const clauses = [filters.view === "trash" ? sql`${status}='trashed'` : sql`${status}!='trashed'`];
   const q = boundedSampleFilter(filters.q, 100).replace(/^@/, "");
   if (q) {
@@ -92,7 +91,7 @@ export async function listPrivateSamples(filters: SampleFilters = {}) {
   const rows = await (await getDb()).select({
     id: privateProfileSamples.id, displayName: privateProfileSamples.displayName, handle: privateProfileSamples.handle,
     provenance: privateProfileSamples.provenance, formJson: privateProfileSamples.formJson,
-    revision: privateProfileSamples.revision, expiresAt: privateProfileSamples.expiresAt,
+    revision: privateProfileSamples.revision,
     migratedAt: privateProfileSamples.migratedAt, migratedProfileId: privateProfileSamples.migratedProfileId,
     trashedAt: privateProfileSamples.trashedAt, trashReason: privateProfileSamples.trashReason,
     createdAt: privateProfileSamples.createdAt, updatedAt: privateProfileSamples.updatedAt,
@@ -111,7 +110,7 @@ export async function listPrivateSamples(filters: SampleFilters = {}) {
     let form: FormData;
     try { form = sampleForm(formJson); } catch { form = new FormData(); }
     const age = Number(form.get("age"));
-    return { ...row, age: Number.isInteger(age) && age >= 18 && age <= 99 ? age : null, gender: String(form.get("gender") ?? ""), city: String(form.get("city") ?? ""), contactWhatsapp: String(form.get("contact_whatsapp") ?? "") };
+    return { ...row, age: Number.isInteger(age) && age >= 18 && age <= 99 ? age : null, gender: String(form.get("gender") ?? ""), city: String(form.get("city") ?? ""), contactWhatsapp: String(form.get("contact_whatsapp") ?? ""), alternateWhatsapp: String(form.get("contact_whatsapp_alt") ?? "") };
   });
 }
 export async function sampleMedia(id: string) {
@@ -135,7 +134,7 @@ export async function canOpenSample(identifier: string, token: string | undefine
   return matches.some(Boolean) ? row : null;
 }
 export function sampleSubmission(row: { formJson: string }) {
-  return readProfileSubmission(sampleForm(row.formJson), { travelDateValidation: "stored" });
+  return readProfileSubmission(sampleForm(row.formJson), { travelDateValidation: "stored", allowLegacyGender: true });
 }
 export function sampleInitial(row: { formJson: string }) {
   const s = sampleSubmission(row);
@@ -159,10 +158,28 @@ export async function createPrivateSample(form: FormData, admin: AdminUser) {
   const formJson = sampleFormJson(form), s = readProfileSubmission(sampleForm(formJson));
   const id = `sam_${crypto.randomUUID()}`, handle = await newSampleHandle(s.handle, s.displayName);
   const db = await getDb();
-  await db.batch([
-    db.insert(privateProfileSamples).values({ id, handle, provenance, displayName: s.displayName, formJson, createdBy: admin.id, expiresAt: Date.now() + SAMPLE_LIFETIME_MS }),
-    db.insert(adminAuditLogs).values({ id: `audit_${crypto.randomUUID()}`, actorUserId: admin.id, actorGithubLogin: admin.githubLogin, actorEmail: admin.email, actorName: admin.displayName, category: "profiles", action: "sample.create", entityType: "sample", entityId: id, entityLabel: s.displayName, summary: "Creó una muestra privada.", afterData: JSON.stringify({ handle, provenance }) }),
-  ]);
+  const intakeId = String(form.get("intake_id") ?? "");
+  const insert = db.insert(privateProfileSamples).values({ id, handle, provenance, displayName: s.displayName, formJson, createdBy: admin.id, expiresAt: SAMPLE_NO_EXPIRY_AT });
+  const audit = db.insert(adminAuditLogs).values({ id: `audit_${crypto.randomUUID()}`, actorUserId: admin.id, actorGithubLogin: admin.githubLogin, actorEmail: admin.email, actorName: admin.displayName, category: "profiles", action: "sample.create", entityType: "sample", entityId: id, entityLabel: s.displayName, summary: intakeId ? "Preparó una muestra privada desde una ficha recibida." : "Creó una muestra privada.", afterData: JSON.stringify({ handle, provenance, ...(intakeId ? { intakeId } : {}) }) });
+  if (!intakeId) {
+    await db.batch([insert, audit]);
+    return id;
+  }
+  if (!SAMPLE_INTAKE_ID.test(intakeId)) throw new ProfileValidationError("La ficha de origen no está disponible.");
+  const guard = crypto.randomUUID();
+  try {
+    await db.batch([
+      db.insert(collaborationGuards).values({ id: guard, allowed: sql`case when exists(select 1 from private_sample_intakes where id=${intakeId} and processed_at is null) then 1 else 0 end` }),
+      insert,
+      db.update(privateSampleIntakes).set({ processedAt: new Date().toISOString(), processedBy: admin.id, sampleId: id }).where(eq(privateSampleIntakes.id, intakeId)),
+      audit,
+      db.delete(collaborationGuards).where(eq(collaborationGuards.id, guard)),
+    ]);
+  } catch (error) {
+    const [intake] = await db.select({ processedAt: privateSampleIntakes.processedAt }).from(privateSampleIntakes).where(eq(privateSampleIntakes.id, intakeId)).limit(1);
+    if (!intake || intake.processedAt) throw new ProfileValidationError("Esta ficha ya fue gestionada o ya no está disponible. Revisa el historial.");
+    throw error;
+  }
   return id;
 }
 export async function updatePrivateSample(id: string, form: FormData, version: ReviewVersion, admin: AdminUser) {
@@ -171,11 +188,13 @@ export async function updatePrivateSample(id: string, form: FormData, version: R
   if (!existing || !sampleCanEdit(existing)) throw new CollaborationConflict();
   const provenance = readSampleProvenance(form.get("sample_provenance") ?? existing.provenance);
   if (!provenance) throw new ProfileValidationError("Selecciona una procedencia válida para la muestra.");
-  const formJson = sampleFormJson(form), s = readProfileSubmission(sampleForm(formJson), { travelDateValidation: "stored" });
-  validateProfileTravelDates(s, sampleSubmission(existing).details.metadata);
+  const storedDetails = sampleSubmission(existing).details.metadata;
+  const formJson = sampleFormJson(form);
+  const s = readProfileSubmission(sampleForm(formJson), { travelDateValidation: "stored", allowLegacyGender: JSON.parse(storedDetails).gender === "Trans" });
+  validateProfileTravelDates(s, storedDetails);
   const db = await getDb(), guard = crypto.randomUUID();
   await guardedBatch(version, [
-    db.insert(collaborationGuards).values({ id: guard, allowed: sql`case when exists(select 1 from private_profile_samples where id=${id} and migrated_at is null and trashed_at is null and expires_at>${Date.now()}) then 1 else 0 end` }),
+    db.insert(collaborationGuards).values({ id: guard, allowed: sql`case when exists(select 1 from private_profile_samples where id=${id} and migrated_at is null and trashed_at is null) then 1 else 0 end` }),
     db.update(privateProfileSamples).set({ displayName: s.displayName, formJson, provenance, updatedAt: new Date().toISOString() }).where(eq(privateProfileSamples.id, id)),
     db.insert(adminAuditLogs).values({ id: `audit_${crypto.randomUUID()}`, actorUserId: admin.id, actorGithubLogin: admin.githubLogin, actorEmail: admin.email, actorName: admin.displayName, category: "profiles", action: "sample.save", entityType: "sample", entityId: id, entityLabel: s.displayName, summary: "Editó los datos y la procedencia de una muestra privada.", beforeData: JSON.stringify({ displayName: existing.displayName, provenance: existing.provenance }), afterData: JSON.stringify({ displayName: s.displayName, provenance }) }),
     db.delete(collaborationGuards).where(eq(collaborationGuards.id, guard)),
@@ -212,7 +231,7 @@ export async function migratePrivateSample(row: PrivateSample, email: string, ve
   const override = target.requiresAdditionalEscortConfirmation;
   if (override && !options.allowAdditionalEscort) throw new SampleEscortLimitConflict(target);
   if (override && (options.expectedOwnerId !== owner.id || options.expectedOwnerRevision !== owner.revision || options.expectedEscortCount !== target.escortCount)) throw new CollaborationConflict();
-  const s = readProfileSubmission(sampleForm(row.formJson)), files = await sampleMedia(row.id);
+  const s = readProfileSubmission(sampleForm(row.formJson), { allowLegacyGender: true }), files = await sampleMedia(row.id);
   if (!files.some(file => file.mediaType === "image")) throw new ProfileValidationError("Sube al menos una foto antes de publicar.");
   const handle = await resolveProfileHandle(s.handle ?? row.handle, s.displayName), id = `prf_${crypto.randomUUID()}`, now = new Date().toISOString(), guard = crypto.randomUUID();
   const tags = s.tags.map(tag => ({ id: `tag_${crypto.randomUUID()}`, profileId: id, tag }));
@@ -221,7 +240,7 @@ export async function migratePrivateSample(row: PrivateSample, email: string, ve
   // Target state/count, sample lifecycle/revision, transfer and audit commit
   // together; an old confirmation cannot authorize a changed account.
   await guardedBatch(version, [
-    db.insert(collaborationGuards).values({ id: guard, allowed: sql`case when exists(select 1 from users where id=${owner.id} and revision=${owner.revision} and is_active=1 and role!='admin' and self_disabled_at is null and admin_disabled_at is null and (email_verified_at is not null or email_verification_exempt_at is not null)) and (select count(*) from profiles where owner_id=${owner.id} and type='escort' and agency_custodian_id is null and trashed_at is null)=${target.escortCount} and exists(select 1 from private_profile_samples where id=${row.id} and migrated_at is null and trashed_at is null and expires_at>${Date.now()}) then 1 else 0 end` }),
+    db.insert(collaborationGuards).values({ id: guard, allowed: sql`case when exists(select 1 from users where id=${owner.id} and revision=${owner.revision} and is_active=1 and role!='admin' and self_disabled_at is null and admin_disabled_at is null and (email_verified_at is not null or email_verification_exempt_at is not null)) and (select count(*) from profiles where owner_id=${owner.id} and type='escort' and agency_custodian_id is null and trashed_at is null)=${target.escortCount} and exists(select 1 from private_profile_samples where id=${row.id} and migrated_at is null and trashed_at is null) then 1 else 0 end` }),
     db.insert(profiles).values({ id, ownerId: owner.id, type: "escort", status: "approved", slug: `${slugify(s.displayName)}-${crypto.randomUUID().slice(0, 8)}`, handle, displayName: s.displayName, shortDescription: s.shortDescription, description: s.description, region: s.region, city: s.city, comuna: s.comuna, contactWhatsapp: s.contactWhatsapp, contactTelegram: s.contactTelegram, tier: s.tier, creationSource: "admin", createdByAdminId: admin.id, createdByAdminLogin: admin.githubLogin, adminEscortLimitOverride: override, verificationStatus: "unreviewed", updatedAt: now }),
     db.insert(profileDetails).values({ profileId: id, ...s.details, updatedAt: now }),
     ...(tags.length ? [db.insert(profileTags).values(tags)] : []),
@@ -231,7 +250,7 @@ export async function migratePrivateSample(row: PrivateSample, email: string, ve
     db.update(users).set({ role: "advertiser" }).where(and(eq(users.id, owner.id), eq(users.role, "visitor"))),
     // R2 objects remain in place, referenced solely by the new listing.
     db.delete(privateSampleMedia).where(eq(privateSampleMedia.sampleId, row.id)),
-    db.update(privateProfileSamples).set({ migratedProfileId: id, migratedAt: now, tokenHash: null, legacyTokenHash: null, tokenEncrypted: null, expiresAt: Date.now(), updatedAt: now }).where(eq(privateProfileSamples.id, row.id)),
+    db.update(privateProfileSamples).set({ migratedProfileId: id, migratedAt: now, tokenHash: null, legacyTokenHash: null, tokenEncrypted: null, updatedAt: now }).where(eq(privateProfileSamples.id, row.id)),
     db.insert(adminAuditLogs).values({ id: `audit_${crypto.randomUUID()}`, actorUserId: admin.id, actorGithubLogin: admin.githubLogin, actorEmail: admin.email, actorName: admin.displayName, category: "profiles", action: "sample.migrate", entityType: "sample", entityId: row.id, entityLabel: row.displayName, summary: "Convirtió una muestra privada en anuncio real.", beforeData: JSON.stringify({ sampleId: row.id, provenance: row.provenance, ownerId: owner.id, escortCount: target.escortCount }), afterData: JSON.stringify({ profileId: id, ownerId: owner.id, additionalEscortAuthorized: override, escortCount: target.escortCount + 1 }) }),
     db.delete(collaborationGuards).where(eq(collaborationGuards.id, guard)),
   ], admin.id);

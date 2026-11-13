@@ -195,11 +195,11 @@ test('private sample media shares the listing pipeline with transactional revisi
       sqlite.exec('DELETE FROM review_reservations'); assert.equal(sqlite.prepare('SELECT count(*) n FROM collaboration_guards').get().n, 0);
     });
 
-    await t.test('expiry during R2 upload is checked in the write transaction even if the revision did not change', async () => {
-      makeSample('expires'); const now = Date.now; let clock = now();
-      Date.now = () => clock;
-      try { afterPut = () => { clock += 100001; }; await assert.rejects(upload('expires'), CollaborationConflict); assert.equal(rows('expires').length, 0); assert.equal([...objects.keys()].filter(key => key.startsWith('private-samples/expires/')).length, 0); }
-      finally { Date.now = now; }
+    await t.test('an old expiry timestamp does not interrupt uploads while trash and conversion block them', async () => {
+      makeSample('old-sample');
+      sqlite.exec("UPDATE private_profile_samples SET expires_at=1 WHERE id='old-sample'");
+      await upload('old-sample');
+      assert.equal(rows('old-sample').length, 1);
       for (const [id, statement] of [['trash', 'trashed_at=1'], ['migrated', "migrated_at='done'"]]) { makeSample(id); sqlite.exec(`UPDATE private_profile_samples SET ${statement} WHERE id='${id}'`); await assert.rejects(upload(id), error => error.status === 409); }
     });
 

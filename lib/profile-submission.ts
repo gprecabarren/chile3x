@@ -114,6 +114,7 @@ function optional(value: string) {
 }
 
 const immediateContactMetadata = new Set([
+  "contact_whatsapp_alt",
   "website",
   "facebook_url",
   "instagram_url",
@@ -186,7 +187,7 @@ function normalizeTelegram(value: string) {
   return username;
 }
 
-export function readProfileSubmission(formData: FormData, options: { travelDateValidation?: "stored" } = {}): ProfileSubmission {
+export function readProfileSubmission(formData: FormData, options: { travelDateValidation?: "stored"; allowLegacyGender?: boolean } = {}): ProfileSubmission {
   const typeValue = compactText(formData.get("type"), 20);
   const tierValue = compactText(formData.get("tier"), 20);
   const region = compactText(formData.get("region"), 120);
@@ -196,6 +197,7 @@ export function readProfileSubmission(formData: FormData, options: { travelDateV
   const shortDescription = required(compactText(formData.get("short_description"), 180), "Agrega una descripción breve.");
   const description = required(longText(formData.get("description"), 4000), "Agrega una descripción completa.");
   const contactWhatsapp = compactText(formData.get("contact_whatsapp"), 15);
+  const alternateWhatsapp = String(formData.get("contact_whatsapp_alt") ?? "").trim();
   const intent = formData.get("intent") === "submit" ? "submit" : "draft";
 
   let handle: string | null = null;
@@ -219,6 +221,12 @@ export function readProfileSubmission(formData: FormData, options: { travelDateV
 
   if (contactWhatsapp && !/^[0-9]{8,15}$/.test(contactWhatsapp)) {
     throw new ProfileValidationError("El WhatsApp debe incluir solo números, sin signo +.");
+  }
+  if (alternateWhatsapp && !/^[0-9]{8,15}$/.test(alternateWhatsapp)) {
+    throw new ProfileValidationError("El WhatsApp alternativo debe incluir entre 8 y 15 dígitos, sin signo + ni espacios.");
+  }
+  if (alternateWhatsapp && alternateWhatsapp === contactWhatsapp) {
+    throw new ProfileValidationError("Usa un número distinto para el WhatsApp alternativo.");
   }
 
   const contactPhone = compactText(formData.get("contact_phone"), 15);
@@ -251,7 +259,7 @@ export function readProfileSubmission(formData: FormData, options: { travelDateV
 
   const age = compactText(formData.get("age"), 180);
   const gender = compactText(formData.get("gender"), 180);
-  const demographicsError = profileDemographicsError(typeValue, gender, age, intent === "submit");
+  const demographicsError = profileDemographicsError(typeValue, gender, age, intent === "submit", options.allowLegacyGender);
   if (demographicsError) throw new ProfileValidationError(demographicsError);
 
   const website = typeValue === "agency" ? requiredUrl(compactText(formData.get("website"), 180), "El sitio web") : "";
@@ -298,6 +306,7 @@ export function readProfileSubmission(formData: FormData, options: { travelDateV
   );
 
   if (typeValue === "escort") Object.assign(metadata, prices);
+  if (alternateWhatsapp) metadata.contact_whatsapp_alt = alternateWhatsapp;
   if (contentOnly) metadata.content_only = "1";
   if (languages) metadata.languages = languages;
   if (availability) metadata.availability = availability;
@@ -581,6 +590,9 @@ export async function updateProfile(profileId: string, ownerId: string, submissi
   const sorted = (values: string[]) => [...values].sort((left, right) => left.localeCompare(right, "es-CL"));
   const savedTagValues = savedTags.map((item) => item.tag);
   const savedGender = typeof moderatedDetailsValues.metadata.gender === "string" ? moderatedDetailsValues.metadata.gender : "";
+  if (submittedDetailsValues.metadata.gender === "Trans" && savedGender !== "Trans") {
+    throw new ProfileValidationError("Selecciona un género válido para el anuncio. Puedes usar la etiqueta Trans por separado.");
+  }
   // Legacy listings could select Hombres independently. Reconcile that derived
   // tag without treating an unchanged, already moderated gender as a new edit.
   const moderatedTags = existing.profile.type === "escort" ? profileTagsForGender(savedTagValues, savedGender) : savedTagValues;

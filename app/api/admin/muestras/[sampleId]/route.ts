@@ -4,7 +4,7 @@ import { adminAuditLogs,collaborationGuards,dataDeletionJobs,privateProfileSampl
 import { getCurrentAdmin,assertSameOrigin } from "@/lib/auth";
 import { canManageSamples,getPrivateSample,migratePrivateSample,updatePrivateSample,SampleEscortLimitConflict } from "@/lib/private-samples";
 import { expectedVersion,guardedBatch,CollaborationConflict,conflictResponse,mutationRedirect } from "@/lib/collaboration";
-import { newSampleToken,sampleTokenHash,sampleLink,sampleCanEdit,SAMPLE_LIFETIME_MS,SAMPLE_TOKEN } from "@/lib/private-sample-policy";
+import { newSampleToken,sampleTokenHash,sampleLink,sampleCanEdit,SAMPLE_TOKEN } from "@/lib/private-sample-policy";
 import { encryptPrivateSampleToken,decryptPrivateSampleToken } from "@/lib/private-sample-links";
 import { ProfileValidationError } from "@/lib/profile-submission";
 import { type AdminAuditAction } from "@/lib/admin-audit";
@@ -22,18 +22,18 @@ export async function POST(request:Request,{params}:{params:Promise<{sampleId:st
   try {
     const form=await request.formData(),version=expectedVersion(form,`sample:${sampleId}`),intent=String(form.get("sample_action")??"save"),db=await getDb();
     if(row.revision!==version.revision)throw new CollaborationConflict();
-    const now=new Date().toISOString(),editable=sampleCanEdit(row),trashed=row.trashedAt!==null||(!row.migratedAt&&row.expiresAt<=Date.now());
+    const now=new Date().toISOString(),editable=sampleCanEdit(row),trashed=row.trashedAt!==null;
     const audit=(action:AdminAuditAction,summary:string,after?:Record<string,unknown>)=>db.insert(adminAuditLogs).values({id:`audit_${crypto.randomUUID()}`,actorUserId:admin.id,actorGithubLogin:admin.githubLogin,actorEmail:admin.email,actorName:admin.displayName,category:"profiles",action,outcome:"success",entityType:"sample",entityId:sampleId,entityLabel:row.displayName,summary,afterData:after?JSON.stringify(after):null});
     const commit=async(values:Partial<typeof privateProfileSamples.$inferInsert>,action:AdminAuditAction,summary:string,after?:Record<string,unknown>)=>{
       const guard=crypto.randomUUID();
       await guardedBatch(version,[
-        db.insert(collaborationGuards).values({id:guard,allowed:sql`case when ${["share","adopt_link","revoke","extend","contact_mark","contact_clear"].includes(intent)?sql`exists(select 1 from private_profile_samples where id=${sampleId} and migrated_at is null and trashed_at is null and expires_at>${Date.now()})`:sql`1`} then 1 else 0 end`}),
+        db.insert(collaborationGuards).values({id:guard,allowed:sql`case when ${["share","adopt_link","revoke","contact_mark","contact_clear"].includes(intent)?sql`exists(select 1 from private_profile_samples where id=${sampleId} and migrated_at is null and trashed_at is null)`:sql`1`} then 1 else 0 end`}),
         db.update(privateProfileSamples).set({...values,updatedAt:now}).where(eq(privateProfileSamples.id,sampleId)),audit(action,summary,after),db.delete(collaborationGuards).where(eq(collaborationGuards.id,guard))
       ],admin.id);
     };
-    const replyLink=async(token:string,revision=row.revision)=>Response.json({url:new URL(sampleLink(row.handle??sampleId,token),request.url).href,expiresAt:row.expiresAt,revision},{headers});
-    if(["save","share","get_link","adopt_link","revoke","extend","migrate","contact_mark","contact_clear"].includes(intent)&&!editable)throw new ProfileValidationError("Esta muestra ya venció, está en papelera o fue convertida. Revisa su estado antes de continuar.");
-    if(intent==="get_link")return row.tokenEncrypted?replyLink(await decryptPrivateSampleToken(row.tokenEncrypted,sampleId)):Response.json({legacyLink:Boolean(row.tokenHash),expiresAt:row.expiresAt,revision:row.revision},{headers});
+    const replyLink=async(token:string,revision=row.revision)=>Response.json({url:new URL(sampleLink(row.handle??sampleId,token),request.url).href,revision},{headers});
+    if(["save","share","get_link","adopt_link","revoke","migrate","contact_mark","contact_clear"].includes(intent)&&!editable)throw new ProfileValidationError("Esta muestra está en papelera o fue convertida. Revisa su estado antes de continuar.");
+    if(intent==="get_link")return row.tokenEncrypted?replyLink(await decryptPrivateSampleToken(row.tokenEncrypted,sampleId)):Response.json({legacyLink:Boolean(row.tokenHash),revision:row.revision},{headers});
     let destination=`/admin/muestras/${sampleId}`;
     if(intent==="save") {
       await updatePrivateSample(sampleId,form,version,admin);
@@ -47,12 +47,10 @@ export async function POST(request:Request,{params}:{params:Promise<{sampleId:st
       let previous:URL;try{previous=new URL(String(form.get("previous_link")??""));}catch{throw new ProfileValidationError("Pega el enlace privado completo, incluido su código después de #.");}
       const token=previous.hash.slice(1),hash=SAMPLE_TOKEN.test(token)?await sampleTokenHash(token):null;
       if(![new URL(request.url).origin,"https://chile3x.cl"].includes(previous.origin)||![`/muestra/${sampleId}`,`/muestra/${row.handle}`].includes(previous.pathname)||!hash||hash!==row.tokenHash)throw new ProfileValidationError("Ese enlace no corresponde al acceso vigente de esta muestra.");
-      await commit({tokenEncrypted:await encryptPrivateSampleToken(token,sampleId)},"sample.adopt_link","Guardó el enlace vigente para recuperarlo sin cambiar su acceso ni vencimiento.");
+      await commit({tokenEncrypted:await encryptPrivateSampleToken(token,sampleId)},"sample.adopt_link","Guardó el enlace vigente para recuperarlo sin cambiar su acceso.");
       return replyLink(token,version.revision+1);
     } else if(intent==="revoke") {
       await commit({tokenHash:null,legacyTokenHash:null,tokenEncrypted:null},"sample.revoke","Revocó todos los enlaces y accesos de la muestra.");
-    } else if(intent==="extend") {
-      await commit({expiresAt:Date.now()+SAMPLE_LIFETIME_MS},"sample.extend","Extendió la muestra por 7 días, conservando el enlace.");
     } else if(intent==="contact_mark"||intent==="contact_clear") {
       const contacted=intent==="contact_mark";
       await commit({contactedAt:contacted?now:null,contactedBy:contacted?admin.id:null,contactedByLogin:contacted?admin.githubLogin:null},contacted?"sample.contact_mark":"sample.contact_clear",contacted?"Marcó al posible anunciante como contactado.":"Retiró la marca de contacto del posible anunciante.",{contacted,contactedAt:contacted?now:null});
@@ -63,7 +61,7 @@ export async function POST(request:Request,{params}:{params:Promise<{sampleId:st
       destination=listReturn(form.get("return_to"),"trashed");
     } else if(intent==="restore") {
       if(!trashed)throw new ProfileValidationError("La muestra no está en papelera.");
-      await commit({trashedAt:null,trashedBy:null,trashReason:null,...(!row.migratedAt?{expiresAt:Date.now()+SAMPLE_LIFETIME_MS}:{})},"sample.restore","Restauró la muestra; su enlace anterior vuelve a estar disponible durante 7 días si no fue revocado.");
+      await commit({trashedAt:null,trashedBy:null,trashReason:null},"sample.restore","Restauró la muestra; su enlace anterior vuelve a estar disponible si no fue revocado.");
       destination=listReturn(form.get("return_to"),"restored");
     } else if(intent==="migrate") {
       if(form.get("acceptance")!=="on")throw new ProfileValidationError("Confirma la aceptación del anunciante y la titularidad de la cuenta destino.");

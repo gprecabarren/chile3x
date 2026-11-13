@@ -45,7 +45,7 @@ function withSecurityHeaders(response: Response, pathname = "", privateDocument 
   }
   // Private administration and beta routes, including anonymous redirects,
   // must not be indexed or cached. This does not replace authentication.
-  if (pathname === "/admin" || pathname.startsWith("/admin/")
+  if (pathname === "/admin" || pathname.startsWith("/admin/") || pathname === "/ficha-escort" || pathname === "/api/ficha-escort"
     || pathname === "/foro" || pathname.startsWith("/foro/")) {
     headers.set("cache-control", "private, no-store, max-age=0");
     headers.set("x-robots-tag", "noindex, nofollow, nosnippet");

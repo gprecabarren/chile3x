@@ -117,6 +117,16 @@
 :root body .directory-root .profile-engagement-actions { flex-wrap:wrap; gap:10px; }
 :root body .directory-root .profile-engagement-actions > button { gap:8px; }
 :root body .directory-root .profile-contact-actions { justify-content:flex-start; }
+
+.profile-facts .profile-website-link {
+  color: #ffadb8;
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.profile-facts .profile-website-link:hover { color: #ffd4da; }
+.profile-facts .profile-website-link:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.profile-facts .profile-website-link .action-icon { width: 12px; height: 12px; margin-inline-start: 5px; vertical-align: middle; }
 :root body .directory-root .profile-share-menu { width:min(300px,calc(100vw - 48px)); max-width:calc(100vw - 48px); }
 :root body .directory-root .profile-share-menu :is(button,a) { width:100%; min-height:44px; font-size:1rem; line-height:1.5; white-space:normal; }
 :root body .directory-root .city-popular-profiles > header { flex-wrap:wrap; }

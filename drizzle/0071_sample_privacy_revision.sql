@@ -7,7 +7,9 @@ SELECT d.published_json,
 FROM legal_documents d, json_each(CASE WHEN json_valid(d.published_json) THEN d.published_json END, '$.sections') s,
   json_each(s.value, '$.blocks') b, json_each(b.value, '$.items') i
 WHERE d.id = 'privacy' AND d.version < '2026.11.13.1'
-  AND i.value LIKE '**Muestras privadas:** vigencia inicial de siete días,%'
+  AND json_extract(s.value, '$.id') = 'conservacion'
+  AND json_extract(b.value, '$.id') = 'block-4'
+  AND instr(i.value, '**Muestras privadas:** vigencia inicial de siete días,') = 1
 LIMIT 1;
 
 INSERT INTO legal_document_versions(id, document_id, version, document_json, published_at, published_by)

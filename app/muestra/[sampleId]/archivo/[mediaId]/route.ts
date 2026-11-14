@@ -3,13 +3,13 @@ import {and,eq} from "drizzle-orm";
 import {getDb} from "@/db";
 import {privateSampleMedia} from "@/db/schema";
 import {getCurrentAdmin} from "@/lib/auth";
-import {canManageSamples,resolvePrivateSample,canOpenSample} from "@/lib/private-samples";
-import {SAMPLE_COOKIE,sampleCanEdit} from "@/lib/private-sample-policy";
+import {canManageSamples,resolveSampleForViewer} from "@/lib/private-samples";
+import {SAMPLE_COOKIE} from "@/lib/private-sample-policy";
 import {mediaByteRange} from "@/lib/media-byte-range";
 export async function GET(request:Request,{params}:{params:Promise<{sampleId:string;mediaId:string}>}) {
   const {sampleId,mediaId}=await params,admin=await getCurrentAdmin();
-  const sample=canManageSamples(admin)?await resolvePrivateSample(sampleId):await canOpenSample(sampleId,(await cookies()).get(SAMPLE_COOKIE)?.value);
-  if(!sample||!sampleCanEdit(sample))return new Response(null,{status:404});
+  const sample=await resolveSampleForViewer(sampleId,(await cookies()).get(SAMPLE_COOKIE)?.value,canManageSamples(admin));
+  if(!sample)return new Response(null,{status:404});
   const file=(await (await getDb()).select().from(privateSampleMedia).where(and(eq(privateSampleMedia.sampleId,sample.id),eq(privateSampleMedia.id,mediaId))).limit(1))[0];
   if(!file)return new Response(null,{status:404});
   const range=mediaByteRange(request.headers.get("range"),file.byteSize);

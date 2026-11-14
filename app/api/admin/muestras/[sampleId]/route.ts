@@ -4,7 +4,7 @@ import { adminAuditLogs,collaborationGuards,dataDeletionJobs,privateProfileSampl
 import { getCurrentAdmin,assertSameOrigin } from "@/lib/auth";
 import { canManageSamples,getPrivateSample,migratePrivateSample,updatePrivateSample,SampleEscortLimitConflict } from "@/lib/private-samples";
 import { expectedVersion,guardedBatch,CollaborationConflict,conflictResponse,mutationRedirect } from "@/lib/collaboration";
-import { newSampleToken,sampleTokenHash,sampleLink,sampleCanEdit,SAMPLE_TOKEN } from "@/lib/private-sample-policy";
+import { newSampleToken,sampleTokenHash,sampleLink,samplePath,sampleCanEdit,sampleIsAvailable,SAMPLE_TOKEN } from "@/lib/private-sample-policy";
 import { encryptPrivateSampleToken,decryptPrivateSampleToken } from "@/lib/private-sample-links";
 import { ProfileValidationError } from "@/lib/profile-submission";
 import { type AdminAuditAction } from "@/lib/admin-audit";
@@ -31,9 +31,17 @@ export async function POST(request:Request,{params}:{params:Promise<{sampleId:st
         db.update(privateProfileSamples).set({...values,updatedAt:now}).where(eq(privateProfileSamples.id,sampleId)),audit(action,summary,after),db.delete(collaborationGuards).where(eq(collaborationGuards.id,guard))
       ],admin.id);
     };
-    const replyLink=async(token:string,revision=row.revision)=>Response.json({url:new URL(sampleLink(row.handle??sampleId,token),request.url).href,revision},{headers});
+    const shortUrl = row.handle ? new URL(samplePath(row.handle), request.url).href : null;
+    const replyLink = (token: string, revision = row.revision) => {
+      const url = new URL(sampleLink(row.handle ?? sampleId, token), request.url).href;
+      return Response.json({ url, shareUrl: shortUrl ?? url, revision }, { headers });
+    };
     if(["save","share","get_link","adopt_link","revoke","migrate","contact_mark","contact_clear"].includes(intent)&&!editable)throw new ProfileValidationError("Esta muestra está en papelera o fue convertida. Revisa su estado antes de continuar.");
-    if(intent==="get_link")return row.tokenEncrypted?replyLink(await decryptPrivateSampleToken(row.tokenEncrypted,sampleId)):Response.json({legacyLink:Boolean(row.tokenHash),revision:row.revision},{headers});
+    if (intent === "get_link") {
+      if (row.tokenEncrypted && row.tokenHash) return replyLink(await decryptPrivateSampleToken(row.tokenEncrypted, sampleId));
+      const shareUrl = sampleIsAvailable(row) ? shortUrl : null;
+      return Response.json({ shareUrl, legacyLink: Boolean(row.tokenHash), revision: row.revision }, { headers });
+    }
     let destination=`/admin/muestras/${sampleId}`;
     if(intent==="save") {
       await updatePrivateSample(sampleId,form,version,admin);

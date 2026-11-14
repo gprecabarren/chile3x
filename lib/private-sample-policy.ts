@@ -43,8 +43,9 @@ export function sampleListStatus(sample: SampleLifecycle & { tokenHash?: string 
 export function readSampleProvenance(value: unknown): SampleProvenance | null {
   return typeof value === "string" && SAMPLE_PROVENANCES.some(item => item === value) ? value as SampleProvenance : null;
 }
+export function samplePath(identifier: string) { return `/muestra/${encodeURIComponent(identifier)}`; }
 export function sampleCookiePath(id:string) { return `/muestra/${id}`; }
-export function sampleLink(id:string,token:string) { return `/muestra/${id}#${token}`; }
+export function sampleLink(id:string,token:string) { return `${samplePath(id)}#${token}`; }
 
 // Never persist review tokens, passwords, CSRF data or arbitrary form fields.
 const fields=new Set(("type tier handle display_name region city comuna short_description description contact_whatsapp contact_whatsapp_alt contact_telegram contact_phone contact_email reference_location legacy_schedule currency price_amount price_30_min price_60_min price_moment price_night gender age nationality skin_color languages height_cm weight_kg measurements hair_color body_type bust_size instagram_url arsmate_url onlyfans_url promotions contact_methods travel_city travel_start travel_end travel_note services_included services_additional tags").split(" "));

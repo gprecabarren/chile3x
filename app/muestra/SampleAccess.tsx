@@ -7,7 +7,7 @@ export function SampleAccess({id}:{id:string}) {
   async function open() {
     setBusy(true);setError("");
     try{
-      if(!SAMPLE_TOKEN.test(token.current))throw new Error("Abre el enlace completo que te compartió administración.");
+      if(!SAMPLE_TOKEN.test(token.current))throw new Error("Esta muestra no está disponible en este enlace. Pide a administración que compruebe si sigue habilitado.");
       const response=await fetch(`/muestra/${encodeURIComponent(id)}/acceso`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({token:token.current}),cache:"no-store",referrerPolicy:"no-referrer"});
       if(!response.ok)throw new Error("Este enlace no está disponible o fue revocado. Solicita uno nuevo a administración.");
       token.current="";location.replace(`/muestra/${encodeURIComponent(id)}`);

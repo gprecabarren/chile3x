@@ -46,7 +46,7 @@ test('sample and media edits invalidate old review snapshots in actual SQLite',a
 test('private presentation omits analytics, public structured data and shared cache entries',async()=>{
  const [worker,page,access,layout]=await Promise.all(['worker/index.ts','app/muestra/[sampleId]/page.tsx','app/muestra/[sampleId]/acceso/route.ts','app/layout.tsx'].map(source));
  assert.match(worker,/requestHeaders.delete\(PRIVATE_SAMPLE_HEADER\)/);assert.match(worker,/noimageindex/);assert.match(worker,/connect-src 'self'"/);
- assert.match(page,/canOpenSample/);assert.match(page,/canonical:null/);assert.match(access,/HttpOnly; SameSite=Lax/);assert.match(access,/>512/);
+ assert.match(page,/resolveSampleForViewer/);assert.match(page,/canonical:null/);assert.match(access,/HttpOnly; SameSite=Lax/);assert.match(access,/>512/);
  assert.ok(layout.indexOf('if(requestHeaders.get(PRIVATE_SAMPLE_HEADER)')<layout.indexOf('<DeferredClientFeatures'));
  assert.match(await source('app/perfil/[slug]/page.tsx'),/!sample && <Suspense/);
  assert.match(await source('app/api/admin/operaciones/almacenamiento/route.ts'),/from\(privateSampleMedia\)/);

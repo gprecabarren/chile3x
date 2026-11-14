@@ -276,3 +276,5 @@ Las rutas normales `/api/perfiles/:id`, medios, documentos, visibilidad, revisi�
 
 
 `GET /ficha-escort` abre el formulario público noindex. `POST /api/ficha-escort` valida origen, datos, tamaño y Turnstile. `GET /admin/muestras/fichas-formulario` es el historial privado. `/admin/muestras/nueva?ficha=<id>` prepara una muestra con los datos de la ficha recibida. Los enlaces privados de muestra permanecen activos hasta que se revoquen, se retire la muestra a papelera o se convierta en anuncio.
+
+`GET /muestra/:usuario` y `GET /muestra/:usuario/archivo/:mediaId` funcionan sin sesión para las muestras con enlace habilitado. El alias por ID conserva el acceso heredado por fragmento y cookie. Las vistas y archivos siguen fuera del índice y de la caché compartida.

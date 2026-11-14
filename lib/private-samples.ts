@@ -5,7 +5,7 @@ import { ADMIN_ACCESS_LEVELS, adminHasCapability } from "./admin-permissions";
 import type { AdminUser } from "./auth";
 import { guardedBatch, type ReviewVersion, CollaborationConflict } from "./collaboration";
 import { readProfileSubmission, resolveProfileHandle, ProfileValidationError, validateProfileTravelDates } from "./profile-submission";
-import { sampleCanEdit, sampleForm, sampleFormJson, sampleIsAvailable, sampleTokenHash, readSampleProvenance, SAMPLE_ID, SAMPLE_HANDLE, SAMPLE_INTAKE_ID, SAMPLE_NO_EXPIRY_AT, PRIVATE_SAMPLES_ENABLED } from "./private-sample-policy";
+import { sampleCanEdit, sampleForm, sampleFormJson, sampleIsAvailable, sampleTokenHash, readSampleProvenance, SAMPLE_ID, SAMPLE_HANDLE, SAMPLE_TOKEN, SAMPLE_INTAKE_ID, SAMPLE_NO_EXPIRY_AT, PRIVATE_SAMPLES_ENABLED } from "./private-sample-policy";
 import { hasUnlimitedEscortListings } from "./profile-limits";
 import { citiesByRegion, escortGenders, slugify } from "./profile";
 import { boundedSampleFilter, samplePhoneSearchTerms } from "./private-sample-filters";
@@ -55,8 +55,11 @@ export async function getPrivateSample(id: string) {
 }
 /** ID aliases and their path-scoped cookies remain valid alongside short handles. */
 export async function resolvePrivateSample(identifier: string) {
-  if (SAMPLE_ID.test(identifier)) return getPrivateSample(identifier);
   if (!PRIVATE_SAMPLES_ENABLED || !SAMPLE_HANDLE.test(identifier)) return null;
+  if (SAMPLE_ID.test(identifier)) {
+    const row = await getPrivateSample(identifier);
+    if (row) return row;
+  }
   return (await (await getDb()).select().from(privateProfileSamples).where(eq(privateProfileSamples.handle, identifier)).limit(1))[0] ?? null;
 }
 export async function listPrivateSamples(filters: SampleFilters = {}) {
@@ -98,7 +101,6 @@ export async function listPrivateSamples(filters: SampleFilters = {}) {
     creatorId: privateProfileSamples.createdBy, creatorLogin,
     contactedAt: privateProfileSamples.contactedAt, contactedBy: privateProfileSamples.contactedBy, contactedByLogin: privateProfileSamples.contactedByLogin,
     shared: sql<boolean>`${privateProfileSamples.tokenHash} is not null or ${privateProfileSamples.legacyTokenHash} is not null`,
-    legacyLink: sql<boolean>`${privateProfileSamples.tokenHash} is not null and ${privateProfileSamples.tokenEncrypted} is null`,
   }).from(privateProfileSamples)
     .leftJoin(users, eq(privateProfileSamples.createdBy, users.id))
     .leftJoin(adminGithubAccess, eq(adminGithubAccess.userId, users.id))
@@ -124,14 +126,28 @@ async function constantTimeHashMatch(stored: string | null, candidate: string) {
   const candidateKey = await crypto.subtle.importKey("raw", bytes.encode(candidate), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
   return crypto.subtle.verify("HMAC", candidateKey, signature, payload);
 }
-export async function canOpenSample(identifier: string, token: string | undefined) {
-  if (!token) return null;
-  const hash = await sampleTokenHash(token);
-  if (!hash) return null;
-  const row = await resolvePrivateSample(identifier);
-  if (!row || !sampleIsAvailable(row)) return null;
+async function matchesSampleToken(row: PrivateSample, token: string | undefined) {
+  const hash = token ? await sampleTokenHash(token) : null;
+  if (!hash) return false;
   const matches = await Promise.all([constantTimeHashMatch(row.tokenHash, hash), constantTimeHashMatch(row.legacyTokenHash, hash)]);
-  return matches.some(Boolean) ? row : null;
+  return matches.some(Boolean);
+}
+
+/** Existing fragment links still exchange a valid token for a scoped cookie. */
+export async function canOpenSample(identifier: string, token: string) {
+  if (!SAMPLE_TOKEN.test(token)) return null;
+  const row = await resolvePrivateSample(identifier);
+  return row && sampleIsAvailable(row) && await matchesSampleToken(row, token) ? row : null;
+}
+
+export async function resolveSampleForViewer(identifier: string, token: string | undefined, adminPreview: boolean) {
+  const row = await resolvePrivateSample(identifier);
+  if (!row || !sampleCanEdit(row)) return null;
+  if (adminPreview) return row;
+  if (!sampleIsAvailable(row)) return null;
+  // The short handle is the share address. Old ID aliases still require a token.
+  if (row.handle === identifier) return row;
+  return await matchesSampleToken(row, token) ? row : null;
 }
 export function sampleSubmission(row: { formJson: string }) {
   return readProfileSubmission(sampleForm(row.formJson), { travelDateValidation: "stored", allowLegacyGender: true });
@@ -143,7 +159,7 @@ export function sampleInitial(row: { formJson: string }) {
 async function newSampleHandle(requested: string | null, displayName: string) {
   const db = await getDb();
   const available = async (handle: string) => !(await db.select({ id: privateProfileSamples.id }).from(privateProfileSamples).where(eq(privateProfileSamples.handle, handle)).limit(1)).length;
-  if (requested && SAMPLE_HANDLE.test(requested) && await available(requested)) return requested;
+  if (requested && SAMPLE_HANDLE.test(requested) && !SAMPLE_ID.test(requested) && await available(requested)) return requested;
   const base = slugify(displayName).slice(0, 30).replace(/[-_]+$/, "") || "muestra";
   for (let attempt = 0; attempt < 5; attempt++) {
     const handle = `${base}-${crypto.randomUUID().replaceAll("-", "").slice(0, 8)}`;

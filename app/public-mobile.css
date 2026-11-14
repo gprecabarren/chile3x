@@ -302,12 +302,6 @@
 }
 
 @media (max-width:620px) {
-  .sample-intake-page .profile-form :is(.form-grid-two, .form-grid-three, .service-columns) {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@media (max-width:620px) {
   /* The two hero actions form one mobile group: same full width and baseline
      height, without stretching desktop actions or constraining text reflow. */
   :root body .home-layout--classic .hero-actions > .button {
@@ -338,6 +332,9 @@
     white-space:nowrap;
   }
   :root body .directory-filter-form .filter-mobile-toggle::after { margin-left:auto; }
+  .sample-intake-page .profile-form :is(.form-grid-two, .form-grid-three, .service-columns) {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .profile-form .availability-editor-row { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .profile-form .availability-day-toggle { grid-column:1 / -1; }
   .travel-agenda-editor .date-parts-field > div { grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr)); }

@@ -73,8 +73,14 @@ test('sample action API preserves invitation state and coordinates private admin
 
     await t.test('sharing, reopening and copying keep the identical encrypted invitation without a deadline', async () => {
       const original = await create({ handle: 'stable-actions' });
+      assert.equal(await service.resolveSampleForViewer(original.handle, undefined, false), null);
+      assert.equal((await service.resolveSampleForViewer(original.handle, undefined, true)).id, original.id);
       const share = await call(original, 'share'); assert.equal(share.status, 200);
       const first = await share.json(), saved = await service.getPrivateSample(original.id);
+      assert.equal(first.shareUrl, 'https://sample.invalid/muestra/stable-actions');
+      assert.equal((await service.resolveSampleForViewer(saved.handle, undefined, false)).id, saved.id);
+      assert.equal(await service.resolveSampleForViewer(saved.id, undefined, false), null);
+      assert.equal((await service.resolveSampleForViewer(saved.id, new URL(first.url).hash.slice(1), false)).id, saved.id);
       assert.equal(first.expiresAt, undefined); assert.equal(saved.expiresAt, original.expiresAt);
       assert.equal(first.revision, saved.revision); assert.equal(audits(original.id, 'sample.share').length, 1);
       assert.ok(saved.tokenEncrypted.startsWith('v1.')); assert.ok(!saved.tokenEncrypted.includes(new URL(first.url).hash.slice(1)));
@@ -83,7 +89,7 @@ test('sample action API preserves invitation state and coordinates private admin
       await assert.rejects(links.decryptPrivateSampleToken(saved.tokenEncrypted, saved.id, 'L'.repeat(43)));
       for (const action of ['get_link', 'share', 'get_link']) {
         const response = await call(saved, action), result = await response.json();
-        assert.equal(response.status, 200); assert.equal(result.url, first.url); assert.equal(result.revision, saved.revision);
+        assert.equal(response.status, 200); assert.equal(result.url, first.url); assert.equal(result.shareUrl, first.shareUrl); assert.equal(result.revision, saved.revision);
       }
       assert.equal((await service.getPrivateSample(saved.id)).revision, saved.revision);
       assert.equal(audits(original.id, 'sample.share').length, 1);
@@ -96,6 +102,8 @@ test('sample action API preserves invitation state and coordinates private admin
       let row = await service.getPrivateSample(sample.id);
       let response = await call(row, 'get_link'), result = await response.json();
       assert.equal(response.status, 200); assert.equal(result.legacyLink, true); assert.ok(!result.url);
+      assert.equal(result.shareUrl, 'https://sample.invalid/muestra/legacy-actions');
+      assert.equal((await service.resolveSampleForViewer(sample.handle, undefined, false)).id, sample.id);
       response = await call(row, 'adopt_link', { previous_link: 'https://sample.invalid/muestra/' + row.id + '#' + token }); result = await response.json();
       assert.equal(response.status, 200); assert.equal(new URL(result.url).hash, '#' + token);
       row = await service.getPrivateSample(sample.id);
@@ -134,17 +142,20 @@ test('sample action API preserves invitation state and coordinates private admin
       const token = new URL(first.url).hash.slice(1);
       assert.equal((await call(row, 'trash')).status, 200);
       assert.equal(await service.canOpenSample(row.handle, token), null);
+      assert.equal(await service.resolveSampleForViewer(row.handle, undefined, false), null);
       row = await service.getPrivateSample(row.id);
       assert.equal((await call(row, 'contact_mark')).status, 400);
       assert.equal((await call(row, 'get_link')).status, 400);
       assert.equal((await call(row, 'restore')).status, 200);
       row = await service.getPrivateSample(row.id);
       assert.equal((await service.canOpenSample(row.handle, token)).id, row.id);
+      assert.equal((await service.resolveSampleForViewer(row.handle, undefined, false)).id, row.id);
       assert.equal((await (await call(row, 'get_link')).json()).url, first.url);
       assert.ok(row.expiresAt >= original.expiresAt);
       assert.equal((await call(row, 'revoke')).status, 200);
       row = await service.getPrivateSample(row.id);
       assert.equal(await service.canOpenSample(row.handle, token), null);
+      assert.equal(await service.resolveSampleForViewer(row.handle, undefined, false), null);
       assert.equal(row.tokenHash, null); assert.equal(row.legacyTokenHash, null); assert.equal(row.tokenEncrypted, null);
       await call(row, 'trash'); row = await service.getPrivateSample(row.id);
       await call(row, 'restore'); row = await service.getPrivateSample(row.id);

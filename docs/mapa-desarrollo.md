@@ -43,6 +43,10 @@ La base usa React 19, convenciones App Router de Next 16 y compilación Vinext/V
 
 ## Flujos del sitio
 
+### Aplicación móvil instalable
+
+`public/site.webmanifest` permite abrir el sitio en modo independiente. Las preferencias de avisos viven en `/mi-cuenta/avisos-moviles` y `/admin/avisos-moviles`, por navegador y cuenta. Los triggers de D1 encolan los eventos de mensajería, aprobación, registro, moderación e historial administrativo. El cron del Worker entrega avisos genéricos y el service worker abre la pantalla autenticada correspondiente. Un cierre de sesión activo retira la suscripción de ese navegador. La expiración natural de la sesión permite seguir recibiendo avisos; los detalles requieren volver a ingresar. La capacidad `audit.view` limita las suscripciones administrativas.
+
 ### Registro, acceso y sesiones
 
 `app/api/auth` → `lib/auth.ts` y módulos del proveedor → `users`, identidades, tokens e intentos → cookie de sesión y preparación de contexto del navegador.

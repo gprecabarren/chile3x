@@ -21,6 +21,7 @@ function AccountNavigation({ user, helpEnabled }: { user: AccountUser; helpEnabl
     <AccountNavigationLink href="/mi-cuenta#agencias">Agencias y permisos</AccountNavigationLink>
     <AccountNavigationLink href="/mi-cuenta/historias">Historias</AccountNavigationLink>
     <AccountNavigationLink className="account-messages-link" href="/mi-cuenta/mensajes">Mensajes<UnreadMessagesBadge /></AccountNavigationLink>
+    <AccountNavigationLink href="/mi-cuenta/avisos-moviles">Notificaciones móviles</AccountNavigationLink>
     <AccountNavigationLink href="/mi-cuenta/contenido">Mi contenido</AccountNavigationLink>
     <AccountNavigationLink href="/mi-cuenta/datos-personales">Mis datos</AccountNavigationLink>
     <AccountNavigationLink grouped className="account-messages-link" href="/mi-cuenta/favoritos">Favoritos y comentarios<UnreadMessagesBadge reviews /></AccountNavigationLink>

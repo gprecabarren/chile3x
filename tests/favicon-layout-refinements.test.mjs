@@ -37,7 +37,9 @@ test('all browser icon links and the manifest use fresh Chile3X paths while orig
     assert.equal(hash(await bytes(oldPath)), hash(await bytes(freshPath)), freshPath);
   }
   assert.ok(manifest.icons.every(icon => layout.includes(icon.src)));
-  assert.match(layout, /manifest: "\/site.webmanifest\?v=20261020"/);
+  assert.match(layout, /manifest: "\/site\.webmanifest\?v=\d{8}"/);
+  assert.equal(manifest.display, "standalone");
+  assert.equal(manifest.scope, "/");
   const icons = layout.slice(layout.indexOf('icons:'), layout.indexOf('manifest:'));
   assert.doesNotMatch(icons, /arsmate|onlyfans|https?:\/\//i);
 });

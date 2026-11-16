@@ -75,7 +75,7 @@ export async function generateMetadata(): Promise<Metadata> {
       shortcut: "/chile3x-favicon-20261020.ico",
       apple: [{ url: "/chile3x-apple-touch-20261020.png", type: "image/png", sizes: "180x180" }],
     },
-    manifest: "/site.webmanifest?v=20261020",
+    manifest: "/site.webmanifest?v=20261116",
   };
 }
 

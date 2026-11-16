@@ -1,6 +1,9 @@
 {
   "name": "Chile3X",
   "short_name": "Chile3X",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
   "icons": [
     {
       "src": "/chile3x-favicon-192-20261020.png",
@@ -17,5 +20,5 @@
   ],
   "theme_color": "#080a11",
   "background_color": "#080a11",
-  "display": "browser"
+  "display": "standalone"
 }

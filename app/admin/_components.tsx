@@ -104,6 +104,7 @@ function AdminNavigation({
       {(adminHasCapability(user, "news.manage")||adminHasCapability(user, "settings.manage"))&&<AdminSidebarLink href="/admin/contenido">Contenido del sitio</AdminSidebarLink>}
       {adminHasCapability(user, "telegram.view") && <AdminSidebarLink className={pendingTelegram > 0 ? "admin-nav-alert" : undefined} href="/admin/telegram">Telegram<AdminPendingCount key={pendingTelegram} kind="pendingTelegram" initial={pendingTelegram} /></AdminSidebarLink>}
       {adminHasCapability(user, "audit.view") && <AdminSidebarLink href="/admin/actividad">Actividad</AdminSidebarLink>}
+      {adminHasCapability(user, "audit.view") && <AdminSidebarLink href="/admin/avisos-moviles">Notificaciones móviles</AdminSidebarLink>}
       {canViewEmailHistory(user) && <AdminSidebarLink href="/admin/correos">Historial correos</AdminSidebarLink>}
       {adminHasCapability(user, "settings.manage") && <AdminSidebarLink href="/admin/configuracion">Configuración</AdminSidebarLink>}
       {adminHasCapability(user, "forum.manage") && <AdminSidebarLink href="/foro">Foro <small>beta privada</small></AdminSidebarLink>}

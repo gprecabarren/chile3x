@@ -1,0 +1,9 @@
+.mobile-push-settings { display: grid; gap: 18px; min-width: 0; }
+.mobile-push-settings h2 { margin: 0 0 12px; font-size: clamp(23px, 3vw, 30px); }
+.mobile-push-settings :is(p, ol) { max-width: 70ch; color: #bdc9da; line-height: 1.65; }
+.mobile-push-settings p { margin: 9px 0; }
+.mobile-push-settings ol { margin: 14px 0 0; padding-inline-start: 22px; }
+.mobile-push-settings li + li { margin-top: 9px; }
+.mobile-push-settings .checkbox-label { margin-top: 16px; }
+.mobile-push-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.mobile-push-settings .button { min-height: 44px; max-width: 100%; white-space: normal; text-align: center; }

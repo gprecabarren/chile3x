@@ -916,6 +916,12 @@ Este script fuerza el uso del `wrangler.json` del repositorio y conserva las var
 
 **Workers Builds en GitHub:** el comando automático de despliegue de Chile3X está configurado como `npx wrangler deploy --config wrangler.json --keep-vars` desde la raíz. El comando antiguo con `--config dist/server/wrangler.json` duplicaba bindings generados y dejaba algunos checks rojos aun cuando la compilación terminaba bien. No reutilizar esta configuración para JurisConecta.
 
+### Aplicación instalable y notificaciones móviles
+
+Chile3X se puede instalar desde Safari en iPhone/iPad o Chrome en Android. En iOS/iPadOS 16.4 o posterior, los avisos necesitan que la aplicación esté agregada a la pantalla de inicio y abierta desde ese ícono al activarlos. Los paneles mantienen sus cuentas y permisos en la aplicación instalada. En **Notificaciones móviles** cada dispositivo puede activar, probar o desactivar su suscripción. Las notificaciones de cuentas son para mensajes internos y anuncios aprobados. Las de administración incluyen nuevos registros y actividad de moderación, y permiten activar el historial mediante una preferencia.
+
+Aplicar `0073_mobile_web_push.sql` antes de que el primer despliegue reciba tráfico. El cron existente entrega avisos en intervalos de cinco minutos a los proveedores Web Push del navegador. Agrupa avisos del mismo tipo pendientes en ese dispositivo. La firma VAPID usa una clave derivada de `X_SETTINGS_ENCRYPTION_KEY` con un dominio propio. Rotar ese secreto exige reactivar las suscripciones. Los avisos usan textos genéricos y el service worker delega el acceso a las páginas normales autenticadas. Los endpoints rechazados se eliminan igual que las suscripciones sin actualizar durante 180 días.
+
 El 30 de septiembre de 2026 se publicó inicialmente un respaldo aproximado por red mediante `/api/location-hint` (versión `5a7308c8-9ff9-49ab-812f-49836c9e9387`). **Ese comportamiento quedó retirado** al comprobarse que podía guardar Santiago Centro o Concepción para una persona situada en Linares. Posteriormente se retiró también la detección GPS: la selección territorial vigente es exclusivamente manual; el antiguo endpoint ya no se ofrece.
 
 La versión histórica `49c52ce7-d886-481a-af3f-3e21f029e09f` corrigió la estimación por IP y verificó que una cookie antigua con Santiago Centro mostrara «Todo Chile». Esa versión aún ofrecía GPS; la selección manual posterior la reemplaza. Ninguna revisión con emulación sustituye una prueba en un iPhone físico.

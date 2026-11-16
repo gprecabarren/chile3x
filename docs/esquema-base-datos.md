@@ -8,6 +8,8 @@ Convenciones: PK = clave primaria; obligatorio = NOT NULL; predeterminado = el e
 
 ## Tablas
 
+La migración [0073_mobile_web_push.sql](../drizzle/0073_mobile_web_push.sql) agrega dos tablas operativas de uso directo desde D1. `mobile_push_devices` asocia una cuenta con una suscripción Web Push y un hash de navegador único; la opción de historial se guarda por dispositivo. `mobile_push_pending` referencia el dispositivo con borrado en cascada y conserva una revisión y un único aviso pendiente por tipo. Triggers en sesiones, mensajes, perfiles, notificaciones e historial encolan o eliminan avisos dentro de la transacción del evento correspondiente. El cron vuelve a comprobar cuenta activa y nivel administrativo antes de entregar. La cola contiene clases de aviso y fechas, sin texto de mensajes ni datos del historial.
+
 ### account_apple_identities
 
 Exportación: `accountAppleIdentities` en [schema.ts](../db/schema.ts).

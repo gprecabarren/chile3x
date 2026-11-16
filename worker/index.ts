@@ -18,6 +18,7 @@ import { HOME_LAYOUT_HEADER } from "../lib/home-layout-policy";
 import { VISUAL_THEME_HEADER } from "../lib/site-theme-policy";
 import { adminMutationResponse } from "./admin-mutation-response";
 import { isSamplePath,PRIVATE_SAMPLE_HEADER,PRIVATE_SAMPLES_ENABLED } from "../lib/private-sample-policy";
+import { deliverMobilePush, purgeExpiredMobilePush } from "./mobile-push";
 
 const availableCitySlugs = new Set(cityDirectory.map(city => city.citySlug));
 
@@ -174,7 +175,11 @@ const worker = {
   async queue(batch: MessageBatch<TelegramQueueMessage>, env: Env): Promise<void> {
     await handleTelegramQueue(batch, env);
   },
-  async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
+  async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(deliverMobilePush(env).catch(() => console.error("Mobile push delivery could not be processed.")));
+    if (new Date(controller.scheduledTime).getUTCMinutes() === 0) {
+      ctx.waitUntil(purgeExpiredMobilePush(env).catch(() => console.error("Mobile push cleanup could not be processed.")));
+    }
     await handleAgencyMailScheduled(env).catch(()=>console.error("Agency mail processing failed; pending jobs retained."));
     await handleModerationMailScheduled(env).catch(() => console.error("Moderation mail processing failed; next cycle will inspect pending jobs."));
     await Promise.all([handleTelegramScheduled(env), handleEmailVerificationScheduled(env), handleDataRetentionScheduled(env), purgeMediaDeletionJobs(env).catch(()=>console.error("La limpieza de archivos se reintentará en el siguiente ciclo.")), purgeExpiredStoryRecords(env).then(result => {
